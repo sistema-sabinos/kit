@@ -1,0 +1,8 @@
+.env
+.env.*
+.backup-falhou
+node_modules/
+.DS_Store
+# ponte pro Codex, criada em tempo de uso, nunca versionada
+.agents/
+# pastas de projeto criadas pelo setup entram aqui, uma linha cada (o /setup adiciona)

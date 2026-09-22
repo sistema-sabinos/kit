@@ -1,0 +1,19 @@
+{
+  "componentes": {
+    "nucleo": { "depende": [], "caminhos": [
+      ".claude/skills/iniciar/", ".claude/skills/atualizar/", ".claude/skills/conectar/",
+      ".claude/skills/mapear/", ".claude/skills/syncar/", ".claude/skills/atualizar-sabinos/",
+      "_contexto/arquivo/README.md", "dados/README.md"
+    ] },
+    "bastao": { "depende": [], "caminhos": [".claude/skills/bastao/"] },
+    "checar": { "depende": ["nucleo"], "caminhos": [".claude/skills/checar/"] },
+    "trava": { "depende": [], "caminhos": [".claude/hooks/barrar-perigoso.mjs"] },
+    "assistir-video": { "depende": [], "caminhos": [".claude/skills/assistir-video/"] },
+    "transcribe": { "depende": [], "caminhos": [".claude/skills/transcribe/"] },
+    "find-skills": { "depende": [], "caminhos": [".claude/skills/find-skills/"] },
+    "otimizar-pc": { "depende": [], "caminhos": [".claude/skills/otimizar-pc/"] },
+    "trafego": { "depende": ["nucleo"], "caminhos": [".claude/skills/trafego/"] }
+  },
+  "mistos": ["AGENTS.md", "CLAUDE.md", ".gitignore", ".claude/settings.json"],
+  "ignorar": { "pastas": ["templates/"], "arquivos": ["README.md"], "finais": [".test.mjs"] }
+}

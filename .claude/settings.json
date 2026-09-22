@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "ask": [
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ],
+    "deny": [
+      "Read(./secrets/**)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'git rev-parse --git-dir >/dev/null 2>&1 || exit 0; git remote get-url origin >/dev/null 2>&1 || exit 0; git add -A >/dev/null 2>&1; git diff --staged --quiet && exit 0; git commit -m \"auto-sync: $(date +\"%Y-%m-%d %H:%M\")\" >/dev/null 2>&1; if git push --quiet 2>/tmp/sabinos-push-err; then rm -f .backup-falhou; else { echo \"O backup automatico no GitHub falhou em $(date +%Y-%m-%d) $(date +%H:%M).\"; echo \"O trabalho esta salvo no computador, mas NAO subiu pra nuvem.\"; echo \"Rode /syncar pra resolver. Erro do git:\"; cat /tmp/sabinos-push-err; } > .backup-falhou 2>/dev/null; fi; true'"
+          }
+        ]
+      }
+    ]
+  }
+}

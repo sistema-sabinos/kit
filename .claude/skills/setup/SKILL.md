@@ -1,0 +1,487 @@
+---
+name: setup
+description: >
+  Conduz o fluxo de primeiro projeto do SabinOS. Lê o RESPONDA-AQUI.txt (ou entrevista
+  na conversa quando ele está em branco), confirma o entendimento, resolve em chat o
+  que não dá pra responder num arquivo (tom, identidade visual, importação de
+  ChatGPT/Gemini), grava a identidade global do usuário em ~/.claude/CLAUDE.md,
+  descobre skills prontas com a find-skills, e cria o projeto novo por cópia seletiva
+  do _modelo/. Use quando o usuário chamar /setup, disser "primeiro projeto",
+  "configura o sistema", "vamos começar", ou quando esta pasta-mãe ainda não tiver
+  nenhuma pasta de projeto.
+---
+
+# /setup, primeiro projeto
+
+Esta skill roda a partir da pasta-mãe (a raiz do SabinOS, onde este arquivo mora
+dentro de `.claude/skills/setup/`). Todo caminho abaixo é relativo a essa raiz,
+salvo quando marcado como caminho do projeto ou caminho global.
+
+## Regra de formato das perguntas (obrigatória em toda a entrevista)
+
+Quem responde nunca usou IA a sério. Pergunta seca gera resposta de uma linha, e
+resposta de uma linha vira memória inútil. Por isso **toda pergunta feita na
+conversa sai em 4 partes**:
+
+1. A pergunta, em linguagem de gente, sem jargão.
+2. Uma linha de **por que estou perguntando**, o que a resposta muda no sistema.
+3. **Dois ou três exemplos de resposta boa**, curtos, de ramos diferentes.
+4. Se a resposta vier vaga, curta ou "não sei", **uma repergunta de acompanhamento**
+   antes de seguir. Nunca aceitar resposta oca e passar direto pra próxima.
+
+Uma pergunta por mensagem, em conversa natural. Nunca listar várias de uma vez,
+nunca numeração formal na frente do usuário.
+
+As 17 perguntas do `RESPONDA-AQUI.txt` já trazem a pergunta, o porquê e os exemplos
+prontos, bloco a bloco. Na conversa, usar esse texto direto (partes 1 a 3), só
+adaptando pra tom de fala. A parte 4, a repergunta, é montada na hora, dirigida ao
+que a resposta deixou faltando.
+
+## Passo 0, ler o questionário
+
+Abrir `RESPONDA-AQUI.txt` e classificar cada uma das 17 perguntas em três estados:
+
+- **Respondida:** tem conteúdo real embaixo de "Sua resposta:", com detalhe suficiente
+  pra usar.
+- **Vaga:** tem texto, mas curto, genérico ou do tipo "não sei", "tanto faz", "normal",
+  sem profundidade pra virar memória útil.
+- **Em branco:** nada escrito embaixo de "Sua resposta:".
+
+Com a classificação em mãos, escolher a rota:
+
+- **10 ou mais respondidas:** seguir a **rota A (arquivo)**. Usar as respostas do
+  arquivo como base e ir direto pro Passo 1.
+- **Menos de 4 respondidas (quase tudo em branco):** oferecer as duas rotas sem
+  travar a conversa, com este texto exato:
+
+  > "Vi que o RESPONDA-AQUI.txt ainda está em branco. Dois caminhos, você escolhe:
+  > preenche ele com calma no seu tempo e me chama quando salvar, ou eu te pergunto
+  > aqui na conversa e eu mesmo preencho o arquivo pra você. Qual prefere?"
+
+  Se a pessoa escolher preencher sozinha, encerrar a sessão e esperar ela chamar de
+  novo. Se escolher a conversa, oferecer o ritmo antes de começar, com este texto:
+
+  > "Dois ritmos: o completo, com 17 perguntas (uns 20 minutos, e a memória fica
+  > bem melhor), ou o rápido, com as 11 que eu não consigo trabalhar sem (uns 10
+  > minutos; as outras 6 ficam anotadas pra você responder depois, quando quiser).
+  > Qual prefere?"
+
+  Seguir então a **rota conversa**: fazer as perguntas na ordem dos blocos (A a F),
+  no formato de 4 partes. No ritmo completo, são as 17, pulando as marcadas como
+  (opcional) se a pessoa começar a cansar. No ritmo rápido, só as essenciais (1, 3,
+  4, 8, 9, 11, 12, 14, 15, 16 e 17); as seis restantes (2, 5, 6, 7, 10 e 13) entram
+  no `tarefas.md` do projeto (Passo 5) como "responder no RESPONDA-AQUI.txt quando
+  der", com a ressalva de que a 7 (ramo regulado) é perguntada em uma linha mesmo no
+  rápido, porque restrição de conselho ou órgão muda o que toda skill pode escrever.
+  Gravar cada resposta dentro do próprio `RESPONDA-AQUI.txt`, embaixo do "Sua
+  resposta:" correspondente, **na hora, antes da pergunta seguinte**: o arquivo vira
+  o registro, mesmo tendo sido preenchido em chat.
+- **Entre 4 e 9 respondidas (caso misto):** o arquivo está pela metade, então
+  também vale oferecer as duas rotas, com uma versão adaptada pro que já foi
+  preenchido:
+
+  > "Vi que você já respondeu parte do RESPONDA-AQUI.txt. Dois caminhos, você
+  > escolhe: termina de preencher o resto com calma no seu tempo e me chama quando
+  > salvar, ou eu te pergunto aqui na conversa só o que ainda ficou faltando. Qual
+  > prefere?"
+
+  Se a pessoa escolher terminar sozinha, encerrar a sessão e esperar ela chamar de
+  novo. Se escolher a conversa, perguntar em chat só o que ficou vago ou em branco,
+  no formato de 4 partes, sem repetir o que já foi respondido bem. Toda resposta
+  colhida em chat é gravada no `RESPONDA-AQUI.txt` **na hora, antes da pergunta
+  seguinte**, embaixo do "Sua resposta:" dela. Nunca acumular pra gravar no fim: a
+  gravação imediata é o que faz a conversa sobreviver a uma queda no meio das 17
+  perguntas; sem ela, a pessoa perde tudo e recomeça do zero.
+
+## Passo 1, confirmar o entendimento
+
+Resumir em até 8 linhas o que foi entendido: quem é a pessoa, o que o negócio faz,
+as principais dores, o foco atual e o quick win esperado. Mostrar o resumo e pedir
+confirmação antes de seguir para a construção.
+
+Antes de fechar o resumo, checar as perguntas **essenciais** (1, 3, 4, 8, 9, 11, 12,
+14, 15, 16 e 17 do `RESPONDA-AQUI.txt`). Toda essencial que ficou vaga ou em branco
+recebe uma repergunta dirigida agora, no formato de 4 partes, antes de montar o
+resumo. As não essenciais (2, 5, 6, 7, 10, 13) que ficaram vagas ou em branco não
+travam o resumo: se a pessoa não completar quando perguntada uma vez, seguir e
+anotar a lacuna para o `tarefas.md` do projeto (Passo 5).
+
+Se a mesma pergunta essencial voltar vaga depois da repergunta, aceitar o que veio,
+anotar a lacuna e seguir sem insistir mais uma vez.
+
+Se a resposta de confirmação vier com correção ou informação nova ("está certo, só
+que..."), acusar o recebimento em uma linha, dizendo o que mudou no entendimento, e
+só então seguir para o Passo 2. Quem corrige e não recebe resposta sobre a correção
+não sabe se foi ouvido, e passa o resto do onboarding na dúvida.
+
+## Passo 2, perguntas que só funcionam em conversa
+
+Três interações que não têm como vir prontas de um arquivo, sempre em chat,
+independente da rota escolhida no Passo 0:
+
+### Tom (reação ao padrão, não pergunta aberta)
+
+Mostrar o conteúdo de `_modelo/_contexto/preferencias.md` resumido em 3 ou 4 linhas
+e perguntar:
+
+> "Esse é o jeito que eu venho configurado pra escrever: informal, direto, sem cara
+> de robô, sem enrolação. Quer que eu mude alguma coisa? Pode ser qualquer detalhe:
+> mais formal com cliente, pode usar gíria, sempre responder curto, o que for do seu
+> jeito."
+
+Se a pessoa pedir mudança, guardar a mudança para escrever no `preferencias.md` do
+projeto (Passo 5, não no `_modelo/`, que nunca se edita). Se disser "tá bom assim",
+seguir com o padrão.
+
+### Identidade visual
+
+Oferecer as 4 rotas em conversa:
+
+- **URL do site:** ler com WebFetch, apresentar o que foi detectado (cores,
+  tipografia, estilo) e confirmar antes de usar.
+- **Prints ou logo:** como o projeto ainda não existe nesse ponto da conversa,
+  pedir pra pessoa dizer onde os arquivos estão salvos no computador dela
+  (o caminho da pasta, ou arrastar o arquivo pro Explorer/Finder e copiar o
+  caminho de lá), ler direto de onde estiverem e confirmar antes de usar.
+- **Texto:** a pessoa descreve cores, estilo e fontes, usar direto.
+- **Não tem:** seguir com um visual neutro e avisar que dá pra preencher depois
+  com o `/atualizar`, dentro da pasta do projeto. Nomear o comando: sem isso a
+  frase vira lacuna e sai um chute (o `/conectar` liga contas e ferramentas, não
+  mexe em identidade visual).
+
+Em todos os casos, perguntar pelo logo (PNG ou SVG), com variação para fundo claro
+e escuro se existir.
+
+### Importação de ChatGPT/Gemini (atalho, uma linha)
+
+> "Última coisa: se você já usa ChatGPT ou Gemini com frequência, tenho um atalho
+> pra puxar o que eles já sabem de você e completar o que faltou. Quer?"
+
+Se sim, mostrar o prompt pra colar lá, sem alterar nada:
+
+```
+Preciso exportar o contexto do meu negócio das nossas conversas para configurar
+uma nova ferramenta. Responda com o que sabe sobre mim nas categorias abaixo.
+Se não souber algo, deixe em branco:
+
+NOME / NEGÓCIO / O QUE FAZ / PRINCIPAIS ATIVIDADES / CLIENTES / EQUIPE /
+FERRAMENTAS / IDENTIDADE VISUAL / TOM DE VOZ / O QUE EVITAR / OUTROS DETALHES
+```
+
+Com a resposta colada, extrair o que complementa as respostas já colhidas, mostrar
+o resumo do que muda e confirmar antes de usar. Se a pessoa não usar outro
+assistente, seguir direto sem essa etapa.
+
+## Passo 3, identidade global
+
+Escrever em `~/.claude/CLAUDE.md` (o arquivo de instrução global do usuário, fora
+desta pasta-mãe) uma seção demarcada por `<!-- sabinos:inicio -->` e
+`<!-- sabinos:fim -->`. Regras exatas:
+
+- **Arquivo não existe:** criar com só essa seção dentro.
+- **Existe, sem os marcadores:** adicionar a seção no final do arquivo, sem tocar
+  em nada que já está escrito ali.
+- **Existe, com os marcadores:** substituir só o miolo entre eles, mantendo tudo
+  antes e depois.
+
+Esse arquivo entra em toda conversa, de qualquer pasta, antes da primeira palavra
+do usuário. O modelo presta mais atenção no começo e no fim do que está na mesa,
+e cada linha dele é cobrada em toda mensagem. Por isso o bloco segue quatro regras
+de forma, nesta ordem de importância:
+
+- **Só regra.** Quem a pessoa é cabe em duas linhas no topo (nome, como prefere
+  ser chamada, o que faz, nível de tecnologia: mais simples pra quem nunca usou
+  nada disso, mais direta pra quem já se vira). História, lista de projetos e
+  notas de ferramenta não entram: vão pra `~/.claude/contexto/` (criar a pasta,
+  um arquivo por assunto) e o bloco aponta pra ela em uma linha, "abrir quando a
+  tarefa pedir". Nunca com `@import`, senão volta tudo pra mesa.
+- **Nunca copiar a lista de skills ou comandos.** O Claude Code já injeta, em
+  toda conversa, o nome e a descrição de cada skill instalada. Cópia manual paga
+  duas vezes e envelhece.
+- **As regras de casa no topo, e repetidas em uma linha no rodapé.** São quatro:
+  pesquisa mundial (buscar em qualquer idioma, principalmente inglês, entregar em
+  português); economia de conversa (processo fechado, conversa nova); chave e
+  senha só em arquivo `.env`, nunca no chat nem em outro arquivo; e gate humano
+  (nada que gasta dinheiro, manda mensagem pra fora, publica ou altera conta de
+  terceiro roda sem o "pode ir" da pessoa naquele momento). Depois delas, o tom
+  de escrita resumido em poucas linhas.
+- **Curto.** Meta: menos de 900 tokens, uns 3.500 caracteres. Regra que vale só
+  pra um projeto não entra aqui; vai pro `AGENTS.md` daquele projeto. Cada regra
+  mora na camada mais alta em que é verdade, e só lá.
+
+Mostrar o bloco inteiro para o usuário antes de gravar, com o tamanho em
+caracteres (`node _ferramentas/medir-mesa.mjs` mede depois de gravado).
+
+## Passo 4, descoberta de skills
+
+Detectar o perfil principal a partir das respostas colhidas: `agencia` (múltiplos
+clientes com processo de entrega), `freelancer` (solo, vende serviço), `solopreneur`
+(negócio próprio, produto ou audiência), `criador` (conteúdo e canal), `empresa`
+(equipe organizada por setor), `profissional` (produtividade pessoal e carreira).
+
+Antes de buscar fora, consultar a biblioteca local em `_modelo/templates/skills/`:
+o que já existe pronto ali cobre boa parte dos casos comuns.
+
+Depois, rodar a skill `find-skills` com termos do negócio da pessoa, em português
+**e** em inglês (exemplo: para uma clínica de estética facial, buscar tanto
+"estética facial" quanto "aesthetics clinic"; para agendamento, tanto "agendamento
+de horário" quanto "appointment scheduling"). Repetir com os termos das dores
+(pergunta 11), das entregas (pergunta 12) e do quick win (pergunta 17).
+
+Política obrigatória diante de qualquer skill de terceiro encontrada:
+
+> "Skill de terceiro nunca se instala às cegas: ler o conteúdo da skill encontrada,
+> aproveitar só o que serve e gerar uma skill própria adaptada ao negócio do
+> usuário, dentro do projeto. O que não existir em lugar nenhum, criar do zero.
+> Cada skill criada é curta, tem frontmatter name/description e segue o formato de
+> 4 partes quando pergunta algo."
+
+Meta: entre 3 e 6 skills ativadas no projeto novo, escolhidas pela dor (pergunta
+11), pelas entregas (pergunta 12) e pelo quick win (pergunta 17). Menos é mais:
+skill que a pessoa não vai usar nos primeiros 30 dias fica de fora.
+
+Quando a pergunta 7 apontou conselho, órgão ou dado sensível, reler cada skill
+gerada procurando exemplo que contradiga o próprio limite que ela declara (um
+exemplo de "monte minha dieta" numa skill que proíbe montar plano alimentar, e
+assim por diante). O exemplo é o que o modelo imita na hora do uso, então exemplo
+e limite que brigam entre si viram a regra sendo furada exatamente no caso
+regulado.
+
+## Passo 5, criar o projeto por cópia seletiva
+
+Tudo daqui pra frente acontece de uma vez, depois que os passos 0 a 4 já
+resolveram todas as respostas. Não gerar arquivo por arquivo durante a entrevista.
+
+### Consentimento do auto-sync (antes de copiar `settings.json`)
+
+Explicar em uma frase e perguntar:
+
+> "Esse sistema salva o trabalho sozinho num backup na nuvem (GitHub) ao fim de
+> cada resposta, pra você nunca perder nada. Quer deixar ligado? Se ainda não tem
+> GitHub configurado, o /syncar te guia nisso depois."
+
+Guardar a escolha para aplicar na cópia do `settings.json` abaixo.
+
+### Anúncio pago (antes de escolher as skills)
+
+Perguntar na conversa, no formato de 4 partes:
+
+> "Você investe em anúncio pago hoje, ou pretende investir nos próximos meses?
+>
+> Pergunto porque, se sim, eu já instalo aqui o comando que cuida disso: ele
+> calcula quanto vale um resultado pro seu negócio e, toda vez que você chamar,
+> te diz o que está queimando dinheiro e o que merece mais verba.
+>
+> Tipo: 'sim, rodo anúncio no Instagram', 'ainda não, mas quero começar', ou
+> 'não, meu movimento vem de indicação'."
+
+Resposta positiva ou "pretendo": copiar a pasta `_modelo/.claude/skills/trafego/`
+inteira, com `referencias/` e `scripts/` dentro, pro `.claude/skills/` do
+projeto, e registrar em `_contexto/ferramentas.md` que a skill está instalada e
+ainda sem régua, porque a régua nasce na primeira vez que a pessoa rodar
+`/trafego`.
+
+Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o `/trafego`
+existe e pode ser instalado depois com o `/mapear`, que acha a skill em
+`_modelo/.claude/skills/trafego/`.
+
+### Nome da pasta
+
+Kebab case do nome do negócio ou projeto, **sem acento nem caractere especial**
+(ex: "Doce Vida Confeitaria" vira `doce-vida-confeitaria/`, "Açaí do Zé" vira
+`acai-do-ze/`). Acento em nome de pasta cria conflito de normalização entre Mac e
+Windows no git, e o backup passa a ver o mesmo arquivo como dois.
+
+### O que copiar de `_modelo/` para `<pasta-do-projeto>/`
+
+- `.claude/settings.json`: copiar como está se o auto-sync ficou ligado; se a
+  pessoa recusou, copiar sem o bloco `Stop`. Nesse caso de recusa, a regra 5 do
+  `AGENTS.md` do projeto (que hoje descreve o hook salvando tudo sozinho e
+  proíbe oferecer `/syncar`) precisa ser reescrita: dizer que não existe backup
+  automático configurado e que o assistente deve sugerir `/syncar` ao fim das
+  sessões de trabalho. Caminho padrão (auto-sync aceito) mantém a regra 5 como
+  está no `_modelo/AGENTS.md`.
+- `.claude/hooks/barrar-perigoso.mjs`, só o script (nunca o `.claude/hooks/barrar-perigoso.test.mjs`,
+  que é teste de desenvolvimento e não serve de nada no projeto do aluno). É a trava de
+  segurança que barra comando destrutivo (apagar pasta, reescrever histórico do GitHub,
+  rodar script baixado da internet) antes de ele rodar. Vai sempre, em todo projeto,
+  mesmo quando a pessoa recusou o auto-sync: o `settings.json` copiado já chama ela pelo
+  bloco `PreToolUse`, e sem o arquivo o projeto nasce apontando pra um script que não existe.
+- `.gitignore`, copiar como está.
+- `_contexto/` inteira (os 6 arquivos: `empresa.md`, `preferencias.md`,
+  `estrategia.md`, `agora.md`, `licoes.md`, `ferramentas.md`), preenchidos com as
+  respostas colhidas, nunca deixando o aviso `NOT CONFIGURED` no projeto final.
+- `marca/design-guide.md`, preenchido com o que veio do Passo 2 (identidade
+  visual), ou mantido neutro se a pessoa não tinha nada ainda.
+- `dados/README.md` (e a pasta `dados/` que ele documenta).
+- As skills base do dia a dia: `iniciar`, `conectar`, `mapear`, `atualizar`,
+  `syncar`, `bastao`, `checar`, `atualizar-sabinos` e `find-skills` (o `AGENTS.md` do projeto e o `/mapear`
+  mandam rodar a `find-skills` lá dentro, então ela vai junto, senão a instrução
+  aponta pra uma skill que não existe na pasta). Além dessas, copiar
+  `assistir-video` e `transcribe` só se o
+  negócio lidar com vídeo, áudio ou redes sociais (pergunta 4, 6, 8 ou 15
+  indicando isso), `otimizar-pc` só se o computador da pessoa for Windows, e a
+  pasta `trafego` inteira só se a pergunta de anúncio pago acima teve resposta
+  positiva ou "pretendo".
+  Nunca deduzir o sistema operacional: nenhuma das 17 perguntas pede isso, então
+  na dúvida ele entra na pergunta em bloco do Passo 5, antes de listar qualquer
+  skill. Assumir Windows entrega a um usuário de Mac uma skill de PowerShell que
+  não roda, e o erro só aparece quando ele tenta usar.
+- As skills escolhidas no Passo 4 (as ativadas de `templates/skills/` mais as
+  geradas do zero), já dentro de `<pasta-do-projeto>/.claude/skills/`. Template
+  da biblioteca é arquivo solto (`<nome>.md`) ou pasta: vira
+  `.claude/skills/<nome>/SKILL.md` (pasta inteira quando for pasta, com os
+  `references/`), nunca um `.md` jogado direto em `.claude/skills/`, que assim
+  não carrega. E vai sempre adaptado ao negócio (produtos, tom, regra do ramo),
+  nunca ativado cru.
+
+### O que nunca copiar
+
+- `templates/` inteira: fica só em `_modelo/`, é a biblioteca de origem, não o
+  produto final.
+- `README.md` do `_modelo/`.
+- Qualquer skill de `_modelo/.claude/skills/` que não tenha sido escolhida pra
+  este negócio.
+
+### `AGENTS.md` do projeto (com `CLAUDE.md` de ponteiro)
+
+Partir de `_modelo/AGENTS.md` inteiro e mexer só na abertura (o título e o parágrafo
+que hoje traz o comentário `NOT CONFIGURED`): trocar pelo nome do negócio e por um
+resumo real de quem é a pessoa e o que o workspace representa. As seções depois
+disso ("Compatibilidade com Codex", "Início de conversa", "Fluxo de trabalho",
+"Regras de operação", "Aprender e atualizar contexto", "Criação de skills") não
+se mexem. "Fluxo de trabalho" e "Criação de skills" já citam a biblioteca pelo
+caminho certo,
+`../_modelo/templates/skills/` (o relativo da pasta do projeto até a pasta-mãe,
+já que `templates/` não é copiada): só conferir que continua assim e deixar como
+está. Reescrever esse caminho de novo gera `../_modelo/../_modelo/`, que não
+resolve.
+
+Salvar esse conteúdo como `AGENTS.md` na raiz do projeto (mesmo nome, mesmo
+conteúdo do `_modelo/AGENTS.md` personalizado, só muda o arquivo alvo). Ao lado
+dele, criar `CLAUDE.md` com uma linha só: `@AGENTS.md`. É esse ponteiro que faz o
+Claude Code carregar o mesmo conteúdo, sem duplicar informação em dois arquivos.
+
+A lista de pastas dentro de "Estrutura de pastas" precisa refletir o que existe **de
+verdade** no projeto, não o que está escrito no `_modelo/` nem no template do
+perfil: tirar a linha de `templates/` (a biblioteca não é copiada, só existe na
+pasta-mãe) e usar como inspiração a lista do
+template de perfil correspondente em `_modelo/templates/perfis/agents-md-<perfil>.md`
+(`agencia`, `freelancer`, `solopreneur` e `empresa` têm modelo pronto; `criador`
+parte do de `solopreneur`; `profissional` usa uma estrutura simples: `trabalho/projetos/`,
+`trabalho/reunioes/`, `anotacoes/` e `tarefas.md`). Mostrar a estrutura de pastas
+proposta e só criar depois da pessoa confirmar.
+
+Pasta que nasce agora e ainda não tem arquivo (ex: `conteudo/`, `clientes/`)
+leva um `README.md` de uma linha dizendo pra que serve, no mesmo espírito do
+`dados/README.md`. Sem isso ela cai na conferência de pasta vazia do Passo 6 e
+some no primeiro backup pro GitHub, que não guarda pasta vazia.
+
+### `tarefas.md`
+
+Criar na raiz do projeto com as pendências que apareceram na entrevista: lacunas de
+perguntas não essenciais deixadas em branco, decisões adiadas (ex: identidade
+visual sem definir) e qualquer item que a pessoa mencionou querer resolver depois.
+
+### Ponte pro Codex
+
+Criar a junction `.agents/skills` (apontando pra `.claude/skills`) na pasta do
+projeto recém-criada, e também na pasta-mãe, se ainda não existir. É essa ponte
+que deixa o Codex (CLI da OpenAI) enxergar as mesmas skills do Claude Code. Rodar
+pelo comando do sistema operacional da pessoa:
+
+- **Windows:** `cmd /c "if not exist .agents mkdir .agents & mklink /J .agents\skills .claude\skills"`
+  (não precisa de administrador; o `if not exist` cria a pasta `.agents` antes,
+  senão o `mklink` falha porque ele não cria pasta-mãe sozinho).
+- **Mac/Linux:** `mkdir -p .agents && ln -sfn ../.claude/skills .agents/skills`.
+
+No Mac, usar o comando como está: o alvo é relativo de propósito e sobrevive à
+pasta mudando de lugar. No Windows não existe essa opção: junction (`mklink /J`)
+grava sempre o caminho absoluto, mesmo recebendo alvo relativo, é limitação do
+formato. Consequência prática: se a pessoa mover a pasta do SabinOS de lugar, a
+ponte quebra em silêncio, e o conserto é apagar `.agents\skills` e rodar o mesmo
+comando de novo dentro da pasta. Deixar isso dito na mensagem final quando a ponte
+for criada no Windows, com este texto exato (em teste real a frase saiu trocada,
+chamando a ponte de "ponte pra backup" e mandando consertar com `/syncar`, que não
+tem nada a ver):
+
+> "Se um dia você mover a pasta do SabinOS de lugar, a ponte que deixa o Codex
+> enxergar os comandos para de funcionar em silêncio. Nada de backup é afetado. O
+> conserto é me pedir 'refaz a ponte do Codex' dentro da pasta do projeto."
+
+Se o comando falhar (permissão, sistema de arquivos sem suporte a link), cair
+pra cópia sem travar o setup: copiar a pasta `.claude/skills` inteira pra
+`.agents/skills` e registrar em `_contexto/ferramentas.md` a linha
+`| Ponte Codex | cópia | <AAAA-MM-DD> | não é link; /mapear e /atualizar
+re-sincronizam |`. Cópia funciona igual pro Codex, só não acompanha skill nova
+sozinha, e é por isso que o `/mapear`, o `/atualizar` e o `/checar` conferem se
+a ponte é cópia e copiam de novo quando for.
+
+## Passo 6, conferência de limpeza
+
+Listar a pasta do projeto criada e checar, um a um:
+
+- Nenhuma pasta vazia sem função (pasta vazia só se justifica se algo vai cair
+  nela em breve, como `dados/`).
+- Nenhuma skill copiada que não foi ativada de propósito.
+- Nenhum arquivo de template sobrando (`templates/perfis/`, `templates/skills/`
+  não deveriam existir dentro do projeto).
+
+Mostrar a estrutura final da pasta em árvore, cabendo numa tela só, pro usuário
+ver de uma olhada o que foi criado.
+
+### Lista final de skills, em linguagem simples
+
+Depois da árvore, entregar em prosa, sem jargão técnico: "Esses comandos ficaram
+prontos pro seu negócio", seguido de uma linha por skill ativada dizendo o que ela
+faz na prática (não o nome do arquivo nem termo técnico), cobrindo tanto as skills
+base quanto as escolhidas ou criadas no Passo 4.
+
+## Passo 7, registrar e encerrar
+
+1. Adicionar a pasta do projeto no `.gitignore` da pasta-mãe, uma linha só (ex:
+   `loja-de-bolos/`).
+2. Semear `_contexto/agora.md` do projeto:
+   - **Onde paramos:** "Sistema recém-criado pelo SabinOS."
+   - **Pendências:** "Abrir esta pasta no VS Code e rodar /iniciar", "/conectar
+     pra ligar as ferramentas", "/mapear pra criar mais comandos", "/syncar pra
+     configurar o backup no GitHub".
+3. Registrar a versão do SabinOS no projeto. Da pasta-mãe, rodar
+   `node _ferramentas/atualizar-projeto.mjs plano <pasta-do-projeto>` e depois
+   `node _ferramentas/atualizar-projeto.mjs aplicar <pasta-do-projeto>`. Tudo sai
+   "igual" e nada é trocado: o que fica é o recibo `.sabinos/instalado.json` e o
+   motor guardado, que deixam o `/atualizar-sabinos` saber, na versão seguinte,
+   o que veio do SabinOS e o que é da pessoa.
+4. Mensagem final, ensinando clique a clique, cobrindo Windows e Mac, como abrir a
+   pasta nova no VS Code (menu Arquivo, opção Abrir Pasta, ou arrastar a pasta pro
+   ícone do VS Code). Antes de fechar, dizer que a estrutura de hoje é o começo, com
+   este texto:
+
+   > "Os comandos de hoje cobrem o que mais pesa agora. A estrutura cresce com o
+   > uso: toda vez que você notar que está fazendo algo pela terceira vez, me fala
+   > que vira comando, e quando eu errar, eu anoto pra não repetir. Em um mês esse
+   > sistema vai estar bem mais parecido com o seu negócio do que está hoje."
+
+   E fechar com a economia de conversa:
+
+   > "Esse processo fechou, abre uma conversa nova já dentro da pasta do projeto."
+
+## Regras gerais
+
+- Gerar tudo do Passo 5 em diante de uma vez só, depois de fechados os Passos 0 a
+  4. Nunca criar arquivo por arquivo durante a entrevista. As quatro confirmações
+  do Passo 5 (auto-sync, anúncio pago, Windows quando nenhuma resposta deixou
+  isso claro, e a estrutura de pastas proposta) vêm antes de gerar, em bloco, e
+  não contam como quebrar essa regra.
+- Depois de gerar, mostrar só o resumo do que foi criado, não o conteúdo de cada
+  arquivo linha por linha.
+- Resposta vaga ou em branco não essencial, perguntada uma vez e ainda vaga: aceitar
+  o que veio, registrar a lacuna em `tarefas.md` e seguir sem virar interrogatório.
+- `_modelo/` nunca se edita durante o setup. Tudo que muda por causa de uma
+  resposta do usuário vai para dentro da pasta do projeto.
+- Erro corrigido, retrabalho ou regra que mudou durante o próprio setup (por
+  exemplo, uma resposta que só ficou clara depois de reperguntada, um ajuste
+  de rota no meio da entrevista, ou a pessoa corrigindo o resumo do Passo 1,
+  que conta como entendimento errado corrigido) vira uma linha datada em
+  `_contexto/licoes.md` do projeto, na hora. Setup que termina com o
+  `licoes.md` sem nenhuma linha depois de uma correção dessas está incompleto.

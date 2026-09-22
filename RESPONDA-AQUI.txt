@@ -1,0 +1,160 @@
+SABINOS, PERGUNTAS DO SEU NEGOCIO
+==================================================
+Responda embaixo de cada "Sua resposta", com calma e detalhe,
+como se estivesse explicando pra um socio novo.
+Nao precisa responder tudo: o que ficar em branco eu pergunto
+na conversa. As marcadas com (opcional) pode pular sem culpa.
+Quanto mais detalhe, melhor eu trabalho pra voce.
+Quando terminar, salve o arquivo, abra o Claude nesta pasta
+e diga: primeiro projeto.
+
+BLOCO A, QUEM É VOCÊ
+
+==================================================
+[1] Qual seu nome, como você quer ser chamado, e qual o nome do seu negócio
+Por que pergunto: assim o sistema te chama do jeito certo e usa o nome certo da marca em tudo que escrever.
+Exemplos: "Sou a Marina Costa, pode me chamar de Marina. O escritório se chama Costa Advocacia." / "Sou o Diego Ramos, mas todo mundo me chama de Dida. A loja é a Dida Store."
+
+Sua resposta:
+
+
+==================================================
+[2] Conte sua história em poucas linhas: como você chegou até aqui, há quanto tempo está no negócio, e o que marcou essa trajetória
+Por que pergunto: entender de onde você veio ajuda a puxar exemplo e comparação que fazem sentido pra você, não pra qualquer pessoa.
+Exemplos: "Sou esteticista há 8 anos, comecei atendendo em casa e hoje tenho um estúdio com 2 funcionárias." / "Gestor de tráfego há 3 anos, saí do mercado financeiro cansado da rotina de escritório."
+(Opcional, pode pular sem culpa.)
+
+Sua resposta:
+
+
+==================================================
+[3] Quanto você manja de tecnologia e de IA hoje: nunca usei, uso o básico, ou já me viro bem
+Por que pergunto: isso calibra a linguagem do sistema inteiro, do jeito que eu explico cada passo até o tanto de detalhe técnico que eu assumo que você já sabe.
+Exemplos: "Nunca usei nada disso, uso o computador só pra planilha e WhatsApp." / "Já uso ChatGPT no dia a dia, mas nunca instalei nada tipo VS Code."
+
+Sua resposta:
+
+
+BLOCO B, O NEGÓCIO
+
+==================================================
+[4] O que o seu negócio faz: o que você vende (produto ou serviço), pra quem vende, e como o dinheiro entra
+Por que pergunto: é a base de tudo, sem isso eu não sei que tipo de conteúdo, copy ou processo faz sentido pro seu caso.
+Exemplos: "Vendo consultoria jurídica trabalhista pra pequenas empresas, cobro por contrato fechado." / "Vendo produtos de papelaria em marketplace online, o dinheiro entra por venda online."
+
+Sua resposta:
+
+
+==================================================
+[5] Números aproximados do seu negócio, se quiser contar: faturamento por mês, ticket médio, volume de vendas ou de clientes
+Por que pergunto: números dão noção do tamanho da operação, o que muda a prioridade do que construir primeiro.
+Exemplos: "Faturo uns R$ 15 mil por mês, ticket médio de R$ 800 por cliente." / "Vendo cerca de 300 pedidos por mês, ticket médio de R$ 45."
+(Opcional, pode pular sem culpa.)
+
+Sua resposta:
+
+
+==================================================
+[6] Quais são seus canais: onde você vende e onde aparece hoje (Instagram, marketplace, loja física, indicação, site)
+Por que pergunto: cada canal tem regra e rotina diferente, isso decide que comandos e integrações valem a pena montar primeiro.
+Exemplos: "Vendo só por marketplace online, não tenho rede social ativa." / "Todo cliente vem por indicação e por Instagram, não tenho site."
+
+Sua resposta:
+
+
+==================================================
+[7] Seu ramo tem alguma regra, conselho ou órgão que limita o que você pode fazer ou dizer, tipo OAB, CFM, CRC, ANVISA ou CRECI? Você lida com dado sensível de cliente, como saúde, processo judicial ou situação financeira?
+Por que pergunto: negócio regulado tem linha que não pode cruzar em anúncio, texto ou promessa, e isso vira regra fixa que toda skill de conteúdo respeita.
+Exemplos: "Sou advogada, a OAB proíbe eu prometer resultado de processo ou fazer captação disfarçada de cliente." / "Sou contador, lido com dado financeiro sensível e o CRC tem regra sobre o que posso divulgar como serviço."
+
+Sua resposta:
+
+
+BLOCO C, CLIENTES E MERCADO
+
+==================================================
+[8] Quem é o seu cliente típico e o que ele quer resolver quando te procura
+Por que pergunto: escrever pro cliente certo, com a dor certa, rende muito mais que escrever de forma genérica.
+Exemplos: "Minha cliente típica é mulher de 30 a 50 anos que quer tratar flacidez sem cirurgia." / "Meu cliente é loja pequena que já vende mas não sabe por que o anúncio não converte."
+
+Sua resposta:
+
+
+==================================================
+[9] Você atende cliente externo, usa o sistema só pro seu próprio negócio, ou as duas coisas
+Por que pergunto: isso muda o tipo de estrutura que eu monto, se é uma operação voltada pra atender terceiros ou só pra rodar o seu próprio negócio.
+Exemplos: "Só uso pra tocar minha própria loja, não tenho cliente de consultoria." / "Sou gestor de tráfego, cuido de campanha de vários clientes ao mesmo tempo."
+
+Sua resposta:
+
+
+==================================================
+[10] Concorrentes ou referências que você admira: nomes, perfis, lojas que você olha pra se inspirar ou se comparar
+Por que pergunto: olhar quem já faz bem ajuda a calibrar padrão de qualidade e enxergar o que fazer diferente.
+Exemplos: "Sigo o perfil da Clínica Bella no Instagram, acho a comunicação deles muito boa." / "Meu maior concorrente é uma loja parecida com a minha no mesmo marketplace."
+(Opcional, pode pular sem culpa.)
+
+Sua resposta:
+
+
+BLOCO D, ROTINA E DORES
+
+==================================================
+[11] O que mais toma o seu tempo no dia a dia, e o que você refaz toda semana do mesmo jeito
+Por que pergunto: tarefa repetitiva é a primeira candidata a virar comando automático, é onde a IA devolve tempo mais rápido.
+Exemplos: "Toda semana escrevo do zero a mesma petição inicial, só muda o nome do cliente." / "Todo dia edito os mesmos tipos de corte de vídeo pros clientes, é sempre o mesmo processo."
+
+Sua resposta:
+
+
+==================================================
+[12] O que você mais produz ou entrega no dia a dia
+Por que pergunto: mostra o formato de trabalho real, o que ajuda a desenhar os comandos certos pro seu fluxo.
+Exemplos: "Entrego relatório de campanha toda semana pra cada cliente." / "Entrego vídeo editado e legendado, geralmente uns 4 por semana."
+
+Sua resposta:
+
+
+==================================================
+[13] O que mais te preocupa ou trava o seu crescimento hoje, o gargalo de verdade, diferente do que só toma seu tempo
+Por que pergunto: tomador de tempo e gargalo de crescimento nem sempre são a mesma coisa, e resolver o gargalo certo muda o negócio de fato.
+Exemplos: "Meu gargalo é não conseguir atender mais clientes sem contratar, e não tenho caixa pra contratar." / "Vendo bem, mas não sei calcular se estou tendo lucro de verdade depois de imposto e comissão."
+
+Sua resposta:
+
+
+BLOCO E, DADOS, FERRAMENTAS E EQUIPE
+
+==================================================
+[14] Onde moram os seus dados hoje: planilha, sistema, caderno, cabeça, WhatsApp
+Por que pergunto: saber onde a informação vive hoje decide por onde o sistema vai buscar e organizar o que já existe.
+Exemplos: "Está tudo numa planilha de Excel bagunçada e nas conversas de WhatsApp com cliente." / "Uso um sistema de gestão pra quase tudo, só o financeiro que ainda fica numa planilha."
+
+Sua resposta:
+
+
+==================================================
+[15] Quais ferramentas você já usa no trabalho hoje
+Por que pergunto: pra saber o que já existe e conectar nisso, em vez de te fazer trocar de ferramenta à toa.
+Exemplos: "Uso Canva pra arte, Notion pra organizar processo e WhatsApp Business pra atender." / "Uso um sistema de gestão pra emissão de nota e o painel de anúncio do marketplace."
+
+Sua resposta:
+
+
+==================================================
+[16] Como é a sua equipe: quem faz o quê, ou se é só você tocando tudo sozinho
+Por que pergunto: define se o sistema serve só pra você ou também vira apoio pra quem trabalha com você.
+Exemplos: "Sou só eu, faço tudo sozinha, do atendimento ao financeiro." / "Somos em 3: eu cuido do comercial, tenho uma assistente financeira e um editor de vídeo freelancer."
+
+Sua resposta:
+
+
+BLOCO F, DIREÇÃO
+
+==================================================
+[17] Qual o seu principal foco nos próximos meses, com uma meta que dê pra medir se você tiver uma, e qual a primeira coisa que você quer que a IA tire do seu colo?
+Por que pergunto: define o que resolver primeiro, o quick win que já mostra resultado na primeira semana de uso.
+Exemplos: "Meu foco é dobrar o faturamento em 6 meses, e a primeira coisa que quero tirar do colo é responder cliente no WhatsApp." / "Quero organizar o financeiro até o fim do ano, e a primeira coisa que quero tirar do colo é montar o relatório de campanha toda semana."
+
+Sua resposta:
+

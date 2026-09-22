@@ -1,0 +1,209 @@
+{
+ "versao": "3.5",
+ "arquivos": {
+  ".claude/hooks/barrar-perigoso.mjs": {
+   "b9a2703d4bb40fdc": "3.4",
+   "e01b1eb119cc7801": "anterior-3.4",
+   "80c28918c3dbcf24": "anterior-3.4",
+   "97d787854e560346": "anterior-3.4",
+   "c18cb4d20ca7ec60": "anterior-3.4",
+   "69abaccc92f8f447": "anterior-3.4",
+   "5c10d1994106faa7": "anterior-3.4"
+  },
+  ".claude/settings.json": {
+   "ed9cc88d1091f7c5": "3.0",
+   "48f7184c1a3c84e9": "3.4",
+   "41d9cd645c4ce95f": "anterior-3.0",
+   "b5ad0fe052a59403": "anterior-3.4",
+   "d2abfb67c3a33556": "anterior-3.4"
+  },
+  ".claude/skills/assistir-video/SKILL.md": {
+   "3e7de8a47d7b1311": "3.0",
+   "749721e4c2975f7f": "anterior-3.0",
+   "2dd20161ca456395": "anterior-3.0"
+  },
+  ".claude/skills/assistir-video/baixar-video.mjs": {
+   "fe02e3001c46a952": "3.0"
+  },
+  ".claude/skills/assistir-video/ver-video.mjs": {
+   "13507add02843971": "3.0",
+   "e3bef37187fcaf2f": "anterior-3.0"
+  },
+  ".claude/skills/atualizar-sabinos/SKILL.md": {
+   "633a1e98070a1a6a": "3.5",
+   "925ddd431692f47b": "3.5"
+  },
+  ".claude/skills/atualizar/SKILL.md": {
+   "6e59beac2d32c3fa": "3.0",
+   "f7c2c3597c86650d": "3.1",
+   "03694d94ed398d4b": "anterior-3.0",
+   "2bdcd778ff9a2a6a": "anterior-3.0"
+  },
+  ".claude/skills/bastao/SKILL.md": {
+   "e3cdf27c533918aa": "3.0"
+  },
+  ".claude/skills/checar/SKILL.md": {
+   "6778eecd23dad6c6": "3.0",
+   "973227ebd8cd3b57": "3.1",
+   "f1325173a0832f80": "3.4",
+   "859f9b51056f0d66": "anterior-3.4",
+   "1ad4b7bf727ecad0": "anterior-3.4"
+  },
+  ".claude/skills/conectar/SKILL.md": {
+   "00ce3a2576a89169": "3.0",
+   "96efa3b18305e191": "3.1"
+  },
+  ".claude/skills/find-skills/SKILL.md": {
+   "5924ba36058bcb50": "3.0",
+   "97e6537b2ec76001": "3.1",
+   "e51509163c3950cf": "anterior-3.0",
+   "739d439c198aa6ae": "anterior-3.0"
+  },
+  ".claude/skills/iniciar/SKILL.md": {
+   "4cfe5288be5dce49": "3.0",
+   "c9e24c717aa054aa": "anterior-3.0",
+   "125b0d71fd20698f": "anterior-3.0",
+   "e51d6dcb94ed19e3": "anterior-3.0",
+   "a4cd35c64db21898": "anterior-3.0"
+  },
+  ".claude/skills/mapear/SKILL.md": {
+   "1d0419caf131bf61": "3.0",
+   "5352c3e61aed01d3": "3.3",
+   "dfe4ec8c7f33a7fd": "anterior-3.0",
+   "b969939ed785aca8": "anterior-3.0",
+   "bd28fbcbd7ce716c": "anterior-3.0",
+   "358cc7008a186c99": "anterior-3.0"
+  },
+  ".claude/skills/novo-projeto/SKILL.md": {
+   "7496700a3ffa8f7b": "anterior-3.0"
+  },
+  ".claude/skills/otimizar-pc/SKILL.md": {
+   "0823092854c7e759": "3.0"
+  },
+  ".claude/skills/otimizar-pc/scripts/_comum.ps1": {
+   "20d84191f769beae": "3.0"
+  },
+  ".claude/skills/otimizar-pc/scripts/atualizar-apps.ps1": {
+   "a24b98c8bd2edac3": "3.0"
+  },
+  ".claude/skills/otimizar-pc/scripts/diagnostico.ps1": {
+   "31e4ecbfe4ee8b4b": "3.0"
+  },
+  ".claude/skills/otimizar-pc/scripts/dism.ps1": {
+   "0de481cbb6795eba": "3.0"
+  },
+  ".claude/skills/otimizar-pc/scripts/limpar.ps1": {
+   "a9bcf1151b6b3d5f": "3.0"
+  },
+  ".claude/skills/otimizar-pc/scripts/quarentena-installer.ps1": {
+   "a2610d81797c0657": "3.0"
+  },
+  ".claude/skills/otimizar-pc/scripts/verificar.ps1": {
+   "a63349066d8643fa": "3.0"
+  },
+  ".claude/skills/setup/SKILL.md": {
+   "2b4b146ff8277214": "anterior-3.0"
+  },
+  ".claude/skills/syncar/SKILL.md": {
+   "b4f4899d262b2d67": "3.0",
+   "1542dc3d412b7095": "anterior-3.0"
+  },
+  ".claude/skills/trafego/SKILL.md": {
+   "e3e5e1033b5c6365": "3.3",
+   "005b40a303cb1be0": "anterior-3.3",
+   "3439e02bd69caa6c": "anterior-3.3"
+  },
+  ".claude/skills/trafego/referencias/metodo.md": {
+   "bb4108df3900381d": "3.3",
+   "a256242c8415f80f": "anterior-3.3",
+   "b1d65dea6e21fcc8": "anterior-3.3"
+  },
+  ".claude/skills/trafego/referencias/regua-exemplo.md": {
+   "43af2666a4ad7f64": "3.3",
+   "60b85ae417d41b9b": "anterior-3.3",
+   "f2e4bbf8055f922d": "anterior-3.3"
+  },
+  ".claude/skills/trafego/scripts/faixas.mjs": {
+   "d797c09b79f453eb": "3.3",
+   "20d7eeab0c2e43a1": "anterior-3.3",
+   "48f48781b3f152db": "anterior-3.3",
+   "071d10d0944aa62a": "anterior-3.3",
+   "081ecbe50f8dba31": "anterior-3.3",
+   "9ba5b4b2914be697": "anterior-3.3",
+   "35d911eb759cdd97": "anterior-3.3"
+  },
+  ".claude/skills/trafego/scripts/regua.mjs": {
+   "606da5b9d0d57212": "3.3",
+   "e68d2823910a6889": "anterior-3.3"
+  },
+  ".claude/skills/transcribe/README.md": {
+   "2570662238d51ba4": "3.0",
+   "858b393aabaf733f": "anterior-3.0"
+  },
+  ".claude/skills/transcribe/SKILL.md": {
+   "30a1f4c989a7bc05": "3.0",
+   "065b184bf20e3dc0": "anterior-3.0"
+  },
+  ".claude/skills/transcribe/scripts/transcribe_url.py": {
+   "338c30119514d99f": "3.0"
+  },
+  ".gitignore": {
+   "8c89c21a2e5b5800": "3.0",
+   "f55a864d8d473607": "anterior-3.0",
+   "de7cbfcf414ae059": "anterior-3.0",
+   "8f5ffdc1d73b5b20": "3.5"
+  },
+  "AGENTS.md": {
+   "2b728a009c77a407": "3.0",
+   "130bd39d003ac0db": "3.1",
+   "d53f8c73eb1d4bf0": "3.4",
+   "56a07bbf79e76281": "anterior-3.0",
+   "a2472a4de5c2c1fd": "anterior-3.0"
+  },
+  "CLAUDE.md": {
+   "336cc4fbf19beaad": "3.0",
+   "14230e4bca5ae346": "anterior-3.0",
+   "75e994de5ef27a2e": "anterior-3.0",
+   "38a053057bf589fa": "anterior-3.0",
+   "677bb73afe5fdf86": "anterior-3.0"
+  },
+  "COMECE-AQUI.md": {
+   "52de4690e48cf260": "anterior-3.0"
+  },
+  "_contexto/agora.md": {
+   "5b8c6bcdd21e9e6c": "3.0",
+   "102fa52a93c984c3": "3.1"
+  },
+  "_contexto/arquivo/README.md": {
+   "f393cdbf7847488a": "3.1"
+  },
+  "_contexto/empresa.md": {
+   "a2ab81acb5cfa8ec": "3.0",
+   "deedee56bb708156": "3.1"
+  },
+  "_contexto/estrategia.md": {
+   "c55f4fc16750f499": "3.0",
+   "0c653e3971d038c3": "3.1"
+  },
+  "_contexto/ferramentas.md": {
+   "8a7285b89d92ee5b": "3.0"
+  },
+  "_contexto/licoes.md": {
+   "ffd0c94cf2f16051": "3.0",
+   "831e3432ac813ebd": "3.1",
+   "fecc9793944f0f78": "anterior-3.0"
+  },
+  "_contexto/preferencias.md": {
+   "8d6dc4dd6e75d1b3": "3.0",
+   "a3513336d9995f5e": "3.1",
+   "665eaf310c33081e": "3.3",
+   "c07a15822c5d13fd": "anterior-3.0"
+  },
+  "dados/README.md": {
+   "51612c99379a8912": "3.0"
+  },
+  "marca/design-guide.md": {
+   "e83b1f226cf0fa54": "3.0"
+  }
+ }
+}

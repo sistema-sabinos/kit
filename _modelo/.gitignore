@@ -1,0 +1,25 @@
+# Chaves e segredos: NUNCA sobem pro GitHub
+.env
+.env.*
+
+# Aviso de backup falhado, escrito pelo auto-sync e lido no início da sessão
+.backup-falhou
+
+# Lixo de execução
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+
+# Mídia pesada: o auto-sync faz `git add -A`, e o GitHub recusa arquivo acima de
+# 100 MB. Um vídeo baixado aqui dentro derruba o backup inteiro, em silêncio.
+*.mp4
+*.mov
+*.webm
+*.mkv
+*.mp3
+*.wav
+*.m4a
+
+# ponte pro Codex, criada em tempo de uso, nunca versionada
+.agents/
