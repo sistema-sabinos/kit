@@ -1,10 +1,15 @@
 import { test } from 'node:test'
 import assert from 'node:assert'
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { rodarGates } from './verificar-kit.mjs'
+import { join, dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { rodarGates, carregarProibidos } from './verificar-kit.mjs'
 import { hashArquivo } from './atualizar-projeto.mjs'
+
+// dois testes leem a lista real, que so existe na _kits; num clone publico eles pulam
+const CAMINHO_BANCADA = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'bancada', 'proibidos.json')
+const SEM_BANCADA = existsSync(CAMINHO_BANCADA) ? false : 'fora da _kits: bancada/proibidos.json nao existe'
 
 function kitFalso() {
   const dir = mkdtempSync(join(tmpdir(), 'kit-'))
@@ -14,12 +19,61 @@ function kitFalso() {
   return dir
 }
 
+// termos sinteticos: a lista real mora na bancada (bancada/proibidos.json), fora do kit,
+// e nenhum termo dela pode aparecer aqui, porque este arquivo vai no zip
+const TERMOS = ['termo-secreto-exemplo', 'segundo-termo-exemplo']
+
 test('gate 1 pega termo proibido', () => {
   const dir = kitFalso()
-  writeFileSync(join(dir, 'README.md'), '# Kit\n\nUsado na operacao Zabinno.\n')
-  const { falhas } = rodarGates(dir)
-  assert.ok(falhas.some(f => f.gate === 1 && /zabinno/i.test(f.detalhe)))
-  rmSync(dir, { recursive: true, force: true })
+  try {
+    writeFileSync(join(dir, 'README.md'), '# Kit\n\nUsado na operacao Termo-Secreto-Exemplo.\n')
+    writeFileSync(join(dir, 'b.md'), 'Conta segundo-termo-exemplo.\n')
+    const { falhas } = rodarGates(dir, { proibidos: TERMOS })
+    assert.ok(falhas.some(f => f.gate === 1 && f.arquivo === 'README.md' && /termo-secreto-exemplo/.test(f.detalhe)))
+    assert.ok(falhas.some(f => f.gate === 1 && f.arquivo === 'b.md' && /segundo-termo-exemplo/.test(f.detalhe)))
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('carregarProibidos de caminho inexistente devolve lista vazia', () => {
+  assert.deepEqual(carregarProibidos(join(tmpdir(), 'nao-existe-proibidos-exemplo.json')), [])
+})
+
+test('carregarProibidos sem argumento le a lista da bancada', { skip: SEM_BANCADA }, () => {
+  const termos = carregarProibidos()
+  assert.ok(Array.isArray(termos) && termos.length > 0, 'bancada/proibidos.json existe na _kits e tem termos')
+})
+
+test('rodarGates sem opcao carrega a lista da bancada e nao avisa', { skip: SEM_BANCADA }, () => {
+  const dir = kitFalso()
+  try {
+    const { falhas, avisos } = rodarGates(dir)
+    assert.ok(falhas.length > 0, 'canario: o kit falso sempre falha no gate 3')
+    assert.deepEqual(avisos, [])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 1 sem a lista da bancada avisa e segue so com os detectores estruturais', () => {
+  const dir = kitFalso()
+  const caminho = join(tmpdir(), 'nao-existe-proibidos-exemplo.json')
+  try {
+    writeFileSync(join(dir, 'a.md'), 'Conta termo-secreto-exemplo.\n')
+    writeFileSync(join(dir, 'b.md'), 'Anuncio MLB' + '1234567' + '.\n')
+    const { falhas, avisos } = rodarGates(dir, { caminhoProibidos: caminho })
+    assert.equal(avisos.length, 1)
+    assert.equal(avisos[0], `Gate 1: lista de termos da bancada nao encontrada em ${caminho}; so os detectores estruturais rodaram`)
+    assert.ok(!falhas.some(f => f.gate === 1 && f.arquivo === 'a.md'), 'sem lista, termo nenhum acusa')
+    assert.ok(falhas.some(f => f.gate === 1 && f.arquivo === 'b.md' && /MLB/.test(f.detalhe)), 'o detector estrutural continua rodando')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 1 fora da bancada (a pasta da lista nao existe) nao avisa', () => {
+  const dir = kitFalso()
+  const caminho = join(tmpdir(), 'nao-existe-bancada-exemplo', 'proibidos.json')
+  try {
+    const { falhas, avisos } = rodarGates(dir, { caminhoProibidos: caminho })
+    assert.ok(falhas.length > 0, 'canario: o kit falso sempre falha no gate 3')
+    assert.deepEqual(avisos, [])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
 test('gate 1 pega valor de segredo mas nao o nome da variavel', () => {
@@ -45,7 +99,7 @@ test('permite a palavra sabinos (nome do produto) mas barra sabino sozinho', () 
   const dir = kitFalso()
   writeFileSync(join(dir, 'a.md'), 'O SabinOS te ajuda a organizar tudo.\n')
   writeFileSync(join(dir, 'b.md'), 'Qualquer duvida, fale com o Sabino.\n')
-  const { falhas } = rodarGates(dir)
+  const { falhas } = rodarGates(dir, { proibidos: ['sabino'] })
   assert.ok(!falhas.some(f => f.gate === 1 && f.arquivo.endsWith('a.md')), 'sabinos (nome do produto) e permitido')
   assert.ok(falhas.some(f => f.gate === 1 && f.arquivo.endsWith('b.md') && /sabino/i.test(f.detalhe)), 'sabino sozinho continua proibido')
   rmSync(dir, { recursive: true, force: true })
@@ -54,10 +108,13 @@ test('permite a palavra sabinos (nome do produto) mas barra sabino sozinho', () 
 test('gate 1 nao acusa o proprio detector por conter a lista de termos e exemplos de segredo', () => {
   const dir = kitFalso()
   mkdirSync(join(dir, '_ferramentas'), { recursive: true })
-  writeFileSync(join(dir, '_ferramentas/verificar-kit.mjs'), "const PROIBIDOS = ['zabinno', 'bling', 'sabino']\n")
+  writeFileSync(join(dir, '_ferramentas/verificar-kit.mjs'), "const TERMOS = ['termo-secreto-exemplo']\n")
   writeFileSync(join(dir, '_ferramentas/verificar-kit.test.mjs'),
-    "writeFileSync(x, 'Usado na operacao Zabinno.\\n')\nwriteFileSync(y, 'GEMINI_API_KEY=AIzaSyD9x1abcdefgh\\n')\n")
-  const { falhas } = rodarGates(dir)
+    "writeFileSync(x, 'Usado na operacao termo-secreto-exemplo.\\n')\nwriteFileSync(y, 'GEMINI_API_KEY=AIzaSyD9x1abcdefgh\\n')\n")
+  // canario: o mesmo conteudo fora dos arquivos do gate acusa
+  writeFileSync(join(dir, 'c.md'), 'Usado na operacao termo-secreto-exemplo.\n')
+  const { falhas } = rodarGates(dir, { proibidos: TERMOS })
+  assert.ok(falhas.some(f => f.gate === 1 && f.arquivo === 'c.md'), 'canario: fora do detector o termo acusa')
   assert.ok(!falhas.some(f => f.gate === 1 && f.arquivo === '_ferramentas/verificar-kit.mjs'), 'o detector nao se auto-acusa')
   assert.ok(!falhas.some(f => f.gate === 1 && f.arquivo === '_ferramentas/verificar-kit.test.mjs'), 'o teste do detector (com exemplo de segredo sintetico) nao se auto-acusa')
   rmSync(dir, { recursive: true, force: true })
@@ -86,13 +143,13 @@ test('scripts/ dentro de uma skill e permitido', () => {
 test('gate 1 varre scripts .ps1/.py/.sh/.cjs em busca de termo proibido', () => {
   const dir = kitFalso()
   mkdirSync(join(dir, '.claude/skills/x/scripts'), { recursive: true })
-  writeFileSync(join(dir, '.claude/skills/x/scripts/a.ps1'), "# roda na conta Zabinno\n")
-  writeFileSync(join(dir, '.claude/skills/x/scripts/b.py'), "# roda na conta Zabinno\n")
-  writeFileSync(join(dir, '.claude/skills/x/scripts/c.sh'), "# roda na conta Zabinno\n")
-  writeFileSync(join(dir, '.claude/skills/x/scripts/d.cjs'), "// roda na conta Zabinno\n")
-  const { falhas } = rodarGates(dir)
+  writeFileSync(join(dir, '.claude/skills/x/scripts/a.ps1'), "# roda na conta termo-secreto-exemplo\n")
+  writeFileSync(join(dir, '.claude/skills/x/scripts/b.py'), "# roda na conta termo-secreto-exemplo\n")
+  writeFileSync(join(dir, '.claude/skills/x/scripts/c.sh'), "# roda na conta termo-secreto-exemplo\n")
+  writeFileSync(join(dir, '.claude/skills/x/scripts/d.cjs'), "// roda na conta termo-secreto-exemplo\n")
+  const { falhas } = rodarGates(dir, { proibidos: TERMOS })
   for (const arquivo of ['a.ps1', 'b.py', 'c.sh', 'd.cjs']) {
-    assert.ok(falhas.some(f => f.gate === 1 && f.arquivo.endsWith(arquivo) && /zabinno/i.test(f.detalhe)),
+    assert.ok(falhas.some(f => f.gate === 1 && f.arquivo.endsWith(arquivo) && /termo-secreto-exemplo/.test(f.detalhe)),
       `gate 1 devia acusar termo proibido em ${arquivo}`)
   }
   rmSync(dir, { recursive: true, force: true })
@@ -359,12 +416,13 @@ test('gate 7 confere o zip de MAIOR versao, nao o primeiro em ordem alfabetica',
   })
 })
 
-test('gate 1 pega a marca do kit de origem (fork) sobrando no produto', () => {
+test('gate 1 pega termo com espaco e em caixa mista (como marca de outro kit)', () => {
   const dir = kitFalso()
-  writeFileSync(join(dir, 'a.md'), '# Minha Loja, Claude Code OS\n')
-  const { falhas } = rodarGates(dir)
-  assert.ok(falhas.some(f => f.gate === 1 && f.arquivo.endsWith('a.md') && /claude code os/.test(f.detalhe)))
-  rmSync(dir, { recursive: true, force: true })
+  try {
+    writeFileSync(join(dir, 'a.md'), '# Minha Loja, Termo Com Espaco Exemplo\n')
+    const { falhas } = rodarGates(dir, { proibidos: ['termo com espaco exemplo'] })
+    assert.ok(falhas.some(f => f.gate === 1 && f.arquivo.endsWith('a.md') && /termo com espaco exemplo/.test(f.detalhe)))
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
 // ---------------------------------------------------------------------------
@@ -679,5 +737,47 @@ test('gate 10 acusa VERSAO diferente do README, dependencia inexistente e mudanc
     assert.match(f, /README diz 3\.5/)
     assert.match(f, /fantasma/)
     assert.match(f, /regra-x sem o campo "Como testar"/)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// ---------------------------------------------------------------------------
+// Pacote Mercado Livre (3.6): gates aceitam o nome de plataforma e conferem agentes
+// ---------------------------------------------------------------------------
+
+test('gate 1 aceita mercado livre e bling como nome de plataforma', () => {
+  const dir = kitFalso()
+  try {
+    writeFileSync(join(dir, 'README.md'), '# Kit\n\nVende no Mercado Livre e cadastra no Bling.\n')
+    const { falhas } = rodarGates(dir)
+    // negativo: a saida precisa ter vindo cheia (o kit falso sempre falha no gate 3)
+    assert.ok(falhas.length > 0)
+    assert.equal(falhas.filter(f => f.gate === 1).length, 0)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 1 pega id numerico e marca vindos da lista', () => {
+  const dir = kitFalso()
+  try {
+    writeFileSync(join(dir, 'README.md'), '# Kit\n\nEstoque no deposito 900000001, marca Segundo-Termo-Exemplo.\n')
+    const { falhas } = rodarGates(dir, { proibidos: ['900000001', 'segundo-termo-exemplo'] })
+    assert.ok(falhas.some(f => f.gate === 1 && /900000001/.test(f.detalhe)))
+    assert.ok(falhas.some(f => f.gate === 1 && /segundo-termo-exemplo/.test(f.detalhe)))
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 2 exige name, description e tools em agente do _modelo', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo/.claude/agents'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/.claude/agents/bom.md'),
+      '---\nname: bom\ndescription: Faz algo.\ntools: Read, Write\n---\n\nTexto.\n')
+    writeFileSync(join(dir, '_modelo/.claude/agents/sem-tools.md'),
+      '---\nname: sem-tools\ndescription: Faz algo.\n---\n\nTexto.\n')
+    writeFileSync(join(dir, '_modelo/.claude/agents/sem-frontmatter.md'), '# Agente\n')
+    const { falhas } = rodarGates(dir)
+    const g2 = falhas.filter(f => f.gate === 2)
+    assert.ok(g2.some(f => f.arquivo.endsWith('sem-tools.md') && /tools/.test(f.detalhe)))
+    assert.ok(g2.some(f => f.arquivo.endsWith('sem-frontmatter.md')))
+    assert.equal(g2.filter(f => f.arquivo.endsWith('bom.md')).length, 0)
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })

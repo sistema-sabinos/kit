@@ -1,6 +1,53 @@
 {
- "versao": "3.5",
+ "versao": "3.6",
  "arquivos": {
+  ".claude/agents/auditor.md": {
+   "bafe5e60cb6f0183": "3.6"
+  },
+  ".claude/agents/copywriter.md": {
+   "c8a7c2ee22a5a5f7": "3.6"
+  },
+  ".claude/agents/designer.md": {
+   "ee7eac4c0b50520d": "3.6"
+  },
+  ".claude/agents/espiao.md": {
+   "ced97c5e410d2d79": "3.6"
+  },
+  ".claude/agents/minerador.md": {
+   "848c9a437716d43b": "3.6"
+  },
+  ".claude/agents/ml-auditor.md": {
+   "e180a758f9f5209d": "3.6",
+   "19b89027b7127854": "3.6",
+   "563640d696ed2e32": "3.6",
+   "896a90d939508e2d": "3.6"
+  },
+  ".claude/agents/ml-copywriter.md": {
+   "3cafe53b3db2e792": "3.6",
+   "09f87517a4ae4100": "3.6",
+   "2c048d53ee9ad906": "3.6"
+  },
+  ".claude/agents/ml-designer.md": {
+   "b63973056f47eed0": "3.6",
+   "6e8aeac398026c73": "3.6"
+  },
+  ".claude/agents/ml-espiao.md": {
+   "6b831cecd3f97856": "3.6",
+   "5ee12932db20e426": "3.6",
+   "4030e3a06dede856": "3.6"
+  },
+  ".claude/agents/ml-minerador.md": {
+   "7b9919dcd0dd3402": "3.6",
+   "fe27c970306a4b38": "3.6"
+  },
+  ".claude/agents/ml-publicador.md": {
+   "0e3adaa402164f5b": "3.6",
+   "0db7b9513f4a028b": "3.6",
+   "6f1c76350342c5bd": "3.6"
+  },
+  ".claude/agents/publicador.md": {
+   "67eff73d42085e8f": "3.6"
+  },
   ".claude/hooks/barrar-perigoso.mjs": {
    "b9a2703d4bb40fdc": "3.4",
    "e01b1eb119cc7801": "anterior-3.4",
@@ -17,6 +64,10 @@
    "b5ad0fe052a59403": "anterior-3.4",
    "d2abfb67c3a33556": "anterior-3.4"
   },
+  ".claude/skills/analisar-catalogo/SKILL.md": {
+   "a374e9a55941b540": "3.6",
+   "f74338832024c2cf": "3.6"
+  },
   ".claude/skills/assistir-video/SKILL.md": {
    "3e7de8a47d7b1311": "3.0",
    "749721e4c2975f7f": "anterior-3.0",
@@ -30,8 +81,8 @@
    "e3bef37187fcaf2f": "anterior-3.0"
   },
   ".claude/skills/atualizar-sabinos/SKILL.md": {
-   "633a1e98070a1a6a": "3.5",
-   "925ddd431692f47b": "3.5"
+   "925ddd431692f47b": "3.5",
+   "633a1e98070a1a6a": "anterior-3.5"
   },
   ".claude/skills/atualizar/SKILL.md": {
    "6e59beac2d32c3fa": "3.0",
@@ -39,8 +90,47 @@
    "03694d94ed398d4b": "anterior-3.0",
    "2bdcd778ff9a2a6a": "anterior-3.0"
   },
+  ".claude/skills/auditar-conta/SKILL.md": {
+   "d80727c54f1b0026": "3.6"
+  },
+  ".claude/skills/auditar-conta/scripts/coletar.mjs": {
+   "68596341887758b7": "3.6",
+   "8fff5ec1dd6f82ea": "3.6"
+  },
+  ".claude/skills/auditar-conta/scripts/diagnosticar.mjs": {
+   "52b32fe6a67833be": "3.6"
+  },
+  ".claude/skills/auditar-conta/scripts/keywords.mjs": {
+   "a70e2c3b8204cad0": "3.6"
+  },
+  ".claude/skills/auditar-conta/scripts/rodar.mjs": {
+   "80a89d423887b3b1": "3.6",
+   "8b046e98057d7e50": "3.6"
+  },
   ".claude/skills/bastao/SKILL.md": {
    "e3cdf27c533918aa": "3.0"
+  },
+  ".claude/skills/cadastrar-bling/SKILL.md": {
+   "e151da239726cdc0": "3.6",
+   "716c4332751ba383": "3.6"
+  },
+  ".claude/skills/cadastrar-bling/mcp/ferramentas.mjs": {
+   "f46fe4522a85686f": "3.6"
+  },
+  ".claude/skills/cadastrar-bling/mcp/package.json": {
+   "b3334b399d0e9e64": "3.6"
+  },
+  ".claude/skills/cadastrar-bling/mcp/servidor.mjs": {
+   "a16a7dbc908df56c": "3.6"
+  },
+  ".claude/skills/cadastrar-bling/scripts/cadastrar.mjs": {
+   "2bc811d1d2cd1db6": "3.6",
+   "3d9a731bca37cbaf": "3.6",
+   "a54dc34e5aa7dacb": "3.6",
+   "7cb20b6493b8ad9e": "3.6",
+   "86d8007f89991ed3": "3.6",
+   "4cc1b7e1399a26c4": "3.6",
+   "94d029075dce891e": "3.6"
   },
   ".claude/skills/checar/SKILL.md": {
    "6778eecd23dad6c6": "3.0",
@@ -51,7 +141,25 @@
   },
   ".claude/skills/conectar/SKILL.md": {
    "00ce3a2576a89169": "3.0",
-   "96efa3b18305e191": "3.1"
+   "96efa3b18305e191": "3.1",
+   "06ac729775e074be": "3.6",
+   "cf6c2654215b51df": "3.6"
+  },
+  ".claude/skills/decidir-anuncio/SKILL.md": {
+   "216427de500eb9a8": "3.6",
+   "84fad1af7affcbff": "3.6",
+   "eebf2ed617a9f09d": "3.6",
+   "3fbfb3ffa4874b8f": "3.6",
+   "029b44e5fbab2166": "3.6"
+  },
+  ".claude/skills/espionar-concorrente/SKILL.md": {
+   "d1370fb2113cc514": "3.6"
+  },
+  ".claude/skills/espionar-concorrente/scripts/espionar.mjs": {
+   "180849aeca7c65b9": "3.6",
+   "9ae5a6be02812e52": "3.6",
+   "cc5bd9ba0be2b15f": "3.6",
+   "deb336201ed77f7a": "3.6"
   },
   ".claude/skills/find-skills/SKILL.md": {
    "5924ba36058bcb50": "3.0",
@@ -72,7 +180,150 @@
    "dfe4ec8c7f33a7fd": "anterior-3.0",
    "b969939ed785aca8": "anterior-3.0",
    "bd28fbcbd7ce716c": "anterior-3.0",
-   "358cc7008a186c99": "anterior-3.0"
+   "358cc7008a186c99": "anterior-3.0",
+   "3562251338e486db": "3.6",
+   "1cf67d5152ddba0f": "3.6"
+  },
+  ".claude/skills/mercado-ads/SKILL.md": {
+   "0bace000b62da161": "3.6",
+   "6ef53747e8b38eba": "3.6",
+   "8e1ec4283727ac91": "3.6"
+  },
+  ".claude/skills/mercado-ads/referencias/estrategia.md": {
+   "5fd2769e02ec191e": "3.6",
+   "2f895f8750f59ec6": "3.6"
+  },
+  ".claude/skills/mercado-ads/scripts/ads.mjs": {
+   "f56af2375750f28d": "3.6",
+   "24961309ef1d7c58": "3.6"
+  },
+  ".claude/skills/mercado-ads/scripts/diagnosticar.mjs": {
+   "ef78e5fd60139ebb": "3.6"
+  },
+  ".claude/skills/mercado-ads/scripts/estrategia.mjs": {
+   "62c844d4a02b5b40": "3.6",
+   "7009351a96041e25": "3.6"
+  },
+  ".claude/skills/mercado-ads/scripts/rodar.mjs": {
+   "308ebaa8e16dcfab": "3.6"
+  },
+  ".claude/skills/mercado-livre/SKILL.md": {
+   "63401f20e683f3d1": "3.6",
+   "8e18cd1d70f35c8b": "3.6",
+   "11ff80e36fb2467d": "3.6",
+   "f340dafbfc94d36e": "3.6",
+   "a1e3d592072ff1f6": "3.6",
+   "f3924f28ed8ddf39": "3.6",
+   "9b9653e75ead70d1": "3.6",
+   "e3d24ddb4c89fea9": "3.6"
+  },
+  ".claude/skills/mercado-livre/package.json": {
+   "e5484cc3ba438b4d": "3.6"
+  },
+  ".claude/skills/mercado-livre/referencias/clips.md": {
+   "ff68050f034247f8": "3.6",
+   "067a90b42e64fa92": "3.6"
+  },
+  ".claude/skills/mercado-livre/referencias/configuracao-exemplo.md": {
+   "91a55cfebae76c07": "3.6",
+   "601e155f7f98de49": "3.6"
+  },
+  ".claude/skills/mercado-livre/referencias/contratos.md": {
+   "018a14d831a02d7b": "3.6",
+   "fbd39de8bbe11e2b": "3.6",
+   "488208f27400e75b": "3.6",
+   "90f07e840d998791": "3.6",
+   "415226e22c145ba4": "3.6",
+   "cd7ec87a2948ec8c": "3.6"
+  },
+  ".claude/skills/mercado-livre/referencias/precificacao.md": {
+   "2748f4d1d5313904": "3.6",
+   "6125ed0a540a3b1b": "3.6"
+  },
+  ".claude/skills/mercado-livre/referencias/regras-ml.md": {
+   "9f48f73d1e952c22": "3.6",
+   "6453c8fff72f6b7c": "3.6",
+   "efaba0b5b5a949e1": "3.6",
+   "ece7c01b318c4b8e": "3.6"
+  },
+  ".claude/skills/mercado-livre/scripts/abrir-chrome.mjs": {
+   "02886102b262b6bd": "3.6"
+  },
+  ".claude/skills/mercado-livre/scripts/autorizar.mjs": {
+   "511832b71685d927": "3.6",
+   "fbec1b273874032a": "3.6",
+   "50fc57e58238e665": "3.6"
+  },
+  ".claude/skills/mercado-livre/scripts/lib/bling-api.mjs": {
+   "7653ca76a96e6be6": "3.6"
+  },
+  ".claude/skills/mercado-livre/scripts/lib/chrome.mjs": {
+   "96fd691d08740769": "3.6",
+   "91e35665775191df": "3.6"
+  },
+  ".claude/skills/mercado-livre/scripts/lib/config.mjs": {
+   "13f1de5dc1610a5b": "3.6",
+   "1baa437aaf3dfcfd": "3.6"
+  },
+  ".claude/skills/mercado-livre/scripts/lib/decisoes.mjs": {
+   "7cd47c67848338f8": "3.6",
+   "94846bb4ba376851": "3.6",
+   "f6899433e92a76fb": "3.6",
+   "12c4b25041705774": "3.6"
+  },
+  ".claude/skills/mercado-livre/scripts/lib/env.mjs": {
+   "3b6843c89acf5a72": "3.6"
+  },
+  ".claude/skills/mercado-livre/scripts/lib/fetch-timeout.mjs": {
+   "11170fec3b2600fb": "3.6"
+  },
+  ".claude/skills/mercado-livre/scripts/lib/ml-api.mjs": {
+   "f6b2c926a45199c7": "3.6"
+  },
+  ".claude/skills/mercado-livre/scripts/lib/pipeline.mjs": {
+   "794cf5e09fa3c70c": "3.6"
+  },
+  ".claude/skills/mercado-livre/scripts/lib/raiz.mjs": {
+   "24315e648d3bc99b": "3.6"
+  },
+  ".claude/skills/mercado-livre/scripts/lib/tokens.mjs": {
+   "1aea29ee2b9bcf82": "3.6",
+   "81dfaf05db96c36d": "3.6",
+   "c43690d4053dd23e": "3.6",
+   "e7e24962e2fe928e": "3.6",
+   "fa0d373d2bd9b6ac": "3.6"
+  },
+  ".claude/skills/montar-anuncio/SKILL.md": {
+   "0b9ad82089bdfb8e": "3.6",
+   "973d7f14c36845da": "3.6",
+   "b249d9c45b1d3985": "3.6",
+   "cb489ab1ce18aad6": "3.6",
+   "eef8e6b6842d0656": "3.6",
+   "cc22ee43f46739ad": "3.6"
+  },
+  ".claude/skills/montar-anuncio/referencias/modelo-descricao.md": {
+   "b17885ee50ac5adf": "3.6",
+   "fd2b1aac9ed3c7ab": "3.6",
+   "39dab9cb7506e648": "3.6",
+   "fc6f51b731b8fd5a": "3.6",
+   "3e4ec4a6f1c6540e": "3.6",
+   "3e1555962cc0deb8": "3.6"
+  },
+  ".claude/skills/montar-anuncio/scripts/simular.mjs": {
+   "8073c67aac72c575": "3.6",
+   "030c62f3cae20154": "3.6",
+   "942be6097cb11d82": "3.6",
+   "bf135be353cbf2a8": "3.6",
+   "57e28302bcf3ae39": "3.6",
+   "3488e1a9b0ff8591": "3.6",
+   "10a8c8b96a1b07c9": "3.6",
+   "7eafbb5f5ddce32c": "3.6",
+   "7ab9f0b113dfd76d": "3.6",
+   "d7846532bba4a9b0": "3.6",
+   "791cb4edb6b68585": "3.6",
+   "384a4a182a4945dd": "3.6",
+   "5c913f5185c279a2": "3.6",
+   "1bcd93a0f396b395": "3.6"
   },
   ".claude/skills/novo-projeto/SKILL.md": {
    "7496700a3ffa8f7b": "anterior-3.0"
@@ -100,6 +351,35 @@
   },
   ".claude/skills/otimizar-pc/scripts/verificar.ps1": {
    "a63349066d8643fa": "3.0"
+  },
+  ".claude/skills/pesquisar-tendencia/SKILL.md": {
+   "42e6f329190c7225": "3.6",
+   "307da608ba96f832": "3.6"
+  },
+  ".claude/skills/pesquisar-tendencia/scripts/coletar-cdp.mjs": {
+   "8be51af87ba9557f": "3.6",
+   "bd56f40eb2e51e57": "3.6"
+  },
+  ".claude/skills/pesquisar-tendencia/scripts/pesquisar.mjs": {
+   "ff9aa280e4b8e503": "3.6",
+   "491427f33e350829": "3.6",
+   "7c59ff5985887871": "3.6"
+  },
+  ".claude/skills/pode-vender/SKILL.md": {
+   "93b8fc121feff1ca": "3.6",
+   "7f7b583f0f2ae9ad": "3.6",
+   "554acd31d9c748fb": "3.6",
+   "9b8cbc21c879f1b2": "3.6"
+  },
+  ".claude/skills/pode-vender/referencias/vereditos-exemplo.md": {
+   "660b6d14a540dc40": "3.6"
+  },
+  ".claude/skills/publicar-marketplace/SKILL.md": {
+   "f25cd9cf9f5086f6": "3.6",
+   "a8ab146dd8c6d1a7": "3.6",
+   "a632448656a0338c": "3.6",
+   "ec044161190dcb0b": "3.6",
+   "634e77126fa2daa2": "3.6"
   },
   ".claude/skills/setup/SKILL.md": {
    "2b4b146ff8277214": "anterior-3.0"
@@ -151,7 +431,8 @@
    "8c89c21a2e5b5800": "3.0",
    "f55a864d8d473607": "anterior-3.0",
    "de7cbfcf414ae059": "anterior-3.0",
-   "8f5ffdc1d73b5b20": "3.5"
+   "8f5ffdc1d73b5b20": "anterior-3.5",
+   "338929ffd51c4b86": "3.6"
   },
   "AGENTS.md": {
    "2b728a009c77a407": "3.0",

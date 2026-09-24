@@ -2,12 +2,14 @@
 name: conectar
 description: >
   Guia o usuário a ligar as contas e ferramentas do negócio no sistema (navegador,
-  plugins, email, Drive, IA de mídia, anúncios, WhatsApp, e o Hermes Agent pra tarefa
-  que roda sozinha e avisa por app de mensagem), explicando pra cada uma o que destrava,
-  se é grátis ou paga, o que precisa pra ligar e se dá pra usar hoje.
+  plugins, email, Drive, IA de mídia, anúncios, WhatsApp, Mercado Livre e Bling, e o
+  Hermes Agent pra tarefa que roda sozinha e avisa por app de mensagem), explicando pra
+  cada uma o que destrava, se é grátis ou paga, o que precisa pra ligar e se dá pra usar
+  hoje.
   Use quando o usuário chamar /conectar, disser "liga o WhatsApp", "conecta meu email",
-  "instala tal ferramenta", "o que dá pra conectar aqui", "quero que isso rode sozinho",
-  "quero receber isso no meu Telegram" ou "dá pra me avisar no celular".
+  "liga o Mercado Livre", "conecta o Bling", "instala tal ferramenta", "o que dá pra
+  conectar aqui", "quero que isso rode sozinho", "quero receber isso no meu Telegram"
+  ou "dá pra me avisar no celular".
 ---
 
 # /conectar, Ligando o negócio no sistema
@@ -85,6 +87,39 @@ Duas coisas a dizer ao usuário quando este item entrar na conversa:
 
 1. **A ponte já está pronta.** As skills deste projeto moram em `.claude/skills/`, e a junction `.agents/skills`, criada no setup, é um dos lugares onde o Hermes procura por skill de projeto. Pela documentação dele, os comandos do usuário aparecem lá sem nenhuma conversão. Ressalva honesta, que se diz em voz alta: isso ainda não foi testado de ponta a ponta. Quem testar primeiro registra o resultado no `_contexto/licoes.md`.
 2. **O gate humano não muda de lugar.** Robô agendado pra LER e avisar, sim. Robô respondendo cliente sozinho ou gastando dinheiro sozinho, não, até existir freio testado. Trocar de programa não troca essa regra.
+
+### 8. Mercado Livre e Bling (pra quem instalou o pacote de marketplace)
+
+Só aparece se o projeto tem `.claude/skills/mercado-livre/`. Sem o pacote, pular.
+
+- **O que te deixa fazer:** eu leio seus anúncios, vendas, reputação e campanhas do Mercado Livre pra auditar a conta e o Mercado Ads, e, se você usa Bling, cadastro produto novo por lá (sempre mostrando antes e esperando seu "pode ir").
+- **Grátis ou pago:** grátis. As duas APIs não cobram.
+- **Precisa de quê:** um aplicativo em cada portal de desenvolvedor, criado por você com o seu login, e o `.env` do projeto com as chaves. Eu guio clique a clique e confiro com você o que o portal pede na tela, porque isso muda.
+- **Hoje ou depois:** hoje, uns 15 minutos cada. O Bling só se o `_contexto/mercado-livre.md` diz `erp: bling`.
+
+**Mercado Livre, passo a passo:**
+
+1. No portal de desenvolvedor do Mercado Livre, criar um aplicativo. A URL de retorno precisa começar com `https` (o portal recusa `http`, conferido por busca em 2026-09-24; fonte secundária, não conferido com o portal aberto). Cadastrar `https://127.0.0.1:8765/callback`; se o portal recusar, `https://localhost:8765/callback`; e se recusar as duas, qualquer endereço `https` que o portal aceitar serve, porque a página de retorno nunca precisa abrir de verdade (a pessoa cola a URL inteira da barra do navegador de qualquer jeito, no passo 4). O que importa é ser exatamente a mesma URL no portal e no `ML_REDIRECT_URI`.
+2. Colar no `.env` do projeto: `ML_CLIENT_ID`, `ML_CLIENT_SECRET` e `ML_REDIRECT_URI` (a mesma URL do passo 1, letra por letra).
+3. Rodar `node .claude/skills/mercado-livre/scripts/autorizar.mjs --ml --url`, abrir o link e autorizar.
+4. Depois de autorizar, o navegador tenta abrir a URL de retorno e mostra erro de página. Isso é esperado: nada roda ali. Copiar a URL inteira da barra do navegador e rodar `node .claude/skills/mercado-livre/scripts/autorizar.mjs --ml "<url colada>"`. Os tokens vão pro `.env` e se renovam sozinhos.
+5. Testar: `node .claude/skills/auditar-conta/scripts/rodar.mjs --dias 7 --sem-keywords` gera um relatório em `relatorios/`.
+
+**Bling, passo a passo:**
+
+1. No Bling, criar o aplicativo (em 2026-09-24: Configurações, Central de extensões, Área do integrador, Criar aplicativo, tipo API, uso Privado). Link de redirecionamento: `http://127.0.0.1:8765/callback`.
+2. Colar no `.env`: `BLING_CLIENT_ID` e `BLING_CLIENT_SECRET`.
+3. Primeiro ligar o receptor: `node .claude/skills/mercado-livre/scripts/autorizar.mjs --bling --ouvir`. Ele fica esperando.
+4. Em outro terminal, `node .claude/skills/mercado-livre/scripts/autorizar.mjs --bling --url`, abrir o link e autorizar. O código do Bling vale 1 minuto, e o receptor troca na hora. Se o receptor não pegar (porta ocupada, antivírus), copiar a URL da barra e rodar `--bling "<url colada>"` em menos de 1 minuto.
+5. Testar: `node .claude/skills/cadastrar-bling/scripts/cadastrar.mjs --categorias` lista as categorias da conta.
+
+**MCP do Bling (uma ponte que deixa o Claude consultar o seu Bling direto na conversa, só leitura):**
+
+1. Instalar as dependências dele, da raiz do projeto: `npm install --prefix .claude/skills/cadastrar-bling/mcp`.
+2. No `.mcp.json` da raiz do projeto (criar se não existir; se existir, juntar sem apagar o que já tem), acrescentar dentro de `mcpServers`: `"bling": { "command": "node", "args": [".claude/skills/cadastrar-bling/mcp/servidor.mjs"] }`. Conferir que o arquivo continua JSON válido.
+3. Fechar e abrir a conversa; aprovar o servidor `bling` quando o Claude Code perguntar. Testar com `/mcp` (deve aparecer `bling` conectado) e pedindo "quantos produtos tenho no Bling?".
+
+O MCP só lê. Cadastro continua pela `/cadastrar-bling`, que mostra antes e espera o "pode ir".
 
 ## Orçamento (no fim, não no começo)
 

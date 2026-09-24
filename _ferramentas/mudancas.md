@@ -127,3 +127,25 @@
 **Te afeta se:** `git ls-files .agents` lista algum arquivo, ou o `.gitignore` não tem `.agents/`.
 **Como aplicar:** acrescentar `.agents/` ao `.gitignore` e rodar `git rm -r --cached .agents`, que tira do controle do git sem apagar nada do disco. Dizer isso à pessoa com essas palavras antes.
 **Como testar:** `git ls-files .agents` não lista nada e a pasta `.agents/skills` continua no disco.
+
+## oferta-mercado-livre
+
+**O que é:** oferece o pacote de marketplace (onze comandos, do "posso vender isso?" ao anúncio publicado e à conta auditada) pra quem vende em marketplace.
+**Por quê:** quem vende no Mercado Livre refaz na mão, todo produto, pesquisa, preço, anúncio e auditoria que o pacote faz.
+**Te afeta se:** o `_contexto/empresa.md` cita marketplace, Mercado Livre, Shopee, Amazon ou Magalu, e o projeto não tem `.claude/skills/mercado-livre/`.
+**Como aplicar:** dizer em uma frase o que o pacote faz e perguntar se entra. Com o sim, refazer o plano do Passo 3 com `--componentes mercado-livre` (somado a qualquer outro componente já escolhido) e aplicar. Depois, a entrada `estrutura-mercado-livre` passa a valer.
+**Como testar:** `.claude/skills/mercado-livre/SKILL.md` e `.claude/agents/ml-publicador.md` existem no projeto.
+
+## estrutura-mercado-livre
+
+**O que é:** registra no projeto as pastas que o pacote de marketplace cria e protege o login do Chrome dedicado.
+**Por quê:** sem a linha no `AGENTS.md`, o assistente não sabe onde mora cada anúncio; sem a linha no `.gitignore`, o backup sobe o login da sua conta do Mercado Livre pro GitHub.
+**Te afeta se:** o projeto tem `.claude/skills/mercado-livre/` e o `.gitignore` não tem `dados/chrome-perfil/`, ou a seção "Estrutura de pastas" do `AGENTS.md` não cita `anuncios/`.
+**Como aplicar:** acrescentar ao `.gitignore` as duas linhas do `_modelo/.gitignore` do kit que começam em "# Perfil do Chrome dedicado"; e, na seção "Estrutura de pastas" do `AGENTS.md`, a linha abaixo:
+
+```
+- pacote Mercado Livre: `fornecedores/`, `anuncios/`, `dados/pipeline/`, `relatorios/` e `_contexto/mercado-livre.md`, criados pela `/mercado-livre` na primeira vez
+```
+
+Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`), rodar `git rm -r --cached dados/chrome-perfil`, que tira do git sem apagar do disco, dizendo isso à pessoa antes.
+**Como testar:** `git check-ignore dados/chrome-perfil/x` imprime o caminho, e `anuncios/` aparece uma vez no `AGENTS.md`.

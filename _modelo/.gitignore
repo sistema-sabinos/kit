@@ -21,5 +21,8 @@ Thumbs.db
 *.wav
 *.m4a
 
+# Perfil do Chrome dedicado do pacote Mercado Livre: guarda o login da conta, nunca sobe
+dados/chrome-perfil/
+
 # ponte pro Codex, criada em tempo de uso, nunca versionada
 .agents/

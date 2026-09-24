@@ -1,0 +1,9 @@
+{
+  "name": "sabinos-mercado-livre",
+  "private": true,
+  "description": "Dependencias dos scripts do pacote Mercado Livre do SabinOS. Instalar da raiz do projeto: npm install --prefix .claude/skills/mercado-livre",
+  "type": "module",
+  "dependencies": {
+    "playwright": "^1.63.0"
+  }
+}

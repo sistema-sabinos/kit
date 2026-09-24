@@ -12,7 +12,20 @@
     "transcribe": { "depende": [], "caminhos": [".claude/skills/transcribe/"] },
     "find-skills": { "depende": [], "caminhos": [".claude/skills/find-skills/"] },
     "otimizar-pc": { "depende": [], "caminhos": [".claude/skills/otimizar-pc/"] },
-    "trafego": { "depende": ["nucleo"], "caminhos": [".claude/skills/trafego/"] }
+    "trafego": { "depende": ["nucleo"], "caminhos": [".claude/skills/trafego/"] },
+    "mercado-livre": { "depende": ["nucleo"], "caminhos": [".claude/skills/mercado-livre/",
+      ".claude/skills/pode-vender/",
+      ".claude/skills/analisar-catalogo/",
+      ".claude/skills/decidir-anuncio/",
+      ".claude/skills/montar-anuncio/",
+      ".claude/skills/publicar-marketplace/",
+      ".claude/skills/pesquisar-tendencia/",
+      ".claude/skills/espionar-concorrente/",
+      ".claude/skills/cadastrar-bling/",
+      ".claude/skills/mercado-ads/",
+      ".claude/skills/auditar-conta/",
+      ".claude/agents/ml-minerador.md", ".claude/agents/ml-espiao.md", ".claude/agents/ml-copywriter.md", ".claude/agents/ml-designer.md", ".claude/agents/ml-auditor.md", ".claude/agents/ml-publicador.md"
+    ] }
   },
   "mistos": ["AGENTS.md", "CLAUDE.md", ".gitignore", ".claude/settings.json"],
   "ignorar": { "pastas": ["templates/"], "arquivos": ["README.md"], "finais": [".test.mjs"] }

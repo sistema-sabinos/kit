@@ -165,8 +165,10 @@ Política obrigatória diante de qualquer skill de terceiro encontrada:
 > formato de 4 partes quando pergunta algo."
 
 Meta: entre 3 e 6 skills ativadas no projeto novo, escolhidas pelo que vai
-ser produzido (pergunta 2) e pela meta (pergunta 3). Menos é mais: skill que
-o projeto não vai usar nos primeiros 30 dias fica de fora.
+ser produzido (pergunta 2) e pela meta (pergunta 3).
+O pacote de marketplace, quando entra, conta como um bloco só e fica fora dessa
+conta. Menos é mais: skill que o projeto não vai usar nos primeiros 30 dias fica
+de fora.
 
 Quando a pergunta 4 apontou conselho, órgão ou dado sensível deste projeto,
 reler cada skill gerada procurando exemplo que contradiga o próprio limite que
@@ -211,6 +213,48 @@ ainda sem régua, porque a régua nasce na primeira vez que a pessoa rodar
 Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o `/trafego`
 existe e pode ser instalado depois com o `/mapear`, que acha a skill em
 `_modelo/.claude/skills/trafego/`.
+
+### Venda em marketplace (antes de escolher as skills)
+
+Só quando as respostas do Passo 1 ou o `empresa.md` lido no Passo 0 citam
+marketplace, Mercado Livre, Shopee, Amazon ou Magalu. Perguntar na conversa, no
+formato de 4 partes:
+
+> "Vi que você vende em marketplace. Tenho um pacote pronto pra isso: vai do
+> 'posso vender esse produto?' até o anúncio publicado e a conta auditada, e
+> custa zero pra usar (a única parte paga é gerar imagem por IA, opcional e
+> sempre avisada antes de rodar). Quer que eu instale?
+>
+> Pergunto porque ele é grande (onze comandos que trabalham juntos), então só
+> entra se fizer sentido pra você.
+>
+> Tipo: 'quero, vendo no Mercado Livre', 'vendo na Shopee, serve?', ou 'agora
+> não'."
+
+A esteira e as ferramentas do pacote são do Mercado Livre (e do Bling, pra quem
+usa). Quem vende só em outro marketplace ouve isso numa frase: o método
+(pode vender, análise de catálogo, decisão e montagem do anúncio) serve pra
+qualquer um; pesquisa, simulador, Ads e auditoria são do Mercado Livre.
+
+Resposta positiva: copiar pro projeto as onze pastas inteiras de
+`_modelo/.claude/skills/` (`mercado-livre`, `pode-vender`, `analisar-catalogo`,
+`pesquisar-tendencia`, `espionar-concorrente`, `decidir-anuncio`,
+`montar-anuncio`, `cadastrar-bling`, `publicar-marketplace`, `mercado-ads`,
+`auditar-conta`) e os seis agentes de `_modelo/.claude/agents/` (`ml-minerador.md`,
+`ml-espiao.md`, `ml-copywriter.md`, `ml-designer.md`, `ml-auditor.md`,
+`ml-publicador.md`) pra `.claude/agents/` do projeto. Nunca copiar arquivo
+terminado em `.test.mjs` nem pasta `node_modules/`. O pacote vai inteiro ou
+não vai: as skills dividem a mesma biblioteca de scripts. Depois:
+
+- Na seção "Estrutura de pastas" do `AGENTS.md` do projeto, uma linha:
+
+    - pacote Mercado Livre: `fornecedores/`, `anuncios/`, `dados/pipeline/`, `relatorios/` e `_contexto/mercado-livre.md`, criados pela `/mercado-livre` na primeira vez
+
+- Em `_contexto/ferramentas.md`: `| pacote Mercado Livre | instalado | <AAAA-MM-DD> | sem configuração: nasce na primeira /mercado-livre |`
+- Em `tarefas.md`: "rodar `/mercado-livre` pra configurar o pacote, e o `/conectar` (seção Mercado Livre e Bling) pra ligar as contas".
+
+Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o pacote de
+marketplace existe e pode ser instalado depois pelo `/mapear`.
 
 ### Nome da pasta
 
@@ -260,6 +304,7 @@ perguntar outro nome antes de seguir.
   1), `otimizar-pc` só se o computador da pessoa for Windows (já sabido do
   Passo 0, ou perguntar se não ficou claro), e a pasta `trafego` inteira só se a
   pergunta de anúncio pago acima teve resposta positiva ou "pretendo".
+  O pacote de marketplace segue o bloco "Venda em marketplace" acima.
 - As skills escolhidas no Passo 2 (as ativadas de `templates/skills/` mais as
   geradas do zero), já dentro de `<pasta-do-projeto>/.claude/skills/`. Template
   da biblioteca é arquivo solto (`<nome>.md`) ou pasta: vira
@@ -371,6 +416,8 @@ Depois da árvore, entregar em prosa, sem jargão técnico: "Esses comandos
 ficaram prontos pro seu projeto", seguido de uma linha por skill ativada
 dizendo o que ela faz na prática (não o nome do arquivo nem termo técnico),
 cobrindo tanto as skills base quanto as escolhidas ou criadas no Passo 2.
+O pacote de marketplace entra como uma linha só: "/mercado-livre, a sua esteira
+de marketplace, do produto novo ao anúncio publicado".
 
 ### Registrar e encerrar
 

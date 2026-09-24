@@ -8,23 +8,22 @@ import { hashArquivo, ignorado, componenteDe } from './atualizar-projeto.mjs'
 
 const CAMPOS_MUDANCA = ['O que é', 'Por quê', 'Te afeta se', 'Como aplicar', 'Como testar']
 
-const PROIBIDOS = [
-  'zabinno', 'sabino', 'henrique', 'rhs sabino', 'negocio-01', 'negocio-02',
-  'negócio-01', 'negócio-02', 'bling', 'mercado livre', 'mercadolivre',
-  'mercadolibre', 'mercado ads', 'orizom', 'takata', 'clickstech', 'sabicolor',
-  'mr distribuidora', 'mr-distribuidora', 'qualynutri', 'webcontinental',
-  'web continental', 'melhor envio', 'melhorenvio', 'nubimetrics', 'avantpro',
-  'e:\\company', 'e:/company', 'sabinoonline', 'canetinha', 'bobbie goods',
-  'andre aldo', 'andré aldo', '51.771.722', 'melizabinno',
-  // marca do kit de origem (o SabinOS nasceu de um fork): nao pode sobrar no produto.
-  // termos exatos, e nao "ratos" solto, porque "contratos" e "extratos" acusariam falso positivo
-  'claude code os', 'ccos-ratos', 'ratos de ia', 'ratosdeia', 'ads-ratos', 'ga4-ratos', 'duduesh',
-]
-// termos permitidos: nome do produto (sabinos) nao pode acusar falso positivo do termo "sabino"
+// A lista de termos proibidos do Gate 1 (nomes, marcas, ids da operacao de origem) mora na
+// bancada de desenvolvimento, em bancada/proibidos.json, fora do kit: este arquivo vai no zip
+// e no repositorio publico, e a lista escrita aqui seria ela mesma o vazamento. Na pasta-mae
+// do aluno o arquivo nao existe, a lista fica vazia e so os detectores estruturais rodam.
+const CAMINHO_PROIBIDOS = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'bancada', 'proibidos.json')
+
+export function carregarProibidos(caminho = CAMINHO_PROIBIDOS) {
+  if (!existsSync(caminho)) return []
+  const termos = JSON.parse(readFileSync(caminho, 'utf8')).termos
+  return Array.isArray(termos) ? termos : []
+}
+// termos permitidos: nome do produto (sabinos) nao pode acusar falso positivo do mesmo nome sem o "s" final
 const PERMITIDOS = [/sabinos/gi, /sabinos\.zip/gi]
-// o proprio detector (e seu teste) precisa CONTER a lista de termos proibidos e exemplos de
-// segredo/MLB como dado pra funcionar e pra se testar; isso nao e vazamento, e auto-referencia
-// estrutural (o linter listando suas proprias regras e testando com um caso positivo sintetico)
+// o teste do detector precisa CONTER exemplos sinteticos de segredo e de termo (inclusive o
+// nome do produto sem o "s", no teste do PERMITIDOS) pra provar que o gate acusa; auto-referencia estrutural,
+// sem vazamento, por isso os dois arquivos do gate ficam fora da varredura de conteudo
 const ISENTOS_CONTEUDO = ['_ferramentas/verificar-kit.mjs', '_ferramentas/verificar-kit.test.mjs']
 const RE_MLB = /\bMLB\d{6,}\b/
 const RE_SEGREDO = /(API_KEY|ACCESS_TOKEN|REFRESH_TOKEN|CLIENT_SECRET|BOT_TOKEN|_SECRET|_PASS|_PASSWORD)\s*[:=]\s*['"]?([A-Za-z0-9._\-]{8,})/g
@@ -64,6 +63,51 @@ const OBRIGATORIOS = [
   '_modelo/templates/skills/financeiro.md', '_modelo/templates/skills/copy-venda.md',
   '_modelo/templates/perfis/agents-md-agencia.md', '_modelo/templates/perfis/agents-md-empresa.md',
   '_modelo/templates/perfis/agents-md-freelancer.md', '_modelo/templates/perfis/agents-md-solopreneur.md',
+  '_modelo/.claude/skills/mercado-livre/SKILL.md',
+  '_modelo/.claude/skills/mercado-livre/package.json',
+  '_modelo/.claude/skills/mercado-livre/referencias/configuracao-exemplo.md',
+  '_modelo/.claude/skills/mercado-livre/referencias/contratos.md',
+  '_modelo/.claude/skills/mercado-livre/referencias/regras-ml.md',
+  '_modelo/.claude/skills/mercado-livre/referencias/precificacao.md',
+  '_modelo/.claude/skills/mercado-livre/referencias/clips.md',
+  '_modelo/.claude/skills/mercado-livre/scripts/abrir-chrome.mjs',
+  '_modelo/.claude/skills/mercado-livre/scripts/autorizar.mjs',
+  '_modelo/.claude/skills/mercado-livre/scripts/lib/raiz.mjs',
+  '_modelo/.claude/skills/mercado-livre/scripts/lib/env.mjs',
+  '_modelo/.claude/skills/mercado-livre/scripts/lib/tokens.mjs',
+  '_modelo/.claude/skills/mercado-livre/scripts/lib/fetch-timeout.mjs',
+  '_modelo/.claude/skills/mercado-livre/scripts/lib/config.mjs',
+  '_modelo/.claude/skills/mercado-livre/scripts/lib/chrome.mjs',
+  '_modelo/.claude/skills/mercado-livre/scripts/lib/ml-api.mjs',
+  '_modelo/.claude/skills/mercado-livre/scripts/lib/bling-api.mjs',
+  '_modelo/.claude/skills/mercado-livre/scripts/lib/decisoes.mjs',
+  '_modelo/.claude/skills/mercado-livre/scripts/lib/pipeline.mjs',
+  '_modelo/.claude/skills/pode-vender/SKILL.md',
+  '_modelo/.claude/skills/pode-vender/referencias/vereditos-exemplo.md',
+  '_modelo/.claude/skills/analisar-catalogo/SKILL.md',
+  '_modelo/.claude/skills/decidir-anuncio/SKILL.md',
+  '_modelo/.claude/skills/montar-anuncio/SKILL.md',
+  '_modelo/.claude/skills/montar-anuncio/referencias/modelo-descricao.md',
+  '_modelo/.claude/skills/montar-anuncio/scripts/simular.mjs',
+  '_modelo/.claude/skills/publicar-marketplace/SKILL.md',
+  '_modelo/.claude/skills/pesquisar-tendencia/SKILL.md',
+  '_modelo/.claude/skills/pesquisar-tendencia/scripts/pesquisar.mjs',
+  '_modelo/.claude/skills/pesquisar-tendencia/scripts/coletar-cdp.mjs',
+  '_modelo/.claude/skills/espionar-concorrente/SKILL.md',
+  '_modelo/.claude/skills/espionar-concorrente/scripts/espionar.mjs',
+  '_modelo/.claude/skills/cadastrar-bling/SKILL.md',
+  '_modelo/.claude/skills/cadastrar-bling/scripts/cadastrar.mjs',
+  '_modelo/.claude/skills/cadastrar-bling/mcp/package.json',
+  '_modelo/.claude/skills/cadastrar-bling/mcp/servidor.mjs',
+  '_modelo/.claude/skills/cadastrar-bling/mcp/ferramentas.mjs',
+  '_modelo/.claude/skills/mercado-ads/SKILL.md',
+  '_modelo/.claude/skills/mercado-ads/referencias/estrategia.md',
+  '_modelo/.claude/skills/mercado-ads/scripts/rodar.mjs',
+  '_modelo/.claude/skills/auditar-conta/SKILL.md',
+  '_modelo/.claude/skills/auditar-conta/scripts/rodar.mjs',
+  '_modelo/.claude/agents/ml-minerador.md', '_modelo/.claude/agents/ml-espiao.md',
+  '_modelo/.claude/agents/ml-copywriter.md', '_modelo/.claude/agents/ml-designer.md',
+  '_modelo/.claude/agents/ml-auditor.md', '_modelo/.claude/agents/ml-publicador.md',
   'VERSAO', '_ferramentas/atualizar-projeto.mjs', '_ferramentas/componentes.json',
   '_ferramentas/impressoes.json', '_ferramentas/mudancas.md',
   '_modelo/.claude/skills/atualizar-sabinos/SKILL.md',
@@ -102,10 +146,22 @@ function ehTexto(rel) {
   return /\.(md|json|txt|mjs|js|cjs|yml|yaml|ps1|py|sh)$/i.test(rel)
 }
 
-export function rodarGates(dirKit) {
+// opcoes.proibidos: lista de termos do Gate 1 (os testes passam a sua). Sem ela, carrega de
+// opcoes.caminhoProibidos, que por padrao e o bancada/proibidos.json ao lado do kit.
+export function rodarGates(dirKit, opcoes = {}) {
   const falhas = []
+  const avisos = []
   const arquivos = existsSync(dirKit) ? listar(dirKit) : []
   const set = new Set(arquivos)
+
+  let PROIBIDOS = opcoes.proibidos
+  if (!Array.isArray(PROIBIDOS)) {
+    const caminho = opcoes.caminhoProibidos || CAMINHO_PROIBIDOS
+    PROIBIDOS = carregarProibidos(caminho)
+    // Na pasta-mae do aluno nao existe bancada/ ao lado do kit, e o aviso seria jargao na tela
+    // dele. Na bancada (a pasta existe e o arquivo sumiu) o aviso continua, porque ai o gate ficou cego.
+    if (!PROIBIDOS.length && existsSync(dirname(caminho))) avisos.push(`Gate 1: lista de termos da bancada nao encontrada em ${caminho}; so os detectores estruturais rodaram`)
+  }
 
   // Gate 1: vazamento de informacao nossa
   for (const rel of arquivos) {
@@ -146,6 +202,18 @@ export function rodarGates(dirKit) {
     if (!m) { falhas.push({ gate: 2, arquivo: rel, detalhe: 'sem frontmatter' }); continue }
     if (!/^name:\s*\S/m.test(m[1])) falhas.push({ gate: 2, arquivo: rel, detalhe: 'sem name' })
     if (!/^description:\s*\S/m.test(m[1])) falhas.push({ gate: 2, arquivo: rel, detalhe: 'sem description' })
+  }
+
+  // Gate 2 (agentes): todo .claude/agents/*.md do _modelo precisa de name, description e tools,
+  // senao o Claude Code ignora o agente calado e a esteira despacha pro vazio
+  for (const rel of arquivos) {
+    if (!/^_modelo\/\.claude\/agents\/[^/]+\.md$/.test(rel)) continue
+    const txt = readFileSync(join(dirKit, rel), 'utf8')
+    const m = txt.match(/^---\r?\n([\s\S]*?)\r?\n---/)
+    if (!m) { falhas.push({ gate: 2, arquivo: rel, detalhe: 'agente sem frontmatter' }); continue }
+    for (const campo of ['name', 'description', 'tools']) {
+      if (!new RegExp(`^${campo}:\\s*\\S`, 'm').test(m[1])) falhas.push({ gate: 2, arquivo: rel, detalhe: `agente sem ${campo}` })
+    }
   }
 
   // Gate 8: skill de trafego instalada precisa de regua declarada.
@@ -380,7 +448,7 @@ export function rodarGates(dirKit) {
     }
   }
 
-  return { falhas, total: arquivos.length }
+  return { falhas, avisos, total: arquivos.length }
 }
 
 const NOMES = {
@@ -392,8 +460,9 @@ const NOMES = {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const dir = process.argv[2] || resolve(dirname(fileURLToPath(import.meta.url)), '..')
-  const { falhas, total } = rodarGates(dir)
+  const { falhas, avisos, total } = rodarGates(dir)
   console.log(`Kit: ${dir} (${total} arquivos)\n`)
+  for (const a of avisos) console.log(`aviso: ${a}\n`)
   for (const g of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
     const desse = falhas.filter(f => f.gate === g)
     console.log(`${desse.length ? 'FALHOU' : 'ok    '}  Gate ${g}: ${NOMES[g]}${desse.length ? ` (${desse.length})` : ''}`)

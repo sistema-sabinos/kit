@@ -1,0 +1,302 @@
+#!/usr/bin/env node
+// Coleta da /espionar-concorrente. Abre os anuncios do topo de um produto no Chrome dedicado
+// (anuncio de outro vendedor nao se le pela API, que devolve 403), junta as avaliacoes pela
+// API de reviews (gratis, vale pra qualquer vendedor) e as perguntas reais pela aba de perguntas
+// dos anuncios que mais vendem. Grava o bruto e recalcula vocabulario.txt e atributos.json da
+// categoria (contrato 0). O briefing em Markdown quem escreve e o agente, lendo o bruto.
+//
+// Uso, da raiz do projeto (Chrome dedicado aberto e logado):
+//   node .claude/skills/espionar-concorrente/scripts/espionar.mjs --fornecedor <f> --categoria <c> --produto "<nome como no pesquisa-input>" [--n 5] [--perguntas 3]
+// Entrada: fornecedores/<f>/_raw-pesquisa-<c>.json (a /pesquisar-tendencia rodou)
+// Saida:   fornecedores/<f>/concorrentes/<c>/_raw-concorrentes-<slug>.json, vocabulario.txt, atributos.json
+//          e a etapa espionagem de dados/pipeline/_categorias/<f>-<c>.json
+//
+// Pagina de anuncio conferida ao vivo em 2026-09-24: h1, meta[itemprop="price"], .ui-pdp-subtitle,
+// .andes-table__row/tr da ficha, .ui-pdp-gallery img com data-zoom, .ui-pdp-description__content e o
+// link "Ver todas as perguntas" batem com a pagina real. O seletor de vendedor tinha mudado (a classe
+// antiga sumiu) e foi ajustado pro que existe hoje. A aba de perguntas confere: comeca em "Perguntas
+// neste anuncio" e termina em "Termos mais procurados" ou "Denunciar". O link do produto no formato
+// produto.mercadolivre.com.br/MLB-<numeros> abre o anuncio, como urlParaAbrir monta pro patrocinado.
+// A rota /reviews/item/<id> devolve 403 sem token, batendo com o uso de mlGet com token aqui; os nomes
+// dos campos da resposta (reviews, rate, title, content, likes, rating_average, rating_levels,
+// paging.total) nao vieram de fonte oficial porque a documentacao do Mercado Livre tambem devolve 403
+// pra robo: conferir na fumaca do plano D. Se o Mercado Livre mudar a pagina de novo, os seletores de
+// lerPagina sao o que precisa de ajuste.
+import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'node:fs'
+import { join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
+import { conectar } from '../../mercado-livre/scripts/lib/chrome.mjs'
+import { tokenMl } from '../../mercado-livre/scripts/lib/tokens.mjs'
+import { mlGet } from '../../mercado-livre/scripts/lib/ml-api.mjs'
+import { slugDe, gravarEtapaDaCategoria } from '../../mercado-livre/scripts/lib/pipeline.mjs'
+
+export function argumentos(argv) {
+  const pega = (nome, padrao) => {
+    const i = argv.indexOf('--' + nome)
+    return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : padrao
+  }
+  const fornecedor = pega('fornecedor', '')
+  const categoria = pega('categoria', '')
+  const produto = pega('produto', '')
+  if (!fornecedor || !categoria || !produto) throw new Error('uso: --fornecedor <f> --categoria <c> --produto "<nome como no pesquisa-input>" [--n 5] [--perguntas 3]')
+  const inteiro = (nome, padrao, min) => {
+    const n = Number(pega(nome, padrao))
+    if (!Number.isInteger(n) || n < min) throw new Error(`--${nome} precisa ser um numero inteiro de ${min} pra cima`)
+    return n
+  }
+  return { fornecedor, categoria, produto, n: inteiro('n', 5, 1), perguntas: inteiro('perguntas', 3, 0) }
+}
+
+// Codigo do anuncio numa URL do Mercado Livre (com ou sem hifen, na query do patrocinado ou no caminho).
+export function idDoAnuncio(url) {
+  const s = String(url ?? '')
+  const q = s.match(/item_id(?:%3A|:)(MLBU?)(\d{7,12})/i)
+  if (q) return q[1].toUpperCase() + q[2]
+  const c = s.match(/(MLBU?)-?(\d{7,12})/)
+  return c ? c[1] + c[2] : null
+}
+
+// Os organicos primeiro, na ordem da busca (e quem o Mercado Livre mostra sem ninguem pagar);
+// patrocinado so completa se faltar. Sem codigo nao da pra abrir, entao fica de fora.
+export function escolherTopo(produto, n) {
+  const vistos = new Set()
+  const comId = (produto.busca?.itens || []).map(i => ({ ...i, id: i.id || idDoAnuncio(i.url) })).filter(i => i.id && !vistos.has(i.id) && vistos.add(i.id))
+  return [...comId.filter(i => !i.patrocinado), ...comId.filter(i => i.patrocinado)].slice(0, n)
+}
+
+// Anuncio patrocinado guarda um link de clique que nao abre o anuncio; o codigo abre.
+export function urlParaAbrir(item) {
+  if (item.url && !/\/mclics\//.test(item.url)) return item.url
+  if (/^MLB\d+$/.test(item.id)) return `https://produto.mercadolivre.com.br/MLB-${item.id.slice(3)}`
+  return null
+}
+
+// O elemento do vendedor tem dois filhos ("Vendido por" ou "Loja oficial", e o nome). Le o texto
+// bruto (innerText, que separa os filhos por quebra de linha; textContent colaria "Vendido
+// porLOJA EXEMPLO"). nome e a ultima linha nao vazia; loja_oficial e true se alguma linha for
+// exatamente "Loja oficial".
+export function vendedorDe(texto) {
+  const linhas = String(texto ?? '').split('\n').map(s => s.trim()).filter(Boolean)
+  if (!linhas.length) return { nome: null, loja_oficial: false }
+  return { nome: linhas[linhas.length - 1], loja_oficial: linhas.some(l => l === 'Loja oficial') }
+}
+
+// '+1000 vendidos' -> 1000; '+5 mil vendidos' -> 5000; '37 vendidos' -> 37; sem numero -> null
+export function vendidosDe(texto) {
+  const m = String(texto ?? '').match(/(\d+(?:[.,]\d+)?)\s*(mil)?\s+vendid/i)
+  if (!m) return null
+  const n = Number(m[1].replace(/\./g, '').replace(',', '.'))
+  return m[2] ? Math.round(n * 1000) : n
+}
+
+// A aba de perguntas, como a pagina entrega no innerText: o que fica entre o titulo da secao
+// e o rodape de termos. Vazio quando a pagina nao tem a secao.
+export function perguntasDoTexto(texto, limite = 8000) {
+  const s = String(texto ?? '')
+  const ini = s.search(/Perguntas neste anúncio|Últimas feitas/i)
+  if (ini < 0) return ''
+  const resto = s.slice(ini)
+  const fim = resto.search(/Termos mais procurados|Denunciar/i)
+  return (fim > 0 ? resto.slice(0, fim) : resto).trim().slice(0, limite)
+}
+
+const PARADAS = new Set(['de', 'da', 'do', 'das', 'dos', 'para', 'pra', 'com', 'sem', 'e', 'ou', 'a', 'o', 'as', 'os', 'em', 'no', 'na', 'nos', 'nas', 'um', 'uma', 'por', 'p', 'c', 'un', 'und'])
+
+export function palavrasDoTitulo(titulo) {
+  return String(titulo ?? '').toLowerCase().normalize('NFC').split(/[^\p{L}\p{N}]+/u).filter(p => p.length > 1 && !PARADAS.has(p))
+}
+
+// Em quantos titulos cada palavra aparece (repetida no mesmo titulo conta uma vez),
+// da mais frequente pra menos, empate em ordem alfabetica.
+export function vocabulario(titulos) {
+  const conta = new Map()
+  for (const t of titulos) for (const p of new Set(palavrasDoTitulo(t))) conta.set(p, (conta.get(p) || 0) + 1)
+  return [...conta].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt-BR'))
+}
+
+export const textoDoVocabulario = pares => pares.map(([p, n]) => `${p}\t${n}`).join('\n') + '\n'
+
+// Atributo preenchido por `minimo` ou mais anuncios, com os valores do mais comum pro menos.
+export function atributosConsensuais(anuncios, minimo = 4) {
+  const porNome = new Map()
+  for (const a of anuncios) {
+    for (const [nome, valor] of Object.entries(a.atributos || {})) {
+      const v = String(valor ?? '').trim()
+      if (!v) continue
+      if (!porNome.has(nome)) porNome.set(nome, new Map())
+      const vals = porNome.get(nome)
+      vals.set(v, (vals.get(v) || 0) + 1)
+    }
+  }
+  const saida = {}
+  for (const [nome, vals] of porNome) {
+    const emQuantos = [...vals.values()].reduce((x, y) => x + y, 0)
+    if (emQuantos >= minimo) saida[nome] = { em_quantos: emQuantos, valores: [...vals].sort((x, y) => y[1] - x[1]).map(([v]) => v) }
+  }
+  return saida
+}
+
+// A galeria repete cada foto em mais de um tamanho (a normal e a "_2X_", em resolucao dobrada) e
+// entra o icone de video no meio; contar tudo infla a mediana de fotos do briefing. O codigo da foto
+// e o <numero>-ML<letra><digitos> do caminho (formato D_<tamanho>_<numero>-ML<letra><digitos>_<mes><ano>-<letra>);
+// sem esse codigo (o .svg do video) a URL fica de fora. O sufixo de data e letra (_<mes><ano>-<letra>)
+// e opcional: variacao de URL sem ele ainda e foto valida, so sem o "-F"/"-R" pro desempate (sobra a
+// "_2X_" no tamanho). Uma URL por codigo, preferindo a de maior resolucao ("_2X_" no tamanho, ou
+// "-F" no ultimo pedaco; "-R" e a menor).
+const CODIGO_FOTO = /(\d+-ML[A-Z]\d+)(?:_\d{6}-([A-Z]))?/
+export function fotosUnicas(urls) {
+  const porCodigo = new Map()
+  for (const url of urls || []) {
+    const m = String(url).match(CODIGO_FOTO)
+    if (!m) continue
+    const altaResolucao = url.includes('_2X_') || m[2] === 'F'
+    const atual = porCodigo.get(m[1])
+    if (!atual || (altaResolucao && !atual.altaResolucao)) porCodigo.set(m[1], { url, altaResolucao })
+  }
+  return [...porCodigo.values()].map(v => v.url)
+}
+
+// Avaliacoes pela API (custo zero). Pagina de `limite` em `limite` ate `maximo`.
+export async function avaliacoesDe(id, get, { limite = 50, maximo = 100 } = {}) {
+  const avaliacoes = []
+  let primeira = null
+  for (let offset = 0; offset < maximo; offset += limite) {
+    const d = await get(`/reviews/item/${id}?limit=${limite}&offset=${offset}`)
+    primeira = primeira || d
+    const lote = (d.reviews || []).map(r => ({ nota: r.rate, titulo: r.title ?? '', texto: r.content ?? '', curtidas: r.likes ?? 0 }))
+    avaliacoes.push(...lote)
+    if (lote.length < limite || avaliacoes.length >= (d.paging?.total ?? 0)) break
+  }
+  return { media: primeira?.rating_average ?? null, total: primeira?.paging?.total ?? 0, niveis: primeira?.rating_levels ?? null, avaliacoes: avaliacoes.slice(0, maximo) }
+}
+
+// Roda dentro da pagina do anuncio (page.evaluate).
+export function lerPagina() {
+  const txt = el => (el ? el.textContent.trim() : null)
+  const bruto = el => (el ? el.innerText : null)
+  const q = s => document.querySelector(s)
+  const atributos = {}
+  for (const linha of document.querySelectorAll('.andes-table__row, tr')) {
+    const nome = txt(linha.querySelector('th, .andes-table__header'))
+    const valor = txt(linha.querySelector('td, .andes-table__column'))
+    if (nome && valor) atributos[nome] = valor
+  }
+  const fotos = [...new Set([...document.querySelectorAll('.ui-pdp-gallery img, figure img')]
+    .map(i => i.getAttribute('data-zoom') || i.getAttribute('src') || '')
+    .filter(u => /mlstatic\.com/.test(u)))]
+  const link = [...document.querySelectorAll('a')].find(a => /ver todas as perguntas/i.test(a.textContent))
+  return {
+    titulo: txt(q('h1')),
+    preco: Number(q('meta[itemprop="price"]')?.getAttribute('content')) || null,
+    subtitulo: txt(q('.ui-pdp-subtitle')),
+    vendedor: bruto(q('.ui-pdp-seller-summary__link-trigger-button, .ui-pdp-seller-summary__header__title')),
+    fotos,
+    atributos,
+    descricao: txt(q('.ui-pdp-description__content')),
+    link_perguntas: link ? link.href : null,
+  }
+}
+
+// Le cada anuncio (pagina e avaliacoes) e depois as perguntas dos `perguntas` que mais vendem.
+// Anuncio que falha vira erro na linha dele e o resto segue.
+export async function espionar({ itens, lerAnuncio, lerPerguntas, get, perguntas = 3, dormir = ms => new Promise(r => setTimeout(r, ms)), log = () => {} }) {
+  const anuncios = []
+  for (const item of itens) {
+    const a = { id: item.id, url: urlParaAbrir(item), preco_na_busca: item.preco, patrocinado: Boolean(item.patrocinado) }
+    try {
+      if (!a.url) throw new Error('sem endereco pra abrir')
+      Object.assign(a, await lerAnuncio(a.url))
+      const vendedor = vendedorDe(a.vendedor)
+      a.vendedor = vendedor.nome
+      a.loja_oficial = vendedor.loja_oficial
+      a.vendidos = vendidosDe(a.subtitulo)
+      a.fotos = fotosUnicas(a.fotos)
+    } catch (e) { a.erro = `pagina: ${e.message}`.slice(0, 200) }
+    try { a.avaliacoes = await avaliacoesDe(item.id, get) } catch (e) { a.avaliacoes = { erro: e.message.slice(0, 200) } }
+    log(`${item.id}: ${a.erro || `${a.titulo?.slice(0, 50)}, ${a.fotos?.length ?? 0} fotos, ${a.avaliacoes.total ?? 0} avaliacoes`}`)
+    anuncios.push(a)
+    await dormir(2000 + Math.floor(Math.random() * 2000))
+  }
+  const maisVendidos = anuncios.filter(a => a.link_perguntas).sort((x, y) => (y.vendidos ?? 0) - (x.vendidos ?? 0)).slice(0, perguntas)
+  for (const a of maisVendidos) {
+    try { a.perguntas = perguntasDoTexto(await lerPerguntas(a.link_perguntas)) } catch (e) { a.perguntas_erro = e.message.slice(0, 200) }
+    await dormir(2000)
+  }
+  return anuncios
+}
+
+// Vocabulario e atributos saem de todos os brutos da pasta da categoria, pra espionagem em lotes
+// somar em vez de sobrescrever. Anuncio repetido entre produtos conta uma vez.
+export function recalcularArquivos(pasta, { minimo = 4 } = {}) {
+  const brutos = existsSync(pasta) ? readdirSync(pasta).filter(f => /^_raw-concorrentes-.+\.json$/.test(f)).sort() : []
+  if (!brutos.length) throw new Error(`nenhum _raw-concorrentes-*.json em ${pasta}`)
+  const porId = new Map()
+  for (const f of brutos) for (const a of JSON.parse(readFileSync(join(pasta, f), 'utf8')).anuncios || []) if (a.titulo && !a.erro) porId.set(a.id || a.url, a)
+  const anuncios = [...porId.values()]
+  const voc = vocabulario(anuncios.map(a => a.titulo))
+  const atr = atributosConsensuais(anuncios, minimo)
+  writeFileSync(join(pasta, 'vocabulario.txt'), textoDoVocabulario(voc))
+  writeFileSync(join(pasta, 'atributos.json'), JSON.stringify(atr, null, 2) + '\n')
+  return { anuncios: anuncios.length, palavras: voc.length, atributos: Object.keys(atr).length }
+}
+
+export function acharProduto(lista, nome) {
+  const alvo = String(nome).trim().toLowerCase()
+  const p = lista.find(x => x.nome === nome) || lista.find(x => String(x.nome).trim().toLowerCase() === alvo)
+  if (!p) throw new Error(`"${nome}" nao esta na pesquisa. Produtos que estao: ${lista.map(x => x.nome).join('; ')}`)
+  return p
+}
+
+const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+if (ehCli) {
+  let browser = null
+  try {
+    const a = argumentos(process.argv.slice(2))
+    const bruto = join(RAIZ, 'fornecedores', a.fornecedor, `_raw-pesquisa-${a.categoria}.json`)
+    if (!existsSync(bruto)) throw new Error(`nao existe ${bruto}. Rode antes a /pesquisar-tendencia nessa categoria.`)
+    const produto = acharProduto(JSON.parse(readFileSync(bruto, 'utf8')), a.produto)
+    const itens = escolherTopo(produto, a.n)
+    if (!itens.length) throw new Error(`a pesquisa de "${produto.nome}" nao tem anuncio com codigo pra abrir. Rode a pesquisa de novo com outro termo.`)
+    const token = await tokenMl()
+    browser = await conectar()
+    const ctx = browser.contexts()[0] || (await browser.newContext())
+    const page = await ctx.newPage()
+    const abrir = async url => {
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 })
+      await page.waitForTimeout(2500)
+      if (/login|registration/i.test(page.url())) throw new Error('a pagina pediu login: a sessao do Chrome dedicado caiu')
+    }
+    const anuncios = await espionar({
+      itens,
+      perguntas: a.perguntas,
+      get: caminho => mlGet(caminho, { token }),
+      lerAnuncio: async url => {
+        await abrir(url)
+        // a descricao so carrega quando rola ate ela
+        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+        await page.waitForTimeout(1500)
+        return page.evaluate(lerPagina)
+      },
+      lerPerguntas: async url => { await abrir(url); return page.evaluate(() => document.body.innerText) },
+      log: m => console.error(m),
+    })
+    await page.close().catch(() => {})
+    const slug = slugDe(produto.nome)
+    const hoje = new Date().toISOString().slice(0, 10)
+    const pasta = join(RAIZ, 'fornecedores', a.fornecedor, 'concorrentes', a.categoria)
+    mkdirSync(pasta, { recursive: true })
+    writeFileSync(join(pasta, `_raw-concorrentes-${slug}.json`), JSON.stringify({ produto: produto.nome, categoria: a.categoria, em: hoje, termo: produto.termo, anuncios }, null, 2) + '\n')
+    const r = recalcularArquivos(pasta)
+    gravarEtapaDaCategoria({ fornecedor: a.fornecedor, categoria: a.categoria, etapa: 'espionagem', dados: { status: 'ok', em: hoje, produtos_analisados: [slug], arquivos: [`fornecedores/${a.fornecedor}/concorrentes/${a.categoria}/`] }, acrescentar: ['produtos_analisados'] })
+    const lidos = anuncios.filter(x => !x.erro)
+    console.log(`${lidos.length} de ${anuncios.length} anuncios lidos; ${anuncios.filter(x => x.perguntas).length} com perguntas; campeoes (mais de 1000 vendidos): ${lidos.filter(x => (x.vendidos ?? 0) > 1000).length}`)
+    console.log(`categoria: ${r.anuncios} anuncios no vocabulario, ${r.atributos} atributos preenchidos em 4 ou mais`)
+    console.log(`fornecedores/${a.fornecedor}/concorrentes/${a.categoria}/_raw-concorrentes-${slug}.json`)
+  } catch (e) {
+    console.error(e.message)
+    process.exitCode = 1
+  } finally {
+    if (browser) await browser.close().catch(() => {})
+  }
+}

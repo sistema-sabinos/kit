@@ -86,6 +86,21 @@ Faltou na conta: [o que não veio nos dados]
 
 Com planilha de vendas por produto e a precificação do Modo 1, listar o que vende bem mas deixa pouco ou nada, e o que deixa muito mas vende pouco. Uma tabela, ordenada por lucro total no período, com a coluna "o que fazer": subir preço, trocar de canal, cortar frete grátis, parar de vender.
 
+## Regras contábeis que valem pra todo negócio
+
+Aprendidas em fechamento de loja de marketplace, e valem em qualquer ramo:
+
+1. **Campo em branco trava a conta.** Custo, taxa ou imposto que não se sabe
+   entra como pendência com nome, nunca como zero: zero vira lucro que não
+   existe.
+2. **Mês em curso não fecha.** Fechamento só depois do último dia, com o
+   extrato completo. Antes disso é prévia, e leva a palavra "prévia" no título.
+3. **Caixa separado de operação.** Aporte do dono, empréstimo e retirada não
+   entram no resultado do mês; ficam numa linha própria, abaixo dele.
+4. **Custo tem vigência e nunca se edita.** Custo de produto, comissão ou frete
+   que mudou ganha linha nova com data de início; a antiga fica, porque as
+   vendas de antes foram feitas com ela.
+
 ## Regras
 
 - Percentual usado na conta sempre acompanhado da fonte e da data

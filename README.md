@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 3.5 (2026-09-22)
+Versão 3.6 (2026-09-24)
 
 Um sistema de trabalho com IA pro seu negócio, rodando dentro do VS Code com o Claude Code.
 
@@ -47,6 +47,8 @@ Todo o passo a passo de leigo está no [COMECE-AQUI.md](COMECE-AQUI.md): respond
 - `/atualizar-kit`, traz uma versão nova do SabinOS (do GitHub ou de um zip) sem tocar nos seus projetos
 
 Dentro de cada projeto criado, outro conjunto de comandos entra em ação (`/iniciar`, `/conectar`, `/mapear`, `/atualizar`, `/checar` e mais), explicado no `AGENTS.md` daquele projeto.
+
+Quem vende em marketplace ganha, se quiser, o pacote `/mercado-livre`: do "posso vender esse produto?" ao anúncio publicado e à conta auditada, sem custo (a única parte paga é gerar imagem por IA, opcional e sempre avisada antes de rodar). O `/setup` oferece quando suas respostas falam em marketplace.
 
 O kit também funciona com o Codex (CLI da OpenAI, login pela sua conta ChatGPT), e a estrutura de skills que ele monta segue o padrão aberto que outros agentes leem, como o Hermes Agent. O guia avançado em `docs/roadmap-avancado.md` explica as rotas.
 
