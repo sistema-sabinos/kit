@@ -13,6 +13,7 @@
     "find-skills": { "depende": [], "caminhos": [".claude/skills/find-skills/"] },
     "otimizar-pc": { "depende": [], "caminhos": [".claude/skills/otimizar-pc/"] },
     "trafego": { "depende": ["nucleo"], "caminhos": [".claude/skills/trafego/"] },
+    "agendar": { "depende": ["nucleo"], "caminhos": [".claude/skills/agendar/"] },
     "mercado-livre": { "depende": ["nucleo"], "caminhos": [".claude/skills/mercado-livre/",
       ".claude/skills/pode-vender/",
       ".claude/skills/analisar-catalogo/",

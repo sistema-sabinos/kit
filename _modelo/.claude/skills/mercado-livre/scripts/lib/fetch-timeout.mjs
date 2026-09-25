@@ -11,11 +11,14 @@
 
 export const TIMEOUT_PADRAO_MS = 30_000;
 
-// Tira a query da URL antes de logar: token e chave viajam ali.
-function alvo(url) {
+// Tira a query da URL antes de logar: token e chave viajam ali. O Telegram leva o token
+// no caminho (/bot<token>/), então esse pedaço também sai mascarado, só no host do
+// Telegram: outro endereço com "bot" no começo (botsite.com, /bots/list) sai intacto.
+export function alvo(url) {
   const s = String(url);
   const i = s.indexOf("?");
-  return i === -1 ? s : s.slice(0, i);
+  const semQuery = i === -1 ? s : s.slice(0, i);
+  return semQuery.replace(/(api\.telegram\.org\/bot)[^/]+/, "$1***");
 }
 
 function erroTimeout(url, ms) {

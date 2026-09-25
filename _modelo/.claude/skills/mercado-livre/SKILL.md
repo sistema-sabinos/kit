@@ -23,6 +23,8 @@ a conta sem o "pode ir" da pessoa naquele momento.
 - `_contexto/empresa.md` e `_contexto/preferencias.md`
 - `_contexto/vereditos-legais.md`, escrito pela `/pode-vender`
 - `referencias/contratos.md`, os arquivos que passam de uma etapa pra outra
+- `referencias/navegador.md`, os cuidados com o Chrome dedicado: ler antes de
+  clicar ou navegar
 - O Chrome dedicado e a conta do Mercado Livre autorizada (seção "Primeira vez")
 
 Caminhos que começam em `referencias/` e `scripts/` são relativos à pasta desta
@@ -184,7 +186,7 @@ perto de publicar sem bloqueio e propor continuar ele.
   fornecedor, Chrome fechado) grava em `status.json` em `bloqueios`; avisar e
   seguir pra outro produto se houver.
 - Paralelismo: copies de anúncios diferentes rodam em paralelo, espionagens
-  também. O `ml-designer` é sequencial por produto.
+  também. Rodar `abrir-chrome.mjs` antes de despachar, pra não abrir dois Chromes. O `ml-designer` é sequencial por produto.
 - Fim de ciclo: ao publicar, acrescentar uma linha curta em
   `_contexto/estrategia.md` e lembrar: processo fechou, próximo produto vale
   conversa nova.

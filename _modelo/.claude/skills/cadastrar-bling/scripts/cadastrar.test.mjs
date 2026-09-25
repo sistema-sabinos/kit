@@ -1,7 +1,7 @@
 // Testes do cadastro no Bling. Nada vai pra rede: o req falso grava cada chamada e responde por roteiro.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { lerCsv, textoParaHtml, prefixoDoSku, proximoNumero, dimensoesDe, montarPayload, separar, resumo, proximoSkuLivre, enviar, jaCadastrado, possiveisDuplicados, argumentos } from './cadastrar.mjs'
+import { lerCsv, textoParaHtml, prefixoDoSku, proximoNumero, dimensoesDe, montarPayload, separar, resumo, proximoSkuLivre, enviar, jaCadastrado, possiveisDuplicados, argumentos, montarLote, resumoLote, enviarLote, conferirNoBling, resumoEnvioLote } from './cadastrar.mjs'
 
 const copy = { titulo: 'Suspiro Tradicional 1 kg Doce Pra Festa', descricao: 'Linha 1\nLinha 2 & <3>', precos: { ml_classico: 54.9, ml_premium: 59.9 }, gtin: '7890000000000', ncm: '1905.90.90', ficha: { Marca: 'Sem marca' } }
 const linha = { status: 'OK', categoria: 'doces', produto: 'Suspiro Tradicional 1 kg', ean: '7890000000000', custo: '30.00', peso_g: '1050', dimensoes_cm: '30x20x10' }
@@ -196,4 +196,163 @@ test('jaCadastrado recusa pelo bloco erp ou pelo status, e deixa passar anuncio 
   assert.match(jaCadastrado('kit', { erp: { id: 555 } }, {}), /ja foi cadastrado no Bling com id 555/)
   assert.match(jaCadastrado('kit', null, { etapas: { cadastro: { status: 'ok', bling_id: 9 } } }), /id 9; pra refazer/)
   assert.equal(jaCadastrado('kit', { slug: 'kit', canais: [] }, { etapas: {} }), null)
+})
+
+test('argumentos: --montar-lote e --enviar-lote separam por virgula e cortam espaco e vazio', () => {
+  assert.deepEqual(argumentos(['--montar-lote', 'a,b, c']), { acao: 'montar-lote', slugs: ['a', 'b', 'c'] })
+  assert.deepEqual(argumentos(['--enviar-lote', 'x,,y']), { acao: 'enviar-lote', slugs: ['x', 'y'] })
+})
+
+test('montarLote monta cada slug na ordem e nao derruba o lote quando um da erro', async () => {
+  const montar = async slug => {
+    if (slug === 'ruim') throw new Error('sem copy.json: rode a /montar-anuncio antes')
+    const { payload, pendencias } = montarPayload({ copy, decisao, linha, config, categoriaId: 123, modalidade: 'classico' })
+    return { payload, pendencias, dup: slug === 'dup' ? [{ id: 1, codigo: 'X', nome: 'Outro' }] : [] }
+  }
+  const linhas = await montarLote(['ok', 'ruim', 'dup'], { montar, config, req: async () => ({ data: [] }), apagar: () => {} })
+  assert.deepEqual(linhas.map(l => l.slug), ['ok', 'ruim', 'dup'])
+  assert.equal(linhas[0].ok, true)
+  assert.equal(linhas[0].duplicado, false)
+  assert.equal(linhas[1].ok, false)
+  assert.match(linhas[1].motivo, /sem copy\.json/)
+  assert.equal(linhas[2].ok, true)
+  assert.equal(linhas[2].duplicado, true)
+})
+
+test('resumoLote mostra uma linha por produto, o motivo de quem nao montou e o total', () => {
+  const linhas = [
+    { slug: 'a', ok: true, nome: 'Produto A', sku: 'LOJA-DOC-<proximo livre>', preco: 10, duplicado: false, pendencias: [] },
+    { slug: 'b', ok: true, nome: 'Produto B', sku: 'LOJA-DOC-<proximo livre>', preco: 20, duplicado: true, pendencias: ['GTIN vazio'] },
+    { slug: 'c', ok: false, motivo: 'sem copy.json' },
+  ]
+  const r = resumoLote(linhas)
+  assert.match(r, /a: Produto A/)
+  assert.match(r, /duplicado: nao/)
+  assert.match(r, /b: Produto B/)
+  assert.match(r, /duplicado: sim/)
+  assert.match(r, /pendencias: 1/)
+  assert.match(r, /c: nao montou \(sem copy\.json\)/)
+  assert.match(r, /Total: 3 produtos, 2 montados, 1 com erro/)
+})
+
+test('enviarLote pula quem ja esta cadastrado, envia o resto e para no primeiro erro', async () => {
+  const { payload } = montarPayload({ copy, decisao, linha, config, categoriaId: 123, modalidade: 'classico' })
+  const gravados = []
+  const carregar = slug => {
+    if (slug === 'jacadastrado') return { recusa: 'ja foi cadastrado no Bling com id 1' }
+    return { pasta: `/pipeline/${slug}`, payload }
+  }
+  let posts = 0
+  const req = async (m, c) => {
+    if (m === 'GET') return { data: [] }
+    if (m === 'POST' && c === '/produtos') {
+      posts++
+      if (posts === 2) throw new Error('o Bling recusou POST /produtos: 400 {"description":"preco invalido"}')
+      return { data: { id: 100 + posts } }
+    }
+    return null
+  }
+  const gravar = (slug, pasta, dados) => gravados.push({ slug, pasta, ...dados })
+  const resultado = await enviarLote(['ok1', 'jacadastrado', 'ruim', 'nunca-chega'], { carregar, req, gravar })
+  assert.equal(resultado.planejados, 4)
+  assert.deepEqual(resultado.jaEstavam, ['jacadastrado'])
+  assert.deepEqual(resultado.criados.map(c => c.slug), ['ok1'])
+  assert.equal(resultado.parouEm, 'ruim')
+  assert.match(resultado.erro, /preco invalido/)
+  assert.equal(gravados.length, 1)
+  assert.equal(gravados[0].slug, 'ok1')
+  assert.equal(gravados[0].pasta, '/pipeline/ok1')
+})
+
+test('enviarLote: carregar que lanca (slug sem --montar) para o lote sem perder quem ja foi criado', async () => {
+  const { payload } = montarPayload({ copy, decisao, linha, config, categoriaId: 123, modalidade: 'classico' })
+  const gravados = []
+  const postos = []
+  const carregar = slug => {
+    if (slug === 'semmontar') throw new Error('nao existe anuncios/semmontar/bling-payload.json: rode --montar antes')
+    return { pasta: `/pipeline/${slug}`, payload }
+  }
+  const req = async (m, c) => {
+    if (m === 'GET') return { data: [] }
+    if (m === 'POST' && c === '/produtos') { postos.push(c); return { data: { id: 777 } } }
+    return null
+  }
+  const gravar = (slug, pasta, dados) => gravados.push({ slug, pasta, ...dados })
+  const resultado = await enviarLote(['ok1', 'semmontar'], { carregar, req, gravar })
+  assert.equal(resultado.planejados, 2)
+  assert.deepEqual(resultado.criados.map(c => c.slug), ['ok1'])
+  assert.equal(resultado.parouEm, 'semmontar')
+  assert.match(resultado.erro, /rode --montar antes/)
+  assert.equal(gravados.length, 1)
+  assert.equal(postos.length, 1)
+})
+
+// req que cria tudo e deixa o PATCH de NCM falhar: vira pendencia comum, o lote segue.
+const reqComNcmRuim = () => {
+  let id = 200
+  return async (m, c) => {
+    if (m === 'GET') return { data: [] }
+    if (m === 'POST' && c === '/produtos') return { data: { id: ++id } }
+    if (m === 'PATCH') throw new Error('NCM invalido')
+    return null
+  }
+}
+
+test('enviarLote: pendencia comum aparece no resumo por produto e o lote segue', async () => {
+  const { payload } = montarPayload({ copy, decisao, linha, config, categoriaId: 123, modalidade: 'classico' })
+  const carregar = slug => ({ pasta: `/pipeline/${slug}`, payload: structuredClone(payload) })
+  const resultado = await enviarLote(['a', 'b'], { carregar, req: reqComNcmRuim(), gravar: () => {} })
+  assert.deepEqual(resultado.criados.map(c => c.slug), ['a', 'b'])
+  assert.equal(resultado.parouEm, null)
+  const r = resumoEnvioLote(resultado, [{ id: 201, achou: true }, { id: 202, achou: true }])
+  assert.match(r, /a: id 201, SKU LOJA-DOC-001/)
+  assert.match(r, /b: id 202, SKU LOJA-DOC-001/)
+  assert.match(r, /NCM nao aplicado.*NCM invalido/)
+  assert.doesNotMatch(r, /Parou em/)
+})
+
+test('enviarLote: aoCriar que falha (ATENCAO) para o lote nesse slug e o aviso sai no resumo', async () => {
+  const { payload } = montarPayload({ copy, decisao, linha, config, categoriaId: 123, modalidade: 'classico' })
+  const carregar = slug => ({ pasta: `/pipeline/${slug}`, payload: structuredClone(payload) })
+  const gravar = slug => { if (slug === 'b') throw new Error('disco cheio') }
+  const resultado = await enviarLote(['a', 'b', 'c'], { carregar, req: reqComNcmRuim(), gravar })
+  assert.deepEqual(resultado.criados.map(c => c.slug), ['a', 'b'])
+  assert.equal(resultado.parouEm, 'b')
+  assert.match(resultado.erro, /^ATENCAO/)
+  assert.match(resultado.erro, /disco cheio/)
+  const r = resumoEnvioLote(resultado, [{ id: 201, achou: true }, { id: 202, achou: true }])
+  assert.match(r, /Parou em: b \(ATENCAO: o produto foi criado no Bling \(id 202/)
+  assert.match(r, /b: id 202, SKU LOJA-DOC-001/)
+})
+
+test('montarLote apaga o bling-payload.json velho de quem nao montou', async () => {
+  const montar = async slug => {
+    if (slug === 'ruim') throw new Error('auditoria nao aprovada')
+    const { payload, pendencias } = montarPayload({ copy, decisao, linha, config, categoriaId: 123, modalidade: 'classico' })
+    return { payload, pendencias, dup: [] }
+  }
+  const apagados = []
+  await montarLote(['ok', 'ruim'], { montar, config, req: async () => ({ data: [] }), apagar: slug => apagados.push(slug) })
+  assert.deepEqual(apagados, ['ruim'])
+})
+
+test('conferirNoBling confere cada id e aponta o que nao achou', async () => {
+  const req = async (m, c) => {
+    if (c === '/produtos/1') return { data: { id: 1 } }
+    if (c === '/produtos/2') throw new Error('404')
+    return { data: null }
+  }
+  const r = await conferirNoBling(req, [1, 2, 3])
+  assert.deepEqual(r, [{ id: 1, achou: true }, { id: 2, achou: false, erro: '404' }, { id: 3, achou: false }])
+})
+
+test('resumoEnvioLote mostra os numeros e onde parou', () => {
+  const resultado = { planejados: 4, criados: [{ slug: 'a', id: 1, sku: 'X' }], jaEstavam: ['b'], parouEm: 'c', erro: 'preco invalido' }
+  const conferidos = [{ id: 1, achou: true }]
+  const r = resumoEnvioLote(resultado, conferidos)
+  assert.match(r, /Planejados:\s+4/)
+  assert.match(r, /Criados agora:\s+1/)
+  assert.match(r, /Ja estavam:\s+1/)
+  assert.match(r, /Conferidos no Bling: 1\/1/)
+  assert.match(r, /Parou em: c \(preco invalido\)/)
 })

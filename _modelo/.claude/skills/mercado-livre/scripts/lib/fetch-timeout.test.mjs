@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { fetchComTimeout, ehTimeout } from './fetch-timeout.mjs';
+import { fetchComTimeout, ehTimeout, alvo } from './fetch-timeout.mjs';
 
 // Sobe um servidor local com o comportamento pedido e devolve a URL + o desligar.
 async function servidor(handler) {
@@ -68,6 +68,34 @@ test('sinal do chamador continua valendo junto com o timeout', async () => {
       (e) => { assert.notEqual(e.code, 'TIMEOUT'); return true; },
     );
   } finally { await s.fechar(); }
+});
+
+// A mensagem de erro vai pro terminal e pro livro de execuções: a query, onde viaja
+// token e chave, sai fora.
+test('timeout não vaza o token que vai na query', async () => {
+  const s = await servidor(() => { /* nunca responde */ });
+  try {
+    await assert.rejects(
+      () => fetchComTimeout(`${s.url}dados?token=exemplo-SEGREDO`, {}, { timeoutMs: 200 }),
+      (e) => {
+        assert.ok(e.message.length > 0, 'mensagem veio vazia');
+        assert.ok(e.message.endsWith(`em ${s.url}dados`), e.message);
+        assert.ok(!e.message.includes('SEGREDO'), `token vazou: ${e.message}`);
+        return true;
+      },
+    );
+  } finally { await s.fechar(); }
+});
+
+// Token do Telegram viaja no CAMINHO (/bot<token>/), não na query. A máscara vale só no
+// host do Telegram: outro endereço que começa com "bot" sai intacto no log.
+test('máscara do /bot<token>/ só no host do Telegram', () => {
+  const tg = alvo('https://api.telegram.org/botexemplo-123:SEGREDO/sendMessage?chat_id=1');
+  assert.ok(tg.length > 0, 'saída veio vazia');
+  assert.equal(tg, 'https://api.telegram.org/bot***/sendMessage');
+  assert.ok(!tg.includes('SEGREDO'), `token vazou: ${tg}`);
+  assert.equal(alvo('https://botsite.com/a'), 'https://botsite.com/a');
+  assert.equal(alvo('https://exemplo.com/bots/list'), 'https://exemplo.com/bots/list');
 });
 
 test('ehTimeout não confunde erro comum com timeout', () => {

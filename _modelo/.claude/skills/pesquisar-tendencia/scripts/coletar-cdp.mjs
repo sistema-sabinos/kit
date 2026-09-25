@@ -15,13 +15,14 @@
 // A rota /products/<id>/items NAO foi confirmada: sem token o api.mercadolibre.com devolveu 403,
 // e nao achei pagina de doc oficial pra ela; conferir na fumaca do plano D. Se o Mercado Livre
 // mudar a pagina, extrairCards e o clique do "Seguinte" sao o que precisa de ajuste.
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
 import { conectar } from '../../mercado-livre/scripts/lib/chrome.mjs'
 import { tokenMl } from '../../mercado-livre/scripts/lib/tokens.mjs'
 import { mlGet } from '../../mercado-livre/scripts/lib/ml-api.mjs'
+import { gravarJson, dataLocal } from '../../mercado-livre/scripts/lib/pipeline.mjs'
 import { processar } from './pesquisar.mjs'
 
 export function argumentos(argv) {
@@ -37,7 +38,7 @@ export function argumentos(argv) {
     if (!Number.isInteger(n) || n < 1) throw new Error(`--${nome} precisa ser um numero inteiro maior que zero`)
     return n
   }
-  return { fornecedor, categoria, maxItens: inteiro('max-itens', 120), maxPaginas: inteiro('max-paginas', 2), semProcessar: argv.includes('--sem-processar') }
+  return { fornecedor, categoria, maxItens: inteiro('max-itens', 120), maxPaginas: inteiro('max-paginas', 2), semProcessar: argv.includes('--sem-processar'), retomar: argv.includes('--retomar') }
 }
 
 // A entrada e escrita pelo agente; erro aqui aponta a linha, em vez de estourar no meio da coleta.
@@ -158,7 +159,9 @@ export async function consultarBuybox(idDoCatalogo, get) {
 }
 
 // Falha de um produto vira erro na linha dele e a coleta segue: um termo ruim nao derruba a rodada.
-export async function coletar({ produtos, buscar, get, dormir = ms => new Promise(r => setTimeout(r, ms)), log = () => {} }) {
+// `salvar` roda logo apos cada item terminar (antes do sono entre produtos), pra quem cair no
+// meio da coleta perder no maximo o produto que estava em andamento, nunca o que ja terminou.
+export async function coletar({ produtos, buscar, get, dormir = ms => new Promise(r => setTimeout(r, ms)), log = () => {}, salvar = () => {}, hoje = dataLocal() }) {
   const saida = []
   for (const p of produtos) {
     const catalogo = await consultarCatalogo(p.termo, get)
@@ -166,7 +169,9 @@ export async function coletar({ produtos, buscar, get, dormir = ms => new Promis
     let busca
     try { busca = await buscar(p.termo) } catch (e) { busca = { total: 0, itens: [], url: urlDaBusca(p.termo), erro: `falha ao abrir a busca: ${e.message}`.slice(0, 200) } }
     log(`${p.nome}: ${busca.total} anuncios${busca.erro ? `, ${busca.erro}` : ''}`)
-    saida.push({ ...p, catalogo, buybox, busca })
+    const item = { ...p, catalogo, buybox, busca, coletado_em: hoje }
+    saida.push(item)
+    await salvar(item)
     await dormir(2000 + Math.floor(Math.random() * 1500))
   }
   return saida
@@ -181,27 +186,45 @@ export function mesclarBruto(existente, novos) {
   return [...saida, ...novos.filter(p => !jaTinha.has(p.nome))]
 }
 
+// Pro --retomar: so pula o produto que ja esta no bruto com `coletado_em` de hoje E que deu
+// certo (sem `busca.erro`). De outro dia, nunca coletado, ou coletado hoje mas com erro, entra
+// na lista de novo: erro de hoje merece nova tentativa, nao e "ja feito".
+export function oQueFalta(existente, produtos, hoje) {
+  const nomesDeHoje = new Set(existente.filter(p => p.coletado_em === hoje && !p.busca?.erro).map(p => p.nome))
+  const aColetar = produtos.filter(p => !nomesDeHoje.has(p.nome))
+  return { aColetar, puladas: produtos.length - aColetar.length }
+}
+
 const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
 if (ehCli) {
   let browser = null
   try {
     const a = argumentos(process.argv.slice(2))
     const pasta = join(RAIZ, 'fornecedores', a.fornecedor)
-    const produtos = lerEntrada(join(pasta, `pesquisa-input-${a.categoria}.json`))
+    const todosOsProdutos = lerEntrada(join(pasta, `pesquisa-input-${a.categoria}.json`))
+    const bruto = join(pasta, `_raw-pesquisa-${a.categoria}.json`)
+    const hoje = dataLocal()
+    let atual = existsSync(bruto) ? JSON.parse(readFileSync(bruto, 'utf8')) : []
+    let produtos = todosOsProdutos
+    if (a.retomar) {
+      const r = oQueFalta(atual, todosOsProdutos, hoje)
+      produtos = r.aColetar
+      if (r.puladas) console.error(`--retomar: ${r.puladas} produto(s) ja coletado(s) hoje, pulando`)
+    }
     const token = await tokenMl()
     browser = await conectar()
     const ctx = browser.contexts()[0] || (await browser.newContext())
     const page = await ctx.newPage()
-    const dados = await coletar({
+    await coletar({
       produtos,
       buscar: termo => coletarBusca(page, termo, a),
       get: caminho => mlGet(caminho, { token }),
       log: m => console.error(m),
+      hoje,
+      // grava (temporario + rename) assim que cada produto termina, pra cair no meio nao perder o que ja foi feito
+      salvar: item => { atual = mesclarBruto(atual, [item]); gravarJson(bruto, atual) },
     })
     await page.close().catch(() => {})
-    const bruto = join(pasta, `_raw-pesquisa-${a.categoria}.json`)
-    const final = existsSync(bruto) ? mesclarBruto(JSON.parse(readFileSync(bruto, 'utf8')), dados) : dados
-    writeFileSync(bruto, JSON.stringify(final, null, 2) + '\n')
     console.error(`coleta gravada em ${bruto} (custo zero)`)
     if (!a.semProcessar) {
       const r = processar({ fornecedor: a.fornecedor, categoria: a.categoria })

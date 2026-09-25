@@ -84,6 +84,35 @@ bloco `erp` em `dados/pipeline/<slug>/publicacao.json` e marca `cadastrado` no
 Id e SKU no Bling, e as pendências que o script listou, sempre com as imagens
 (sobem do computador pela tela do anúncio). Próximo passo: `/publicar-marketplace`.
 
+## Vários produtos de uma vez
+
+```bash
+node .claude/skills/cadastrar-bling/scripts/cadastrar.mjs --montar-lote slug1,slug2,slug3
+```
+
+Monta cada slug como o `--montar` já faz e mostra um resumo único: uma linha
+por produto (nome, SKU a gerar, preço, duplicado possível sim ou não,
+pendências) e o total no fim. Produto que não monta entra na lista com o
+motivo e não derruba o lote. O gate humano vale pro lote inteiro: mostrar
+esse resumo e um único "pode ir" cobre o envio de todos.
+
+O lote vai sem estoque: produto com estoque em mãos usa `--montar <slug> --estoque N` sozinho e fica fora do lote.
+No `--enviar-lote` vão só os slugs que montaram no `--montar-lote` mostrado: o que aparece como "não montou" sai da lista (o `bling-payload.json` velho dele já foi apagado).
+
+```bash
+node .claude/skills/cadastrar-bling/scripts/cadastrar.mjs --enviar-lote slug1,slug2,slug3
+```
+
+Envia na ordem, pula quem `jaCadastrado` já barra (conta como "já estava") e
+para no primeiro erro, sem seguir cadastrando no escuro (o aviso ATENCAO de
+produto criado sem o id gravado também para). No fim confere cada
+id criado nesta rodada direto no Bling e mostra planejados, criados agora,
+já estavam e conferidos no Bling, e cada produto criado com id, SKU e
+pendências. Rodar de novo depois de uma queda é
+seguro: quem já foi cadastrado é pulado. O número final tem que bater
+(planejados = criados + já estavam); se não bater, investigar antes de
+seguir.
+
 ## Regras
 
 - Nunca enviar sem o "pode ir" daquele momento. O `--montar` existe pra isso.

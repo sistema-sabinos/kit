@@ -13,6 +13,14 @@ export function slugDe(texto) {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 }
 
+// 'hoje' pelo calendario local, nao pelo UTC de Date#toISOString: 23h30 no Brasil (UTC-3) e
+// ainda o dia de hoje aqui, mas ja e amanha em UTC. Usa isso sempre que o codigo carimbar ou
+// comparar "hoje" (coletado_em, a data do bruto), senao vira e mexe do meia-noite as 21h local.
+export function dataLocal(d = new Date()) {
+  const dois = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${dois(d.getMonth() + 1)}-${dois(d.getDate())}`
+}
+
 export function lerJson(caminho, padrao = null) {
   if (!existsSync(caminho)) return padrao
   return JSON.parse(readFileSync(caminho, 'utf8'))

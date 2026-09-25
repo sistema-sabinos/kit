@@ -78,10 +78,12 @@ Pra cada um, responder sempre as mesmas 4 coisas: **o que te deixa fazer**, **é
 
 ### 7. Hermes Agent (pra quando você quiser que o sistema trabalhe sozinho)
 
+Quem só quer receber aviso de um robô no Telegram não precisa de nada deste item: o `/agendar` monta isso sem custo.
+
 - **O que te deixa fazer:** é outro programa de agente, alternativo a este aqui, que lê a mesma pasta e os mesmos comandos que já montamos. Ele traz duas coisas que este não tem: agendar tarefa pra rodar sozinha no horário marcado (o relatório da semana toda segunda, a checagem dos anúncios todo dia) e te encontrar por app de mensagem, como Telegram, Discord, Slack ou WhatsApp. Na prática: o resultado chega no seu celular sem você abrir o computador.
 - **Grátis ou pago:** o programa é grátis e de código aberto (licença MIT), mas **o uso é pago, por token**. Preste atenção nesta parte, porque ela surpreende: ele **não usa a sua assinatura do Claude**. Mesmo quem assina o Pro ou o Max precisa criar e bancar uma chave de API à parte. A assinatura tem valor fixo no mês; aqui a conta sobe conforme o uso, e um robô que dispara sozinho todo dia usa mais do que parece.
 - **Precisa de quê:** instalar o programa (um comando só, pelo site oficial hermes-agent.nousresearch.com), criar uma chave de API num provedor de modelo e colar no `.env` dele, e autorizar o canal de mensagem escolhido. No Telegram é criar um bot, uns 5 minutos. No WhatsApp é a mesma burocracia do item 6.
-- **Hoje ou depois:** **depois, e a ordem importa.** O caminho barato vem primeiro: um robô agendado pelo próprio Windows ou Mac, avisando por email, custa zero e resolve a maior parte. Quando ele já estiver rodando há semanas e o incômodo virar "preciso estar no computador pra ver o resultado", aí o canal de mensagem compensa o custo. O desenho completo está em `docs/roadmap-avancado.md` na pasta-mãe, seção "Rota Hermes Agent".
+- **Hoje ou depois:** **depois, e a ordem importa.** O caminho barato vem primeiro: um robô agendado pelo próprio Windows ou Mac, montado pelo `/agendar` e avisando no Telegram, custa zero e resolve a maior parte. Quando ele já estiver rodando há semanas e o incômodo virar "preciso estar no computador pra ver o resultado", aí o canal de mensagem compensa o custo. O desenho completo está em `docs/roadmap-avancado.md` na pasta-mãe, seção "Rota Hermes Agent".
 
 Duas coisas a dizer ao usuário quando este item entrar na conversa:
 

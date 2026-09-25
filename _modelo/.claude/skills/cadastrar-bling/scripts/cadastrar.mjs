@@ -24,7 +24,7 @@
 // do plano D. Nao deu pra confirmar se GET /produtos aceita pesquisa= por prefixo de
 // codigo (o SDK de terceiros so lista os parametros nome e codigo, nenhum dos dois
 // serve pra prefixo): conferir na fumaca do plano D.
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, rmSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
@@ -240,7 +240,9 @@ export function argumentos(argv) {
     return { acao: 'montar', slug: valor('montar'), estoque: est === null ? null : Number(est) }
   }
   if (valor('enviar')) return { acao: 'enviar', slug: valor('enviar') }
-  throw new Error('uso: --categorias | --montar <slug> [--estoque N] | --enviar <slug>')
+  if (valor('montar-lote')) return { acao: 'montar-lote', slugs: valor('montar-lote').split(',').map(s => s.trim()).filter(Boolean) }
+  if (valor('enviar-lote')) return { acao: 'enviar-lote', slugs: valor('enviar-lote').split(',').map(s => s.trim()).filter(Boolean) }
+  throw new Error('uso: --categorias | --montar <slug> [--estoque N] | --enviar <slug> | --montar-lote <slugs> | --enviar-lote <slugs>')
 }
 
 function carregarAnuncio(slug) {
@@ -250,6 +252,139 @@ function carregarAnuncio(slug) {
   const auditoria = lerJson(join(pasta, 'auditoria.json'))
   if (auditoria?.veredito !== 'aprovado') throw new Error(`o anuncio ${slug} nao tem auditoria aprovada: rode o ml-auditor antes de cadastrar`)
   return { pasta, status, auditoria, decisao: lerJson(join(pasta, 'decisao.json')), copy: lerJson(join(pasta, 'copy.json')) }
+}
+
+// Monta um slug sem imprimir nada: grava anuncios/<slug>/bling-payload.json e ja procura duplicado.
+// Usado pelo --montar (mostra o resumo inteiro) e pelo --montar-lote (uma linha por produto).
+export async function montarUm(slug, { estoque = null, config, req, log = () => {} }) {
+  const { status, auditoria, decisao, copy } = carregarAnuncio(slug)
+  const forn = join(RAIZ, 'fornecedores', status.fornecedor)
+  const bling = lerJson(join(forn, 'bling.json'), {})
+  const csv = join(forn, 'catalogo-analisado.csv')
+  const nome = decisao?.composicao?.[0]?.produto
+  const linha = existsSync(csv) && decisao?.tipo !== 'kit' ? lerCsv(readFileSync(csv, 'utf8')).find(l => l.produto === nome) : null
+  const { payload, pendencias } = montarPayload({ copy, decisao: { ...decisao, categoria: status.categoria }, linha, config, categoriaId: bling.categorias?.[status.categoria], modalidade: auditoria.modalidade_escolhida || 'classico', estoque, cnpj: bling.cnpj })
+  gravarJson(join(RAIZ, 'anuncios', slug, 'bling-payload.json'), payload)
+  const dup = await possiveisDuplicados(req, { nome: payload.nome, gtin: payload.gtin, log })
+  return { payload, pendencias, dup }
+}
+
+const apagarPayload = slug => rmSync(join(RAIZ, 'anuncios', slug, 'bling-payload.json'), { force: true })
+
+// --montar-lote: monta cada slug na ordem dada. Produto que nao monta entra com o motivo e nao
+// derruba o lote (o proximo slug continua normalmente). O bling-payload.json velho de quem nao
+// montou e apagado, pro --enviar-lote nao mandar uma versao antiga por engano.
+export async function montarLote(slugs, { montar = montarUm, config, req, log = () => {}, apagar = apagarPayload }) {
+  const linhas = []
+  for (const slug of slugs) {
+    try {
+      const { payload, pendencias, dup } = await montar(slug, { config, req, log })
+      linhas.push({ slug, ok: true, nome: payload.nome, sku: `${payload._skuPrefix}<proximo livre>`, preco: payload.preco, duplicado: dup.length > 0, pendencias })
+    } catch (e) {
+      apagar(slug)
+      linhas.push({ slug, ok: false, motivo: e.message })
+    }
+  }
+  return linhas
+}
+
+export function resumoLote(linhas) {
+  const brl = n => `R$ ${Number(n).toFixed(2).replace('.', ',')}`
+  const L = linhas.map(l => l.ok
+    ? `${l.slug}: ${l.nome} | SKU ${l.sku} | ${brl(l.preco)} | duplicado: ${l.duplicado ? 'sim' : 'nao'}${l.pendencias.length ? ` | pendencias: ${l.pendencias.length}` : ''}`
+    : `${l.slug}: nao montou (${l.motivo})`)
+  const ok = linhas.filter(l => l.ok).length
+  L.push('', `Total: ${linhas.length} produtos, ${ok} montados, ${linhas.length - ok} com erro`)
+  return L.join('\n')
+}
+
+// O que o --enviar-lote precisa de um slug: recusa se jaCadastrado ja barra, senao o payload gravado.
+function carregarParaEnviar(slug) {
+  const { pasta, status } = carregarAnuncio(slug)
+  const recusa = jaCadastrado(slug, lerJson(join(pasta, 'publicacao.json')), status)
+  if (recusa) return { recusa }
+  const payload = lerJson(join(RAIZ, 'anuncios', slug, 'bling-payload.json'))
+  if (!payload) throw new Error(`nao existe anuncios/${slug}/bling-payload.json: rode --montar antes`)
+  return { pasta, payload }
+}
+
+// Grava publicacao.json (bloco erp) e status.json depois de criar o produto, no mesmo formato do --enviar de um so.
+function gravarEnvio(slug, pasta, { id, sku, em }) {
+  const pub = lerJson(join(pasta, 'publicacao.json'), { slug, canais: [] })
+  gravarJson(join(pasta, 'publicacao.json'), { ...pub, erp: { sistema: 'bling', id, sku, em } })
+  const st = lerJson(join(pasta, 'status.json'))
+  st.etapas = { ...st.etapas, cadastro: { status: 'ok', em, bling_id: id, sku } }
+  st.etapa_atual = 'cadastrado'
+  gravarJson(join(pasta, 'status.json'), st)
+}
+
+// --enviar-lote: em ordem, pula quem jaCadastrado ja barra (conta como "ja estava"), envia o resto
+// pelo mesmo enviar() do --enviar de um so, e para no primeiro erro (nao segue cadastrando no escuro).
+// carregar() que lanca (status.json ausente, auditoria nao aprovada, bling-payload.json faltando)
+// conta como o mesmo tipo de parada: o resultado ate ali (com quem ja foi criado) ainda volta,
+// pra quem chama sempre poder mostrar o resumo e conferir no Bling o que foi criado nesta rodada.
+// Pendencia que comeca com ATENCAO (o produto foi criado mas o id nao foi gravado, e reenviar
+// duplicaria) tambem para o lote: o slug entra em criados e em parouEm, com o aviso como motivo.
+export async function enviarLote(slugs, { carregar = carregarParaEnviar, req, log = () => {}, gravar = gravarEnvio }) {
+  const resultado = { planejados: slugs.length, criados: [], jaEstavam: [], parouEm: null, erro: null }
+  for (const slug of slugs) {
+    let c
+    try {
+      c = carregar(slug)
+    } catch (e) {
+      resultado.parouEm = slug
+      resultado.erro = e.message
+      break
+    }
+    if (c.recusa) { resultado.jaEstavam.push(slug); continue }
+    const hoje = new Date().toISOString().slice(0, 10)
+    const aoCriar = ({ id, sku }) => gravar(slug, c.pasta, { id, sku, em: hoje })
+    try {
+      const r = await enviar(c.payload, { req, log, aoCriar })
+      resultado.criados.push({ slug, id: r.id, sku: r.sku, pendencias: r.pendencias })
+      const atencao = r.pendencias.find(p => p.startsWith('ATENCAO'))
+      if (atencao) {
+        resultado.parouEm = slug
+        resultado.erro = atencao
+        break
+      }
+    } catch (e) {
+      resultado.parouEm = slug
+      resultado.erro = e.message
+      break
+    }
+  }
+  return resultado
+}
+
+// Confere no Bling que cada id criado nesta rodada existe de verdade (GET /produtos/{id}).
+export async function conferirNoBling(req, ids) {
+  const resultado = []
+  for (const id of ids) {
+    try {
+      const r = await req('GET', `/produtos/${id}`)
+      resultado.push({ id, achou: !!r?.data?.id })
+    } catch (e) {
+      resultado.push({ id, achou: false, erro: e.message })
+    }
+  }
+  return resultado
+}
+
+export function resumoEnvioLote(resultado, conferidos) {
+  const achou = conferidos.filter(c => c.achou).length
+  const L = [
+    `Planejados:          ${resultado.planejados}`,
+    `Criados agora:       ${resultado.criados.length}`,
+    `Ja estavam:          ${resultado.jaEstavam.length}`,
+    `Conferidos no Bling: ${achou}/${conferidos.length}`,
+  ]
+  // cada produto criado com as pendencias dele, igual o --enviar de um so mostra
+  for (const c of resultado.criados) L.push('', `${c.slug}: id ${c.id}, SKU ${c.sku}`, ...(c.pendencias || []).map(p => `- ${p}`))
+  if (resultado.parouEm) L.push('', `Parou em: ${resultado.parouEm} (${resultado.erro})`)
+  const naoAchados = conferidos.filter(c => !c.achou)
+  if (naoAchados.length) L.push('', 'Nao achado no Bling ao conferir:', ...naoAchados.map(c => `- id ${c.id}`))
+  return L.join('\n')
 }
 
 const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
@@ -262,22 +397,21 @@ if (ehCli) {
       const r = await clienteBling()('GET', '/categorias/produtos', { query: { limite: 100 } })
       for (const c of r?.data || []) console.log(`${c.id}\t${c.descricao}`)
     } else if (a.acao === 'montar') {
-      const { status, auditoria, decisao, copy } = carregarAnuncio(a.slug)
-      const forn = join(RAIZ, 'fornecedores', status.fornecedor)
-      const bling = lerJson(join(forn, 'bling.json'), {})
-      const csv = join(forn, 'catalogo-analisado.csv')
-      const nome = decisao?.composicao?.[0]?.produto
-      const linha = existsSync(csv) && decisao?.tipo !== 'kit' ? lerCsv(readFileSync(csv, 'utf8')).find(l => l.produto === nome) : null
-      const { payload, pendencias } = montarPayload({ copy, decisao: { ...decisao, categoria: status.categoria }, linha, config, categoriaId: bling.categorias?.[status.categoria], modalidade: auditoria.modalidade_escolhida || 'classico', estoque: a.estoque, cnpj: bling.cnpj })
-      gravarJson(join(RAIZ, 'anuncios', a.slug, 'bling-payload.json'), payload)
+      const { payload, pendencias, dup } = await montarUm(a.slug, { estoque: a.estoque, config, req: clienteBling(), log: m => console.error(m) })
       console.log(resumo(payload, pendencias))
-      const dup = await possiveisDuplicados(clienteBling(), { nome: payload.nome, gtin: payload.gtin, log: m => console.error(m) })
       if (dup.length) {
         console.log('\nPossivel duplicado no Bling:')
         for (const d of dup) console.log(`- id ${d.id}, SKU ${d.codigo || '(sem)'}: ${d.nome}`)
         console.log('confirmar com a pessoa antes de enviar')
       }
       console.log(`\npayload em anuncios/${a.slug}/bling-payload.json. Nada foi enviado.`)
+    } else if (a.acao === 'montar-lote') {
+      const linhas = await montarLote(a.slugs, { config, req: clienteBling(), log: m => console.error(m) })
+      console.log(resumoLote(linhas))
+    } else if (a.acao === 'enviar-lote') {
+      const resultado = await enviarLote(a.slugs, { req: clienteBling(), log: m => console.error(m) })
+      const conferidos = await conferirNoBling(clienteBling(), resultado.criados.map(c => c.id))
+      console.log(resumoEnvioLote(resultado, conferidos))
     } else {
       const { pasta, status } = carregarAnuncio(a.slug)
       const recusa = jaCadastrado(a.slug, lerJson(join(pasta, 'publicacao.json')), status)

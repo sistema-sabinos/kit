@@ -26,6 +26,8 @@ e a margem bruta na mediana. Sai um `.md` pra ler e um `.csv` que a
 - `_contexto/vereditos-legais.md`: produto sem veredito válido não entra
 - `.env` com a autorização do Mercado Livre (`/conectar`, seção Mercado Livre e Bling)
 - Chrome dedicado aberto e logado (`node .claude/skills/mercado-livre/scripts/abrir-chrome.mjs`)
+- `.claude/skills/mercado-livre/referencias/navegador.md`, os cuidados com o
+  Chrome dedicado: ler antes de clicar ou navegar
 - `.claude/skills/mercado-livre/referencias/contratos.md`, seção 0: as colunas que saem daqui
 
 ## Fluxo
@@ -76,7 +78,10 @@ coleta. O segundo abre a busca de cada termo (até duas páginas, 120 anúncios)
 consulta o catálogo unificado pela API, grava
 `_raw-pesquisa-<categoria>.json` e no fim gera o `.md`, o `.csv` e a etapa
 `pesquisa` em `dados/pipeline/_categorias/<f>-<categoria>.json`. Leva mais de
-10 segundos por produto, de propósito: navegação com ritmo de gente.
+10 segundos por produto, de propósito: navegação com ritmo de gente. A cada
+produto coletado o arquivo bruto já é salvo: caiu no meio (energia, fechou o
+Chrome), rodar de novo com `--retomar`, que pula quem já foi coletado hoje e
+avisa quantos pulou.
 
 Pra só refazer os arquivos a partir da coleta que já existe:
 `node .claude/skills/pesquisar-tendencia/scripts/pesquisar.mjs --fornecedor <f> --categoria <c>`.

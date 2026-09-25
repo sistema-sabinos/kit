@@ -358,9 +358,9 @@ Windows no git, e o backup passa a ver o mesmo arquivo como dois.
   visual), ou mantido neutro se a pessoa não tinha nada ainda.
 - `dados/README.md` (e a pasta `dados/` que ele documenta).
 - As skills base do dia a dia: `iniciar`, `conectar`, `mapear`, `atualizar`,
-  `syncar`, `bastao`, `checar`, `atualizar-sabinos` e `find-skills` (o `AGENTS.md` do projeto e o `/mapear`
+  `syncar`, `bastao`, `checar`, `agendar`, `atualizar-sabinos` e `find-skills` (o `AGENTS.md` do projeto e o `/mapear`
   mandam rodar a `find-skills` lá dentro, então ela vai junto, senão a instrução
-  aponta pra uma skill que não existe na pasta). Além dessas, copiar
+  aponta pra uma skill que não existe na pasta). Das skills copiadas, nunca copiar arquivo terminado em `.test.mjs` (a `trafego` e a `agendar` trazem testes que só servem no kit). Além dessas, copiar
   `assistir-video` e `transcribe` só se o
   negócio lidar com vídeo, áudio ou redes sociais (pergunta 4, 6, 8 ou 15
   indicando isso), `otimizar-pc` só se o computador da pessoa for Windows, e a

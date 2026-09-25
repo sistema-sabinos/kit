@@ -5,14 +5,15 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { argumentos, idDoAnuncio, escolherTopo, urlParaAbrir, vendidosDe, vendedorDe, perguntasDoTexto, palavrasDoTitulo, vocabulario, textoDoVocabulario, atributosConsensuais, fotosUnicas, avaliacoesDe, espionar, recalcularArquivos, acharProduto } from './espionar.mjs'
+import { argumentos, idDoAnuncio, escolherTopo, urlParaAbrir, vendidosDe, vendedorDe, perguntasDoTexto, palavrasDoTitulo, vocabulario, textoDoVocabulario, atributosConsensuais, fotosUnicas, avaliacoesDe, espionar, recalcularArquivos, acharProduto, mesclarAnuncios, oQueFaltaEspionar, pontoDePartida } from './espionar.mjs'
 
 const L = 'MLB'
 const id = n => L + n
 
 test('argumentos: produto obrigatorio, padroes 5 e 3', () => {
-  assert.deepEqual(argumentos(['--fornecedor', 'f', '--categoria', 'c', '--produto', 'Bala de Coco']), { fornecedor: 'f', categoria: 'c', produto: 'Bala de Coco', n: 5, perguntas: 3 })
+  assert.deepEqual(argumentos(['--fornecedor', 'f', '--categoria', 'c', '--produto', 'Bala de Coco']), { fornecedor: 'f', categoria: 'c', produto: 'Bala de Coco', n: 5, perguntas: 3, retomar: false })
   assert.equal(argumentos(['--fornecedor', 'f', '--categoria', 'c', '--produto', 'x', '--perguntas', '0']).perguntas, 0)
+  assert.equal(argumentos(['--fornecedor', 'f', '--categoria', 'c', '--produto', 'x', '--retomar']).retomar, true)
   assert.throws(() => argumentos(['--fornecedor', 'f', '--categoria', 'c']), /--produto/)
 })
 
@@ -156,6 +157,156 @@ test('recalcularArquivos soma os brutos da pasta e grava os dois arquivos do con
   } finally {
     rmSync(pasta, { recursive: true, force: true })
   }
+})
+
+test('mesclarAnuncios troca pelo id, mantem a ordem e poe o novo no fim', () => {
+  const existentes = [{ id: id('3000001'), titulo: 'A' }, { id: id('3000002'), titulo: 'B' }]
+  const r = mesclarAnuncios(existentes, [{ id: id('3000002'), titulo: 'B novo' }, { id: id('3000003'), titulo: 'C' }])
+  assert.deepEqual(r.map(a => `${a.id}:${a.titulo}`), [`${id('3000001')}:A`, `${id('3000002')}:B novo`, `${id('3000003')}:C`])
+  assert.deepEqual(mesclarAnuncios([], [{ id: id('9000009') }]), [{ id: id('9000009') }])
+})
+
+test('oQueFaltaEspionar pula quem foi coletado hoje, recomeca se o carimbo e de outro dia, falta ou o arquivo nao existe', () => {
+  const itens = [{ id: id('4000001') }, { id: id('4000002') }]
+  const arquivoDeHoje = { em: '2026-09-25', anuncios: [{ id: id('4000001'), titulo: 'ja lido', coletado_em: '2026-09-25' }] }
+  const r = oQueFaltaEspionar(arquivoDeHoje, itens, '2026-09-25')
+  assert.deepEqual(r.aColetar.map(i => i.id), [id('4000002')])
+  assert.equal(r.puladas, 1)
+
+  // o `em` do arquivo diz hoje, mas o anuncio e de ontem (ou de arquivo antigo, sem carimbo)
+  const arquivoMisturado = { em: '2026-09-25', anuncios: [{ id: id('4000001'), titulo: 'velho', coletado_em: '2026-09-24' }, { id: id('4000002'), titulo: 'sem carimbo' }] }
+  const rm = oQueFaltaEspionar(arquivoMisturado, itens, '2026-09-25')
+  assert.deepEqual(rm.aColetar.map(i => i.id), itens.map(i => i.id))
+  assert.equal(rm.puladas, 0)
+
+  const arquivoDeOntem = { em: '2026-09-24', anuncios: [{ id: id('4000001'), coletado_em: '2026-09-24' }] }
+  const r2 = oQueFaltaEspionar(arquivoDeOntem, itens, '2026-09-25')
+  assert.deepEqual(r2.aColetar.map(i => i.id), itens.map(i => i.id))
+  assert.equal(r2.puladas, 0)
+
+  const r3 = oQueFaltaEspionar(null, itens, '2026-09-25')
+  assert.equal(r3.puladas, 0)
+})
+
+test('oQueFaltaEspionar recoleta quem deu erro hoje, mesmo estando no arquivo de hoje (erro nao e "ja feito")', () => {
+  const itens = [{ id: id('4000001') }, { id: id('4000002') }]
+  const arquivo = { em: '2026-09-25', anuncios: [{ id: id('4000001'), titulo: 'ok', coletado_em: '2026-09-25' }, { id: id('4000002'), erro: 'pagina: timeout', coletado_em: '2026-09-25' }] }
+  const r = oQueFaltaEspionar(arquivo, itens, '2026-09-25')
+  assert.deepEqual(r.aColetar.map(i => i.id), [id('4000002')])
+  assert.equal(r.puladas, 1)
+})
+
+test('espionar grava cada anuncio assim que termina de ler a pagina', async () => {
+  const itens = [{ id: id('5000001'), url: 'https://exemplo.com/1', preco: 10 }, { id: id('5000002'), url: 'https://exemplo.com/2', preco: 12 }]
+  const paginas = {
+    'https://exemplo.com/1': { titulo: 'A', subtitulo: '+10 vendidos', fotos: [], atributos: {}, link_perguntas: null },
+    'https://exemplo.com/2': { titulo: 'B', subtitulo: '+10 vendidos', fotos: [], atributos: {}, link_perguntas: null },
+  }
+  const lerAnuncio = async url => paginas[url]
+  const lerPerguntas = async () => ''
+  const get = async () => ({ paging: { total: 0 }, reviews: [] })
+  const salvos = []
+  const r = await espionar({ itens, lerAnuncio, lerPerguntas, get, perguntas: 0, dormir: async () => {}, salvar: a => salvos.push(a.id) })
+  assert.deepEqual(salvos, [id('5000001'), id('5000002')])
+  assert.equal(r.length, 2)
+})
+
+// Retomada: a fase de perguntas olha o conjunto inteiro (os de hoje ja gravados mais os novos),
+// senao uma queda depois das paginas deixa o dia sem pergunta nenhuma, calado.
+const HOJE = '2026-09-25'
+const semRede = { get: async () => ({ paging: { total: 0 }, reviews: [] }), dormir: async () => {}, hoje: HOJE }
+
+test('espionar retomado sem anuncio novo ainda busca as perguntas dos que faltam', async () => {
+  const jaColetados = [
+    { id: id('6000001'), titulo: 'A', vendidos: 50, link_perguntas: 'qa' },
+    { id: id('6000002'), titulo: 'B', vendidos: 5000, link_perguntas: 'qb' },
+    { id: id('6000003'), titulo: 'C', vendidos: 900, link_perguntas: 'qc', perguntas: 'ja lidas', perguntas_em: HOJE },
+  ]
+  const abertas = []
+  const lerPerguntas = async link => { abertas.push(link); return ABA }
+  const r = await espionar({ ...semRede, itens: [], jaColetados, lerAnuncio: async () => { throw new Error('nao devia abrir') }, lerPerguntas, perguntas: 2 })
+  assert.equal(r.length, 0)
+  assert.ok(abertas.length > 0, 'a fase de perguntas rodou')
+  assert.deepEqual(abertas, ['qb'])
+  assert.match(jaColetados[1].perguntas, /glúten/)
+  assert.equal(jaColetados[1].perguntas_em, HOJE)
+  assert.equal(jaColetados[2].perguntas, 'ja lidas')
+})
+
+test('espionar: pergunta de outro dia (ou sem data) conta como faltando e e lida de novo', async () => {
+  const jaColetados = [
+    { id: id('6100001'), titulo: 'A', vendidos: 900, link_perguntas: 'qa', perguntas: 'de ontem', perguntas_em: '2026-09-24' },
+    { id: id('6100002'), titulo: 'B', vendidos: 800, link_perguntas: 'qb', perguntas: 'sem data' },
+  ]
+  const abertas = []
+  await espionar({ ...semRede, itens: [], jaColetados, lerAnuncio: async () => ({}), lerPerguntas: async link => { abertas.push(link); return ABA }, perguntas: 2 })
+  assert.deepEqual(abertas, ['qa', 'qb'])
+  assert.match(jaColetados[0].perguntas, /glúten/)
+})
+
+// Cenario da revisao: bruto completo de 09-24; a rodada de 09-25 sem --retomar cai depois do A;
+// o --retomar tem que recoletar B e C (e as perguntas deles), nao aceitar os dados de ontem como de hoje.
+test('retomar depois de queda no dia seguinte recoleta os anuncios de ontem e as perguntas deles', async () => {
+  const itens = ['7100001', '7100002', '7100003'].map((n, i) => ({ id: id(n), url: `https://exemplo.com/${i}`, preco: 10 }))
+  const velho = (it, t) => ({ id: it.id, titulo: t, vendidos: 1000, link_perguntas: 'q' + t, perguntas: 'de ontem', perguntas_em: '2026-09-24', coletado_em: '2026-09-24' })
+  const arquivo0924 = { em: '2026-09-24', anuncios: [velho(itens[0], 'A'), velho(itens[1], 'B'), velho(itens[2], 'C')] }
+  const paginas = Object.fromEntries(itens.map((it, i) => [it.url, { titulo: 'ABC'[i] + ' novo', subtitulo: '+5 mil vendidos', fotos: [], atributos: {}, link_perguntas: 'q' + 'ABC'[i] }]))
+  // rodada sem --retomar que cai logo depois de gravar o A
+  const p1 = pontoDePartida(arquivo0924, itens, HOJE, false)
+  let atual = p1.atual
+  await assert.rejects(espionar({ ...semRede, itens: p1.itens, jaColetados: p1.jaColetados, lerAnuncio: async url => paginas[url], lerPerguntas: async () => ABA, perguntas: 3, salvar: a => { atual = mesclarAnuncios(atual, [a]); throw new Error('queda') } }), /queda/)
+  const arquivoDaQueda = { em: HOJE, anuncios: atual }
+  // retomada
+  const p2 = pontoDePartida(arquivoDaQueda, itens, HOJE, true)
+  assert.deepEqual(p2.itens.map(i => i.id), [itens[1].id, itens[2].id])
+  assert.equal(p2.puladas, 1)
+  const abertas = []
+  const novos = await espionar({ ...semRede, itens: p2.itens, jaColetados: p2.jaColetados, lerAnuncio: async url => paginas[url], lerPerguntas: async link => { abertas.push(link); return ABA }, perguntas: 3 })
+  assert.deepEqual(novos.map(a => a.titulo), ['B novo', 'C novo'])
+  assert.ok(novos.every(a => a.coletado_em === HOJE))
+  assert.deepEqual([...abertas].sort(), ['qA', 'qB', 'qC'])
+})
+
+test('espionar retomado depois de ler 3 de 5 escolhe os que mais vendem pelo conjunto inteiro', async () => {
+  const jaColetados = [
+    { id: id('7000001'), titulo: 'A', vendidos: 5000, link_perguntas: 'qa' },
+    { id: id('7000002'), titulo: 'B', vendidos: 3000, link_perguntas: 'qb' },
+    { id: id('7000003'), titulo: 'C', vendidos: 10, link_perguntas: 'qc' },
+  ]
+  const itens = [{ id: id('7000004'), url: 'https://exemplo.com/4', preco: 10 }, { id: id('7000005'), url: 'https://exemplo.com/5', preco: 10 }]
+  const paginas = {
+    'https://exemplo.com/4': { titulo: 'D', subtitulo: '+100 vendidos', fotos: [], atributos: {}, link_perguntas: 'qd' },
+    'https://exemplo.com/5': { titulo: 'E', subtitulo: '+4 mil vendidos', fotos: [], atributos: {}, link_perguntas: 'qe' },
+  }
+  const abertas = []
+  const lerPerguntas = async link => { abertas.push(link); return ABA }
+  const r = await espionar({ ...semRede, itens, jaColetados, lerAnuncio: async url => paginas[url], lerPerguntas, perguntas: 3 })
+  assert.equal(r.length, 2)
+  assert.deepEqual(abertas, ['qa', 'qe', 'qb'])
+})
+
+test('pontoDePartida sem --retomar coleta tudo mas parte do bruto que ja existe, pra nao encolher', () => {
+  const itens = [{ id: id('8000001') }, { id: id('8000002') }]
+  const antigo = { em: '2026-09-20', anuncios: [{ id: id('8000001'), titulo: 'velho' }, { id: id('8000009'), titulo: 'fora do topo' }] }
+  const r = pontoDePartida(antigo, itens, '2026-09-25', false)
+  assert.deepEqual(r.itens.map(i => i.id), itens.map(i => i.id))
+  assert.deepEqual(r.atual.map(a => a.id), [id('8000001'), id('8000009')])
+  assert.deepEqual(r.jaColetados, [])
+  assert.equal(r.puladas, 0)
+  // primeiro salvamento: troca pelo id, os outros continuam
+  const depois = mesclarAnuncios(r.atual, [{ id: id('8000001'), titulo: 'novo' }])
+  assert.deepEqual(depois.map(a => a.titulo), ['novo', 'fora do topo'])
+  assert.deepEqual(pontoDePartida(null, itens, '2026-09-25', false).atual, [])
+})
+
+test('pontoDePartida com --retomar pula os coletados hoje, entrega so eles pra fase de perguntas e nao encolhe o bruto', () => {
+  const itens = [{ id: id('8100001') }, { id: id('8100002') }]
+  const arquivo = { em: '2026-09-25', anuncios: [{ id: id('8100001'), titulo: 'ok', coletado_em: '2026-09-25' }, { id: id('8100002'), titulo: 'de ontem', coletado_em: '2026-09-24' }] }
+  const r = pontoDePartida(arquivo, itens, '2026-09-25', true)
+  assert.deepEqual(r.itens.map(i => i.id), [id('8100002')])
+  assert.deepEqual(r.atual.map(a => a.id), [id('8100001'), id('8100002')])
+  assert.deepEqual(r.jaColetados.map(a => a.id), [id('8100001')])
+  assert.equal(r.puladas, 1)
 })
 
 test('acharProduto aceita diferenca de caixa e lista os nomes quando nao acha', () => {

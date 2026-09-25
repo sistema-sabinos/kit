@@ -26,6 +26,8 @@ roda é o agente `ml-espiao`.
 
 - `fornecedores/<f>/_raw-pesquisa-<categoria>.json` (a `/pesquisar-tendencia` rodou nessa categoria)
 - Chrome dedicado aberto e logado, e a autorização do Mercado Livre no `.env`
+- `.claude/skills/mercado-livre/referencias/navegador.md`, os cuidados com o
+  Chrome dedicado: ler antes de clicar ou navegar
 - `.claude/skills/mercado-livre/referencias/contratos.md`, seção 0
 
 ## Fluxo
@@ -54,6 +56,8 @@ categoria e marca a etapa `espionagem` no arquivo da categoria.
 
 Anúncio que falha vira erro na linha dele e o resto segue. A página pediu
 login: a sessão do Chrome dedicado caiu, entrar de novo e rodar outra vez.
+A cada anúncio lido o arquivo bruto já é salvo: caiu no meio, rodar de novo
+com `--retomar`, que pula quem já foi coletado hoje e avisa quantos pulou.
 
 ### 3. Analisar
 

@@ -30,7 +30,7 @@ Você tem um processo de 4+ etapas que roda toda semana, já mapeado em skills q
 
 ### O que é
 
-Uma tarefa que executa no horário marcado sem ninguém pedir: toda segunda de manhã um relatório da semana, todo dia às 13h uma checagem dos anúncios, todo dia um backup. No Windows, via Task Scheduler; no Mac/Linux, via cron. O script roda, grava o resultado e avisa num canal (email ou app de mensagem via bot).
+Uma tarefa que executa no horário marcado sem ninguém pedir: toda segunda de manhã um relatório da semana, todo dia às 13h uma checagem dos anúncios, todo dia um backup. No Windows, via Task Scheduler; no Mac/Linux, via cron. O script roda, grava o resultado e avisa no Telegram. Dentro de um projeto, o `/agendar` monta tudo isso.
 
 ### Por que existe
 
@@ -50,9 +50,9 @@ Existe uma checagem ou relatório que você já faz manualmente há semanas, do 
 ### Por onde começar
 
 1. Escolher UMA checagem que você já faz na mão
-2. Pedir pro Claude escrever o script que a faz e grava o resultado em `relatorios/`
-3. Rodar manualmente por uma semana
-4. Só então agendar, com o aviso por email/bot pra quando houver ação a tomar
+2. Pedir o robô pelo `/agendar`: ele escreve a receita e testa na sua frente
+3. Rodar o teste na mão (`--teste`) por alguns dias pra ver se o aviso faz sentido
+4. Só então deixar o `/agendar` cadastrar no agendador do computador
 
 ## Automação agendada, onde estão as instruções técnicas
 
@@ -226,8 +226,8 @@ Você já tem um robô agendado de leitura rodando há semanas pelo agendador do
 sistema, ele funciona, e o incômodo virou "preciso estar no computador pra ver o
 resultado". Aí um canal de mensagem compensa. Antes disso, não.
 
-Ordem segura: primeiro o agendador do sistema operacional com aviso por email
-(custo zero, descrito acima), e só depois o Hermes, se o canal de mensagem virar
+Ordem segura: primeiro o agendador do sistema operacional com aviso no Telegram,
+pelo `/agendar` (custo zero, descrito acima), e só depois o Hermes, se o canal de mensagem virar
 necessidade de verdade. E nunca com o agente respondendo mensagem de terceiro
 sozinho: a regra do gate humano não muda de lugar porque o programa mudou.
 

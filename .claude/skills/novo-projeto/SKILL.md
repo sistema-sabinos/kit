@@ -296,9 +296,9 @@ perguntar outro nome antes de seguir.
   comando; sem isso a frase vira lacuna e sai um chute).
 - `dados/README.md` (e a pasta `dados/` que ele documenta).
 - As skills base do dia a dia: `iniciar`, `conectar`, `mapear`, `atualizar`,
-  `syncar`, `bastao`, `checar`, `atualizar-sabinos` e `find-skills` (o `AGENTS.md` do projeto e o `/mapear`
+  `syncar`, `bastao`, `checar`, `agendar`, `atualizar-sabinos` e `find-skills` (o `AGENTS.md` do projeto e o `/mapear`
   mandam rodar a `find-skills` lá dentro, então ela vai junto, senão a
-  instrução aponta pra uma skill que não existe na pasta). Além dessas, copiar
+  instrução aponta pra uma skill que não existe na pasta). Das skills copiadas, nunca copiar arquivo terminado em `.test.mjs` (a `trafego` e a `agendar` trazem testes que só servem no kit). Além dessas, copiar
   `assistir-video` e `transcribe` só
   se o projeto lidar com vídeo, áudio ou redes sociais (respostas do Passo
   1), `otimizar-pc` só se o computador da pessoa for Windows (já sabido do

@@ -6,14 +6,15 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { argumentos, lerEntrada, urlDaBusca, chaveDoAnuncio, deduplicar, coletarBusca, coletar, mesclarBruto } from './coletar-cdp.mjs'
+import { argumentos, lerEntrada, urlDaBusca, chaveDoAnuncio, deduplicar, coletarBusca, coletar, mesclarBruto, oQueFalta } from './coletar-cdp.mjs'
 
 const L = 'MLB'
 const id = n => L + n
 
 test('argumentos: padroes, numeros e erro claro', () => {
-  assert.deepEqual(argumentos(['--fornecedor', 'f', '--categoria', 'c']), { fornecedor: 'f', categoria: 'c', maxItens: 120, maxPaginas: 2, semProcessar: false })
+  assert.deepEqual(argumentos(['--fornecedor', 'f', '--categoria', 'c']), { fornecedor: 'f', categoria: 'c', maxItens: 120, maxPaginas: 2, semProcessar: false, retomar: false })
   assert.equal(argumentos(['--fornecedor', 'f', '--categoria', 'c', '--max-itens', '30', '--sem-processar']).maxItens, 30)
+  assert.equal(argumentos(['--fornecedor', 'f', '--categoria', 'c', '--retomar']).retomar, true)
   assert.throws(() => argumentos(['--categoria', 'c']), /--fornecedor/)
   assert.throws(() => argumentos(['--fornecedor', 'f', '--categoria', 'c', '--max-paginas', 'duas']), /inteiro/)
 })
@@ -120,4 +121,42 @@ test('mesclarBruto troca pelo nome, mantem a ordem e poe o novo no fim', () => {
   const r = mesclarBruto(existente, [{ nome: 'B', busca: { total: 40 } }, { nome: 'D', busca: { total: 3 } }])
   assert.deepEqual(r.map(p => `${p.nome}${p.busca.total}`), ['A5', 'B40', 'C9', 'D3'])
   assert.deepEqual(mesclarBruto([], [{ nome: 'X' }]), [{ nome: 'X' }])
+})
+
+test('oQueFalta pula so quem foi coletado hoje; de outro dia ou nunca, recoleta', () => {
+  const existente = [
+    { nome: 'A', coletado_em: '2026-09-25' },
+    { nome: 'B', coletado_em: '2026-09-24' },
+  ]
+  const produtos = [{ nome: 'A', termo: 'a' }, { nome: 'B', termo: 'b' }, { nome: 'C', termo: 'c' }]
+  const r = oQueFalta(existente, produtos, '2026-09-25')
+  assert.deepEqual(r.aColetar.map(p => p.nome), ['B', 'C'])
+  assert.equal(r.puladas, 1)
+  assert.deepEqual(oQueFalta([], produtos, '2026-09-25').aColetar, produtos)
+})
+
+test('oQueFalta recoleta quem deu erro hoje, mesmo estando no bruto de hoje (erro nao e "ja feito")', () => {
+  const existente = [
+    { nome: 'A', coletado_em: '2026-09-25', busca: { total: 5 } },
+    { nome: 'B', coletado_em: '2026-09-25', busca: { total: 0, erro: 'falha ao abrir a busca: timeout' } },
+  ]
+  const produtos = [{ nome: 'A', termo: 'a' }, { nome: 'B', termo: 'b' }]
+  const r = oQueFalta(existente, produtos, '2026-09-25')
+  assert.deepEqual(r.aColetar.map(p => p.nome), ['B'])
+  assert.equal(r.puladas, 1)
+})
+
+test('coletar grava cada item assim que termina (retomavel) e marca coletado_em', async () => {
+  const salvos = []
+  const get = async () => ({ paging: { total: 0 }, results: [] })
+  const buscar = async termo => ({ total: 0, itens: [], url: urlDaBusca(termo) })
+  const r = await coletar({
+    produtos: [{ nome: 'A', custo: 1, termo: 'a' }, { nome: 'B', custo: 1, termo: 'b' }],
+    buscar, get, dormir: async () => {},
+    hoje: '2026-09-25',
+    salvar: item => salvos.push(item.nome),
+  })
+  assert.deepEqual(salvos, ['A', 'B'])
+  assert.equal(r[0].coletado_em, '2026-09-25')
+  assert.equal(r[1].coletado_em, '2026-09-25')
 })

@@ -47,6 +47,12 @@ de `_contexto/mercado-livre.md`.
   "vou usar o `catalogo-2026-09.pdf`, pode ser?". Ler com a ferramenta de
   leitura; PDF que não vira texto (só imagem) pede à pessoa a planilha ou um
   export do fornecedor.
+- **Planilha ou CSV do fornecedor**: preço sem `R$`, sem separador de milhar
+  e com a vírgula decimal convertida pra ponto; espaço invisível (U+00A0,
+  non-breaking space) trocado por espaço comum. No fim do preparo, conferir:
+  quantidade de linhas da fonte igual à da tabela gerada, e soma dos preços
+  da fonte igual à soma da tabela gerada; diferença aponta linha perdida ou
+  número mal lido.
 - **Site ou API do fornecedor**: só com credencial no `.env` do projeto (a
   pessoa diz o nome da variável). Sem credencial, parar e dizer o que falta.
   Nunca raspar site que exige login sem a pessoa pedir.
