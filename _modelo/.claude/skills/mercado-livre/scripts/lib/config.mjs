@@ -8,7 +8,8 @@ import { RAIZ } from './raiz.mjs'
 export const CAMINHO_CONFIG = join(RAIZ, '_contexto', 'mercado-livre.md')
 export const NUMERICOS = new Set(['imposto_pct', 'margem_minima_rs', 'margem_minima_pct', 'margem_minima_kit_rs', 'limite_gasto_usd'])
 export const LISTAS = new Set(['fornecedores'])
-export const PADROES = { erp: 'nenhum', limite_gasto_usd: 2, loja_oficial: 'nao', full: 'nao', guia_de_marca: 'marca/design-guide.md' }
+export const PADROES = { erp: 'nenhum', modelo: 'estoque', limite_gasto_usd: 2, loja_oficial: 'nao', full: 'nao', guia_de_marca: 'marca/design-guide.md' }
+export const VALORES = { modelo: ['dropshipping', 'estoque'] }
 
 export function lerConfiguracao(texto) {
   const m = String(texto).match(/```mercado-livre\s*\n([\s\S]*?)```/)
@@ -27,7 +28,12 @@ export function lerConfiguracao(texto) {
       const n = Number(valor.replace('%', '').replace(',', '.').trim())
       if (!Number.isFinite(n)) throw new Error(`o campo ${chave} precisa ser numero, e veio "${valor}"`)
       c[chave] = n
-    } else c[chave] = valor
+    } else {
+      if (VALORES[chave] && !VALORES[chave].includes(valor.toLowerCase())) {
+        throw new Error(`o campo ${chave} aceita ${VALORES[chave].join(' ou ')}, e veio "${valor}"`)
+      }
+      c[chave] = VALORES[chave] ? valor.toLowerCase() : valor
+    }
   }
   return c
 }

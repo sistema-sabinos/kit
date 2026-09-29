@@ -15,6 +15,7 @@ fornecedores/<nome>/
   concorrentes/<categoria>/<produto>.md, vocabulario.txt, atributos.json
   concorrentes/<categoria>/_raw-concorrentes-<produto>.json   coleta bruta da espionagem
   bling.json                       CNPJ do fornecedor e categorias no Bling (só com Bling)
+  fornecedor.md                    estado, prazo de despacho, nota e fotos (só no drop), da /comecar-a-vender
   plano-anuncios-<categoria>.md    saída da /decidir-anuncio
 anuncios/<slug>/
   copy.md                          copy pra gente ler

@@ -5,6 +5,8 @@ nomes das linhas. O `/mercado-livre` monta ele por entrevista na primeira vez.
 
 ```mercado-livre
 erp: nenhum
+modelo: estoque
+estado:
 imposto_pct:
 imposto_informado_em:
 imposto_fonte:
@@ -23,7 +25,9 @@ limite_gasto_usd: 2
 ```
 
 - `erp`: `bling` ou `nenhum`. Com `nenhum`, o cadastro é feito direto no painel do Mercado Livre, pelo checklist
-- `imposto_pct`: a alíquota do mês sobre a venda, em porcentagem (exemplo: 6). Vem da contadora e muda; `imposto_informado_em` guarda a data (exemplo: 2026-09-01) e `imposto_fonte` quem informou (exemplo: contadora)
+- `modelo`: `dropshipping` (o fornecedor despacha em seu nome, sem estoque seu) ou `estoque` (você guarda e despacha). Muda o que a auditoria confere
+- `estado`: a sigla do estado do seu CNPJ (exemplo: SP). No dropshipping, o fornecedor precisa ser do mesmo estado
+- `imposto_pct`: a alíquota do mês sobre a venda, em porcentagem (exemplo: 6). Vem da contadora e muda; `imposto_informado_em` guarda a data (exemplo: 2026-09-01) e `imposto_fonte` quem informou (exemplo: contadora). MEI põe 0, porque o imposto dele é o valor fixo do DAS, pago todo mês, e escreve em `imposto_fonte`: MEI, imposto fixo no DAS
 - `margem_minima_rs` e `margem_minima_pct`: o piso de lucro por venda, em reais e em porcentagem, abaixo do qual o anúncio novo reprova (exemplo: 8 e 15). `margem_minima_kit_rs` é o piso pra kit (exemplo: 12)
 - `sku_prefixo`: as letras que abrem o código dos seus produtos no ERP (exemplo: LOJA, que vira `LOJA-DOC-001`)
 - `deposito_id` e `canal_id`: só com ERP. O id do depósito onde entra o estoque e o id do canal do Mercado Livre dentro do ERP

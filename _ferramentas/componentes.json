@@ -15,6 +15,7 @@
     "trafego": { "depende": ["nucleo"], "caminhos": [".claude/skills/trafego/"] },
     "agendar": { "depende": ["nucleo"], "caminhos": [".claude/skills/agendar/"] },
     "mercado-livre": { "depende": ["nucleo"], "caminhos": [".claude/skills/mercado-livre/",
+      ".claude/skills/comecar-a-vender/",
       ".claude/skills/pode-vender/",
       ".claude/skills/analisar-catalogo/",
       ".claude/skills/decidir-anuncio/",

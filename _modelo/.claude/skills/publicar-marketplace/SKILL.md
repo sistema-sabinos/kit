@@ -70,6 +70,11 @@ caminho pra resolver. Produto incompleto não se publica.
 
 Sem ERP: conferir `copy.json` sem `[PREENCHER]` e `imagens.json` aprovado.
 
+Dropshipping: estoque anunciado igual ou menor que o que o fornecedor
+confirmou; prazo de disponibilidade vazio quando o fornecedor despacha no
+mesmo dia (o prazo extra derruba a exposição do anúncio); `fornecedor.md` com
+`prazo_despacho` e `emite_nota: sim`. Faltou: bloqueio no topo do checklist.
+
 ### 2. Montar o anúncio
 
 Título e capa vêm prontos do `copy.json` e do `imagens.json`; aqui não se
@@ -89,7 +94,7 @@ depois de publicar, senão o anúncio fica no preço cheio.
 > Gerado por /publicar-marketplace em <AAAA-MM-DD>. Rota: <Bling | painel do Mercado Livre>
 
 ## Bloqueios antes de clicar
-- [ ] <estoque zero, validade não confirmada, ressalva do veredito pendente, foto crua faltando...>
+- [ ] <estoque zero, validade não confirmada, ressalva do veredito pendente, foto crua faltando, fornecedor de drop sem prazo de despacho por escrito...>
 
 ## Cabeçalho
 - Produto: <nome> (SKU <sku>) · Estoque: <N> no depósito <nome ou id>

@@ -5,7 +5,7 @@ import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { lerConfiguracao, carregarConfiguracao, exigir, PADROES } from './config.mjs'
+import { lerConfiguracao, carregarConfiguracao, exigir, PADROES, VALORES } from './config.mjs'
 
 const AQUI = dirname(fileURLToPath(import.meta.url))
 const EXEMPLO = join(AQUI, '..', '..', 'referencias', 'configuracao-exemplo.md')
@@ -71,4 +71,43 @@ test('valor zero em campo numerico nao vira ausente', () => {
   const c = lerConfiguracao('```mercado-livre\nmargem_minima_rs: 0\n```\n')
   assert.equal(c.margem_minima_rs, 0)
   assert.equal(exigir(c, ['margem_minima_rs']), c)
+})
+
+test('sem o campo modelo, quem ja vende continua como estoque', () => {
+  const c = lerConfiguracao('```mercado-livre\nerp: bling\n```\n')
+  assert.equal(c.modelo, 'estoque')
+  assert.equal(PADROES.modelo, 'estoque')
+})
+
+test('modelo dropshipping e estado entram', () => {
+  const c = lerConfiguracao('```mercado-livre\nmodelo: dropshipping\nestado: SP\n```\n')
+  assert.equal(c.modelo, 'dropshipping')
+  assert.equal(c.estado, 'SP')
+})
+
+test('modelo com erro de digitacao da erro com os valores aceitos, nunca cai no padrao', () => {
+  assert.throws(() => lerConfiguracao('```mercado-livre\nmodelo: drop\n```\n'), /dropshipping.*estoque/)
+  assert.deepEqual(VALORES.modelo, ['dropshipping', 'estoque'])
+})
+
+test('os valores de modelo que a trilha manda gravar sao os que a configuracao aceita', () => {
+  const trilha = join(AQUI, '..', '..', '..', 'comecar-a-vender', 'referencias', 'trilha-modelo.md')
+  const linha = readFileSync(trilha, 'utf8').split('\n').find(l => l.startsWith('`modelo`:'))
+  assert.ok(linha, 'a trilha-modelo.md nao documenta o campo modelo')
+  const valores = linha.slice('`modelo`:'.length).split('(')[0].split(' ou ')
+    .map(v => v.replace(/[.,`]/g, '').trim()).filter(Boolean)
+  assert.ok(valores.length > 0, 'nao achei nenhum valor na linha do modelo')
+  for (const v of valores) assert.ok(VALORES.modelo.includes(v), `a trilha cita "${v}", que a configuracao recusa`)
+})
+
+test('MEI com imposto 0 conta como preenchido', () => {
+  const c = lerConfiguracao('```mercado-livre\nimposto_pct: 0\n```\n')
+  assert.equal(c.imposto_pct, 0)
+  assert.doesNotThrow(() => exigir(c, ['imposto_pct']))
+})
+
+test('bloco em CRLF le o modelo sem o CR grudado', () => {
+  const c = lerConfiguracao('```mercado-livre\r\nmodelo: dropshipping\r\nestado: SP\r\n```\r\n')
+  assert.equal(c.modelo, 'dropshipping')
+  assert.equal(c.estado, 'SP')
 })

@@ -18,7 +18,7 @@ description: >
    `node .claude/skills/agendar/scripts/agendador.mjs atrasados`: robô que parou de
    rodar entra no mesmo campo
 3. Verificar se `_contexto/empresa.md` está configurado (sem `<!-- NOT CONFIGURED -->`)
-4. Ler `_contexto/empresa.md`, `_contexto/preferencias.md`, `_contexto/estrategia.md` e `_contexto/agora.md`
+4. Ler `_contexto/empresa.md`, `_contexto/preferencias.md`, `_contexto/estrategia.md`, `_contexto/agora.md` e `_contexto/trilha.md` (se existir)
 5. Ler `AGENTS.md` (o conteúdo real do projeto; `CLAUDE.md` é só o ponteiro `@AGENTS.md`) e, se existir, `tarefas.md`
 6. Apresentar o resumo e perguntar o que o usuário quer fazer
 7. Se `_contexto/empresa.md` estiver com NOT CONFIGURED, esta pasta é o `_modelo/` ou uma cópia crua: avisar que o lugar de começar é a pasta-mãe, com `primeiro projeto`
@@ -38,6 +38,7 @@ de cada robô parado desde quando. Depois do resumo, perguntar se pode apagar o
 arquivo de avisos]
 **Negócio:** [nome e o que faz, em uma linha]
 **Foco agora:** [prioridade principal do estrategia.md]
+**Trilha:** [só aparece se `_contexto/trilha.md` existir e `etapa_atual` for menor que 10: "etapa N de 10, <nome da etapa>", e o que espera o contador se houver]
 **Onde paramos:** [do agora.md, a última coisa em andamento; omitir se vazio]
 **Pendências:** [do agora.md, até 2 itens mais relevantes; omitir se não houver]
 **Lembretes:** [preferência importante de escrita, se houver]
@@ -45,7 +46,7 @@ arquivo de avisos]
 O que você quer fazer hoje?
 ```
 
-Até 7 linhas. Não reescrever o que está nos arquivos, só o essencial pra retomar.
+Até 8 linhas. Não reescrever o que está nos arquivos, só o essencial pra retomar.
 
 ## Se não está configurado
 

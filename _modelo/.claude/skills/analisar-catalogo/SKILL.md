@@ -102,6 +102,12 @@ Observação`, e o cabeçalho:
 com ponto decimal e campo vazio onde não há dado. É esse arquivo que as outras
 skills leem.
 
+**Modelo dropshipping** (`modelo: dropshipping` em `_contexto/mercado-livre.md`):
+as fotos do produto vêm do fornecedor. Com a autorização de uso anotada em
+`fornecedores/<nome>/fornecedor.md`, copiar pra `anuncios/<slug>/fotos-cruas/`
+quando o produto virar anúncio. O estoque que conta é o que o fornecedor
+confirma, nunca um número suposto.
+
 ### 6. Resumo no chat
 
 ```

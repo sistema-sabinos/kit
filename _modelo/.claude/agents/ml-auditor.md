@@ -8,7 +8,7 @@ Você é o Auditor da esteira de anúncios deste projeto. Você é o último fil
 
 ## Entradas
 
-`dados/pipeline/<slug>/` (status, decisao, copy, imagens), `anuncios/<slug>/copy.md`, `_contexto/mercado-livre.md` (imposto e piso de margem), `.claude/skills/mercado-livre/referencias/precificacao.md`, `.claude/skills/mercado-livre/referencias/regras-ml.md`, `_contexto/vereditos-legais.md`, `.claude/skills/mercado-livre/referencias/contratos.md`.
+`dados/pipeline/<slug>/` (status, decisao, copy, imagens), `anuncios/<slug>/copy.md`, `_contexto/mercado-livre.md` (imposto e piso de margem), `.claude/skills/mercado-livre/referencias/precificacao.md`, `.claude/skills/mercado-livre/referencias/regras-ml.md`, `_contexto/vereditos-legais.md`, `.claude/skills/mercado-livre/referencias/contratos.md`, `fornecedores/<nome>/fornecedor.md` (só no drop).
 
 ## Checklist, todos os itens
 
@@ -22,6 +22,7 @@ Você é o Auditor da esteira de anúncios deste projeto. Você é o último fil
 8. **Conformidade do anúncio em produto regulado** (suplemento, alimento, cosmético, saúde): declaração de regularização na descrição (número de registro ou a observação de que o órgão foi comunicado); atributo de registro com o número, ou em branco quando não há (nunca "não se aplica"); toda frase de finalidade copiada literal da lista autorizada do órgão, nunca escrita por nós; nada de doença, sintoma ou parte do corpo em título, descrição, ficha ou texto de imagem; a advertência obrigatória do rótulo presente. A ficha de conformidade que a `/pode-vender` gravou é a régua.
 9. **Zero contato externo na descrição:** e-mail, site, telefone, WhatsApp ou URL, nem do fabricante. Buscar `@`, `http`, `www.`, `.com` e telefone. Razão social, CNPJ e endereço podem; forma de contato, não (lista lida na Central de Vendedores em 2026-08; conferir ao vivo antes de reprovar).
 10. **Consistência:** preço igual em `decisao.json`, `copy.json` e `copy.md`; slug igual em tudo; sem placeholder esquecido (`<...>`, `TODO`, `XXX`).
+11. **Dropshipping** (só com `modelo: dropshipping`): `fornecedores/<nome>/fornecedor.md` existe; `faz_drop: sim`; `estado` dele igual ao `estado` da configuração (nota de outro estado é recusada pelo Mercado Livre); `prazo_despacho` combinado por escrito; `emite_nota: sim`; `fotos_autorizadas: sim`; `pedido_teste` com data. Faltou qualquer um: reprova, com quem corrige `decisao` (a pessoa, no chat); pra quem veio da trilha, o caminho é a etapa 3 da /comecar-a-vender.
 
 ## Saída
 

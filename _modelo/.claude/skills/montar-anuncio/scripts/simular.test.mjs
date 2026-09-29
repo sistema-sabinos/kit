@@ -256,3 +256,9 @@ test('lucro tira imposto e custo do "Voce recebe", e exige o imposto da configur
   assert.deepEqual(l, { imposto: 2.39, custo: 15, lucro_liquido: 7.77, margem_pct: 19.46 })
   assert.throws(() => lucro({ voceRecebe: 25.16, preco: 39.9, custo: 15 }), /imposto_pct/)
 })
+
+test('lucro com imposto 0 (MEI) calcula sem erro', () => {
+  const r = lucro({ voceRecebe: 80, preco: 100, custo: 50, impostoPct: 0 })
+  assert.equal(r.imposto, 0)
+  assert.equal(r.lucro_liquido, 30)
+})

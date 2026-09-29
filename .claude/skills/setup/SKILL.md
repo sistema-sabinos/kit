@@ -290,40 +290,45 @@ existe e pode ser instalado depois com o `/mapear`, que acha a skill em
 ### Venda em marketplace (antes de escolher as skills)
 
 Só quando a pergunta 4 ou a 6 do questionário cita marketplace, Mercado Livre,
-Shopee, Amazon ou Magalu. Perguntar na conversa, no formato de 4 partes:
+Shopee, Amazon ou Magalu, ou a pessoa diz que quer começar a vender online.
+Perguntar na conversa, no formato de 4 partes:
 
-> "Vi que você vende em marketplace. Tenho um pacote pronto pra isso: vai do
+> "Vi que você vende ou quer vender em marketplace. Tenho um pacote pronto pra isso: vai do
 > 'posso vender esse produto?' até o anúncio publicado e a conta auditada, e
 > custa zero pra usar (a única parte paga é gerar imagem por IA, opcional e
 > sempre avisada antes de rodar). Quer que eu instale?
 >
-> Pergunto porque ele é grande (onze comandos que trabalham juntos), então só
+> Pergunto porque ele é grande (doze comandos que trabalham juntos), então só
 > entra se fizer sentido pra você.
 >
 > Tipo: 'quero, vendo no Mercado Livre', 'vendo na Shopee, serve?', ou 'agora
 > não'."
+
+Quem ainda não vende ouve também: "e se você está começando do zero, o pacote
+tem uma trilha que vai da conta no gov.br ao primeiro anúncio, pelo
+dropshipping ou com produto próprio".
 
 A esteira e as ferramentas do pacote são do Mercado Livre (e do Bling, pra quem
 usa). Quem vende só em outro marketplace ouve isso numa frase: o método
 (pode vender, análise de catálogo, decisão e montagem do anúncio) serve pra
 qualquer um; pesquisa, simulador, Ads e auditoria são do Mercado Livre.
 
-Resposta positiva: copiar pro projeto as onze pastas inteiras de
-`_modelo/.claude/skills/` (`mercado-livre`, `pode-vender`, `analisar-catalogo`,
-`pesquisar-tendencia`, `espionar-concorrente`, `decidir-anuncio`,
-`montar-anuncio`, `cadastrar-bling`, `publicar-marketplace`, `mercado-ads`,
-`auditar-conta`) e os seis agentes de `_modelo/.claude/agents/` (`ml-minerador.md`,
-`ml-espiao.md`, `ml-copywriter.md`, `ml-designer.md`, `ml-auditor.md`,
-`ml-publicador.md`) pra `.claude/agents/` do projeto. Nunca copiar arquivo
-terminado em `.test.mjs` nem pasta `node_modules/`. O pacote vai inteiro ou
-não vai: as skills dividem a mesma biblioteca de scripts. Depois:
+Resposta positiva: copiar pro projeto as doze pastas inteiras de
+`_modelo/.claude/skills/` (`mercado-livre`, `comecar-a-vender`, `pode-vender`,
+`analisar-catalogo`, `pesquisar-tendencia`, `espionar-concorrente`,
+`decidir-anuncio`, `montar-anuncio`, `cadastrar-bling`, `publicar-marketplace`,
+`mercado-ads`, `auditar-conta`) e os seis agentes de `_modelo/.claude/agents/`
+(`ml-minerador.md`, `ml-espiao.md`, `ml-copywriter.md`, `ml-designer.md`,
+`ml-auditor.md`, `ml-publicador.md`) pra `.claude/agents/` do projeto. Nunca
+copiar arquivo terminado em `.test.mjs` nem pasta `node_modules/`. O pacote vai
+inteiro ou não vai: as skills dividem a mesma biblioteca de scripts. Depois:
 
 - Na seção "Estrutura de pastas" do `AGENTS.md` do projeto, uma linha:
 
     - pacote Mercado Livre: `fornecedores/`, `anuncios/`, `dados/pipeline/`, `relatorios/` e `_contexto/mercado-livre.md`, criados pela `/mercado-livre` na primeira vez
 
 - Em `_contexto/ferramentas.md`: `| pacote Mercado Livre | instalado | <AAAA-MM-DD> | sem configuração: nasce na primeira /mercado-livre |`
-- Em `tarefas.md`: "rodar `/mercado-livre` pra configurar o pacote, e o `/conectar` (seção Mercado Livre e Bling) pra ligar as contas".
+- Em `tarefas.md`: "rodar `/mercado-livre` (ele pergunta se você já vende e, se não, abre a trilha do zero), e o `/conectar` (seção Mercado Livre e Bling) pra ligar as contas".
 
 Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o pacote de
 marketplace existe e pode ser instalado depois pelo `/mapear`.

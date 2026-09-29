@@ -30,6 +30,20 @@ a conta sem o "pode ir" da pessoa naquele momento.
 Caminhos que começam em `referencias/` e `scripts/` são relativos à pasta desta
 skill; `_contexto/`, `dados/`, `fornecedores/` e `anuncios/` são da raiz do projeto.
 
+## Antes de tudo: você já vende?
+
+Se `_contexto/mercado-livre.md` não existe:
+
+- `_contexto/trilha.md` existe e o `etapa_atual` dele é menor que 8: dizer em
+  que etapa a pessoa está e oferecer continuar a trilha. Aqui não se pergunta
+  se ela já vende.
+- Sem trilha, a primeira pergunta é: "Você já vende no Mercado Livre?" (por
+  que pergunto: quem ainda não vende precisa de outras coisas antes, como MEI
+  e fornecedor; exemplos: "já vendo há um ano" / "ainda não, estou começando
+  do zero"). Já vende: segue daqui, pela configuração abaixo.
+- Não vende: chamar a `/comecar-a-vender`, que leva do zero ao primeiro
+  anúncio e volta pra cá na etapa 8.
+
 ## Primeiro de tudo: existe configuração?
 
 Se `_contexto/mercado-livre.md` não existir, rodar a entrevista antes de
@@ -45,11 +59,11 @@ Pular o que `empresa.md` já responde.
 2. **Você usa algum sistema de gestão, tipo Bling?** Por que pergunto: com ERP
    o cadastro sai por API e o anúncio nasce de lá; sem ERP você publica direto
    no painel pelo checklist. Exemplos: "uso o Bling" / "nada, faço na mão".
-3. **Qual a alíquota de imposto sobre a venda neste mês, e quem te passou?**
-   Por que pergunto: o imposto entra em toda conta de margem e muda com o mês;
-   sem ele o preço sai errado pra sempre. Exemplos: "6%, minha contadora" /
-   "não sei, vou perguntar". Sem resposta, o campo fica vazio e toda skill de
-   preço para até ele existir.
+3. **Você é MEI? Se não, qual a alíquota de imposto sobre a venda neste mês,
+   e quem te passou?** Por que pergunto: o imposto entra em toda conta de
+   margem. MEI paga um valor fixo por mês (o DAS), então a alíquota sobre a
+   venda fica 0. Exemplos: "sou MEI" / "6%, minha contadora". Sem resposta, o
+   campo fica vazio e toda skill de preço para até ele existir.
 4. **Quanto você precisa lucrar por venda, no mínimo, em reais e em
    porcentagem?** Por que pergunto: é o piso que reprova anúncio novo antes de
    gastar tempo nele. Exemplos: "R$ 8 e 15%" / "R$ 12 num kit".
@@ -63,6 +77,14 @@ Pular o que `empresa.md` já responde.
    catálogo. Exemplos: "verde, sem loja oficial, sem Full" / "conta nova".
 7. **Qual guia de marca manda nas fotos?** Por que pergunto: o agente `ml-designer` lê esse
    arquivo antes de qualquer imagem. Padrão: `marca/design-guide.md`.
+8. **Você vende pelo dropshipping (o fornecedor despacha em seu nome) ou com
+   estoque seu? E em que estado é o seu CNPJ?** Por que pergunto: no drop a
+   auditoria confere o fornecedor (mesmo estado, prazo de despacho), e a foto e
+   o estoque vêm dele. Exemplos: "drop, SP" / "estoque próprio, MG".
+   Quando for dropshipping, pra cada fornecedor criar
+   `fornecedores/<nome>/fornecedor.md` copiando
+   `.claude/skills/comecar-a-vender/referencias/fornecedor-modelo.md` e
+   preenchendo com a pessoa, porque é esse arquivo que a auditoria confere.
 
 Ao fim, gravar `_contexto/mercado-livre.md` copiando
 `referencias/configuracao-exemplo.md` e trocando os valores do bloco marcado
@@ -85,7 +107,9 @@ cada passo:
    primeira vez a pessoa faz login no Mercado Livre nessa janela, e pronto: o
    login fica salvo lá. Sem ele, pesquisa, espionagem e simulador não rodam,
    porque o Mercado Livre bloqueia navegador sem sessão.
-4. **Conta do Mercado Livre autorizada:** a pessoa cria um aplicativo no portal
+4. **Conta do Mercado Livre autorizada.** Quem veio da `/comecar-a-vender`
+   faz este item na etapa 8 da trilha, depois da conta criada na etapa 6 e
+   antes da esteira; quem já vende segue como sempre. A pessoa cria um aplicativo no portal
    de desenvolvedor do Mercado Livre (o `/conectar` guia clique a clique, e o
    que o portal pede se confere na tela, nunca de memória), cola
    `ML_CLIENT_ID`, `ML_CLIENT_SECRET` e `ML_REDIRECT_URI` (com `https`: o
