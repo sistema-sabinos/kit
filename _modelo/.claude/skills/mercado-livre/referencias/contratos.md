@@ -169,14 +169,19 @@ fornecedor ou da contadora; sem dado, `null` e pendência.
   "slug": "kit-5-suspiros",
   "formato": "1:1",
   "imagens": [
-    { "n": 1, "arquivo": "anuncios/kit-5-suspiros/imagens/01-capa.jpg", "papel": "capa", "aprovada": true },
-    { "n": 2, "arquivo": "anuncios/kit-5-suspiros/imagens/02-sabores.jpg", "papel": "infografico", "aprovada": true }
+    { "n": 1, "arquivo": "anuncios/kit-5-suspiros/imagens/01-capa.jpg", "papel": "capa", "motor": "foto", "aprovada": true },
+    { "n": 2, "arquivo": "anuncios/kit-5-suspiros/imagens/02-sabores.jpg", "papel": "infografico", "motor": "zero-ia", "aprovada": true }
   ],
   "custo_usd_total": 0,
   "aprovado_pelo_usuario": true,
   "em": "2026-09-23"
 }
 ```
+
+`motor` diz de onde veio a imagem: `foto` (recorte da foto real, sem IA),
+`codex` ou `gemini` (cenário por IA com o produto real por cima) ou `zero-ia`
+(fundo liso). Peça com texto herda o motor da foto de base. A prancha de
+aprovação (`anuncios/<slug>/imagens/prancha.html`) sai deste arquivo.
 
 As imagens ficam no computador. O envio pro anúncio é pelo painel, e o
 checklist de publicação diz a ordem.

@@ -130,7 +130,7 @@
 
 ## oferta-mercado-livre
 
-**O que é:** oferece o pacote de marketplace (onze comandos, do "posso vender isso?" ao anúncio publicado e à conta auditada) pra quem vende em marketplace.
+**O que é:** oferece o pacote de marketplace (treze comandos, do "posso vender isso?" ao anúncio publicado e à conta auditada) pra quem vende em marketplace.
 **Por quê:** quem vende no Mercado Livre refaz na mão, todo produto, pesquisa, preço, anúncio e auditoria que o pacote faz.
 **Te afeta se:** o `_contexto/empresa.md` cita marketplace, Mercado Livre, Shopee, Amazon ou Magalu, e o projeto não tem `.claude/skills/mercado-livre/`.
 **Como aplicar:** dizer em uma frase o que o pacote faz e perguntar se entra. Com o sim, refazer o plano do Passo 3 com `--componentes mercado-livre` (somado a qualquer outro componente já escolhido) e aplicar. Depois, a entrada `estrutura-mercado-livre` passa a valer.
@@ -149,3 +149,11 @@
 
 Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`), rodar `git rm -r --cached dados/chrome-perfil`, que tira do git sem apagar do disco, dizendo isso à pessoa antes.
 **Como testar:** `git check-ignore dados/chrome-perfil/x` imprime o caminho, e `anuncios/` aparece uma vez no `AGENTS.md`.
+
+## estilo-por-categoria
+
+**O que é:** o guia de marca ganha a seção "Estilo por categoria", que diz qual estilo de foto (Limpo, Colorido ou Natural) cada categoria de produto usa.
+**Por quê:** a `/gerar-imagens` lê essa seção pra escolher as cores e o clima das fotos do anúncio; sem ela, todas saem no estilo Limpo.
+**Te afeta se:** o projeto tem `.claude/skills/gerar-imagens/` e o `marca/design-guide.md` não tem a seção `## Estilo por categoria`.
+**Como aplicar:** copiar do `_modelo/marca/design-guide.md` do kit a seção `## Estilo por categoria` inteira (do título até o `---` que vem antes de `## O que NUNCA fazer`) e colar no `marca/design-guide.md` do projeto logo antes de `## O que NUNCA fazer`, sem mexer no resto do guia. Guia sem essa seção "O que NUNCA fazer": colar no fim.
+**Como testar:** `## Estilo por categoria` aparece uma vez no `marca/design-guide.md` e vem antes de `## O que NUNCA fazer`.

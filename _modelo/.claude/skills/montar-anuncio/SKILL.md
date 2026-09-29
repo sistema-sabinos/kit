@@ -15,8 +15,8 @@ description: >
 
 Pega um anúncio ou kit aprovado (`decisao.json`) e escreve tudo que o cadastro
 precisa: título, descrição, ficha, preço por modalidade, FAQ e o mapa que diz o
-que cada foto mostra. Não cria imagem: o `ml-designer` escreve o brief e a
-pessoa produz. É um anúncio por produto: um título, uma capa.
+que cada foto mostra. Não cria imagem: quem faz é o `ml-designer`, pela
+`/gerar-imagens`. É um anúncio por produto: um título, uma capa.
 
 ## Dependências
 

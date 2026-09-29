@@ -42,6 +42,15 @@
 
 ---
 
+## Estilo por categoria
+
+> Lido pela /gerar-imagens nas fotos do anúncio. Estilos de partida: Limpo,
+> Colorido e Natural (explicados na própria skill). Uma linha por categoria.
+
+- **Padrão:** Limpo
+
+---
+
 ## O que NUNCA fazer
 
 ---

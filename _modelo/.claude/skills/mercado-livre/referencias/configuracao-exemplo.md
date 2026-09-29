@@ -35,4 +35,4 @@ limite_gasto_usd: 2
 - `loja_oficial` e `full`: `sim` ou `nao`
 - `guia_de_marca`: o arquivo que manda no visual das fotos
 - `fornecedores`: os nomes curtos das pastas em `fornecedores/`, separados por vírgula (exemplo: fornecedor-exemplo)
-- `limite_gasto_usd`: acima disso, qualquer gasto de API confirma antes
+- `limite_gasto_usd`: teto de gasto por rodada de imagens: acima disso o sistema para e pede pra dividir o lote ou subir o teto

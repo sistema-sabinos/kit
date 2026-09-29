@@ -125,7 +125,8 @@ cada passo:
    o receptor (`autorizar.mjs --bling --ouvir`) liga antes de autorizar.
 
 Nada disso custa dinheiro. A única coisa paga no pacote é gerar imagem por IA,
-e ela avisa antes.
+e ela avisa antes. Sem IA paga, as imagens saem do mesmo jeito, com a foto
+real e fundo liso.
 
 ## A equipe
 
@@ -137,7 +138,7 @@ e ela avisa antes.
 | 3 | agente `ml-espiao` | roda a `/espionar-concorrente` |
 | 4 | `/decidir-anuncio` | no chat, com a pessoa: é o gate principal |
 | 5 | agente `ml-copywriter` | roda a `/montar-anuncio` |
-| 5.5 | agente `ml-designer` | brief de cada foto e, se o Gemini estiver ligado, gera com aviso de custo |
+| 5.5 | agente `ml-designer` | roda a `/gerar-imagens`: foto real, cenário pelo melhor motor que houver, prancha pra aprovar |
 | gate | agente `ml-auditor` | sempre antes do cadastro |
 | 6 e 7 | agente `ml-publicador` | roda a `/cadastrar-bling` (se tem ERP) e a `/publicar-marketplace` |
 | depois | `/auditar-conta` e `/mercado-ads` | fora da esteira, a pedido |
@@ -181,10 +182,24 @@ ler `dados/pipeline/<slug>/status.json` e continuar da etapa atual:
 1. Copy pendente: despachar `ml-copywriter`. Mostrar o recibo em 5 linhas e
    seguir (se a pessoa quiser revisar, pausar).
 2. Imagens pendentes: conferir `anuncios/<slug>/fotos-cruas/`. Vazia é
-   bloqueio: pedir as fotos e parar. Senão, despachar `ml-designer` no modo GERAR.
-3. Gate de imagens: mostrar cada imagem com o papel do slot e o custo. Reprovou
-   alguma: `ml-designer` no modo REFAZER com o comentário literal. Aprovou:
-   `ml-designer` no modo ENTREGAR.
+   bloqueio: pedir as fotos e parar. Senão, antes de despachar, rodar
+   `node .claude/skills/gerar-imagens/scripts/motor.mjs` e ver o degrau:
+   - `gemini`: conferir na web, hoje, o preço por imagem na página oficial de
+     preços do Google AI, contar as fotos de clima do `mapa_fotos`, mostrar a
+     estimativa (preço vezes número de fotos de clima) e esperar o "pode ir".
+     Com ele, despachar `ml-designer` no modo GERAR dizendo "gasto autorizado:
+     US$ X, preço por imagem Y". Sem ele, despachar dizendo "sem gasto:
+     zero-ia".
+   - `codex`: dizer uma vez à pessoa "o Codex não cobra por imagem dentro da
+     cota do seu plano; se você comprou créditos avulsos do Codex, passar do
+     limite do plano gasta esses créditos" e despachar no modo GERAR.
+   - `zero-ia`: despachar no modo GERAR.
+3. Gate de imagens: abrir a prancha que o `ml-designer` gerou
+   (`anuncios/<slug>/imagens/prancha.html`) e esperar 'aprova tudo' ou 'refaz a
+   N'. Reprovou alguma: `ml-designer` no modo REFAZER com o comentário literal.
+   Refazer no Gemini é gasto novo: estimativa e "pode ir" de novo, e o
+   despacho leva "gasto autorizado" outra vez. Aprovou: `ml-designer` no modo
+   ENTREGAR.
 4. Auditoria: despachar `ml-auditor`. Reprovado: despachar a correção pra quem a
    falha aponta e auditar de novo. Aprovado: seguir.
 5. Cadastro e publicação: despachar `ml-publicador`. Com `erp: bling`, ele

@@ -298,7 +298,7 @@ Perguntar na conversa, no formato de 4 partes:
 > custa zero pra usar (a única parte paga é gerar imagem por IA, opcional e
 > sempre avisada antes de rodar). Quer que eu instale?
 >
-> Pergunto porque ele é grande (doze comandos que trabalham juntos), então só
+> Pergunto porque ele é grande (treze comandos que trabalham juntos), então só
 > entra se fizer sentido pra você.
 >
 > Tipo: 'quero, vendo no Mercado Livre', 'vendo na Shopee, serve?', ou 'agora
@@ -313,11 +313,11 @@ usa). Quem vende só em outro marketplace ouve isso numa frase: o método
 (pode vender, análise de catálogo, decisão e montagem do anúncio) serve pra
 qualquer um; pesquisa, simulador, Ads e auditoria são do Mercado Livre.
 
-Resposta positiva: copiar pro projeto as doze pastas inteiras de
+Resposta positiva: copiar pro projeto as treze pastas inteiras de
 `_modelo/.claude/skills/` (`mercado-livre`, `comecar-a-vender`, `pode-vender`,
 `analisar-catalogo`, `pesquisar-tendencia`, `espionar-concorrente`,
 `decidir-anuncio`, `montar-anuncio`, `cadastrar-bling`, `publicar-marketplace`,
-`mercado-ads`, `auditar-conta`) e os seis agentes de `_modelo/.claude/agents/`
+`mercado-ads`, `auditar-conta`, `gerar-imagens`) e os seis agentes de `_modelo/.claude/agents/`
 (`ml-minerador.md`, `ml-espiao.md`, `ml-copywriter.md`, `ml-designer.md`,
 `ml-auditor.md`, `ml-publicador.md`) pra `.claude/agents/` do projeto. Nunca
 copiar arquivo terminado em `.test.mjs` nem pasta `node_modules/`. O pacote vai
