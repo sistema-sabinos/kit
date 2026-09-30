@@ -132,7 +132,7 @@ real e fundo liso.
 
 | Etapa | Quem faz | Como |
 |---|---|---|
-| 0 | `/pode-vender` | no chat, antes de tudo |
+| 0 | `/pode-vender` | no chat, começando pelo gate de marca (Chrome dedicado) |
 | 1 | `/analisar-catalogo` | no chat |
 | 2 | agente `ml-minerador` | roda a `/pesquisar-tendencia` |
 | 3 | agente `ml-espiao` | roda a `/espionar-concorrente` |

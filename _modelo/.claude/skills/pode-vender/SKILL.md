@@ -2,7 +2,8 @@
 name: pode-vender
 description: >
   Crivo legal de produto, o gate 0 da esteira do Mercado Livre. Antes de gastar pesquisa,
-  foto, cadastro ou estoque num produto novo, descobre se você pode vendê-lo: categoria
+  foto, cadastro ou estoque num produto novo, descobre se você pode vendê-lo: se a marca
+  ainda vive no Mercado Livre e está limpa na ANVISA, categoria
   regulatória, órgão competente (ANVISA, INMETRO, ANATEL, MAPA), listas de proibidos e
   restritos, exigências do vendedor (CNAE, alvará, notificação) e as regras do marketplace.
   Toda consulta é feita na hora em fonte oficial, e o veredito tem validade de 6 meses.
@@ -32,7 +33,8 @@ pode. Volume de anúncio prova só que a fiscalização é reativa.
   Reprovado não avança e não consome pesquisa.
 - Fornecedor novo: antes de fechar, rodar em 3 a 5 produtos representativos do
   catálogo dele. O que o crivo revela sobre um costuma valer pro catálogo
-  inteiro.
+  inteiro. Comece pelo gate de marca com a lista de marcas dele (`--marcas`):
+  marca reprovada tira do caminho todos os produtos dela de uma vez.
 - Avulso, quando a pessoa perguntar "posso vender X?".
 - Revalidação: veredito com mais de 6 meses vence e se refaz do zero. Regra
   sanitária muda.
@@ -47,6 +49,9 @@ pode. Volume de anúncio prova só que a fiscalização é reativa.
   primeira vez: criar copiando `referencias/vereditos-exemplo.md`
 - `_contexto/conformidade/<nicho>/`: a pasta de conformidade do nicho, quando o
   ramo é regulado (seção "A pasta de conformidade do seu nicho")
+- O Chrome dedicado do pacote Mercado Livre, pro gate de marca (passo 0). Na
+  primeira vez: `npm install --prefix .claude/skills/mercado-livre` (uma vez,
+  baixa o Playwright) e `node .claude/skills/mercado-livre/scripts/abrir-chrome.mjs`
 
 Caminhos que começam em `referencias/` são relativos à pasta desta skill;
 `_contexto/` é da raiz do projeto.
@@ -63,6 +68,81 @@ medicamento, cosmético), e é ela que decide tudo. Serve o rótulo real, nunca 
 foto de catálogo do fornecedor.
 
 ## Procedimento
+
+### 0. Gate de marca: essa marca pode ser anunciada?
+
+"Posso vender este produto?" e "posso anunciar esta marca?" são duas perguntas,
+e a segunda é mais barata. O Mercado Livre pode limpar uma marca inteira do site
+sem avisar ninguém, e a ANVISA pode ter apreendido a marca inteira. Quem pula
+essa pergunta gasta pesquisa, foto e cadastro num produto que nunca ia subir.
+
+Rodar da raiz do projeto, com a categoria do produto (`suplemento`, `alimento`,
+`cosmetico`, `saneante` ou `outra`):
+
+    node .claude/skills/pode-vender/scripts/gate-marca.mjs --categoria suplemento --marca "Nome da Marca"
+
+Com a lista de marcas de um fornecedor, um arquivo JSON
+`{ "marcas": ["Marca A", { "marca": "Marca B", "aliases": ["Linha X"] }] }`
+(apelido é o nome de linha que a marca usa sem citar o próprio nome):
+
+    node .claude/skills/pode-vender/scripts/gate-marca.mjs --categoria cosmetico --marcas fornecedores/<fornecedor>/marcas.json
+
+O que ele mede, de graça:
+
+| Gate | Pergunta | Quando roda |
+|---|---|---|
+| A | a marca aparece no Mercado Livre hoje? | sempre |
+| B | a ANVISA já apreendeu ou proibiu produto da marca? | suplemento, alimento, cosmético, saneante |
+| C | a marca tem produto notificado ativo na ANVISA? | suplemento |
+
+Toda rodada mede antes uma marca de controle, que sabidamente vende
+(`Max Titanium` pra suplemento, `Nestlé` pra alimento, `Nivea` pra cosmético,
+`Ypê` pra saneante, `Tramontina` pra outra; troca com `--controle "Outra"`).
+Se o controle falha, quem quebrou foi a leitura, e tudo sai INCONCLUSIVO.
+
+A ANVISA tem uma verificação anti-robô. O script abre a página de consultas no
+Chrome dedicado e espera o próprio site liberar; às vezes isso leva uns
+minutos na primeira consulta, e o terminal avisa enquanto espera. Se em 4
+minutos não liberar, a marca sai INCONCLUSIVO: seguir com a busca manual da
+seção 3 ("[marca] ANVISA irregular") e rodar o gate de novo mais tarde. Ela
+também trava quando recebe muitas consultas seguidas (umas 20 em 10
+minutos): rode no máximo 5 marcas por vez e, se travar, espere uns 20
+minutos.
+
+Como ler o selo:
+
+- **PODE**: marca viva no Mercado Livre, sem dossiê, e a busca da ANVISA achou
+  produto notificado ativo. O resultado lista o número, o produto e a
+  empresa: confira que é mesmo da sua marca, porque essa busca da ANVISA traz
+  produto de outras empresas junto. O número vai pra ficha de conformidade.
+- **PODE MENOS OS VETADOS**: a marca passa, mas os produtos listados têm
+  medida da ANVISA e não entram.
+- **PODE NA MARCA**: a marca passou; o produto segue pelos passos 1 a 7.
+- **ATENÇÃO**: tem sinal pra conferir antes de investir. Três casos: a marca
+  não aparece no Mercado Livre mas a busca veio cheia de outras coisas; a
+  ANVISA tem medida que cita a marca inteira, mas a marca segue viva no
+  Mercado Livre (a medida pode ser contra um revendedor: abrir o dossiê e ver
+  a empresa); ou, em suplemento, a busca não achou notificação ativa. Nesse
+  último, peça o número ao fornecedor e confira; sem número, só lote
+  fabricado antes de 01/09/2026 (fim do prazo de adequação da RDC 843/2024),
+  dentro da validade, com nota fiscal.
+- **NÃO PODE**: com o motivo e a rota. Sai quando a marca sumiu do Mercado
+  Livre com a busca magra, ou quando a ANVISA tem medida contra a marca
+  inteira e a marca também sumiu ou está rara no Mercado Livre.
+- **INCONCLUSIVO**: vale como NÃO PODE até resolver.
+
+O resultado completo fica em `dados/gate-marca/<nome>-<categoria>-<data>.json`
+(rodada nova nunca apaga a anterior). O selo do gate é da marca, nunca do
+produto, e não vira entrada própria no `_contexto/vereditos-legais.md`:
+
+- NÃO PODE e INCONCLUSIVO param aqui. O produto não segue pros passos
+  seguintes, e a entrada dele no passo 7 registra NÃO PODE ou INCONCLUSIVO com
+  o motivo do gate.
+- Qualquer outro selo segue pros passos 1 a 7, e o veredito do produto sai de
+  lá. ATENÇÃO e PODE MENOS OS VETADOS entram como ressalva: o produto sai no
+  máximo PODE COM RESSALVA até o ponto do gate ser conferido.
+- No passo 7, a entrada do produto ganha a linha **Gate de marca**, com o
+  selo, a data e o arquivo.
 
 ### 1. Identificar o que o produto é
 
@@ -201,6 +281,7 @@ formato do `referencias/vereditos-exemplo.md`:
 - **Motivo:** <1 a 3 linhas, direto>
 - **Normas:** <as que decidem o caso>
 - **Fontes consultadas:** <nome e endereço, com a data>
+- **Gate de marca:** <selo, data e arquivo em dados/gate-marca/, ou "não rodou">
 - **Condições ou rota alternativa:** <o que fazer>
 - **Ficha de conformidade:** <os três campos da seção 6, ou "não se aplica">
 ```
@@ -238,10 +319,11 @@ vencido se refaz antes de reaproveitar qualquer coisa dele.
 5. Sem aconselhamento jurídico definitivo. A skill levanta e documenta o risco
    com fonte. Decisão que envolve CNPJ, tributo e alvará passa pela contadora
    e pela vigilância municipal, e a resposta diz isso.
-6. Marca com dossiê de irregularidade no órgão é PODE COM RESSALVA, com a
-   ressalva escrita: aquela marca não entra naquele canal enquanto o dossiê
-   não se resolve, mesmo que o produto em si possa. O marketplace remove a
-   marca inteira, e o seu anúncio junto.
+6. Marca com dossiê que cita a marca inteira ("TODOS OS ... MARCA X") é NÃO
+   PODE quando a marca também sumiu ou está rara no Mercado Livre: o
+   marketplace remove a marca inteira, e o seu anúncio junto. Com a marca
+   viva no Mercado Livre, é ATENÇÃO até conferir contra quem é a medida.
+   Dossiê de um produto só veta aquele produto (PODE MENOS OS VETADOS).
 
 ## O que essa skill não faz
 
