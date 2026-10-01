@@ -157,3 +157,11 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto tem `.claude/skills/gerar-imagens/` e o `marca/design-guide.md` não tem a seção `## Estilo por categoria`.
 **Como aplicar:** copiar do `_modelo/marca/design-guide.md` do kit a seção `## Estilo por categoria` inteira (do título até o `---` que vem antes de `## O que NUNCA fazer`) e colar no `marca/design-guide.md` do projeto logo antes de `## O que NUNCA fazer`, sem mexer no resto do guia. Guia sem essa seção "O que NUNCA fazer": colar no fim.
 **Como testar:** `## Estilo por categoria` aparece uma vez no `marca/design-guide.md` e vem antes de `## O que NUNCA fazer`.
+
+## permissao-escrita-ml
+
+**O que é:** o `/publicar-marketplace` passa a criar o anúncio direto no Mercado Livre, já pausado, quando você não usa Bling.
+**Por quê:** pra isso o aplicativo do Mercado Livre que você criou no `/conectar` precisa de permissão de leitura e escrita; com só leitura, a auditoria funciona e a publicação volta erro de permissão.
+**Te afeta se:** o `.env` tem `ML_CLIENT_ID` e o projeto tem `.claude/skills/publicar-marketplace/scripts/publicar-ml.mjs`.
+**Como aplicar:** abrir com a pessoa o portal de desenvolvedor do Mercado Livre, no aplicativo dela, e conferir na tela que a permissão é de leitura e escrita; se for só leitura, trocar e autorizar a conta de novo com o `autorizar.mjs --ml --url`, como no `/conectar`.
+**Como testar:** o `publicar-ml.mjs --montar` de um anúncio auditado termina sem erro de permissão (a validação do Mercado Livre é uma escrita que não cria nada).

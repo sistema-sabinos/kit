@@ -21,8 +21,9 @@ anuncios/<slug>/
   copy.md                          copy pra gente ler
   fotos-cruas/                     fotos reais do produto, tiradas pela pessoa
   imagens/                         as imagens do anúncio, prontas
-  publicacao-ml.md                 checklist de publicação
+  publicacao-ml.md                 checklist de publicação (Bling ou plano B)
   bling-payload.json               o que a /cadastrar-bling manda pro Bling
+  ml-payload.json                  o que o publicar-ml.mjs manda pro Mercado Livre (sem ERP)
 dados/pipeline/
   _categorias/<fornecedor>-<categoria>.json
   <slug>/status.json, decisao.json, copy.json, imagens.json, auditoria.json, publicacao.json
@@ -222,10 +223,25 @@ cada item diz o que corrigir e quem corrige (`copywriter`, `designer` ou
 ```
 
 Sem ERP, `erp` fica `null`. `anuncio_id` é o código que o Mercado Livre dá ao
-anúncio, informado pela pessoa depois de publicar.
+anúncio: na rota API o script grava na hora; no checklist, a pessoa informa
+depois de publicar.
+
+Canal publicado pela API ganha quatro campos: `via: "api"`, `estado`
+(`pausado`, `ativo`, `fechado` ou `em revisao`, sempre o que a conta mostra),
+`link` e `descricao` (`ok`, ou `pendente` quando a descrição não gravou e o
+próximo `--enviar` só grava ela). Na etapa `publicacao` do `status.json`, o
+status fica `pausado` até a pessoa ativar; o `--conferir` troca pra `ok` e
+põe `etapa_atual: "publicado"`.
+
+`anuncios/<slug>/ml-payload.json` é do `publicar-ml.mjs`: o corpo validado,
+as imagens na ordem, a descrição, o resumo que a pessoa aprovou e a data de
+modificação do `copy.json` e do `imagens.json` naquela hora (se mudar, o
+`--enviar` recusa). `anuncios/<slug>/ml-tentativa.json` (hora e título da
+tentativa) só existe enquanto um envio não confirmou; o `--montar` nunca mexe
+nele.
 
 A `/cadastrar-bling` cria o arquivo com o bloco `erp` e `canais` vazio; a
-`/publicar-marketplace` só acrescenta em `canais`.
+`/publicar-marketplace` só acrescenta em `canais` (e o `publicar-ml.mjs` cria o arquivo quando não existe).
 
 ## 8. `dados/custos.jsonl`
 

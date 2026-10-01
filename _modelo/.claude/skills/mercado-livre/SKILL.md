@@ -206,8 +206,15 @@ ler `dados/pipeline/<slug>/status.json` e continuar da etapa atual:
    só monta o cadastro (`--montar`) e devolve o resumo: mostrar à pessoa e
    esperar o "pode ir". Com ele, despachar de novo dizendo "envio autorizado
    pela pessoa" (ou rodar o `--enviar` da `/cadastrar-bling` nesta conversa).
-   Sem ERP, ele gera só o checklist. A publicação em si é a pessoa no painel; quando ela voltar com o
-   código do anúncio, registrar em `publicacao.json` e marcar `publicado`.
+   Sem ERP, ele monta o anúncio da API (`publicar-ml.mjs --montar`) e
+   devolve o resumo: mostrar à pessoa e esperar o "pode ir"; com ele,
+   despachar de novo dizendo "envio autorizado pela pessoa". O anúncio nasce
+   pausado: a pessoa confere no painel, ativa e aplica o
+   desconto (antes de ativar, se a Central deixar), e quando
+   ela disser que ativou, rodar o `--conferir`. PLANO B (variação ou
+   catálogo): o publicador gera o checklist, a pessoa publica no painel, e
+   quando ela voltar com o código do anúncio, registrar em `publicacao.json`
+   e marcar `publicado`.
 
 **`/mercado-livre continuar`**: varrer os `status.json`, achar o produto mais
 perto de publicar sem bloqueio e propor continuar ele.

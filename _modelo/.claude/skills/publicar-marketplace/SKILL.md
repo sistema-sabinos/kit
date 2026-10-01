@@ -1,25 +1,29 @@
 ---
 name: publicar-marketplace
 description: >
-  Prepara a publicação de um anúncio auditado no Mercado Livre: monta o checklist com
-  todos os valores prontos pra colar, pela rota do Bling (gestão de anúncios) ou direto no
-  painel do Mercado Livre quando não há ERP, e registra o código do anúncio depois que a
-  pessoa publica. É a etapa 7 da esteira, e só roda com auditoria aprovada. Use quando o
-  usuário chamar /publicar-marketplace, disser "publica o [produto]", "manda pro Mercado
-  Livre", "cria o anúncio", "o que eu preencho no painel", ou voltar com o código do
-  anúncio publicado.
+  Publica um anúncio auditado no Mercado Livre. Sem ERP, cria o anúncio direto
+  pela API do Mercado Livre, já pausado, depois do "pode ir" da pessoa, e ela
+  confere no painel e ativa; com Bling, ou quando o produto tem variação ou é
+  de catálogo, monta o checklist com todos os valores prontos pra colar. É a
+  etapa 7 da esteira, e só roda com auditoria aprovada. Use quando o usuário
+  chamar /publicar-marketplace, disser "publica o [produto]", "manda pro
+  Mercado Livre", "cria o anúncio", "o que eu preencho no painel", "já ativei o
+  anúncio", ou voltar com o código do anúncio publicado.
 ---
 
-# /publicar-marketplace, o checklist que publica
+# /publicar-marketplace, a etapa que publica
 
 ## O que essa skill faz
 
-Entrega o roteiro completo pra publicar um anúncio: cada campo com o valor
-pronto, na ordem da tela, com os bloqueios no topo. A publicação em si é a
-pessoa clicando, porque publicar é ação da pessoa, com o "pode ir" daquele
-momento (a API do Mercado Livre até publica, e o pacote não a usa de
-propósito). O que a skill elimina é a etapa de "pensar o
-que preencher".
+Leva o anúncio auditado até o Mercado Livre. Sem ERP, o caminho padrão é a
+API: o script monta o anúncio, o Mercado Livre confere antes (a validação dele
+não cria nada), a pessoa lê o resumo e diz "pode ir", e o anúncio nasce
+PAUSADO. Quem põe no ar é a pessoa, no painel, depois de conferir, e ela aplica o
+desconto antes de ativar se a Central de Promoções deixar: publicar continua
+sendo ação dela. Com Bling, e no plano B da API,
+a skill entrega o roteiro completo, cada campo com o valor pronto, na ordem da
+tela, com os bloqueios no topo, e elimina a etapa de "pensar o que
+preencher".
 
 ## Pré-condição dura
 
@@ -40,7 +44,7 @@ parar e dizer o que falta. Não existe exceção.
 Caminhos que começam em `_contexto/`, `dados/` e `anuncios/` são da raiz do
 projeto.
 
-## As duas rotas
+## As três rotas
 
 **Com Bling (`erp: bling`).** O produto já existe no Bling (etapa 6). O anúncio
 nasce no canal do Mercado Livre cadastrado no Bling (`canal_id` da
@@ -51,8 +55,63 @@ conferir que a integração do Mercado Livre no Bling está logada; árvore de
 categoria que não carrega é token expirado, e a solução é sair e entrar de novo
 na integração.
 
-**Sem ERP.** Direto no painel do Mercado Livre (Vender, anunciar). Mesmos
-campos, mesma ordem; as imagens sobem do computador.
+**Sem ERP, pela API (o padrão).** O script `publicar-ml.mjs` cria o anúncio
+pausado na conta da pessoa. Passo a passo na seção "Rota API" abaixo. Precisa
+da conta do Mercado Livre autorizada com um aplicativo de leitura e escrita
+(o `/conectar` guia).
+
+**Sem ERP, pelo painel (plano B).** Quando o script sai com PLANO B (produto
+com variação de cor, tamanho ou sabor, ou categoria que exige anúncio de
+catálogo) ou a conta não tem permissão de escrita: direto no painel do
+Mercado Livre (Vender, anunciar), com o checklist. Mesmos campos, mesma
+ordem; as imagens sobem do computador.
+
+## Rota API, passo a passo
+
+Os comandos rodam da raiz do projeto.
+
+1. Perguntar à pessoa, se o despacho não trouxe: quantas unidades anunciar
+   (no dropshipping, no máximo o que o fornecedor confirmou) e quantos dias de
+   garantia. O kit não guarda esses dois, e inventar estoque vende o que o
+   fornecedor não tem.
+2. Montar, sem mexer na conta:
+   `node .claude/skills/publicar-marketplace/scripts/publicar-ml.mjs --montar <slug> --estoque N --garantia-dias N`.
+   Ele acha a categoria pelo título, cruza a ficha com os campos que a
+   categoria exige, pede a validação do Mercado Livre e mostra o resumo.
+   - Saiu com código 0: mostrar o resumo inteiro à pessoa e esperar o "pode
+     ir". Categoria errada: montar de novo com `--categoria MLB123`.
+   - Código 1: o resumo lista o que falta resolver (campo da ficha,
+     medidas da embalagem com `--embalagem CxLxA --peso-g N`, título longo).
+     Resolver e montar de novo. Nada foi enviado.
+   - Código 2: PLANO B. Seguir pelo checklist do painel (seção "Fluxo").
+3. Com o "pode ir":
+   `node .claude/skills/publicar-marketplace/scripts/publicar-ml.mjs --enviar <slug>`.
+   Ele sobe as imagens, cria o anúncio pausado, grava a descrição, lê de
+   volta pra conferir, grava `publicacao.json` e `status.json` e imprime o
+   link. Repassar à pessoa o link e cada aviso. Aviso com ATENCAO quer dizer
+   anúncio ATIVO que ela ainda não conferiu: pedir que pause no painel agora.
+   Se o `--enviar` disser que o Mercado Livre recusou na validação e nada foi
+   criado, resolver o que ele lista, montar de novo e pedir outro "pode ir".
+   Primeira vez nessa conta: se o anúncio sair "em revisao", "inativo" ou
+   "ainda nao ativo", não ativar nada e mostrar o recibo.
+4. Se o `--enviar` disser que a copy ou as imagens mudaram depois do resumo,
+   montar de novo e pedir outro "pode ir": o anterior valeu pro que ela leu.
+5. Se a resposta do Mercado Livre não chegar (queda de internet, ou erro 5xx
+   do lado dele), nunca criar o anúncio no painel nem mandar a pessoa criar:
+   rodar o `--enviar` de novo, que ele procura na conta se o anúncio chegou
+   antes de tentar outra vez. Enquanto o envio não confirma, o script guarda
+   `anuncios/<slug>/ml-tentativa.json` pra saber o que procurar. Se o envio
+   anterior foi há menos de 10 minutos, o script pede pra esperar e rodar de
+   novo depois, porque a busca do Mercado Livre demora pra mostrar o anúncio
+   novo.
+6. A pessoa abre o link no painel, confere título, fotos, ficha e descrição,
+   tenta aplicar o desconto na Central de Promoções antes de ativar; se a
+   Central não deixar com o anúncio pausado, ativa e aplica o desconto na
+   mesma hora, senão ele vende no preço de lista, que é inflado. Quando ela
+   disser que ativou:
+   `node .claude/skills/publicar-marketplace/scripts/publicar-ml.mjs --conferir <slug>`.
+   Ativo: a etapa fecha e o produto fica `publicado`. Acrescentar a linha em
+   `_contexto/estrategia.md`, como no passo 4 do fluxo.
 
 ## Fluxo
 
@@ -68,7 +127,7 @@ dimensões, condição "Novo", estoque maior que zero no depósito da
 configuração, fornecedor vinculado. Faltou algo: parar e listar, com o
 caminho pra resolver. Produto incompleto não se publica.
 
-Sem ERP: conferir `copy.json` sem `[PREENCHER]` e `imagens.json` aprovado.
+Sem ERP, no plano B: conferir `copy.json` sem `[PREENCHER]` e `imagens.json` aprovado.
 
 Dropshipping: estoque anunciado igual ou menor que o que o fornecedor
 confirmou; prazo de disponibilidade vazio quando o fornecedor despacha no
@@ -159,6 +218,9 @@ modalidade e preço), marcar `status.json` com etapa `publicacao` `ok` e
 - Auditoria aprovada ou nada.
 - Um anúncio por produto; segundo posicionamento é produto ou kit novo.
 - Publicar, aplicar promoção e entrar em campanha são ações da pessoa, com o
-  "pode ir" daquele momento.
+  "pode ir" daquele momento. Na rota API, o `--enviar` só roda depois do
+  "pode ir" sobre o resumo, e o anúncio nasce pausado: quem ativa é ela.
+- Escrita na API nunca se repete no escuro: resposta que não chegou se
+  resolve rodando o `--enviar` de novo, que procura antes de criar.
 - Toda regra de plataforma citada aqui leva data e se confere ao vivo antes
   de agir.

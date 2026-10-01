@@ -221,10 +221,11 @@ No dropshipping, marcar esta etapa como "não se aplica" e pular pra 8.
    fotos do fornecedor, com a autorização de uso dele.
 4. Código de barras (`ml-gtin`): o do fabricante, nunca inventado.
 5. Seguir a esteira do `/mercado-livre` com esse produto até o
-   `/publicar-marketplace`, que entrega o checklist de publicação. Agora que
+   `/publicar-marketplace`, que cria o anúncio pausado pela API. Agora que
    existem conta, fornecedor e autorização, a `/pesquisar-tendencia` entra
    como parte da esteira e mede a demanda com os dados do Mercado Livre. Ela
-   publica com o print aberto e a skill conferindo cada campo.
+   confere o anúncio pausado no painel, com o print aberto e a skill
+   conferindo cada campo, e ativa.
 6. Avisar sobre o nome que confunde: no painel, "Dropshipping" é uma forma de
    envio pelos Correios (`ml-drop-nome`), sem ligação com vender sem estoque.
 

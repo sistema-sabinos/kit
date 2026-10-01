@@ -128,7 +128,7 @@ seguir.
 - Erro do Bling sobe com a mensagem original dele: repassar como veio, ela diz
   o campo errado.
 - Sem Bling (`erp: nenhum`), o script recusa e a rota é a `/publicar-marketplace`
-  direto no painel.
+  direto no Mercado Livre, pela API.
 
 ## O MCP do Bling (consulta)
 

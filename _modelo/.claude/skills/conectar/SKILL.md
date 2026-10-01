@@ -94,14 +94,14 @@ Duas coisas a dizer ao usuário quando este item entrar na conversa:
 
 Só aparece se o projeto tem `.claude/skills/mercado-livre/`. Sem o pacote, pular.
 
-- **O que te deixa fazer:** eu leio seus anúncios, vendas, reputação e campanhas do Mercado Livre pra auditar a conta e o Mercado Ads, e, se você usa Bling, cadastro produto novo por lá (sempre mostrando antes e esperando seu "pode ir").
+- **O que te deixa fazer:** eu leio seus anúncios, vendas, reputação e campanhas do Mercado Livre pra auditar a conta e o Mercado Ads, crio anúncio novo já pausado (você confere e ativa), e, se você usa Bling, cadastro produto novo por lá (sempre mostrando antes e esperando seu "pode ir").
 - **Grátis ou pago:** grátis. As duas APIs não cobram.
 - **Precisa de quê:** um aplicativo em cada portal de desenvolvedor, criado por você com o seu login, e o `.env` do projeto com as chaves. Eu guio clique a clique e confiro com você o que o portal pede na tela, porque isso muda.
 - **Hoje ou depois:** hoje, uns 15 minutos cada. O Bling só se o `_contexto/mercado-livre.md` diz `erp: bling`.
 
 **Mercado Livre, passo a passo:**
 
-1. No portal de desenvolvedor do Mercado Livre, criar um aplicativo. A URL de retorno precisa começar com `https` (o portal recusa `http`, conferido por busca em 2026-09-24; fonte secundária, não conferido com o portal aberto). Cadastrar `https://127.0.0.1:8765/callback`; se o portal recusar, `https://localhost:8765/callback`; e se recusar as duas, qualquer endereço `https` que o portal aceitar serve, porque a página de retorno nunca precisa abrir de verdade (a pessoa cola a URL inteira da barra do navegador de qualquer jeito, no passo 4). O que importa é ser exatamente a mesma URL no portal e no `ML_REDIRECT_URI`.
+1. No portal de desenvolvedor do Mercado Livre, criar um aplicativo. A URL de retorno precisa começar com `https` (o portal recusa `http`, conferido por busca em 2026-09-24; fonte secundária, não conferido com o portal aberto). Cadastrar `https://127.0.0.1:8765/callback`; se o portal recusar, `https://localhost:8765/callback`; e se recusar as duas, qualquer endereço `https` que o portal aceitar serve, porque a página de retorno nunca precisa abrir de verdade (a pessoa cola a URL inteira da barra do navegador de qualquer jeito, no passo 4). O que importa é ser exatamente a mesma URL no portal e no `ML_REDIRECT_URI`. Se o portal perguntar a permissão do aplicativo, escolher leitura e escrita: só leitura audita, mas não cria anúncio. O nome e o lugar dessa opção mudam; conferir na tela com a pessoa.
 2. Colar no `.env` do projeto: `ML_CLIENT_ID`, `ML_CLIENT_SECRET` e `ML_REDIRECT_URI` (a mesma URL do passo 1, letra por letra).
 3. Rodar `node .claude/skills/mercado-livre/scripts/autorizar.mjs --ml --url`, abrir o link e autorizar.
 4. Depois de autorizar, o navegador tenta abrir a URL de retorno e mostra erro de página. Isso é esperado: nada roda ali. Copiar a URL inteira da barra do navegador e rodar `node .claude/skills/mercado-livre/scripts/autorizar.mjs --ml "<url colada>"`. Os tokens vão pro `.env` e se renovam sozinhos.

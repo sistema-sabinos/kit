@@ -24,7 +24,7 @@ fornecedores:
 limite_gasto_usd: 2
 ```
 
-- `erp`: `bling` ou `nenhum`. Com `nenhum`, o cadastro é feito direto no painel do Mercado Livre, pelo checklist
+- `erp`: `bling` ou `nenhum`. Com `nenhum`, o anúncio é criado pausado direto no Mercado Livre pela API (ou pelo checklist no painel, quando o produto tem variação)
 - `modelo`: `dropshipping` (o fornecedor despacha em seu nome, sem estoque seu) ou `estoque` (você guarda e despacha). Muda o que a auditoria confere
 - `estado`: a sigla do estado do seu CNPJ (exemplo: SP). No dropshipping, o fornecedor precisa ser do mesmo estado
 - `imposto_pct`: a alíquota do mês sobre a venda, em porcentagem (exemplo: 6). Vem da contadora e muda; `imposto_informado_em` guarda a data (exemplo: 2026-09-01) e `imposto_fonte` quem informou (exemplo: contadora). MEI põe 0, porque o imposto dele é o valor fixo do DAS, pago todo mês, e escreve em `imposto_fonte`: MEI, imposto fixo no DAS
