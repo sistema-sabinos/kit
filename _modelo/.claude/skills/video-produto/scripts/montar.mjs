@@ -12,7 +12,9 @@ import { medirFaixasChapadas, planoDeCorte, pareceBorda } from './lib/bordas.mjs
 
 function rodar(args) {
   const r = spawnSync('ffmpeg', args, { encoding: 'utf8', timeout: 600000 });
-  if (r.status !== 0) throw new Error(`ffmpeg falhou: ${(r.stderr || '').slice(-400)}`);
+  // estourou o limite ou foi morto: o stderr vem vazio, entao o recado diz o porque
+  if (r.error?.code === 'ETIMEDOUT') throw new Error('ffmpeg passou de 10 minutos num passo so e foi interrompido (maquina muito carregada?). Feche o que estiver pesando e rode a fase 3 de novo.');
+  if (r.status !== 0) throw new Error(`ffmpeg falhou${r.signal ? ` (interrompido por ${r.signal})` : ''}: ${(r.stderr || r.error?.message || '').slice(-400)}`);
 }
 
 export function probe(arquivo) {

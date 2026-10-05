@@ -134,7 +134,7 @@ Com o "pode ir" dado, aplicar pelo MCP um por um, dizendo o que fez a cada passo
 
 ## Quando o usuário discordar
 
-Discordância entra no mesmo `decisoes.jsonl`, com a resposta dele em `resposta` e o motivo que ele deu. Na terceira discordância do mesmo tipo de corte, parar e dizer em voz alta que o ticket provavelmente está errado, e oferecer refazer a entrevista pra recalcular a régua. É o ajuste que o método manda fazer, e ele só se percebe pelo histórico do arquivo.
+Discordância entra no mesmo `dados/trafego/decisoes.jsonl` (a ata do Mercado Livre, `dados/decisoes.jsonl`, é outra e não se mistura), com a resposta dele em `resposta` e o motivo que ele deu. Na terceira discordância do mesmo tipo de corte, parar e dizer em voz alta que o ticket provavelmente está errado, e oferecer refazer a entrevista pra recalcular a régua. É o ajuste que o método manda fazer, e ele só se percebe pelo histórico do arquivo.
 
 ## O que esta skill nunca faz
 

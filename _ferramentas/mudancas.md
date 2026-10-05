@@ -213,3 +213,11 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto tem `.claude/skills/configurar-video/` e o `.gitignore` não tem `!.claude/skills/configurar-video/referencias/teste-voz.wav`.
 **Como aplicar:** acrescentar essa linha logo abaixo da linha `*.m4a` do `.gitignore`.
 **Como testar:** `git check-ignore .claude/skills/configurar-video/referencias/teste-voz.wav` não imprime nada.
+
+## carrossel-na-producao
+
+**O que é:** o modelo de carrossel passa a salvar cada post em `producao/<data>-<assunto>/`, com os slides em `final/` e a legenda num `post.md`, o formato que a `/publicar-social` agenda. Antes ia pra `conteudo/carrosseis/`, onde o agendamento não acha. Também deixou de mandar rodar o `/setup` de dentro do projeto e de citar preço fixo de gerador de imagem.
+**Por quê:** carrossel pronto que não dá pra agendar obriga a pessoa a mover arquivo na mão.
+**Te afeta se:** o projeto tem `.claude/skills/carrossel/SKILL.md` e ele cita `conteudo/carrosseis`.
+**Como aplicar:** essa skill foi adaptada ao negócio quando entrou, então não se substitui inteira. Mostrar à pessoa as seções "Onde o post mora" e de custo do modelo novo (`../_modelo/templates/skills/carrossel/SKILL.md` na pasta-mãe) e, com o sim, trocar só essas partes na skill dela, mantendo o tom, as cores e os exemplos que ela já tinha.
+**Como testar:** a skill do projeto cita `producao/` e `post.md` e não cita mais `conteudo/carrosseis`.

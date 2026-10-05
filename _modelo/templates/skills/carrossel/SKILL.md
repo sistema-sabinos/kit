@@ -81,11 +81,15 @@ Salvar em `_contexto/preferencias.md`.
 
 ### 4. Contexto do negócio
 
-Ler `_contexto/empresa.md`. Se estiver vazio, avisar:
+Ler `_contexto/empresa.md`. Se ainda tiver `<!-- NOT CONFIGURED -->` ou a seção "Quem é" estiver no texto entre colchetes do molde, perguntar ali mesmo, uma pergunta por mensagem, no formato de 4 partes da casa (pergunta simples, por que pergunto, exemplos, repergunta se vier vago):
 
-> "Ajuda se eu souber sobre o teu negócio e público pra escrever melhor. Roda /setup pra configurar, ou me conta rápido: o que tu faz e pra quem."
+> "O que tu vende ou faz, e pra quem?
+>
+> Pergunto porque carrossel que fala com todo mundo não prende ninguém: o texto precisa da dor de quem compra de ti.
+>
+> Tipo: 'vendo moedor de café manual pra quem toma café em casa', ou 'faço consultoria de Mercado Livre pra loja pequena'."
 
-Se o usuário responder rápido (sem rodar /setup), anotar o essencial em `_contexto/empresa.md`.
+Se vier vago ("vendo de tudo"), reperguntar uma vez pedindo o produto que mais vende e quem mais compra. Com a resposta, preencher as seções "Quem é" e "Como o negócio funciona" de `_contexto/empresa.md` e tirar a linha `<!-- NOT CONFIGURED -->`. O resto do arquivo fica como está.
 
 ### 5. Playwright
 
@@ -120,6 +124,28 @@ O usuário fornece:
 - Imagens (opcional): se anexar fotos, usar nos slides. Se não, criar design visual sem foto
 - Número do episódio ou série (se aplicável)
 
+## Onde o post mora
+
+Cada carrossel é uma pasta `producao/<slug>/`, com `<slug>` no formato `AAAA-MM-DD-assunto-curto` (data de hoje, assunto em minúsculas, sem acento, com hífen). É a mesma pasta que a `/publicar-social` lê pra agendar:
+
+- `final/slide-01.png`, `final/slide-02.png`...: os slides prontos, em 4:5, e nada mais nessa pasta (no máximo 10 slides, o teto do agendador).
+- `final-916/`: a versão em pé pro TikTok, se pedida, com o mesmo número de slides.
+- `post.md`: a legenda, no formato do molde da mídia social.
+- `roteiro.md`, `imagens/` e `html/`: o texto aprovado, as fotos e os HTMLs dos slides.
+
+**Pasta que veio da `/pauta`.** Antes de criar uma pasta nova, olhar `producao/*/roteiro.md` (fora `_molde` e `_pauta`) atrás de uma pasta do mesmo assunto com a tabela `## Carrossel` preenchida. Achando uma ou mais, listar em ordem de data e perguntar qual é. Confirmada, usar essa pasta: o texto dos slides parte da tabela do `roteiro.md` (já aprovado no Gate 2 da `/pauta`), e o `post.md` que ela escreveu fica, só revisado. Sem pasta da `/pauta`, criar `producao/<slug>/`.
+
+**Molde do `post.md`.** Usar o primeiro que existir: `producao/_molde/post.md` ou `.claude/skills/midia-social/moldes/producao/_molde/post.md`. Sem nenhum dos dois, o projeto não tem o pacote de mídia social: escrever o `post.md` à mão com estas linhas, que é o mesmo formato:
+
+```
+# Post: <título curto>
+
+ia: nao
+
+## Legenda
+<legenda>
+```
+
 ---
 
 ## Workflow em 3 Fases
@@ -140,7 +166,7 @@ O usuário fornece:
    > "Antes de escrever, me confirma:
    > - Quantos slides? (padrão: 8-10)
    > - Vai querer imagem na capa ou dentro dos slides? Se sim, quantas imagens tu tem?
-   >   - Se tiver imagens: joga na pasta `conteudo/carrosseis/[tema]/imagens/` e me diz os nomes
+   >   - Se tiver imagens: joga na pasta `producao/<slug>/imagens/` e me diz os nomes
    >   - Se não tiver: faço um design visual que funciona bem sem foto
    >   - Se quiser, posso gerar imagens por IA (ver seção Geração de Imagens abaixo)
    > - CTA do último slide? (ex: 'segue pra mais', 'link na bio', 'comenta X')
@@ -148,7 +174,7 @@ O usuário fornece:
 
    Se o usuário responder tudo junto ("faz sobre X com 8 slides"), não ficar perguntando mais. Usar bom senso pros campos que faltaram.
 
-   Se o usuário fornecer imagens, criar a pasta `conteudo/carrosseis/[tema]/imagens/` e confirmar que as imagens estão lá antes de seguir.
+   Se o usuário fornecer imagens, criar a pasta `producao/<slug>/imagens/` e confirmar que as imagens estão lá antes de seguir.
 
 6. **Planejar a espinha dorsal do carrossel e mostrar pro usuário.** Montar e apresentar:
 
@@ -225,7 +251,7 @@ O usuário fornece:
 
 9. Mostrar o texto completo de todos os slides + legenda no chat (não só salvar no arquivo)
 
-10. Salvar tudo em `conteudo/carrosseis/[tema]/carousel-text.md`
+10. Salvar o texto dos slides em `producao/<slug>/roteiro.md` (numa pasta que veio da `/pauta`, atualizar a coluna "Texto (literal)" da tabela `## Carrossel`). A legenda vai no `post.md`: copiar o molde (seção "Onde o post mora") pra `producao/<slug>/post.md`, trocar o título, pôr a legenda inteira (gancho, desenvolvimento, CTA e hashtags) no lugar do texto entre `<` e `>` da seção `## Legenda`, e apagar as seções `## YouTube titulo` e `## YouTube descricao`, que carrossel não usa (o YouTube só recebe vídeo). A linha `ia:` fica `ia: sim` se algum slide usar imagem gerada por IA, senão `ia: nao`. Nenhuma linha com texto entre `<` e `>` pode sobrar: o agendador recusa o post enquanto houver.
 
 **CHECKPOINT 2:** Mostrar o texto completo + legenda. Esperar o usuário aprovar ou pedir ajustes antes de seguir pra Fase 2. Se pedir pra mudar um slide, ajustar só aquele.
 
@@ -236,16 +262,16 @@ O usuário fornece:
 1. Ler `marca/design-guide.md` pra identidade visual (cores, fontes, logo)
 2. Ler `references/design-carrossel.md` pra regras de design (layouts, ritmo, imagens, elementos fixos)
 3. Criar HTMLs seguindo as regras do arquivo de design
-4. Salvar HTMLs em `conteudo/carrosseis/[tema]/instagram/`
-5. Renderizar via CLI:
+4. Salvar HTMLs em `producao/<slug>/html/`
+5. Renderizar via CLI, com o PNG direto em `final/`:
    ```bash
-   npx playwright screenshot --viewport-size=1080,1350 --full-page "file:///caminho/absoluto/slide-01.html" "slide-01.png"
+   npx playwright screenshot --viewport-size=1080,1350 --full-page "file:///caminho/absoluto/producao/<slug>/html/slide-01.html" "producao/<slug>/final/slide-01.png"
    ```
    Renderizar **slide 1 primeiro** e mostrar pro usuário.
 
 **CHECKPOINT:** Mostrar slide 1 renderizado. Se aprovado, renderizar os demais. Se pedir ajuste, editar o HTML e re-renderizar só aquele slide.
 
-Salvar PNGs em `conteudo/carrosseis/[tema]/instagram/`.
+Os PNGs ficam em `producao/<slug>/final/`, com nome `slide-01.png`, `slide-02.png`... (dois dígitos, é por esse nome que o agendador acha e ordena os slides).
 
 > **Dica:** se o usuário não gostar do visual, as regras de design ficam em `references/design-carrossel.md`. Pode editar direto ou pedir: "muda a regra X no design do carrossel".
 
@@ -259,28 +285,30 @@ Após finalizar o Instagram, perguntar:
 Se sim:
 - Adaptar os HTMLs: height 1920px, aumentar padding, ajustar espaçamento
 - **Bottom safe zone:** deixar 230px livres embaixo (UI do TikTok sobrepõe)
-- Renderizar via CLI:
+- Salvar os HTMLs em `producao/<slug>/html-916/` e renderizar via CLI:
   ```bash
-  npx playwright screenshot --viewport-size=1080,1920 --full-page "file:///caminho/absoluto/slide-01.html" "slide-01.png"
+  npx playwright screenshot --viewport-size=1080,1920 --full-page "file:///caminho/absoluto/producao/<slug>/html-916/slide-01.html" "producao/<slug>/final-916/slide-01.png"
   ```
-- Salvar em `conteudo/carrosseis/[tema]/tiktok/`
+- Os PNGs ficam em `producao/<slug>/final-916/`, com o mesmo número de slides do `final/`
 
 ---
 
 ## Output final
 
 ```
-conteudo/carrosseis/[tema]/
-  carousel-text.md          <- texto aprovado + legenda
+producao/<AAAA-MM-DD-assunto>/
+  post.md                   <- legenda (formato do molde da mídia social)
+  roteiro.md                <- texto aprovado dos slides
   imagens/                  <- fotos do usuário ou geradas (se houver)
-  instagram/
-    slide-01.html -> slide-01.png
-    slide-02.html -> slide-02.png
-    ...
-  tiktok/ (se solicitado)
-    slide-01.html -> slide-01.png
-    ...
+  html/                     <- slide-01.html, slide-02.html...
+  final/                    <- slide-01.png, slide-02.png... e só isso
+  html-916/, final-916/     <- versão TikTok (se pedida)
 ```
+
+Fechar dizendo onde está a pasta e como sai pro ar:
+
+- **Com o pacote de mídia social** (existe `.claude/skills/publicar-social/`): "Pra agendar no Instagram e no TikTok, chama a `/publicar-social` com essa pasta e o horário."
+- **Sem o pacote:** "Os slides estão em `final/` e a legenda no `post.md`, prontos pra postar à mão. A pasta já está no formato que a `/publicar-social` lê: quando o pacote de mídia social for instalado, ela agenda daqui mesmo."
 
 ## Geração de imagens (opcional)
 
@@ -294,26 +322,36 @@ Gera imagens direto por URL, sem API key:
 curl -L "https://image.pollinations.ai/prompt/modern%20office%20desk%20minimal%20clean?width=1080&height=720&nologo=true" -o imagens/foto-01.jpg
 ```
 
-- Gratuito, sem limite prático
+- Grátis e sem cadastro quando esta skill foi escrita, com fila mais lenta pra quem não tem conta. Regra de serviço grátis muda: se a chamada falhar ou pedir chave, conferir a página oficial do Pollinations antes de dizer que é grátis
 - Qualidade OK pra foto de apoio (não pra foto principal de produto)
 - Não precisa instalar nada
 
 **Como usar no fluxo:**
 1. Perguntar ao usuário o que quer na imagem (ex: "mesa de trabalho com notebook", "pessoa usando celular")
-2. Gerar com Pollinations, salvar em `conteudo/carrosseis/[tema]/imagens/`
+2. Gerar com Pollinations, salvar em `producao/<slug>/imagens/`
 3. Mostrar pro usuário aprovar antes de usar no slide
-4. Se a qualidade não servir, sugerir: "Se quiser uma imagem melhor, tu pode gerar no Canva, DALL-E ou Midjourney e jogar na pasta imagens/"
+4. Se a qualidade não servir, oferecer um gerador pago (abaixo) ou sugerir que ele gere numa ferramenta que já usa e jogue o arquivo na pasta `imagens/`
 
 **Dica pro prompt:** ser específico e adicionar "no text, clean background, professional" pra resultados mais limpos.
 
-### Outras opções (requer API key)
+### Gerador pago (requer chave de API)
 
-Se o usuário já tiver chave de algum serviço:
-- **OpenAI DALL-E 3** (~R$0.20/imagem): qualidade excelente, precisa de `OPENAI_API_KEY` no `.env`
-- **Stability AI** (gratuito ~25/dia): qualidade boa, precisa de `STABILITY_API_KEY`
-- **Replicate Flux** (5 grátis/mês): melhor qualidade open source, precisa de `REPLICATE_API_TOKEN`
+Se o usuário já tiver chave de algum serviço pago de imagem (OpenAI, Stability AI, Replicate ou outro, com a chave no `.env`), dá pra usar, nesta ordem e sem pular passo:
 
-Se nenhuma dessas tiver configurada e o Pollinations não servir, orientar o usuário a gerar a imagem em outra ferramenta (Canva, Midjourney, ChatGPT) e jogar na pasta `imagens/`.
+1. **Preço do dia.** Abrir a página oficial de preços do serviço, hoje, e anotar o preço por imagem no tamanho que vai ser pedido. Preço de imagem por IA muda de um mês pro outro: nunca dizer de memória.
+2. **Avisar o custo antes.** Mostrar a conta: "São N imagens a US$ X cada, total US$ Y, pelo preço de hoje na página do <serviço>. Pode ir?"
+3. **Esperar o "pode ir".** Sem ele, nada é gerado.
+4. **Registrar o gasto** em `dados/custos.jsonl`, uma linha por rodada, no contrato `{em, servico, usd, contexto}`. Com o pacote de mídia social instalado, o registrador pronto faz isso:
+   ```bash
+   node .claude/skills/midia-social/scripts/lib/custos.mjs --servico "<serviço> (carrossel)" --usd <total em dólar> --contexto "<slug>, N imagens"
+   ```
+   Sem o pacote, acrescentar no fim do `dados/custos.jsonl` (criar o arquivo e a pasta se não existirem) uma linha só, em JSON, assim (valores de exemplo):
+   ```
+   {"em":"2026-10-05T14:30:00.000Z","servico":"<serviço> (carrossel)","usd":0.12,"contexto":"<slug>, 3 imagens"}
+   ```
+   `em` é a data e hora da geração em UTC, `usd` é número com ponto (não texto), e cada gasto é uma linha nova, nunca editando as antigas.
+
+Imagem gerada por IA no slide deixa o `post.md` com `ia: sim`.
 
 ---
 

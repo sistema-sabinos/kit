@@ -839,16 +839,41 @@ test('fase 3 com clipe quebrado explica o que fazer e lembra que o clipe ja foi 
 
 // A trava que impede a suite de gastar: mesmo mandando a fase 3 rodar sem
 // dry-run (o caminho que transcreve, que e pago), nada sai da maquina.
-test('a trava de teste impede gasto mesmo quando o caminho pago e chamado de proposito', () => {
+// Roda em processo com SO a montagem trocada por falsa: a trava mora no
+// carregarChave do transcrever de verdade, depois da montagem, e montar de
+// verdade aqui custava ~20s de ffmpeg (sob carga passou dos 600s do timeout e
+// derrubou o teste por motivo alheio a trava). A montagem real ja e provada
+// pelo teste do dry-run logo abaixo. O fetch vira armadilha: se a trava falhar
+// numa maquina com chave, o teste quebra em vez de gastar.
+test('a trava de teste impede gasto mesmo quando o caminho pago e chamado de proposito', async () => {
   preparar(roteiroValido())
   assert.equal(rodar([`--mlb=${MLB}`, '--fase=1', '--aprovar']).status, 0)
   copiarClipes()
   criarNarracoes()
 
-  const r = rodar([`--mlb=${MLB}`, '--fase=3', ...PRECOS_AUTORIZADO]) // sem --dry-run: iria transcrever
-  assert.equal(r.status, 1)
-  assert.match(r.stderr, /GEMINI_SEM_API/)
-  assert.match(r.stderr, /tentou GASTAR/)
+  const fetchOriginal = globalThis.fetch
+  const travaOriginal = process.env.GEMINI_SEM_API
+  globalThis.fetch = () => { throw new Error('fetch chamado: a trava NAO segurou o gasto') }
+  process.env.GEMINI_SEM_API = '1'
+  let montou = false
+  try {
+    const r = await chamar([`--mlb=${MLB}`, '--fase=3', ...PRECOS_AUTORIZADO], { // sem --dry-run: iria transcrever
+      montarVideo: async ({ saida }) => {
+        montou = true
+        fs.copyFileSync(path.join(modelosDeClipe, 'bloco-1.mp4'), saida)
+        return { ok: true, legenda: { corpo: 1, resumo: 'falsa' }, duracoes: [8, 8, 8, 8] }
+      },
+    })
+    assert.ok(montou, 'tem que chegar ate a montagem, senao parou antes do caminho pago')
+    assert.equal(r.status, 1)
+    assert.match(r.stderr, /GEMINI_SEM_API/)
+    assert.match(r.stderr, /tentou GASTAR/)
+    assert.equal(fs.existsSync(path.join(pasta, 'final')), false)
+  } finally {
+    globalThis.fetch = fetchOriginal
+    if (travaOriginal === undefined) delete process.env.GEMINI_SEM_API
+    else process.env.GEMINI_SEM_API = travaOriginal
+  }
 })
 
 test('fase 3 em dry-run monta em producao/<slug>/_tmp/<slug>.mp4, deixa final/ vazia e NAO transcreve', () => {

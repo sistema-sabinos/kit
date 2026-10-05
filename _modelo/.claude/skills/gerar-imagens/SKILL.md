@@ -108,7 +108,7 @@ Abrir cada imagem (Read) e conferir, refazendo sozinho o que falhar:
    imagem e `aprovado_pelo_usuario: false`). Peça com texto herda o motor da
    foto de base.
 2. `node .claude/skills/gerar-imagens/scripts/prancha.mjs --imagens dados/pipeline/<slug>/imagens.json`
-3. Abrir a prancha pra pessoa: no Windows `cmd /c start "" "<caminho>"`, no Mac
+3. Abrir a prancha pra pessoa: no Windows `node -e "require('child_process').spawn('cmd',['/c','start','',process.argv[1]],{detached:true,stdio:'ignore'}).unref()" "<caminho>"` (pelo Node porque o `cmd /c` direto no terminal Git Bash não faz nada), no Mac
    `open "<caminho>"`. Dizer: "Abri as fotos no navegador. Responde aqui:
    aprova tudo, ou refaz a 3 e diz o que mudar."
 4. Refazer só as citadas, com o mesmo nome de arquivo, e gerar a prancha de

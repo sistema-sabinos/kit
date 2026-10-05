@@ -56,16 +56,15 @@ Com essas leituras em mãos, confirmar o entendimento em até 3 linhas, citando
 o nome real da pessoa e os projetos existentes de verdade, sem inventar nada
 que não veio dessas leituras:
 
-Se a resposta de confirmação vier com correção ou informação nova ("é isso, só
-que..."), acusar o recebimento em uma linha, dizendo o que mudou no entendimento,
-antes de seguir.
-
-
 > "Pelo que já sei: você é [nome], toca [projeto A, o que é] e [projeto B, o
 > que é]. O projeto novo é sobre o quê?"
 
 Se só existir um projeto até agora, ajustar pro singular: "você é [nome] e
 toca [projeto A, o que é]. O projeto novo é sobre o quê?"
+
+Se a resposta de confirmação vier com correção ou informação nova ("é isso, só
+que..."), acusar o recebimento em uma linha, dizendo o que mudou no entendimento,
+antes de seguir.
 
 ## Passo 0.5, sala própria ou pasta dentro de um projeto que já existe
 
@@ -397,7 +396,7 @@ perguntar outro nome antes de seguir.
 Partir de `_modelo/AGENTS.md` inteiro e mexer só na abertura (o título e o
 parágrafo que hoje traz o comentário `NOT CONFIGURED`): trocar pelo nome do
 projeto novo e por um resumo real do que ele é, vindo das respostas do Passo
-1. As seções depois disso ("Compatibilidade com Codex", "Início de conversa",
+1. As seções depois disso ("Compatibilidade com outros agentes", "Início de conversa",
 "Fluxo de trabalho", "Regras de operação", "Aprender e atualizar contexto",
 "Criação de skills") não se mexem. "Fluxo de trabalho" e "Criação de skills"
 já citam a biblioteca pelo caminho certo, `../_modelo/templates/skills/` (o

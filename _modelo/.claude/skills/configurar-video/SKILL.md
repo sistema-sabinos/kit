@@ -81,7 +81,7 @@ deep-filter**: diga em uma frase o que é, mostre o tamanho (`mb`) e o comando
   meio, rode o mesmo comando de novo.
 - **whisper**: o comando do campo `instalar`, do jeito que vem (já traz o `--modelo` que o
   passo 1 escolheu, e a pasta do whisper é a `ferramentas/whisper.cpp` do `_video`). É o programa que escuta a voz e escreve a legenda, e roda no
-  seu computador, de graça.
+  seu computador, de graça. A `/transcribe` e a `/pauta` usam outro programa (o faster-whisper), de propósito: o do vídeo é o que o Remotion sabe usar pra legenda palavra por palavra, e o outro roda em projeto sem vídeo.
 - **deep-filter**: `node .claude/skills/configurar-video/scripts/baixar-deep-filter.mjs`.
   Limpa o ruído da voz (ventilador, eco). Se o seu computador não tiver versão pronta, o
   script avisa e a voz passa por outro filtro, que limpa um pouco menos e funciona igual.

@@ -1,17 +1,14 @@
-# Pasta de projeto
+# Molde dos projetos
 
-Esta pasta é um projeto criado pelo SabinOS. Abra ela no VS Code pra
-trabalhar.
+Esta pasta é o molde de onde o SabinOS copia cada projeto novo. Não trabalhe
+aqui nem edite nada dela: mudança feita no molde some na próxima atualização
+do kit, e projeto nenhum recebe ela.
 
-## Comandos do dia a dia
+Pra criar um projeto, abra a pasta-mãe (um nível acima desta) no VS Code e
+diga "primeiro projeto" ou "adicionar projeto". O Claude copia daqui só o que
+o seu negócio precisa e monta a pasta nova pra você. Detalhes no
+[README](../README.md) da pasta-mãe.
 
-- `/iniciar`, no começo de cada sessão
-- `/atualizar`, no fim, pra fechar e guardar onde parou
-- `/mapear`, pra criar comandos novos a partir dos seus processos
-- `/conectar`, pra ligar as ferramentas do seu negócio
-- `/checar`, quando algo parecer quebrado ou pra saber se o backup está em dia
-
-## Criar outros projetos
-
-A sala de controle é a pasta-mãe, um nível acima desta. É lá que você cria e
-organiza os projetos: veja o [README](../README.md) dela.
+A biblioteca de modelos de comando (`templates/`) também mora aqui; ela não vai
+pros projetos, e o `/mapear` de cada projeto busca nela quando você quer criar
+um comando novo.

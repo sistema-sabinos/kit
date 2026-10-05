@@ -1,6 +1,6 @@
 # [Nome da Agência], SabinOS
 
-> Template pra agências e freelancers que atendem clientes.
+> Template pra agências que atendem clientes (freelancer tem modelo próprio).
 > Preencha os campos com colchetes e delete este aviso.
 
 ## O que é esse workspace

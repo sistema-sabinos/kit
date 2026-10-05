@@ -29,6 +29,17 @@ export function ehYoutube(url) {
   } catch { return false; }
 }
 
+// O YouTube pede um motor de JavaScript pro yt-dlp extrair todos os formatos; sem ele sai aviso
+// e pode faltar formato. O Node ja esta instalado, mas so versao nova do yt-dlp conhece a opcao:
+// versao velha recusaria a chamada inteira, por isso pergunta antes.
+export function opcoesJs(ajuda) {
+  return /--js-runtimes/.test(ajuda || '') ? ['--js-runtimes', 'node'] : [];
+}
+
+// O Gemini olha poucos quadros por segundo e em resolucao baixa: 720p ainda le texto na tela e
+// evita baixar centenas de MB a toa (video 4K virava 723 MB).
+export const FORMATO = 'bv*[height<=720][ext=mp4]+ba[ext=m4a]/bv*[height<=720]+ba/b[height<=720]/bv*+ba/b';
+
 function viaYtDlp(url, destino) {
   if (!temNoPath('yt-dlp')) {
     console.error(
@@ -36,28 +47,36 @@ function viaYtDlp(url, destino) {
       '  Windows: winget install yt-dlp\n' +
       '  Mac:     brew install yt-dlp'
     );
-    return null;
+    return { motivo: 'yt-dlp ausente' };
   }
   const saida = `${destino}.%(ext)s`;
+  const ajuda = spawnSync('yt-dlp', ['--help'], { encoding: 'utf8' }).stdout;
   const r = spawnSync('yt-dlp', [
-    '--no-warnings', '--no-playlist',
-    '-f', 'bv*[ext=mp4]+ba[ext=m4a]/bv*+ba/b',
+    '--no-warnings', '--no-playlist', ...opcoesJs(ajuda),
+    '-f', FORMATO,
     '--merge-output-format', 'mp4',
     '-o', saida, url,
   ], { encoding: 'utf8', timeout: 300000 });
 
   const alvo = `${destino}.mp4`;
-  if (existsSync(alvo) && statSync(alvo).size > 20000) return alvo;
+  if (existsSync(alvo) && statSync(alvo).size > 20000) return { arquivo: alvo };
   const motivo = (r.stderr || r.stdout || '').split('\n').filter(Boolean).slice(-2).join(' | ');
   console.error(`[baixar] yt-dlp não deu conta: ${motivo.slice(0, 220)}`);
-  return null;
+  return { motivo };
 }
 
+// 403 e 429 sao o site recusando por excesso de pedido seguido: passa sozinho, e login nao resolve.
+export const ehRecusaPorExcesso = motivo => /HTTP Error (403|429)/.test(motivo || '');
+
 export async function baixarVideo(url, destino) {
-  const porYtDlp = viaYtDlp(url, destino);
-  if (porYtDlp) {
-    console.error(`[baixar] yt-dlp ok (${(statSync(porYtDlp).size / 1e6).toFixed(2)} MB)`);
-    return porYtDlp;
+  const { arquivo, motivo } = viaYtDlp(url, destino);
+  if (arquivo) {
+    console.error(`[baixar] yt-dlp ok (${(statSync(arquivo).size / 1e6).toFixed(2)} MB)`);
+    return arquivo;
+  }
+  if (ehRecusaPorExcesso(motivo)) {
+    console.error('[baixar] o site recusou o download por excesso de pedidos seguidos (erro 403 ou 429). Espere uns minutos e tente de novo.');
+    throw new Error('download recusado pelo site, tentar de novo daqui a uns minutos');
   }
   console.error(
     '[baixar] o yt-dlp não conseguiu baixar esse vídeo. Se a rede exige login (comum no\n' +

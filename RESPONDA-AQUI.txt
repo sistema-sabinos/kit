@@ -1,10 +1,10 @@
-SABINOS, PERGUNTAS DO SEU NEGOCIO
+SABINOS, PERGUNTAS DO SEU NEGÓCIO
 ==================================================
 Responda embaixo de cada "Sua resposta", com calma e detalhe,
-como se estivesse explicando pra um socio novo.
-Nao precisa responder tudo: o que ficar em branco eu pergunto
+como se estivesse explicando pra um sócio novo.
+Não precisa responder tudo: o que ficar em branco eu pergunto
 na conversa. As marcadas com (opcional) pode pular sem culpa.
-Quanto mais detalhe, melhor eu trabalho pra voce.
+Quanto mais detalhe, melhor eu trabalho pra você.
 Quando terminar, salve o arquivo, abra o Claude nesta pasta
 e diga: primeiro projeto.
 

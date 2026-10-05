@@ -125,9 +125,11 @@ separado), ou o projeto virando, na prática, um negócio à parte.
    morar de forma definitiva.
 2. Abrir essa pasta como workspace independente no VS Code, e não mais como
    pasta dentro da pasta-mãe.
-3. Criar um repositório Git próprio pra ela (o `/syncar` serve pra isso
-   também fora da pasta-mãe) e apontar pro remoto novo, em vez de continuar
-   compartilhando o repositório da pasta-mãe.
+3. Conferir o backup: o projeto já tem repositório Git próprio (a pasta-mãe
+   ignora a pasta dele), então ele continua igual; o `/syncar` confirma.
+4. Refazer a ponte do Codex (`.agents/skills`): no Windows ela guarda o
+   caminho antigo e para de funcionar em silêncio. É só pedir "refaz a ponte
+   do Codex" dentro da pasta nova.
 
 ### O que conferir depois de mover
 
@@ -138,6 +140,14 @@ separado), ou o projeto virando, na prática, um negócio à parte.
   `templates/` pra dentro do projeto promovido (vira uma cópia própria, que
   passa a evoluir sozinha), ou aceitar que dali pra frente toda skill nova
   se escreve do zero.
+- **O que mais procura a pasta-mãe em `../`.** O `/mapear` lê o setup e o
+  `componentes.json` dela pra oferecer os pacotes; o `/checar` e o
+  `/atualizar` medem o tamanho dos arquivos de regra com o `medir-mesa` dela;
+  a regra 13 do `AGENTS.md` cria projeto novo pela skill dela. Fora da
+  pasta-mãe, essas partes não acham o que procuram: pra elas, abrir a
+  pasta-mãe no VS Code e pedir de lá.
+  Atualização de versão continua funcionando: o `/atualizar-sabinos` baixa do
+  GitHub e não depende da pasta-mãe.
 - **A pasta-mãe perde a linha do `.gitignore`.** A pasta do projeto estava
   listada lá pra não entrar no repositório da pasta-mãe; como ela não mora
   mais ali, essa linha virou lixo e pode ser removida.

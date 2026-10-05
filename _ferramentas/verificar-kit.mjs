@@ -30,6 +30,24 @@ const RE_SEGREDO = /(API_KEY|ACCESS_TOKEN|REFRESH_TOKEN|CLIENT_SECRET|BOT_TOKEN|
 // valor que e placeholder ou leitura de variavel, nao chave real
 const RE_PLACEHOLDER = /xxx|aqui|exemplo|placeholder|process\.env|sua.?chave|seu.?token/i
 const RE_LINK = /\[[^\]]*\]\(([^)]+)\)/g
+// Gate 6: dependencia de Windows chumbada (exportado pro teste dos guias na bancada)
+export const RE_WIN = /(?:\b[A-Z]:[\\/]{1,2}[\w\\/]|schtasks|\.bat\b|\\\\Users\\\\)/i
+
+// Detectores de conteudo do Gate 1 sobre um texto: devolve o detalhe de cada achado.
+// Exportado pro teste dos guias na bancada, que moram fora do kit e o gate nunca olha.
+export function vazamentosNoTexto(txt, proibidos) {
+  const achados = []
+  let baixo = txt.toLowerCase()
+  for (const re of PERMITIDOS) baixo = baixo.replace(re, '')
+  for (const termo of proibidos) {
+    if (baixo.includes(termo)) achados.push(`termo proibido: ${termo}`)
+  }
+  if (RE_MLB.test(txt)) achados.push('id de anuncio (MLB)')
+  for (const m of txt.matchAll(RE_SEGREDO)) {
+    if (!RE_PLACEHOLDER.test(m[2])) achados.push(`valor de segredo atribuido (${m[1]})`)
+  }
+  return achados
+}
 
 const OBRIGATORIOS = [
   'COMECE-AQUI.md', 'README.md', 'CLAUDE.md', 'AGENTS.md', 'RESPONDA-AQUI.txt', '.gitignore',
@@ -191,15 +209,7 @@ export function rodarGates(dirKit, opcoes = {}) {
     if (!ehTexto(rel)) continue
     if (ISENTOS_CONTEUDO.includes(rel)) continue
     const txt = readFileSync(join(dirKit, rel), 'utf8')
-    let baixo = txt.toLowerCase()
-    for (const re of PERMITIDOS) baixo = baixo.replace(re, '')
-    for (const termo of PROIBIDOS) {
-      if (baixo.includes(termo)) falhas.push({ gate: 1, arquivo: rel, detalhe: `termo proibido: ${termo}` })
-    }
-    if (RE_MLB.test(txt)) falhas.push({ gate: 1, arquivo: rel, detalhe: 'id de anuncio (MLB)' })
-    for (const m of txt.matchAll(RE_SEGREDO)) {
-      if (!RE_PLACEHOLDER.test(m[2])) falhas.push({ gate: 1, arquivo: rel, detalhe: `valor de segredo atribuido (${m[1]})` })
-    }
+    for (const detalhe of vazamentosNoTexto(txt, PROIBIDOS)) falhas.push({ gate: 1, arquivo: rel, detalhe })
   }
   for (const rel of arquivos) {
     // pasta proibida so conta como pasta de PRIMEIRO NIVEL do kit ou do _modelo/
@@ -301,7 +311,6 @@ export function rodarGates(dirKit, opcoes = {}) {
   }
 
   // Gate 6: portabilidade Windows/Mac (todo arquivo texto dentro de _modelo/ e do .claude/ da pasta-mae)
-  const RE_WIN = /(?:\b[A-Z]:[\\/]{1,2}[\w\\/]|schtasks|\.bat\b|\\\\Users\\\\)/i
   const RE_ENSINA = /windows.*mac|mac.*windows/i
   for (const rel of arquivos) {
     if (!ehTexto(rel)) continue

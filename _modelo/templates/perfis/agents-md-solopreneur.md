@@ -11,7 +11,6 @@
 - `_contexto/`, memória do sistema (não apagar)
 - `conteudo/`, produção de conteúdo por tipo
 - `projetos/`, projetos internos
-- `templates/`, modelos reutilizáveis
 - `dados/`, arquivos para análise (CSV, PDF, etc)
 - `tarefas.md`, lista de tarefas corrente
 

@@ -59,10 +59,25 @@ Todos os comandos abaixo que começam assim servem para os dois sistemas
 
 1. Pergunte: "Sobre o que é o vídeo, e o que a pessoa que assiste leva
    embora?". Resposta vaga ("faz aí") vira uma proposta sua, dita em voz alta.
-2. Crie `producao/AAAA-MM-DD-<assunto>/` com as pastas `bruto/`, `trab/`,
-   `public/` e `final/` dentro (os comandos dos próximos passos gravam nelas), e
-   os arquivos `brief.md` (a ideia) e `roteiro.md` (a fala).
-3. Escreva o roteiro assim:
+2. **Pasta da `/pauta` primeiro.** A `/pauta` já cria a pasta do post, com
+   `brief.md`, `roteiro.md` e `post.md`. Antes de criar qualquer pasta, procure
+   uma do mesmo assunto: o aluno diz qual ("é o do moedor da pauta"), ou existe
+   `producao/*/roteiro.md` (fora `_molde` e `_pauta`) com a tabela de vídeo
+   (`Bloco | Fala (literal) | ...`) sobre o mesmo assunto e sem `.mp4` em `final/`.
+   Achou mais de uma: liste todas em ordem de data e pergunte qual. Confirmada,
+   essa pasta é o `<slug>`: crie só as pastas `bruto/`, `trab/`, `public/` e
+   `final/` que faltarem, sem apagar nem reescrever o `brief.md`, o `roteiro.md`
+   e o `post.md` dela, e pule para o item 5.
+3. **Sem pasta da `/pauta`**, crie `producao/AAAA-MM-DD-<assunto>/` com as pastas
+   `bruto/`, `trab/`, `public/` e `final/` dentro (os comandos dos próximos passos
+   gravam nelas), e os arquivos `brief.md` (a ideia) e `roteiro.md` (a fala). Se o
+   projeto tem o pacote de mídia social, copie também o molde do post para
+   `producao/<slug>/post.md`: o primeiro que existir entre
+   `producao/_molde/post.md` e
+   `.claude/skills/midia-social/moldes/producao/_molde/post.md`. Ele é preenchido
+   no passo 8. Sem nenhum dos dois, o projeto não tem o pacote e o `post.md` sai
+   à mão no passo 8.
+4. Escreva o roteiro assim:
    - **Primeiro, a mensagem em uma frase**: o que a pessoa leva embora. A
      primeira frase do vídeo promete isso e a última entrega. Vídeo com dois ou
      três destinos (piada, aula e recado) confunde.
@@ -78,8 +93,19 @@ Todos os comandos abaixo que começam assim servem para os dois sistemas
      "Promessa e regras" de `referencias/checklist-qc.md` antes de mostrar.
    - Escreva `roteiro.md` como tabela com as colunas **Fala**, **Na tela** e
      **Som**. A coluna "Na tela" diz o gráfico ou o recurso de cada frase.
-4. **Gate do roteiro.** Mostre o roteiro e pergunte: "É isso que você vai
+5. **Roteiro que veio da `/pauta`.** Ele tem outras colunas:
+   `Bloco | Fala (literal) | O que aparece na tela | Duracao`. Leia assim:
+   "Fala (literal)" é a **Fala**, "O que aparece na tela" é o **Na tela**, e cada
+   bloco é uma linha de fala. "Duracao" é só o alvo de tempo do bloco, nunca corte
+   obrigatório: o corte sai da fala gravada (passo 3). Não há coluna **Som**: o
+   som se decide no passo 5. Não converta nem reescreva o arquivo, porque foi esse
+   texto que o aluno aprovou na `/pauta`; mudança que ele pedir agora entra na
+   própria tabela, no formato dela. A seção `## Carrossel` do molde, se sobrou,
+   não vale para vídeo.
+6. **Gate do roteiro.** Mostre o roteiro e pergunte: "É isso que você vai
    falar? Aprova, ou me diz o que mudar". Nada de gravar, nem de editar, antes do sim.
+   No roteiro da `/pauta`, a pergunta é só "É este que você vai gravar, do jeito
+   que está?", já que ele foi aprovado lá.
 
 ## Passo 2: fundo verde ou cenário próprio
 
@@ -370,14 +396,34 @@ nas camadas:
 Guarde a versão: copie `producao/<slug>/final/<slug>.mp4` para
 `producao/<slug>/final/<slug>-v1.mp4` antes de qualquer novo render (o render
 apaga o anterior). Abra o vídeo para o aluno (no Windows
-`cmd /c start "" "<caminho>"`, no Mac `open "<caminho>"`) e diga:
+`node -e "require('child_process').spawn('cmd',['/c','start','',process.argv[1]],{detached:true,stdio:'ignore'}).unref()" "<caminho>"`, pelo Node porque o `cmd /c` direto no terminal Git Bash não faz nada; no Mac `open "<caminho>"`) e diga:
 
 "Pronto, abri o vídeo. Assiste inteiro, até o fim, e me responde: aprova, ou
 me diz o que mudar e em que segundo."
 
 Cada pedido de mudança vira uma nova rodada: ajuste, render, conferir, fiscal,
-`-v2`. Aprovado, diga onde está o arquivo. Se pedir, escreva a legenda do post.
-Esta skill nunca publica.
+`-v2`. Aprovado, diga onde está o arquivo. Esta skill nunca publica.
+
+**O `post.md` do vídeo aprovado.** É dele que a `/publicar-social` tira a
+legenda, e sem ele o vídeo não agenda.
+
+- Pasta da `/pauta`: o `post.md` já existe. Releia contra o vídeo final e só
+  mude o que o vídeo mudou, mostrando ao aluno.
+- Pasta nova: preencha o `post.md` copiado no passo 1 (sem pacote de mídia
+  social, crie com as mesmas seções do molde: `# Post: <título>`, a linha `ia:`,
+  `## Legenda`, `## YouTube titulo` e `## YouTube descricao`). A legenda tem de 3 a
+  6 linhas e fecha com a chamada do vídeo; o título do Short é curto e diz o
+  assunto; a descrição do Short repete a promessa em duas ou três linhas. Nenhuma
+  linha com texto entre `<` e `>` pode sobrar, senão o agendador recusa.
+- A linha `ia:` fica `ia: sim` se o vídeo tiver imagem ou voz gerada por IA
+  (o cenário gerado pelo Gemini ou pelo Codex conta), senão `ia: nao`.
+- No `final/` fica só o vídeo pronto: o agendador pega o `.mp4` mais novo que
+  não tenha `-preview` no nome. Prévia de teste leva `-preview` no nome.
+
+Mostre a legenda ao aluno e feche dizendo: com o pacote de mídia social, "Pra
+agendar, chama a `/publicar-social` com a pasta `<slug>` e o horário"; sem ele,
+"O vídeo e a legenda estão prontos pra postar à mão, e a pasta já está no formato
+que a `/publicar-social` lê quando o pacote de mídia social for instalado".
 
 ## Passo 9: aprendizado da peça (obrigatório)
 

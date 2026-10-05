@@ -1095,8 +1095,12 @@ async function fase3({ mlb, base, slug, a, d, precos }) {
   // rosto, e ai a legenda (que sai do roteiro) fica mentindo. O transcrever so
   // aceita WAV, entao extrai o audio antes em vez de mandar o mp4 com mime errado.
   const wav = path.join(trabalho, 'final-audio.wav')
-  const ext = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', saida, '-vn', '-ac', '1', '-ar', '24000', wav], { encoding: 'utf8' })
-  if (ext.status !== 0) { console.error(`[voz] nao consegui extrair o audio do video pra conferir: ${(ext.stderr || '').slice(-300)}`); return 1 }
+  const ext = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', saida, '-vn', '-ac', '1', '-ar', '24000', wav], { encoding: 'utf8', timeout: 600000 })
+  if (ext.status !== 0) {
+    const porque = ext.signal ? `o ffmpeg passou de 10 minutos e foi interrompido (maquina carregada?), rode a fase 3 de novo` : (ext.stderr || '').slice(-300)
+    console.error(`[voz] nao consegui extrair o audio do video pra conferir: ${porque}`)
+    return 1
+  }
 
   let dito
   try {

@@ -254,6 +254,11 @@ A `/cadastrar-bling` cria o arquivo com o bloco `erp` e `canais` vazio; a
 Uma decisão por linha. Linha nunca se edita nem se apaga: pra reabrir,
 grava-se outra pro mesmo alvo, e a mais recente é a que vale.
 
+Esta ata é só do Mercado Livre. O `/trafego` (anúncio no Instagram e no
+Facebook) mantém a dele em `dados/trafego/decisoes.jsonl`, com o formato da
+própria skill, e nenhuma das duas lê a outra: são negócios e plataformas
+diferentes, e misturar faria a fila de uma esconder anúncio da outra.
+
 ```json
 {"ts":"2026-09-23T14:00:00.000Z","escopo":"ads","alvo":{"id":"123","nome":"Campanha kits"},"decisao":"nao_mexer","resumo":"deixar aprender mais uma semana","motivo":"o lance mudou há 3 dias","baseline":{"acos_7d":0.18},"reavaliar_em":"2026-09-30","esperado":"ACOS abaixo do teto"}
 ```

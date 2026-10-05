@@ -11,7 +11,6 @@
 - `_contexto/`, memória do sistema (não apagar)
 - `clientes/`, um subdiretório por cliente
 - `conteudo/`, produção de conteúdo
-- `templates/`, modelos reutilizáveis
 - `dados/`, arquivos para análise (CSV, PDF, etc)
 - `tarefas.md`, lista de tarefas corrente
 

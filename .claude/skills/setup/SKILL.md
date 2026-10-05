@@ -482,7 +482,7 @@ Windows no git, e o backup passa a ver o mesmo arquivo como dois.
 Partir de `_modelo/AGENTS.md` inteiro e mexer só na abertura (o título e o parágrafo
 que hoje traz o comentário `NOT CONFIGURED`): trocar pelo nome do negócio e por um
 resumo real de quem é a pessoa e o que o workspace representa. As seções depois
-disso ("Compatibilidade com Codex", "Início de conversa", "Fluxo de trabalho",
+disso ("Compatibilidade com outros agentes", "Início de conversa", "Fluxo de trabalho",
 "Regras de operação", "Aprender e atualizar contexto", "Criação de skills") não
 se mexem. "Fluxo de trabalho" e "Criação de skills" já citam a biblioteca pelo
 caminho certo,
@@ -498,8 +498,7 @@ Claude Code carregar o mesmo conteúdo, sem duplicar informação em dois arquiv
 
 A lista de pastas dentro de "Estrutura de pastas" precisa refletir o que existe **de
 verdade** no projeto, não o que está escrito no `_modelo/` nem no template do
-perfil: tirar a linha de `templates/` (a biblioteca não é copiada, só existe na
-pasta-mãe) e usar como inspiração a lista do
+perfil: usar como inspiração a lista do
 template de perfil correspondente em `_modelo/templates/perfis/agents-md-<perfil>.md`
 (`agencia`, `freelancer`, `solopreneur` e `empresa` têm modelo pronto; `criador`
 parte do de `solopreneur`; `profissional` usa uma estrutura simples: `trabalho/projetos/`,
