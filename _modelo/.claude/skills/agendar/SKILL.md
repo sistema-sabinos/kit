@@ -123,8 +123,8 @@ agendar.
 
 `node .claude/skills/agendar/scripts/agendador.mjs registrar robos/<nome>.mjs`
 
-O comando confere lendo a tarefa de volta do agendador. Anotar em
-`_contexto/ferramentas.md`: `| robô <nome> | agendado | <AAAA-MM-DD> | <quando> |`.
+O comando confere lendo a tarefa de volta do agendador. Anotar uma linha em
+`_contexto/automacoes.md`: `| <nome> | <o que confere> | este computador | <quando> | robo-<nome> | aviso no Telegram ou recado em _memoria/recados/ |`.
 
 Dizer ao usuário: "Pronto. Se estiver tudo certo, você não recebe nada." E
 completar conforme o computador. No Windows: "Se o computador estiver desligado
@@ -139,8 +139,8 @@ hora, ele roda quando acordar; desligado, a rodada daquele dia se perde."
   rodada.
 - "Tira o robô X": confirmar e rodar
   `node .claude/skills/agendar/scripts/agendador.mjs remover <nome>`. A receita
-  em `robos/` fica, a não ser que o usuário peça pra apagar. Atualizar
-  `_contexto/ferramentas.md`.
+  em `robos/` fica, a não ser que o usuário peça pra apagar. Tirar a linha
+  dele do `_contexto/automacoes.md`.
 - "Algum robô parou?": `node .claude/skills/agendar/scripts/agendador.mjs atrasados`
   mostra robô que parou de rodar (PC trocado, pasta renomeada, janela fechada).
   O `/iniciar` já confere isso sozinho.
@@ -153,7 +153,7 @@ hora, ele roda quando acordar; desligado, a rodada daquele dia se perde."
   `robos/execucoes.jsonl`, consertar a receita e testar com `--teste`.
 - Aviso "não conseguiu nem começar": a receita quebrou ou a pasta mudou de
   lugar. O erro fica em `robos/<nome>.log`; consertar e testar com `--teste`.
-- Mensagem que não chegou fica guardada em `robos/avisos-pendentes.md`, e o
+- Mensagem que não chegou vira um recado em `_memoria/recados/`, e o
   `/iniciar` mostra. Conferir o token e a conversa com `avisar.mjs --teste`.
 - No Windows, a coluna "Resultado da última execução" do Agendador de Tarefas
   sempre mostra 0, mesmo quando o robô falhou. O resultado de verdade está em

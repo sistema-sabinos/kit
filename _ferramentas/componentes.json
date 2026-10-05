@@ -3,7 +3,9 @@
     "nucleo": { "depende": [], "caminhos": [
       ".claude/skills/iniciar/", ".claude/skills/atualizar/", ".claude/skills/conectar/",
       ".claude/skills/mapear/", ".claude/skills/syncar/", ".claude/skills/atualizar-sabinos/",
-      "_contexto/arquivo/README.md", "dados/README.md"
+      ".claude/skills/faxina/", ".claude/skills/compartilhar/", ".claude/skills/segunda-opiniao/",
+      "_contexto/arquivo/README.md", "dados/README.md",
+      ".claude/hooks/auto-sync.mjs"
     ] },
     "bastao": { "depende": [], "caminhos": [".claude/skills/bastao/"] },
     "checar": { "depende": ["nucleo"], "caminhos": [".claude/skills/checar/"] },

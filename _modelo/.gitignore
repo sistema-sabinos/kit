@@ -1,30 +1,70 @@
-# Chaves e segredos: NUNCA sobem pro GitHub
-.env
-.env.*
+# Backup fechado por padrao. O auto-sync faz `git add -A` ao fim de cada resposta,
+# entao aqui tudo comeca FORA do backup e so entra o tipo liberado abaixo. Tipo novo
+# (video, .zip, .psd, export gigante) nunca sobe nem derruba o backup em silencio;
+# a /faxina avisa quando um arquivo seu ficou de fora.
+*
+!*/
 
-# Aviso de backup falhado, escrito pelo auto-sync e lido no início da sessão
-.backup-falhou
+# texto e estrutura
+!*.md
+!*.html
+!*.css
+!*.txt
+!*.csv
+!*.jsonl
+!*.pdf
+# configuracao
+!*.json
+!*.yaml
+!*.yml
+!*.toml
+# script
+!*.mjs
+!*.js
+!*.ts
+!*.tsx
+!*.py
+!*.sh
+!*.ps1
+# imagem
+!*.png
+!*.jpg
+!*.jpeg
+!*.svg
+!*.webp
+!*.gif
+# escritorio
+!*.docx
+!*.xlsx
+!*.pptx
+!*.odt
+!*.ods
+# estrutura do git
+!.gitkeep
+!.gitignore
+!.gitattributes
 
-# Lixo de execução
-node_modules/
-*.log
-.DS_Store
-Thumbs.db
-
-# Mídia pesada: o auto-sync faz `git add -A`, e o GitHub recusa arquivo acima de
-# 100 MB. Um vídeo baixado aqui dentro derruba o backup inteiro, em silêncio.
-*.mp4
-*.mov
-*.webm
-*.mkv
-*.mp3
-*.wav
-*.m4a
-# exceção: a voz de teste do /configurar-video é arquivo do kit (387 KB) e o teste rápido exige ela
+# Excecoes do kit, por caminho: arquivos que o sistema traz e precisam ir no backup
 !.claude/skills/configurar-video/referencias/teste-voz.wav
+!.claude/skills/editar-video/motor/scripts/modelos/face_detection_yunet_2023mar.onnx
+!.claude/skills/video-produto/scripts/fontes/*.ttf
 
-# Perfil do Chrome dedicado do pacote Mercado Livre: guarda o login da conta, nunca sobe
-dados/chrome-perfil/
-
-# ponte pro Codex, criada em tempo de uso, nunca versionada
+# Bloqueio de proposito, por cima de tudo que foi liberado
+# chaves e segredos: NUNCA sobem pro GitHub
+.env*
+!.env.example
+# nome desta maquina e aviso do auto-sync: valem so neste computador
+.origem
+.backup-falhou
+_memoria/recados/*-auto-sync-parado.md
+.claude/settings.local.json
+# lixo de execucao e de instalacao
+node_modules/
+__pycache__/
+.venv/
+dist/
+build/
+# ponte pro Codex, criada em tempo de uso
 .agents/
+# perfil do Chrome dedicado do pacote Mercado Livre: guarda o login da conta
+dados/chrome-perfil/

@@ -32,6 +32,8 @@ comandos sob medida pro seu negócio. Se você vende em marketplace, ele oferece
 No final ele cria uma pasta com o nome do seu projeto e te ensina a
 abrir ela no VS Code. É lá que o trabalho acontece dali em diante.
 Esta pasta aqui serve pra criar projetos novos quando você quiser.
+Uma vez por mês, peça `/faxina` dentro do projeto: ela mostra o que ficou
+velho ou fora do lugar e só mexe com o seu sim.
 
 ---
 

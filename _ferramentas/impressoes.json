@@ -1,5 +1,5 @@
 {
- "versao": "4.2",
+ "versao": "4.3",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -56,6 +56,10 @@
   ".claude/agents/publicador.md": {
    "67eff73d42085e8f": "anterior-3.6"
   },
+  ".claude/hooks/auto-sync.mjs": {
+   "dd71c594aab6fed3": "4.3",
+   "366ebb77ab7292bf": "4.3"
+  },
   ".claude/hooks/barrar-perigoso.mjs": {
    "b9a2703d4bb40fdc": "3.4",
    "e01b1eb119cc7801": "anterior-3.4",
@@ -70,12 +74,14 @@
    "48f7184c1a3c84e9": "3.4",
    "41d9cd645c4ce95f": "anterior-3.0",
    "b5ad0fe052a59403": "anterior-3.4",
-   "d2abfb67c3a33556": "anterior-3.4"
+   "d2abfb67c3a33556": "anterior-3.4",
+   "82960e08b81e28d2": "4.3"
   },
   ".claude/skills/agendar/SKILL.md": {
    "f36add9b42324990": "3.7",
    "5c2b406782b75d73": "anterior-3.7",
-   "2cb43f7e65a01a9e": "anterior-3.7"
+   "2cb43f7e65a01a9e": "anterior-3.7",
+   "aadd8d45a14f5b4b": "4.3"
   },
   ".claude/skills/agendar/scripts/agendador.mjs": {
    "a48bb50be24605fa": "3.7",
@@ -86,7 +92,8 @@
    "e64a878ba493146c": "anterior-3.7"
   },
   ".claude/skills/agendar/scripts/avisar.mjs": {
-   "4499fac96a3135ef": "3.7"
+   "4499fac96a3135ef": "3.7",
+   "920fc394f8f96463": "4.3"
   },
   ".claude/skills/agendar/scripts/lib/boot-guard.mjs": {
    "299f9655d154e046": "3.7"
@@ -166,14 +173,21 @@
   },
   ".claude/skills/atualizar-sabinos/SKILL.md": {
    "925ddd431692f47b": "3.5",
-   "633a1e98070a1a6a": "anterior-3.5"
+   "633a1e98070a1a6a": "anterior-3.5",
+   "1766e31e3190aaff": "4.3",
+   "6adc00353b88ae00": "4.3"
   },
   ".claude/skills/atualizar/SKILL.md": {
    "6e59beac2d32c3fa": "3.0",
    "f7c2c3597c86650d": "3.1",
    "847b1c82510b9fb7": "4.1",
    "03694d94ed398d4b": "anterior-3.0",
-   "2bdcd778ff9a2a6a": "anterior-3.0"
+   "2bdcd778ff9a2a6a": "anterior-3.0",
+   "4528ce98f080867d": "4.3",
+   "e01941735e19daf8": "4.3",
+   "7e82d529aef5254d": "4.3",
+   "81ad7a7e94d4d26e": "4.3",
+   "d8f453458b0c9477": "4.3"
   },
   ".claude/skills/auditar-conta/SKILL.md": {
    "d80727c54f1b0026": "3.6",
@@ -254,7 +268,9 @@
    "859f9b51056f0d66": "anterior-3.4",
    "1ad4b7bf727ecad0": "anterior-3.4",
    "e3b9acc8664f6320": "anterior-3.7",
-   "688b533e3d3481bd": "anterior-3.7"
+   "688b533e3d3481bd": "anterior-3.7",
+   "bb0630a2a770e236": "4.3",
+   "ea7cb1f99b0863e4": "4.3"
   },
   ".claude/skills/comecar-a-vender/SKILL.md": {
    "851b4a1d8a039a29": "3.8",
@@ -284,6 +300,20 @@
   ".claude/skills/comecar-a-vender/scripts/fatos.mjs": {
    "45b3454154506af9": "3.8"
   },
+  ".claude/skills/compartilhar/SKILL.md": {
+   "79da263ebdbc8789": "4.3",
+   "6f31562549b4be0f": "4.3",
+   "0f6c34a5067f63f6": "4.3",
+   "aab0de264ef9832f": "4.3",
+   "9e0b2909b9036646": "4.3"
+  },
+  ".claude/skills/compartilhar/scripts/compartilhar.mjs": {
+   "d2552786b0e21378": "4.3",
+   "d801c3503802f7c4": "4.3",
+   "7f60b1b99aa57164": "4.3",
+   "31edb2701c995ee8": "4.3",
+   "9cd25318ee15b1e0": "4.3"
+  },
   ".claude/skills/conectar/SKILL.md": {
    "00ce3a2576a89169": "3.0",
    "96efa3b18305e191": "3.1",
@@ -295,6 +325,7 @@
   },
   ".claude/skills/configurar-video/SKILL.md": {
    "65b9510e6d597851": "4.1",
+   "cb1b8e9aecd1815c": "4.2",
    "66ea8160e98d55fc": "anterior-4.1",
    "da23fb7faf5b1f1f": "anterior-4.1",
    "88d396d7c2ece819": "anterior-4.1",
@@ -302,8 +333,7 @@
    "552cc44a12557f79": "anterior-4.1",
    "2a23e655e557ee84": "anterior-4.1",
    "58e6941b7f33136a": "anterior-4.1",
-   "c60a74eac85d8bb8": "anterior-4.1",
-   "cb1b8e9aecd1815c": "4.2"
+   "c60a74eac85d8bb8": "anterior-4.1"
   },
   ".claude/skills/configurar-video/referencias/midia-manifesto.json": {
    "e6409f8f3a873307": "anterior-4.1",
@@ -385,11 +415,11 @@
   },
   ".claude/skills/editar-video/SKILL.md": {
    "3e36f035602f746f": "4.1",
+   "113e26c3d74ccd8e": "4.2",
    "347d70d8a587e38e": "anterior-4.1",
    "62b3bfd574d0bfc1": "anterior-4.1",
    "96fe5d0b9a91ed63": "anterior-4.1",
-   "a018092b341be72e": "anterior-4.1",
-   "113e26c3d74ccd8e": "4.2"
+   "a018092b341be72e": "anterior-4.1"
   },
   ".claude/skills/editar-video/motor/.gitignore": {
    "fe213e386b214ebb": "4.1"
@@ -652,6 +682,25 @@
    "c375b93cc3691952": "anterior-4.1",
    "07a36da8d565fa10": "anterior-4.1"
   },
+  ".claude/skills/faxina/SKILL.md": {
+   "519445c2314b6833": "4.3",
+   "20f72cca57f7a2cf": "4.3",
+   "a79278f238a0d29e": "4.3",
+   "50c496df3bce1b2d": "4.3",
+   "d407e86cab10c6cd": "4.3",
+   "5d2d757a790d36d4": "4.3"
+  },
+  ".claude/skills/faxina/scripts/faxina.mjs": {
+   "bb8cfee3e3c12df9": "4.3",
+   "ff724cdf05da2ebb": "4.3",
+   "2baa31b048b98bb9": "4.3",
+   "55d2a7afcbe6be05": "4.3",
+   "d15c6aa078703e80": "4.3",
+   "de06cdb2d2bcc008": "4.3",
+   "104fa4e008649e85": "4.3",
+   "b2057eae076b3334": "4.3",
+   "9abf4aa31716801c": "4.3"
+  },
   ".claude/skills/find-skills/SKILL.md": {
    "5924ba36058bcb50": "3.0",
    "97e6537b2ec76001": "3.1",
@@ -661,9 +710,9 @@
   },
   ".claude/skills/gerar-imagens/SKILL.md": {
    "4d9613bd46433985": "4.1",
+   "0ede41dc238bba7a": "4.2",
    "79b208a3578ac0d1": "anterior-4.1",
-   "774bba6bf16360f2": "anterior-4.1",
-   "0ede41dc238bba7a": "4.2"
+   "774bba6bf16360f2": "anterior-4.1"
   },
   ".claude/skills/gerar-imagens/referencias/estilos.md": {
    "422779be6e0606ef": "4.1"
@@ -721,7 +770,9 @@
    "e51d6dcb94ed19e3": "anterior-3.0",
    "a4cd35c64db21898": "anterior-3.0",
    "6bef6171079f5ca8": "anterior-3.7",
-   "86354aabf68b5cd5": "anterior-3.8"
+   "86354aabf68b5cd5": "anterior-3.8",
+   "7d536d2d06fb730f": "4.3",
+   "e5d4f045eef169c3": "4.3"
   },
   ".claude/skills/mapear/SKILL.md": {
    "1d0419caf131bf61": "3.0",
@@ -802,6 +853,7 @@
    "cd7ec87a2948ec8c": "3.6",
    "5c885fb59ae9b1a6": "3.8",
    "d7eb464178c6f3d5": "4.1",
+   "ef5326dd6e26cd91": "4.2",
    "018a14d831a02d7b": "anterior-3.6",
    "fbd39de8bbe11e2b": "anterior-3.6",
    "488208f27400e75b": "anterior-3.6",
@@ -809,8 +861,7 @@
    "415226e22c145ba4": "anterior-3.6",
    "35dfe8168a5d3e6a": "anterior-4.1",
    "2e9b0069cf8f0e4c": "anterior-4.1",
-   "5614c8432b6e5836": "anterior-4.1",
-   "ef5326dd6e26cd91": "4.2"
+   "5614c8432b6e5836": "anterior-4.1"
   },
   ".claude/skills/mercado-livre/referencias/navegador.md": {
    "028bc14577b03c93": "3.7"
@@ -1173,20 +1224,29 @@
    "c737bc4f35efa890": "anterior-4.1",
    "88ad7cc6ee8040d8": "anterior-4.1"
   },
+  ".claude/skills/segunda-opiniao/SKILL.md": {
+   "d8df5b3a197749d6": "4.3",
+   "144de5c122ab5e8a": "4.3",
+   "d1f038b977bc6ec8": "4.3"
+  },
   ".claude/skills/setup/SKILL.md": {
    "2b4b146ff8277214": "anterior-3.0"
   },
   ".claude/skills/syncar/SKILL.md": {
    "b4f4899d262b2d67": "3.0",
    "17900feef39d7058": "4.1",
-   "1542dc3d412b7095": "anterior-3.0"
+   "1542dc3d412b7095": "anterior-3.0",
+   "22f1995cd7d253a4": "4.3",
+   "66b7a79ad2babf6a": "4.3",
+   "9071ff69bcaed336": "4.3",
+   "a7455357749c4ec4": "4.3"
   },
   ".claude/skills/trafego/SKILL.md": {
    "e3e5e1033b5c6365": "3.3",
    "e60e3f1eb09e9bfa": "4.1",
+   "a0eaf0558ac80d40": "4.2",
    "005b40a303cb1be0": "anterior-3.3",
-   "3439e02bd69caa6c": "anterior-3.3",
-   "a0eaf0558ac80d40": "4.2"
+   "3439e02bd69caa6c": "anterior-3.3"
   },
   ".claude/skills/trafego/referencias/metodo.md": {
    "bb4108df3900381d": "3.3",
@@ -1213,15 +1273,15 @@
   },
   ".claude/skills/transcribe/README.md": {
    "2570662238d51ba4": "3.0",
-   "858b393aabaf733f": "anterior-3.0",
-   "287024f70020b8b7": "4.2"
+   "287024f70020b8b7": "4.2",
+   "858b393aabaf733f": "anterior-3.0"
   },
   ".claude/skills/transcribe/SKILL.md": {
    "30a1f4c989a7bc05": "3.0",
    "0eae47ca101674ee": "4.1",
+   "a41b9b80b91528ff": "4.2",
    "065b184bf20e3dc0": "anterior-3.0",
-   "28e3c9e500cf909f": "anterior-4.1",
-   "a41b9b80b91528ff": "4.2"
+   "28e3c9e500cf909f": "anterior-4.1"
   },
   ".claude/skills/transcribe/scripts/transcribe_url.py": {
    "338c30119514d99f": "3.0",
@@ -1333,13 +1393,16 @@
   },
   ".claude/skills/video-produto/scripts/video-produto.mjs": {
    "6bfde41974ef4cdc": "4.1",
+   "11de4ab6928e2561": "4.2",
    "0d329c10050860b3": "anterior-4.1",
    "eeb3dec766b59dba": "anterior-4.1",
    "be75abf74fb955da": "anterior-4.1",
    "b7b938c98ed74917": "anterior-4.1",
    "c56c72f23a2ff335": "anterior-4.1",
-   "60aa56aee384b50a": "anterior-4.1",
-   "11de4ab6928e2561": "4.2"
+   "60aa56aee384b50a": "anterior-4.1"
+  },
+  ".gitattributes": {
+   "4d04b7e92d8b3ef8": "4.3"
   },
   ".gitignore": {
    "8c89c21a2e5b5800": "3.0",
@@ -1347,17 +1410,25 @@
    "60b0aa527617d529": "4.1",
    "f55a864d8d473607": "anterior-3.0",
    "de7cbfcf414ae059": "anterior-3.0",
-   "8f5ffdc1d73b5b20": "anterior-3.5"
+   "8f5ffdc1d73b5b20": "anterior-3.5",
+   "3fa975c61d0a27fc": "4.3",
+   "253bb87f8b12c05a": "4.3",
+   "20e2aaf84973b129": "4.3"
   },
   "AGENTS.md": {
    "2b728a009c77a407": "3.0",
    "130bd39d003ac0db": "3.1",
    "d53f8c73eb1d4bf0": "3.4",
    "6c558189c1acd355": "4.1",
+   "b508df390f5b9859": "4.2",
    "56a07bbf79e76281": "anterior-3.0",
    "a2472a4de5c2c1fd": "anterior-3.0",
    "22902c95f73a6baf": "anterior-4.1",
-   "b508df390f5b9859": "4.2"
+   "e1de1ad21ed4f5d9": "4.3",
+   "3a6554d4c0bf2e9c": "4.3",
+   "c6306480a5adf33e": "4.3",
+   "b25c1008862d978b": "4.3",
+   "d14f42184890533a": "4.3"
   },
   "CLAUDE.md": {
    "336cc4fbf19beaad": "3.0",
@@ -1371,10 +1442,14 @@
   },
   "_contexto/agora.md": {
    "5b8c6bcdd21e9e6c": "3.0",
-   "102fa52a93c984c3": "3.1"
+   "102fa52a93c984c3": "3.1",
+   "87defc84423f6df1": "4.3"
   },
   "_contexto/arquivo/README.md": {
    "f393cdbf7847488a": "3.1"
+  },
+  "_contexto/automacoes.md": {
+   "ef2f8d713fe10871": "4.3"
   },
   "_contexto/empresa.md": {
    "a2ab81acb5cfa8ec": "3.0",
@@ -1387,6 +1462,9 @@
   "_contexto/ferramentas.md": {
    "8a7285b89d92ee5b": "3.0"
   },
+  "_contexto/infra.md": {
+   "5d0130320548dfac": "4.3"
+  },
   "_contexto/licoes.md": {
    "ffd0c94cf2f16051": "3.0",
    "831e3432ac813ebd": "3.1",
@@ -1397,6 +1475,21 @@
    "a3513336d9995f5e": "3.1",
    "665eaf310c33081e": "3.3",
    "c07a15822c5d13fd": "anterior-3.0"
+  },
+  "_memoria/arquivo/.gitkeep": {
+   "e3b0c44298fc1c14": "4.3"
+  },
+  "_memoria/decisoes.md": {
+   "c87e8dcbfd6d44bf": "4.3",
+   "5ea11533996324c4": "4.3",
+   "2630518edba9cb4e": "4.3",
+   "8f5d971022e846d3": "4.3"
+  },
+  "_memoria/diario/.gitkeep": {
+   "e3b0c44298fc1c14": "4.3"
+  },
+  "_memoria/recados/.gitkeep": {
+   "e3b0c44298fc1c14": "4.3"
   },
   "dados/README.md": {
    "51612c99379a8912": "3.0"

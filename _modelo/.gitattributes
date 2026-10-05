@@ -1,0 +1,4 @@
+# Diario e decisoes so recebem linha nova. Quando dois computadores escrevem no
+# mesmo arquivo ao mesmo tempo, o Git junta as duas versoes em vez de travar o backup.
+_memoria/decisoes.md merge=union
+_memoria/diario/*.md merge=union

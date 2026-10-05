@@ -1,29 +1,75 @@
 # Projeto SabinOS
 
+## Sobre este negócio
+
 <!-- NOT CONFIGURED: o /setup substitui esta seção pelo contexto real do negócio -->
 > Workspace de trabalho com IA. Rode `/setup` pra configurar pro seu negócio.
 
-## Estrutura de pastas
+## Mapa
 
-- `_contexto/`, memória do sistema (não apagar): empresa, preferências, estratégia, `agora.md` (onde paramos, pendências), `licoes.md` (erro aprendido), `ferramentas.md` (o que está conectado), `arquivo/` (memória fria, fora da conversa)
-- `marca/`, identidade visual (`design-guide.md`, lido antes de tarefa visual)
-- `dados/`, arquivos pra análise (planilha, PDF, CSV, print)
-- biblioteca de templates na pasta-mãe do SabinOS, em `../_modelo/templates/`; o `/mapear` puxa de lá
-- `tarefas.md`, lista de tarefas corrente (criada pelo /setup)
+Pra saber X, leia Y. Única fonte de caminho do sistema: skill e regra dizem "a marca", "o diário", e o caminho sai daqui.
 
-## Compatibilidade com outros agentes
+- negócio, clientes, processos: `_contexto/empresa.md`
+- jeito de trabalhar e de escrever: `_contexto/preferencias.md`
+- rumo, prioridade e fase: `_contexto/estrategia.md`
+- onde paramos: `_contexto/agora.md`
+- erro já corrigido: `_contexto/licoes.md`
+- ferramenta e conta ligada: `_contexto/ferramentas.md`
+- o que roda sozinho: `_contexto/automacoes.md`
+- site, domínio, servidor, banco, DNS: `_contexto/infra.md`
+- o que foi feito em cada dia (o diário): `_memoria/diario/AAAA-MM-DD.md`
+- decisão e o porquê: `_memoria/decisoes.md`
+- recado de robô ou de outra máquina: `_memoria/recados/`
+- memória fria: `_contexto/arquivo/` e `_memoria/arquivo/AAAA/`
+- a marca: `marca/design-guide.md`
+- material pra análise: `dados/`
+- pendência pra depois: `tarefas.md`
+- um projeto: a pasta dele (`AGENTS.md`, `contexto.md`, `andamento.md`)
+- nome desta máquina (a origem): `.origem`, uma palavra; sem o arquivo, `dono`
+- templates de skill: `../_modelo/templates/skills/`
 
-O conteúdo real fica aqui; o `CLAUDE.md` é só o ponteiro `@AGENTS.md`. Vale pro Claude Code e pro Codex, e a ponte `.agents/skills` serve aos dois e ao Hermes Agent. No Codex não rodam o auto-sync nem a trava da regra 12: backup manual com `/syncar` no fim da sessão.
+## Tabela de destinos
 
-## Início de conversa
+Aconteceu X, escreve em Y. Diário e `licoes.md` vão na hora; o resto o `/atualizar` passa pela tabela no fim. Instrução permanente ("sempre que", "prefiro assim") é a exceção ao "no fim": perguntar; com o sim, gravar na hora. Sempre linha nova, sem reformatar o arquivo, mostrando o que entrou.
 
-Ler em background, sem confirmar: `_contexto/empresa.md`, `_contexto/preferencias.md`, `_contexto/estrategia.md` e `_contexto/agora.md`; em tarefa visual, também `marca/design-guide.md`.
+- fato do negócio → `empresa.md`
+- rumo → `estrategia.md`
+- correção de jeito → `preferencias.md`
+- ferramenta → `ferramentas.md`
+- automação → `automacoes.md`
+- hospedagem → `infra.md`
+- onde paramos → `agora.md`
+- pendência pra depois → `tarefas.md`
+- erro corrigido → `licoes.md`, na hora
+- feito hoje → o diário, uma linha quando a tarefa fecha
+- decisão → `decisoes.md`
+- robô reporta → `recados/`
+- visual → a marca
+- regra desta pasta → este `AGENTS.md`
+- trabalho de projeto → a pasta dele
+- material bruto → a pasta do projeto, destilado no `contexto.md` dela com data e caminho da fonte
+- trivial → não salva
+- não coube → pergunta, nunca inventa gaveta
 
-Se existir um arquivo `.backup-falhou` na raiz da pasta, o backup automático não subiu pra nuvem: avisar na primeira resposta, em uma linha, "Seu último backup no GitHub falhou, o trabalho está só neste computador. Rode `/syncar` pra resolver." e seguir a tarefa.
+Diário: `- HH:MM, <o que foi feito> (<arquivo>)`; origem diferente de `dono` escreve em `AAAA-MM-DD-<origem>.md`; o arquivo do dia, se não existir, nasce com `# AAAA-MM-DD` na primeira linha, e data e hora são as locais. Decisão: `- AAAA-MM-DD, <origem>: <decisão>. Por quê: <motivo>.`; mudar uma velha é linha nova terminando em `substitui: AAAA-MM-DD "<começo da velha>"`; decisão de projeto: `- AAAA-MM-DD, <origem>, [projeto] <pasta>: <decisão>. Por quê: <motivo>.`, com `<pasta>` sendo o último pedaço do caminho (`clientes/doceria-da-bia` vira `doceria-da-bia`). Os dois só recebem acréscimo.
 
-## Fluxo de trabalho
+## Gatilhos
 
-Antes de qualquer tarefa, checar se existe skill em `.claude/skills/` que cubra o pedido e seguir ela. Tarefa claramente repetível sem skill: perguntar "Isso pode virar um comando pra próxima vez. Quer que eu crie?" (nunca pra coisa pontual), checando antes os templates de `../_modelo/templates/skills/`.
+- começo de conversa → ler em background, sem confirmar, `empresa.md`, `preferencias.md`, `estrategia.md` e `agora.md`; tarefa visual, também a marca. Existe `.backup-falhou` na raiz: avisar na primeira resposta, em uma linha, "Seu último backup no GitHub falhou, o trabalho está só neste computador. Rode `/syncar` pra resolver." e seguir. Buscar `precisa de ação: sim` nos recados de `_memoria/recados/`: avisar em uma linha.
+- antes de tarefa → skill de `.claude/skills/` que cubra o pedido; tarefa repetível sem skill: "Isso pode virar um comando pra próxima vez. Quer que eu crie?" (nunca pra coisa pontual)
+- "por quê", ou vai mudar algo decidido → `decisoes.md` antes
+- vai dizer "não consigo" → `ferramentas.md` antes
+- vai trabalhar numa pasta de projeto → `AGENTS.md`, `contexto.md` e `andamento.md` dela
+- vai pedir o ok da pessoa (plano, mudança, gasto, publicação, qualquer tamanho) → `/segunda-opiniao` antes, sempre
+- sinal de encerramento ("valeu", "até amanhã") ou sessão que mudou contexto → oferecer o `/atualizar` em uma linha; sessão trivial, não
+
+## Recall
+
+Pergunta sobre o passado ("o que fizemos", "quando foi", "por que a gente") se responde buscando antes no diário e nas decisões, inclusive na memória fria. Não achou: dizer que não achou, nunca reconstruir de cabeça.
+
+## Rotinas
+
+Rotina é o que roda sem gente na frente: robô do `/agendar`, Hermes, agente agendado. Lê muito e escreve pouco: só no próprio diário, nos recados e nos arquivos que ela mesma criou. Mudança em `_contexto/` ou em decisão vira recado, nunca edição. Recado é um arquivo, `AAAA-MM-DD-<origem>-<assunto>.md`, começando com `de:`, `quando:` e `precisa de ação: sim/não`; tratou, apaga. O recado é a única coisa de `_memoria/` que se apaga; o resto lá só recebe acréscimo, e a `/faxina` move diário e decisão substituída com mais de 90 dias pra `_memoria/arquivo/`, com o sim da pessoa (mover não é apagar). Robô do `/agendar` assina `robo-<nome>`; outra rotina assina o nome curto dela na linha do `automacoes.md`. Toda rotina ligada tem linha em `automacoes.md`.
 
 ## Regras de operação
 
@@ -53,9 +99,15 @@ Antes de qualquer tarefa, checar se existe skill em `.claude/skills/` que cubra 
 
 **13. Um projeto por pasta.** Pedido de outro projeto, sem relação com este negócio (outro negócio, finanças pessoais, mentor de curso de outro assunto), ganha pasta própria, senão a memória e as regras dos dois se misturam. Recomendar em uma linha, com esse porquê, e, com o sim, criar a pasta pela skill `../.claude/skills/novo-projeto/SKILL.md` da pasta-mãe. No fim, avisar: "Abra a pasta nova no VS Code (Arquivo > Abrir Pasta) e comece um chat novo lá." Tarefa do mesmo negócio fica aqui.
 
-## Aprender e atualizar contexto
+## Estrutura de pastas
 
-Instrução permanente ("sempre que", "evita", "prefiro assim") ou mudança real no negócio: perguntar se quer salvar, gravar em linha nova sem reformatar o arquivo e mostrar o que entrou. Negócio, clientes e processos vão pro `_contexto/empresa.md`; tom e estilo, pro `preferencias.md`; prioridade e fase, pro `estrategia.md`; onde paramos, pro `agora.md` (quem escreve é o `/atualizar`); erro e correção, pro `licoes.md` (sem perguntar); visual, pro `marca/design-guide.md`; regra desta pasta, pra este `AGENTS.md`.
+As pastas base estão no Mapa. Pastas próprias deste negócio, uma linha cada:
+
+<!-- o /setup e as skills de pacote acrescentam aqui -->
+
+## Compatibilidade com outros agentes
+
+O conteúdo real fica aqui; o `CLAUDE.md` é só o ponteiro `@AGENTS.md`. Vale pro Claude Code e pro Codex, e a ponte `.agents/skills` serve aos dois e ao Hermes Agent. No Codex não rodam o auto-sync nem a trava da regra 12: backup manual com `/syncar` no fim da sessão.
 
 ## Criação de skills
 

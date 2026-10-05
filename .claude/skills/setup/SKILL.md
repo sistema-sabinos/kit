@@ -284,6 +284,38 @@ Explicar em uma frase e perguntar:
 
 Guardar a escolha para aplicar na cópia do `settings.json` abaixo.
 
+### Equipe e computadores (logo depois do auto-sync)
+
+Perguntar na conversa, no formato de 4 partes:
+
+> "Você toca isso sozinho num computador só, ou tem sócio, equipe ou mais de um
+> computador mexendo nesse projeto?
+>
+> Pergunto porque, com mais de um, cada computador assina o que faz com um nome
+> curto, e o backup sabe parar e te avisar quando dois mexerem no mesmo arquivo,
+> em vez de um apagar o outro.
+>
+> Tipo: 'só eu, no notebook', 'eu e minha sócia, cada uma no seu', ou 'eu, no
+> notebook e no computador da loja'."
+
+Sozinho: o projeto ganha `.origem` com a palavra `dono`, e nada mais muda.
+
+Mais de um: pedir um nome curto pra cada outro computador ou pessoa (uma palavra,
+minúscula, só letras sem acento, números ou hífen, tipo `loja`, `ana`, `notebook`); este computador, o principal, continua
+`dono`. Gravar o `.origem` com `dono`, registrar em `_contexto/ferramentas.md` a
+linha `| Equipe e máquinas | dono (este computador), <nomes> | <AAAA-MM-DD> | cada computador tem o .origem com o próprio nome; o /syncar grava no computador novo |`
+e, em `tarefas.md`, uma linha por computador, que se basta sozinha (nesse
+computador o agente abre a pasta-mãe, e o projeto só depois): "no computador
+<nome>, com o SabinOS instalado e o Git configurado: abrir a pasta-mãe no VS Code
+e pedir 'baixa o projeto <pasta> do GitHub' (o agente roda `git clone <endereço do
+repositório> <pasta>`); antes de abrir o projeto, criar na raiz dele o arquivo
+`.origem` contendo só `<nome>`; acrescentar a linha `<pasta>/` no `.gitignore`
+da pasta-mãe; abrir a pasta do projeto e rodar /syncar uma vez (ele acerta nome e
+email do Git e o login, se precisar)".
+
+Com o auto-sync recusado a pergunta vale igual: o commit feito pelo `/syncar`
+também assina com a origem.
+
 ### Anúncio pago (antes de escolher as skills)
 
 Perguntar na conversa, no formato de 4 partes:
@@ -439,16 +471,29 @@ Windows no git, e o backup passa a ver o mesmo arquivo como dois.
   rodar script baixado da internet) antes de ele rodar. Vai sempre, em todo projeto,
   mesmo quando a pessoa recusou o auto-sync: o `settings.json` copiado já chama ela pelo
   bloco `PreToolUse`, e sem o arquivo o projeto nasce apontando pra um script que não existe.
-- `.gitignore`, copiar como está.
-- `_contexto/` inteira (os 6 arquivos: `empresa.md`, `preferencias.md`,
-  `estrategia.md`, `agora.md`, `licoes.md`, `ferramentas.md`), preenchidos com as
-  respostas colhidas, nunca deixando o aviso `NOT CONFIGURED` no projeto final.
+- `.claude/hooks/auto-sync.mjs`, só o script (nunca o `auto-sync.test.mjs`). É o
+  backup automático que o bloco `Stop` do `settings.json` chama: manda o trabalho
+  pro GitHub ao fim de cada resposta e, se outro computador mexeu no mesmo
+  arquivo, para e deixa recado em vez de forçar. Vai sempre, como a trava: com o
+  auto-sync recusado ele fica no projeto sem nada chamando.
+- `.gitignore`, copiar como está. É fechado por padrão: só o tipo liberado (texto, planilha, imagem, PDF, script) vai pro backup.
+- `.gitattributes`, copiar como está. Faz o diário e as decisões, que só recebem
+  linha nova, juntarem as duas versões sozinhos quando dois computadores escrevem
+  ao mesmo tempo, em vez de travar o backup.
+- `_contexto/` inteira (os 8 arquivos: `empresa.md`, `preferencias.md`,
+  `estrategia.md`, `agora.md`, `licoes.md`, `ferramentas.md`, `automacoes.md`,
+  `infra.md`), preenchidos com as respostas colhidas (os dois últimos nascem quase
+  vazios quando a pessoa não citou rotina nem hospedagem), nunca deixando o aviso `NOT CONFIGURED` no projeto final.
 - `marca/design-guide.md`, preenchido com o que veio do Passo 2 (identidade
   visual), ou mantido neutro se a pessoa não tinha nada ainda.
 - `dados/README.md` (e a pasta `dados/` que ele documenta).
+- `_memoria/` inteira (diário, decisões, recados e arquivo, com os `.gitkeep`): é o
+  registro do que aconteceu e por quê, e nasce vazia.
+- `.origem` não se copia: nasce da pergunta de equipe acima. Fica fora do backup
+  de propósito, porque cada computador tem o seu.
 - As skills base do dia a dia: `iniciar`, `conectar`, `mapear`, `atualizar`,
-  `syncar`, `bastao`, `checar`, `agendar`, `atualizar-sabinos`, `find-skills` e
-  `aprender-curso` (o `AGENTS.md` do projeto e o `/mapear`
+  `syncar`, `bastao`, `checar`, `agendar`, `atualizar-sabinos`, `faxina`,
+  `compartilhar`, `segunda-opiniao`, `find-skills` e `aprender-curso` (o `AGENTS.md` do projeto e o `/mapear`
   mandam rodar a `find-skills` lá dentro, então ela vai junto, senão a instrução
   aponta pra uma skill que não existe na pasta), mais a `assistir-video` e a
   `transcribe`, que a `aprender-curso` usa pra estudar um curso em vídeo e virar
@@ -479,31 +524,34 @@ Windows no git, e o backup passa a ver o mesmo arquivo como dois.
 
 ### `AGENTS.md` do projeto (com `CLAUDE.md` de ponteiro)
 
-Partir de `_modelo/AGENTS.md` inteiro e mexer só na abertura (o título e o parágrafo
-que hoje traz o comentário `NOT CONFIGURED`): trocar pelo nome do negócio e por um
-resumo real de quem é a pessoa e o que o workspace representa. As seções depois
-disso ("Compatibilidade com outros agentes", "Início de conversa", "Fluxo de trabalho",
-"Regras de operação", "Aprender e atualizar contexto", "Criação de skills") não
-se mexem. "Fluxo de trabalho" e "Criação de skills" já citam a biblioteca pelo
-caminho certo,
-`../_modelo/templates/skills/` (o relativo da pasta do projeto até a pasta-mãe,
-já que `templates/` não é copiada): só conferir que continua assim e deixar como
-está. Reescrever esse caminho de novo gera `../_modelo/../_modelo/`, que não
-resolve.
+Partir de `_modelo/AGENTS.md` inteiro e preencher só a seção `## Sobre este
+negócio`: trocar o que o molde deixou marcado como não configurado pelo nome do
+negócio e por um resumo real de quem é a pessoa e o que o workspace representa.
+As outras seções (`## Mapa`, `## Tabela de destinos`, `## Gatilhos`, `## Recall`,
+`## Rotinas`, `## Regras de operação`, `## Estrutura de pastas`) não se mexem,
+com duas exceções: a regra 5 de `## Regras de operação` quando o auto-sync foi
+recusado (acima) e a lista de `## Estrutura de pastas` (abaixo). O caminho da
+biblioteca, `../_modelo/templates/skills/`, já vem certo do molde (o relativo da
+pasta do projeto até a pasta-mãe, já que `templates/` não é copiada): conferir e
+deixar como está. Reescrever esse caminho de novo gera `../_modelo/../_modelo/`,
+que não resolve.
 
 Salvar esse conteúdo como `AGENTS.md` na raiz do projeto (mesmo nome, mesmo
 conteúdo do `_modelo/AGENTS.md` personalizado, só muda o arquivo alvo). Ao lado
 dele, criar `CLAUDE.md` com uma linha só: `@AGENTS.md`. É esse ponteiro que faz o
 Claude Code carregar o mesmo conteúdo, sem duplicar informação em dois arquivos.
 
-A lista de pastas dentro de "Estrutura de pastas" precisa refletir o que existe **de
+A lista de pastas dentro de `## Estrutura de pastas` precisa refletir o que existe **de
 verdade** no projeto, não o que está escrito no `_modelo/` nem no template do
 perfil: usar como inspiração a lista do
 template de perfil correspondente em `_modelo/templates/perfis/agents-md-<perfil>.md`
 (`agencia`, `freelancer`, `solopreneur` e `empresa` têm modelo pronto; `criador`
 parte do de `solopreneur`; `profissional` usa uma estrutura simples: `trabalho/projetos/`,
-`trabalho/reunioes/`, `anotacoes/` e `tarefas.md`). Mostrar a estrutura de pastas
-proposta e só criar depois da pessoa confirmar.
+`trabalho/reunioes/`, `anotacoes/` e `tarefas.md`). O template de perfil traz também uma `## Tabela de destinos` com linhas
+próprias do perfil: elas entram dentro da `## Tabela de destinos` do `AGENTS.md`,
+nunca como um segundo título igual. Passar a
+estrutura de pastas proposta pela `/segunda-opiniao` (a skill desta pasta-mãe),
+mostrar e só criar depois da pessoa confirmar.
 
 Pasta que nasce agora e ainda não tem arquivo (ex: `conteudo/`, `clientes/`)
 leva um `README.md` de uma linha dizendo pra que serve, no mesmo espírito do
@@ -591,7 +639,40 @@ seus posts da semana, agendados e medidos".
    "igual" e nada é trocado: o que fica é o recibo `.sabinos/instalado.json` e o
    motor guardado, que deixam o `/atualizar-sabinos` saber, na versão seguinte,
    o que veio do SabinOS e o que é da pessoa.
-4. Mensagem final, ensinando clique a clique, cobrindo Windows e Mac, como abrir a
+4. **Teste de aceite.** Reler do disco, nunca da memória da conversa, o
+   `_contexto/empresa.md`, o `_contexto/estrategia.md` e o
+   `_contexto/preferencias.md` do projeto, e provar com três fatos tirados deles,
+   numa frase só:
+
+   > "Pra conferir que ficou certo: você <quem é e o que faz>, o foco agora é
+   > <foco>, e comigo você quer <o jeito>. Bateu?"
+
+   Bateu: seguir. Não bateu: corrigir o arquivo de onde saiu o fato errado,
+   anotar no `_contexto/licoes.md` do projeto (entendimento errado corrigido) e
+   repetir só o fato corrigido. O teste lê o arquivo porque é ele que o sistema
+   vai ler amanhã: fato que ficou só na conversa some.
+5. **`bem-vindo.html`.** Copiar `_modelo/templates/bem-vindo.template.html` pra
+   raiz do projeto como `bem-vindo.html` e trocar cada marcador:
+   - `{{NEGOCIO}}`, `{{PESSOA}}` (como a pessoa prefere ser chamada) e `{{DATA}}`
+     (AAAA-MM-DD de hoje);
+   - `{{COR_FUNDO}}`, `{{COR_DESTAQUE}}`, `{{COR_TEXTO}}` e `{{COR_CARD}}` pelas
+     cores do `marca/design-guide.md` do projeto, e `{{FONTE_TITULO}}` e
+     `{{FONTE_CORPO}}` pelas fontes dele. Guia vazio: visual neutro (`#FAFAF7`,
+     `#2F5D50`, `#1F2328`, `#FFFFFF`, fonte `Inter` nas duas);
+   - `{{LINK_FONTES}}` pela linha `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=<Fonte>:wght@400;700&display=swap">`
+     quando a fonte existe no Google Fonts (uma por fonte), ou por nada;
+   - `{{FATO_QUEM}}`, `{{FATO_FOCO}}` e `{{FATO_JEITO}}` pelos três fatos do teste
+     de aceite, já confirmados;
+   - `{{COMANDOS}}` por um `<li>` por comando da lista final do Passo 6, na mesma
+     linguagem simples;
+   - `{{PROXIMO_PASSO}}` pela primeira pendência do `agora.md`.
+
+   Antes de mostrar, conferir no arquivo gravado que não sobrou nenhum `{{` e
+   nenhum travessão (os caracteres U+2014 e U+2013; resposta colada do
+   questionário é por onde ele costuma entrar). Abrir no navegador (Windows:
+   `start bem-vindo.html`; Mac: `open bem-vindo.html`) e dizer em uma linha que é
+   o retrato do que o sistema sabe hoje e que muda junto com os arquivos.
+6. Mensagem final, ensinando clique a clique, cobrindo Windows e Mac, como abrir a
    pasta nova no VS Code (menu Arquivo, opção Abrir Pasta, ou arrastar a pasta pro
    ícone do VS Code). Antes de fechar, dizer que a estrutura de hoje é o começo, com
    este texto:
@@ -608,8 +689,8 @@ seus posts da semana, agendados e medidos".
 ## Regras gerais
 
 - Gerar tudo do Passo 5 em diante de uma vez só, depois de fechados os Passos 0 a
-  4. Nunca criar arquivo por arquivo durante a entrevista. As quatro confirmações
-  do Passo 5 (auto-sync, anúncio pago, Windows quando nenhuma resposta deixou
+  4. Nunca criar arquivo por arquivo durante a entrevista. As cinco confirmações
+  do Passo 5 (auto-sync, equipe e computadores, anúncio pago, Windows quando nenhuma resposta deixou
   isso claro, e a estrutura de pastas proposta) vêm antes de gerar, em bloco, e
   não contam como quebrar essa regra.
 - Depois de gerar, mostrar só o resumo do que foi criado, não o conteúdo de cada

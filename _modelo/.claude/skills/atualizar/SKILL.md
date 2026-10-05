@@ -1,20 +1,20 @@
 ---
 name: atualizar
 description: >
-  Fecha a sessão e mantém a memória do sistema em dia: compara o estado real do projeto
-  com o que está documentado, registra onde parou no _contexto/agora.md e propõe
-  correções pro usuário aprovar. Use quando o usuário chamar /atualizar, disser "fecha a
-  sessão", "encerra por hoje", "registra o que fizemos" ou "arruma o contexto", ou ao fim
-  de uma sessão longa com muitas mudanças. Versão nova do SabinOS é com o /atualizar-sabinos.
+  Fecha a sessão e mantém a memória do sistema em dia: passa o que aconteceu pela
+  tabela de destinos (decisão, diário, contexto, onde paramos) e audita a memória
+  do projeto. Use quando o usuário chamar /atualizar, disser "fecha a sessão", "encerra
+  por hoje", "registra o que fizemos" ou "arruma o contexto", ou ao fim de uma sessão
+  longa com muitas mudanças. Versão nova do SabinOS é com o /atualizar-sabinos.
 ---
 
 # /atualizar, Manutenção de contexto
 
-Duas funções em uma: fechar a sessão (registrar no `agora.md` o que aconteceu nesta conversa) e auditar a memória (comparar o estado real das pastas com o que os arquivos de contexto dizem).
+Duas funções em uma: fechar a sessão (passar o que aconteceu nesta conversa pela tabela de destinos do `AGENTS.md`) e auditar a memória (comparar o estado real das pastas com o que os arquivos de contexto dizem).
 
 ## Passo 1: Levantar o estado real
 
-1. **Estrutura de pastas**, listar os diretórios de primeiro nível (ignorar `.git`, `node_modules`, `.claude`, `templates`, `dados`)
+1. **Estrutura de pastas**, listar os diretórios de primeiro nível (ignorar `.git`, `node_modules`, `.claude`, `templates`, `dados`, `_memoria`)
 2. **Skills ativas**, listar `.claude/skills/*/`
 3. **MCPs configurados**, ler `.mcp.json` na raiz do workspace, se existir
 4. **Mudanças recentes**, `git diff --name-only HEAD~5..HEAD` (ou menos commits se não houver 5) e `git status`
@@ -28,21 +28,23 @@ Duas funções em uma: fechar a sessão (registrar no `agora.md` o que aconteceu
 4. `_contexto/preferencias.md`, tom (raramente muda)
 5. `_contexto/agora.md`, contexto vivo
 6. `_contexto/ferramentas.md`, o que está conectado
-7. `marca/design-guide.md`, visual
+7. `_contexto/automacoes.md` e `_contexto/infra.md`
+8. `_memoria/decisoes.md` (as últimas 20 linhas) e o diário de hoje
+9. `marca/design-guide.md`, visual
 
-## Passo 3: Fechar a sessão (escrever no `agora.md`)
+## Passo 3: Passar a sessão pela tabela de destinos
 
-Diferente do resto (que compara pastas com documentos), aqui a fonte é **esta conversa**:
+A fonte aqui é **esta conversa**. Listar o que aconteceu e dar a cada item um destino pela seção "Tabela de destinos" do `AGENTS.md`, numa passada só:
 
-- **Onde paramos:** a última coisa em andamento (substitui a anterior, não acumula)
-- **Decisões recentes:** decisão tomada na sessão vira linha datada `AAAA-MM-DD, decisão`
-- **Pendências:** adicionar o que abriu, remover o que fechou
-- **Quente agora:** ajustar o que está ativo na semana
-- **Higiene:** decisão com mais de uns 30 dias sai do arquivo
+- **Decisão:** linha nova no `_memoria/decisoes.md`, no formato do cabeçalho dele, com o motivo que apareceu na conversa. Muda uma decisão anterior: linha nova com `substitui: <data da velha> "<começo da velha>"`; a velha fica onde está.
+- **Diário:** o que foi feito e ainda não tem linha no diário de hoje entra agora, uma linha por tarefa fechada.
+- **`_contexto/`:** fato do negócio, rumo, jeito, ferramenta, automação e hospedagem vão pro arquivo que a tabela manda.
+- **`agora.md`:** "Onde paramos" é a última coisa em andamento (substitui a anterior); "Pendências" ganha o que abriu e perde o que fechou; "Quente agora" se ajusta. Higiene: pendência fechada e prazo vencido saem.
+- **Trivial:** não salva. **Não coube:** perguntar, nunca inventar gaveta.
 
-Fronteiras, pra não duplicar: lição de erro vai pro `licoes.md`; mudança de fase ou prioridade de fundo vai pro `estrategia.md`; tarefa de backlog vai pro `tarefas.md`. No `agora.md` só entra o que está em curso ou travando agora.
+Projeto de antes da 4.3 com a seção "Decisões recentes" no `agora.md`: cada linha dela vai pro `decisoes.md` com a data que tinha (origem `dono`, motivo "não registrado") e a seção sai do `agora.md`.
 
-Sessão trivial (uma pergunta, um email avulso) não mexe no `agora.md`.
+Montar o plano arquivo por arquivo, com as linhas que vão entrar, sem mostrar aqui: ele se mostra uma vez no Passo 5, junto com o resto, e se aplica com um sim. Sessão trivial (uma pergunta, um email avulso) não mexe em nada.
 
 ## Passo 3.5: Lição repetida vira regra na skill
 
@@ -91,7 +93,7 @@ Se tudo em dia: "Tudo atualizado. Os arquivos refletem o estado real."
 
 ## Passo 5: Aplicar (com aprovação)
 
-Mostrar cada mudança proposta (incluindo as linhas do `agora.md` e as regras do Passo 3.5) e perguntar se aplica. Se sim, aplicar todas de uma vez e resumir. Se o usuário quiser aprovar uma a uma, respeitar.
+Mostrar cada mudança proposta (incluindo o plano do Passo 3 e as regras do Passo 3.5) e perguntar se aplica. Se sim, aplicar todas de uma vez e resumir. Se o usuário quiser aprovar uma a uma, respeitar.
 
 ## Regras
 
@@ -99,3 +101,4 @@ Mostrar cada mudança proposta (incluindo as linhas do `agora.md` e as regras do
 - Não inventar: se não dá pra inferir do estado do projeto, perguntar
 - Não exagerar em diagnóstico de coisa trivial
 - Projeto recém-configurado: dizer que está tudo certo e não forçar atualização
+- `_memoria/` só recebe acréscimo: nunca reescrever, consolidar ou apagar linha de lá. A exceção é da `/faxina`, que move diário e decisão substituída com mais de 90 dias pra `_memoria/arquivo/`, com o sim da pessoa (mover não é apagar)

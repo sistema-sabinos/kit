@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // Gates de qualidade do kit SabinOS (pasta-mae + _modelo). Nenhum zip sai com gate vermelho.
 // Uso: node verificar-kit.mjs <caminho-do-kit>
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync, existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { join, relative, dirname, resolve } from 'node:path'
+import { spawnSync } from 'node:child_process'
+import { tmpdir } from 'node:os'
 import { pathToFileURL, fileURLToPath } from 'node:url'
 import { hashArquivo, ignorado, componenteDe } from './atualizar-projeto.mjs'
 
@@ -62,10 +64,12 @@ const OBRIGATORIOS = [
   'docs/roadmap-avancado.md',
   '_modelo/CLAUDE.md', '_modelo/AGENTS.md', '_modelo/.gitignore', '_modelo/.claude/settings.json',
   '_modelo/.claude/hooks/barrar-perigoso.mjs',
+  '_modelo/.claude/hooks/auto-sync.mjs',
   '_modelo/_contexto/empresa.md', '_modelo/_contexto/preferencias.md',
   '_modelo/_contexto/estrategia.md', '_modelo/_contexto/agora.md',
   '_modelo/_contexto/licoes.md', '_modelo/_contexto/ferramentas.md',
   '_modelo/marca/design-guide.md', '_modelo/dados/README.md',
+  '_modelo/templates/bem-vindo.template.html',
   '_modelo/.claude/skills/iniciar/SKILL.md', '_modelo/.claude/skills/conectar/SKILL.md',
   '_modelo/.claude/skills/mapear/SKILL.md', '_modelo/.claude/skills/atualizar/SKILL.md',
   '_modelo/.claude/skills/syncar/SKILL.md', '_modelo/.claude/skills/assistir-video/SKILL.md',
@@ -163,6 +167,29 @@ function matcherCobreBashEPowerShell(matcher) {
   if (typeof matcher !== 'string') return false
   const partes = matcher.split(/[|,]/).map(s => s.trim())
   return partes.includes('Bash') && partes.includes('PowerShell')
+}
+
+// Gate 11: quais destes arquivos o .gitignore do _modelo deixa fora do backup do aluno.
+// Pergunta ao proprio git (check-ignore), que e quem decide no auto-sync, numa copia
+// temporaria: so a estrutura de pastas com arquivos vazios, mais o conteudo real de cada
+// .gitignore. Devolve os caminhos ignorados em ordem, ou null quando o git nao roda.
+export function foraDoBackup(dirModelo, rels) {
+  const tmp = mkdtempSync(join(tmpdir(), 'gate11-'))
+  try {
+    for (const rel of rels) {
+      const destino = join(tmp, rel)
+      mkdirSync(dirname(destino), { recursive: true })
+      writeFileSync(destino, rel.split('/').pop() === '.gitignore' ? readFileSync(join(dirModelo, rel)) : '')
+    }
+    const opcoes = { encoding: 'utf8', windowsHide: true }
+    if (spawnSync('git', ['init', '-q', tmp], opcoes).status !== 0) return null
+    // o .gitignore global da maquina de quem roda nao pode mudar a resposta
+    const r = spawnSync('git', ['-C', tmp, '-c', `core.excludesFile=${join(tmp, 'nada')}`, 'check-ignore', '-z', '--stdin'],
+      { ...opcoes, input: rels.join('\0') + '\0' })
+    if (r.status === 1) return []
+    if (r.status !== 0) return null
+    return r.stdout.split('\0').filter(Boolean).sort()
+  } finally { rmSync(tmp, { recursive: true, force: true }) }
 }
 
 // Na pasta-mae do aluno o /atualizar-kit roda o verificador com os projetos dele dentro: projeto
@@ -307,6 +334,18 @@ export function rodarGates(dirKit, opcoes = {}) {
     const txt = readFileSync(settings, 'utf8')
     if (/git/.test(txt) && !/git rev-parse --git-dir/.test(txt)) {
       falhas.push({ gate: 5, arquivo: rel, detalhe: 'hook de git sem guarda de repo/remote' })
+    }
+  }
+
+  // Gate 5 (_modelo): o auto-sync saiu da linha de bash pro script, e a guarda mora nele
+  if (set.has('_modelo/.claude/settings.json')) {
+    const txt = readFileSync(join(dirKit, '_modelo/.claude/settings.json'), 'utf8')
+    const falha5 = detalhe => falhas.push({ gate: 5, arquivo: '_modelo/.claude/settings.json', detalhe })
+    if (!txt.includes('.claude/hooks/auto-sync.mjs')) falha5('Stop do _modelo sem o auto-sync.mjs')
+    else if (!set.has('_modelo/.claude/hooks/auto-sync.mjs')) falha5('settings.json chama o auto-sync.mjs, que nao existe')
+    else {
+      const s = readFileSync(join(dirKit, '_modelo/.claude/hooks/auto-sync.mjs'), 'utf8')
+      if (!s.includes("'rev-parse', '--git-dir'") || !s.includes("'remote', 'get-url', 'origin'")) falha5('auto-sync.mjs sem guarda de repo/remote')
     }
   }
 
@@ -480,6 +519,15 @@ export function rodarGates(dirKit, opcoes = {}) {
     }
   }
 
+  // Gate 11: backup do aluno. O .gitignore do _modelo nega tudo e libera por tipo, entao
+  // arquivo do kit de tipo fora da lista nasceria fora do backup de todo projeto, calado.
+  if (set.has('_modelo/.gitignore')) {
+    const doModelo = arquivos.filter(r => r.startsWith('_modelo/')).map(r => r.slice('_modelo/'.length))
+    const fora = foraDoBackup(join(dirKit, '_modelo'), doModelo)
+    if (fora === null) avisos.push('Gate 11: git nao encontrado; a conferencia do backup do aluno nao rodou')
+    else for (const r of fora) falhas.push({ gate: 11, arquivo: `_modelo/${r}`, detalhe: 'fora do backup do aluno: liberar o tipo ou o caminho no _modelo/.gitignore' })
+  }
+
   return { falhas, avisos, total: arquivos.length }
 }
 
@@ -488,6 +536,7 @@ const NOMES = {
   3: 'Manifesto de arquivos', 4: 'Links internos', 5: 'Hook de auto-sync',
   6: 'Portabilidade Windows/Mac', 7: 'Empacotamento do zip',
   8: 'Regua do /trafego', 9: 'Travas de seguranca', 10: 'Atualizador',
+  11: 'Backup do aluno (.gitignore)',
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -495,7 +544,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const { falhas, avisos, total } = rodarGates(dir)
   console.log(`Kit: ${dir} (${total} arquivos)\n`)
   for (const a of avisos) console.log(`aviso: ${a}\n`)
-  for (const g of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+  for (const g of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) {
     const desse = falhas.filter(f => f.gate === g)
     console.log(`${desse.length ? 'FALHOU' : 'ok    '}  Gate ${g}: ${NOMES[g]}${desse.length ? ` (${desse.length})` : ''}`)
     for (const f of desse.slice(0, 15)) console.log(`        ${f.arquivo}: ${f.detalhe}`)

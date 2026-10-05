@@ -13,11 +13,7 @@ description: >
 
 1. Verificar se existe `.backup-falhou` na raiz. Se existir, ler o arquivo: o backup
    automático não subiu pra nuvem, e isso entra no resumo como primeira linha
-2. Verificar se existe `robos/avisos-pendentes.md`. Se existir, são avisos de robô
-   que não chegaram no Telegram: entram no resumo logo depois do backup. Se existir
-   a pasta `robos/` com receitas (`.mjs`), rodar
-   `node .claude/skills/agendar/scripts/agendador.mjs atrasados`: robô que parou de
-   rodar entra no mesmo campo
+2. Ler os recados: cada arquivo `.md` de `_memoria/recados/` (o `.gitkeep` não conta) é um aviso de robô ou de outra máquina, com `de:`, `quando:` e `precisa de ação:` no topo. Entram no resumo logo depois do backup. Projeto de antes da 4.3 pode ainda ter `robos/avisos-pendentes.md`: entra junto, e depois do resumo oferecer passar cada linha dele pra um recado. Se existir a pasta `robos/` com receitas (`.mjs`), rodar `node .claude/skills/agendar/scripts/agendador.mjs atrasados`: robô que parou de rodar entra no mesmo campo
 3. Verificar se `_contexto/empresa.md` está configurado (sem `<!-- NOT CONFIGURED -->`)
 4. Ler `_contexto/empresa.md`, `_contexto/preferencias.md`, `_contexto/estrategia.md`, `_contexto/agora.md` e `_contexto/trilha.md` (se existir)
 5. Ler `AGENTS.md` (o conteúdo real do projeto; `CLAUDE.md` é só o ponteiro `@AGENTS.md`) e, se existir, `tarefas.md`
@@ -26,6 +22,8 @@ description: >
    pra continuar: <primeira linha do bastão>. Retomo dela?". Com o sim, seguir a retomada da
    skill `/bastao`
 7. Se `_contexto/empresa.md` estiver com NOT CONFIGURED, esta pasta é o `_modelo/` ou uma cópia crua: avisar que o lugar de começar é a pasta-mãe, com `primeiro projeto`
+8. Sem `.origem` na raiz e com a linha "Equipe e máquinas" no `_contexto/ferramentas.md`: este é um computador da equipe que ainda não se apresentou. Perguntar na primeira resposta qual nome da linha é este computador e gravar o `.origem` (regra da seção "Outro computador no mesmo projeto" do `/syncar`). Sem isso o diário e o backup saem assinados como `dono`
+9. Projeto com mais de 30 dias e nenhuma menção a `/faxina` no diário dos últimos 30 dias: uma linha no fim do resumo, "faz um mês sem faxina; quer rodar a `/faxina`? ela só mostra, e mexe com o seu sim"
 
 ## Se está configurado
 
@@ -36,10 +34,10 @@ Contexto carregado.
 
 **Backup:** [só aparece se `.backup-falhou` existir: "o último backup no GitHub
 falhou, seu trabalho está só neste computador. Rode /syncar pra resolver"]
-**Robôs:** [só aparece se `robos/avisos-pendentes.md` existir ou se o `atrasados`
-apontar robô: quantos avisos não chegaram no celular e o mais recente, e o nome
-de cada robô parado desde quando. Depois do resumo, perguntar se pode apagar o
-arquivo de avisos]
+**Recados:** [só aparece se houver recado ou se o `atrasados` apontar robô:
+quantos recados, quantos com "precisa de ação: sim", o mais recente em uma
+linha, e o nome de cada robô parado desde quando. Depois do resumo, perguntar
+quais já foram tratados e apagar só esses]
 **Negócio:** [nome e o que faz, em uma linha]
 **Foco agora:** [prioridade principal do estrategia.md]
 **Trilha:** [só aparece se `_contexto/trilha.md` existir e `etapa_atual` for menor que 10: "etapa N de 10, <nome da etapa>", e o que espera o contador se houver]

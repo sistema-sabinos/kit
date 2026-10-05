@@ -21,7 +21,7 @@ Rodar os comandos de leitura e classificar cada item em verde, amarelo ou vermel
 
 - `_contexto/empresa.md`, `preferencias.md`, `estrategia.md`, `agora.md`, `licoes.md`, `ferramentas.md` existem?
 - Algum ainda traz `<!-- NOT CONFIGURED -->` ou placeholder entre colchetes (`[a última coisa...]`) onde já deveria ter conteúdo?
-- `agora.md` foi atualizado nos últimos 30 dias? (data das linhas de "Decisões recentes", ou `git log -1 -- _contexto/agora.md`)
+- `agora.md` foi atualizado nos últimos 30 dias? (`git log -1 -- _contexto/agora.md`, ou a data do arquivo mais novo em `_memoria/diario/`)
 - **Vermelho:** arquivo faltando ou `NOT CONFIGURED`. Conserto: o `/setup` na pasta-mãe (se nunca rodou) ou preencher em conversa agora.
 - **Amarelo:** `agora.md` parado há mais de 30 dias. Conserto: rodar `/atualizar` no fim desta sessão.
 
@@ -29,13 +29,13 @@ Rodar os comandos de leitura e classificar cada item em verde, amarelo ou vermel
 
 - `git rev-parse --git-dir` (é repositório?), `git remote get-url origin` (tem nuvem?), `git status --short` (tem coisa não salva?), `git log -1 --format=%cd` (último commit), `git status -sb` (está "ahead", ou seja, commit que não subiu?)
 - Existe `.backup-falhou` na raiz?
-- `.claude/settings.json` tem o hook de auto-sync? (procurar `git push` dentro dele)
+- `.claude/settings.json` tem o hook de auto-sync? (procurar `auto-sync.mjs` dentro do bloco `hooks.Stop`) E o arquivo `.claude/hooks/auto-sync.mjs` existe?
 - **Vermelho:** sem repositório ou sem remote (o trabalho existe só neste computador), ou `.backup-falhou` presente, ou commits "ahead" sem push. Conserto: `/syncar`.
-- **Amarelo:** hook ausente (backup é manual). Conserto: nenhum obrigatório; lembrar de rodar `/syncar` ao fim das sessões.
+- **Amarelo:** hook ou script ausente enquanto a regra 5 do `AGENTS.md` diz que o hook salva sozinho. Conserto: copiar `.claude/hooks/auto-sync.mjs` de `../_modelo/` (sem o `.test.mjs`) e reaplicar o bloco `Stop` do `settings.json` do molde. Se a regra 5 diz que não existe backup automático (a pessoa recusou o auto-sync no `/setup`), é o combinado: verde, e o `/syncar` ao fim das sessões é o caminho.
 
 ### 3. Chaves e segredos
 
-- `.gitignore` existe e tem `.env` e `.env.*`?
+- `.gitignore` existe e bloqueia o `.env` e as variações dele? Vale `.env*` numa linha só (o do molde) ou `.env` e `.env.*` em duas.
 - `git ls-files | grep -i "\.env"` volta vazio? (nenhum arquivo de chave rastreado)
 - `git grep -I -n -E "(API_KEY|ACCESS_TOKEN|CLIENT_SECRET|_PASSWORD)\s*[:=]\s*['\"]?[A-Za-z0-9._-]{12,}"` volta vazio? (nenhuma chave colada em arquivo versionado)
 - **Vermelho:** `.env` rastreado ou chave em arquivo. Conserto: mover a chave pro `.env`, tirar do arquivo, `git rm --cached` no `.env` se estiver rastreado, e avisar que a chave exposta deve ser trocada no provedor (uma vez no GitHub, considerar vazada).
@@ -103,7 +103,7 @@ o que testaria de verdade.
 ```
 Check-up do sistema
 
-Memória        verde    6 arquivos preenchidos, agora.md de 3 dias atrás (testado agora)
+Memória        verde    8 arquivos preenchidos, agora.md de 3 dias atrás (testado agora)
 Backup         VERMELHO último push há 12 dias e 2 commits presos. Conserto: /syncar (testado agora)
 Chaves         verde    .env protegido, nada colado em arquivo (testado agora)
 Comandos       verde    9 comandos carregando (testado agora)

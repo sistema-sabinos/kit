@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync
 import { tmpdir } from 'node:os'
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { rodarGates, carregarProibidos } from './verificar-kit.mjs'
+import { rodarGates, carregarProibidos, foraDoBackup } from './verificar-kit.mjs'
 import { hashArquivo } from './atualizar-projeto.mjs'
 
 // dois testes leem a lista real, que so existe na _kits; num clone publico eles pulam
@@ -799,5 +799,77 @@ test('gate 2 exige name, description e tools em agente do _modelo', () => {
     assert.ok(g2.some(f => f.arquivo.endsWith('sem-tools.md') && /tools/.test(f.detalhe)))
     assert.ok(g2.some(f => f.arquivo.endsWith('sem-frontmatter.md')))
     assert.equal(g2.filter(f => f.arquivo.endsWith('bom.md')).length, 0)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// Gate 11: o .gitignore do _modelo e fechado por padrao (nega tudo e libera por tipo).
+// Arquivo do kit de tipo fora da lista nasceria fora do backup do aluno, calado.
+const GITIGNORE_MODELO = readFileSync(fileURLToPath(new URL('../_modelo/.gitignore', import.meta.url)), 'utf8')
+
+test('gate 11 acusa arquivo do _modelo que o .gitignore fechado deixa fora do backup', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo/marca'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/.gitignore'), GITIGNORE_MODELO)
+    writeFileSync(join(dir, '_modelo/marca/arte.psd'), '')
+    writeFileSync(join(dir, '_modelo/marca/notas.md'), '# notas\n')
+    const g11 = rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 11)
+    assert.ok(g11.length > 0, 'canario: o gate rodou e achou alguma coisa')
+    assert.deepEqual(g11.map(f => f.arquivo), ['_modelo/marca/arte.psd'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 11 respeita o .gitignore de subpasta do _modelo', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo/motor/out'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/.gitignore'), GITIGNORE_MODELO)
+    writeFileSync(join(dir, '_modelo/motor/.gitignore'), 'out\n')
+    writeFileSync(join(dir, '_modelo/motor/out/a.js'), '')
+    writeFileSync(join(dir, '_modelo/motor/b.js'), '')
+    const g11 = rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 11)
+    assert.deepEqual(g11.map(f => f.arquivo), ['_modelo/motor/out/a.js'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 11 fica quieto sem .gitignore no _modelo (o Gate 3 cobra a falta)', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/arte.psd'), '')
+    assert.deepEqual(rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 11), [])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('o .gitignore do _modelo libera o que o aluno produz e bloqueia o de proposito', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'gi-'))
+  try {
+    writeFileSync(join(dir, '.gitignore'), GITIGNORE_MODELO)
+    const entra = ['.gitignore', 'dados/custos.jsonl', 'dados/vendas.xlsx', 'dados/vendas.csv', 'marca/logo.png',
+      'marca/FOTO.JPG', 'marca/anim.gif', 'docs/contrato.pdf', 'docs/proposta.docx', '.env.example',
+      '_memoria/recados/.gitkeep', '.claude/skills/x/scripts/a.mjs', '.claude/settings.json', 'bem-vindo.html',
+      '.claude/skills/configurar-video/referencias/teste-voz.wav',
+      '.claude/skills/video-produto/scripts/fontes/Montserrat-Bold.ttf']
+    const fica = ['.env', '.env.local', '.origem', '.backup-falhou', '.claude/settings.local.json', 'video.mp4',
+      'audio.wav', 'arte.psd', 'pacote.zip', 'node_modules/x/a.js', 'dados/chrome-perfil/Default/Preferences.json',
+      'dist/a.js', '.agents/skills/x.md', 'robos/vigia.log']
+    assert.deepEqual(foraDoBackup(dir, [...entra, ...fica]), [...fica].sort())
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 5 cobra o auto-sync.mjs com guarda no _modelo', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo/.claude/hooks'), { recursive: true })
+    const settings = { hooks: { Stop: [{ hooks: [{ type: 'command', command: 'node "${CLAUDE_PROJECT_DIR}/.claude/hooks/auto-sync.mjs"' }] }] } }
+    writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify(settings))
+    const g5 = () => rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 5).map(f => f.detalhe)
+    assert.deepEqual(g5(), ['settings.json chama o auto-sync.mjs, que nao existe'])
+    writeFileSync(join(dir, '_modelo/.claude/hooks/auto-sync.mjs'), "git(dir, ['push'])\n")
+    assert.deepEqual(g5(), ['auto-sync.mjs sem guarda de repo/remote'])
+    writeFileSync(join(dir, '_modelo/.claude/hooks/auto-sync.mjs'), "git(dir, ['rev-parse', '--git-dir']); git(dir, ['remote', 'get-url', 'origin'])\n")
+    assert.deepEqual(g5(), [])
+    writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify({ hooks: {} }))
+    assert.deepEqual(g5(), ['Stop do _modelo sem o auto-sync.mjs'])
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })

@@ -1,13 +1,14 @@
 // Aviso dos robos no Telegram, pelo bot do proprio aluno.
 //
-// Aviso que nao sai (sem token, token recusado, rede fora) nunca se perde: vai pra
-// robos/avisos-pendentes.md, uma linha por aviso, e o /iniciar mostra na proxima sessao.
+// Aviso que nao sai (sem token, token recusado, rede fora) nunca se perde: vira um recado
+// em _memoria/recados/, um arquivo por aviso, e o /iniciar mostra na proxima sessao.
+// O robo assina como robo-<nome>, a mesma origem da linha dele no _contexto/automacoes.md.
 //
 // Uso na mao (o /agendar chama na primeira vez):
 //   node avisar.mjs --descobrir-chat     lista as conversas que mandaram mensagem pro bot
 //   node avisar.mjs --gravar-chat <id>   grava TELEGRAM_CHAT_ID no .env
 //   node avisar.mjs --teste              manda uma mensagem de teste
-import { appendFileSync, mkdirSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { fetchComTimeout } from './lib/fetch-timeout.mjs'
@@ -19,18 +20,37 @@ export const LIMITE_TEXTO = 4000
 const PRAZO_MS = 15_000
 const API = 'https://api.telegram.org/bot'
 
-export function caminhoPendentes(raiz) {
-  return join(raiz, 'robos', 'avisos-pendentes.md')
+export function caminhoRecados(raiz) {
+  return join(raiz, '_memoria', 'recados')
 }
 
-function carimbo(d) {
-  const p = (n) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+// nome de arquivo seguro no Windows e no Mac: minuscula sem acento, numero e hifen
+export function origemDoRobo(robo) {
+  const limpo = String(robo).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  return `robo-${limpo || 'sem-nome'}`
 }
 
-function guardarPendente(raiz, robo, texto, agora) {
-  mkdirSync(join(raiz, 'robos'), { recursive: true })
-  appendFileSync(caminhoPendentes(raiz), `- [${carimbo(agora)}] ${robo}: ${String(texto).replace(/\r?\n/g, ' / ')}\n`)
+const p2 = (n) => String(n).padStart(2, '0')
+// data de calendario pelo fuso do aluno, nunca toISOString (UTC vira o dia seguinte de noite)
+const dia = (d) => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`
+
+function guardarRecado(raiz, robo, texto, agora) {
+  const pasta = caminhoRecados(raiz)
+  mkdirSync(pasta, { recursive: true })
+  const origem = origemDoRobo(robo)
+  const hora = `${p2(agora.getHours())}:${p2(agora.getMinutes())}`
+  const base = `${dia(agora)}-${origem}-aviso-${hora.replace(':', '')}`
+  const corpo = `de: ${origem}\nquando: ${dia(agora)} ${hora}\nprecisa de ação: sim\n\n${texto}\n`
+  // wx: dois avisos no mesmo minuto (ou dois robos ao mesmo tempo) nunca se sobrescrevem
+  for (let n = 1; ; n++) {
+    try {
+      writeFileSync(join(pasta, n === 1 ? `${base}.md` : `${base}-${n}.md`), corpo, { flag: 'wx' })
+      return
+    } catch (e) {
+      if (e.code !== 'EEXIST') throw e
+    }
+  }
 }
 
 export async function avisar(texto, { env = {}, raiz, robo, fetch = fetchComTimeout, agora = new Date() }) {
@@ -48,7 +68,7 @@ export async function avisar(texto, { env = {}, raiz, robo, fetch = fetchComTime
       // rede fora: cai no arquivo logo abaixo
     }
   }
-  guardarPendente(raiz, robo, corpo, agora)
+  guardarRecado(raiz, robo, corpo, agora)
   return { entregue: false }
 }
 
@@ -81,7 +101,7 @@ if (ehCli) {
       console.log('TELEGRAM_CHAT_ID gravado no .env')
     } else if (cmd === '--teste') {
       const r = await avisar('Teste do SabinOS: se esta mensagem chegou, o aviso dos robôs está ligado.', { env, raiz: RAIZ, robo: 'teste' })
-      console.log(r.entregue ? 'entregue' : 'nao entregue, guardado em robos/avisos-pendentes.md')
+      console.log(r.entregue ? 'entregue' : 'nao entregue, virou recado em _memoria/recados/')
       process.exitCode = r.entregue ? 0 : 1
     } else {
       console.error('uso: node avisar.mjs --descobrir-chat | --gravar-chat <id> | --teste')

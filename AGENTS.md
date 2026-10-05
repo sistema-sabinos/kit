@@ -29,6 +29,9 @@ Ao abrir conversa aqui, ANTES de qualquer coisa:
 5. Se o usuário falar de versão nova do kit, de zip novo ou de atualizar pelo
    GitHub: seguir a skill `atualizar-kit`. Ela nunca toca nas pastas de
    projeto sem aprovação nominal.
+6. Se pedir "baixa o projeto <pasta> do GitHub" (segundo computador ou sócio):
+   seguir a seção "Outro computador no mesmo projeto" de
+   `_modelo/.claude/skills/syncar/SKILL.md`.
 
 ## Regras de operação
 
@@ -52,6 +55,9 @@ Ao abrir conversa aqui, ANTES de qualquer coisa:
 7. Nunca editar `_modelo/`: ele é o molde dos próximos projetos. Skill
    nova ou correção que valha pra todo projeto futuro entra no `_modelo/`
    só com o usuário pedindo explicitamente.
+8. Segunda opinião: antes de pedir o ok da pessoa (estrutura de pasta, pacote
+   de skills, qualquer confirmação do `setup` ou do `novo-projeto`), seguir a
+   skill `segunda-opiniao`.
 
 ## Compatibilidade com outros agentes
 

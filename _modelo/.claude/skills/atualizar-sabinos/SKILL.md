@@ -98,7 +98,7 @@ registrar.
    fechar.
 2. Se o projeto tem `.claude/settings.json`, conferir que continua JSON válido:
    `node -e "JSON.parse(require('fs').readFileSync('.claude/settings.json','utf8'))"`.
-3. Anotar no `_contexto/agora.md`: `AAAA-MM-DD, SabinOS atualizado pra <v>: <o que entrou em uma linha>`.
+3. Anotar no diário de hoje (`_memoria/diario/AAAA-MM-DD.md`, ou `AAAA-MM-DD-<origem>.md` quando o `.origem` existe e é diferente de `dono`; criando a pasta e o arquivo com `# AAAA-MM-DD` se faltar): `- HH:MM, SabinOS atualizado pra <v>: <o que entrou em uma linha>`. Mudança do `mudancas.md` que a pessoa recusou vira linha no `_memoria/decisoes.md`, no formato do cabeçalho dele, com o motivo dela.
 4. Fechar: "Pronto, projeto na versão <v>. Se algo ficou estranho, é só pedir
    'desfaz a atualização' que eu volto tudo como estava. Esse processo fechou,
    abre uma conversa nova." O download fica na pasta temporária do computador

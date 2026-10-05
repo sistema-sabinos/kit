@@ -92,13 +92,37 @@ aí dentro com prazo ou meta, se houver. Depois:
 
 1. Sugerir o lugar dentro do projeto-pai, seguindo a estrutura que ele já tem
    (`clientes/<nome>/` numa agência, `projetos/<nome>/` num negócio próprio,
-   `conteudo/<nome>/` pra série ou canal). Confirmar antes de criar.
-2. Criar a pasta com um `AGENTS.md` curto (menos de 30 linhas) e um `CLAUDE.md`
-   com a linha `@AGENTS.md`. Conteúdo do `AGENTS.md`: o que é, tipo (cliente,
-   produto, conteúdo, interno), escopo, contexto (prazo, orçamento, regra ou
-   órgão próprio se houver), "Arquivos importantes" e "Regras específicas"
-   como listas vazias que crescem com o uso. Se for cliente, mais "Contato" e
-   "Entregas" como checklist.
+   `conteudo/<nome>/` pra série ou canal).
+   Antes de propor, procurar o que o projeto-pai já sabe dessa pasta: o nome
+   (e o nome da pasta) nas decisões (inclusive as com `[<nome-da-pasta>]`), no
+   diário, no `agora.md`, no `empresa.md` e nos arquivos que o Mapa do
+   `AGENTS.md` do projeto-pai lista. O que achar entra no `contexto.md` e no
+   `andamento.md` com a data e o caminho de onde saiu; pendência que o diário diz
+   que já foi feita entra como feita. Dado pessoal (CPF, telefone pessoal,
+   endereço de casa) e senha ficam de fora.
+   Passar o lugar e os quatro arquivos do item 2 pela `/segunda-opiniao` (a
+   skill desta pasta-mãe) e só então pedir a confirmação.
+2. Criar a pasta com quatro arquivos, e só eles (subpasta nasce quando a
+   pessoa pedir):
+   - `CLAUDE.md`, com a linha `@AGENTS.md`.
+   - `AGENTS.md` curto (menos de 30 linhas): o que é e o tipo (cliente,
+     produto, conteúdo, interno); uma seção "Antes de agir" dizendo que o que
+     é o projeto e o que foi combinado está no `contexto.md`, que onde está e
+     o que falta está no `andamento.md`, que texto ou peça pra fora segue a
+     marca do projeto-pai (ou a `marca/` desta pasta, se ela tem identidade
+     própria), que onde salvar segue a Tabela de destinos do `AGENTS.md` do
+     projeto-pai e que decisão sobre esta pasta vai pras decisões do projeto
+     com a marca de projeto que a Tabela de destinos do projeto-pai manda e o
+     nome da pasta; uma seção "Regras desta pasta", lista
+     vazia que cresce com o uso; e a regra "sessão que mexeu aqui atualiza o
+     `andamento.md` antes de fechar".
+   - `contexto.md`: o que é e o que precisa ser entregue; prazo, orçamento,
+     ferramenta e regra ou órgão próprio, se houver; contato, se for cliente;
+     e uma seção "Material de origem", onde transcrição, PDF ou e-mail do
+     projeto entram destilados, cada linha com a data e o caminho da fonte.
+   - `andamento.md`: "Onde está (AAAA-MM-DD)", com "pasta criada" e o
+     primeiro passo que a pessoa citou; "Pendências", em checklist (as
+     entregas, se for cliente); e "Feito", vazio.
 3. Registrar a pasta na "Estrutura de pastas" do `AGENTS.md` do projeto-pai,
    uma linha, e, se for cliente, oferecer uma linha em `_contexto/empresa.md`
    do projeto-pai.
@@ -109,6 +133,20 @@ aí dentro com prazo ou meta, se houver. Depois:
 
 Nome da subpasta em kebab case, sem acento nem caractere especial, pelo mesmo
 motivo da regra de nome de pasta do Passo 3.
+
+**Modo link (pasta que já existe).** Quando a pessoa diz que a pasta já
+existe ("liga a pasta X", "/novo-projeto link X"), ou quando o `/compartilhar`
+acha uma pasta sem os quatro arquivos: ler o que tem dentro, criar só o que
+falta dos quatro arquivos do item 2 e registrar na Estrutura de pastas do
+projeto-pai. O `contexto.md` nasce com o que dá pra deduzir dos arquivos que
+já estão lá, cada linha com o caminho de onde saiu. Mostrar o que vai ser
+criado, passar pela `/segunda-opiniao` e só gravar com o ok. Nunca mover,
+renomear nem reescrever o que já estava dentro da pasta. Se a pasta
+já tem linha na Estrutura de pastas, atualizar essa linha em vez de criar outra.
+O modo link pula o Passo 0.5 e as perguntas da rota leve: o nome é o da pasta e
+o resto se deduz dos arquivos dela e da busca do item 1. Pasta fora de qualquer
+projeto: perguntar se ela entra num projeto (mover só com o sim) ou se merece
+sala própria (rota completa).
 
 **Rota completa (sala própria).** Seguir do Passo 1 em diante.
 
@@ -349,9 +387,16 @@ perguntar outro nome antes de seguir.
   rodar script baixado da internet) antes de ele rodar. Vai sempre, em todo projeto,
   mesmo quando a pessoa recusou o auto-sync: o `settings.json` copiado já chama ela pelo
   bloco `PreToolUse`, e sem o arquivo o projeto nasce apontando pra um script que não existe.
+- `.claude/hooks/auto-sync.mjs`, só o script (nunca o `auto-sync.test.mjs`). É o
+  backup automático que o bloco `Stop` do `settings.json` chama. Vai sempre, como a
+  trava: sem ele o projeto nasce com o `settings.json` apontando pra um script que não existe.
 - `.gitignore`, copiar como está.
-- `_contexto/` inteira (os 6 arquivos: `empresa.md`, `preferencias.md`,
-  `estrategia.md`, `agora.md`, `licoes.md`, `ferramentas.md`), preenchidos
+- `.gitattributes`, copiar como está. Faz o diário e as decisões, que só recebem
+  linha nova, juntarem as duas versões sozinhos quando dois computadores escrevem
+  ao mesmo tempo, em vez de travar o backup.
+- `_contexto/` inteira (`empresa.md`, `preferencias.md`, `estrategia.md`,
+  `agora.md`, `licoes.md`, `ferramentas.md`, `automacoes.md`, `infra.md` e a
+  pasta `arquivo/`), preenchidos
   com o que já se sabe da pessoa pelas leituras do Passo 0 (nome, tom,
   ferramentas que já valem pra ela em qualquer projeto) mais o que é
   específico deste projeto novo (respostas do Passo 1), nunca deixando o
@@ -365,9 +410,17 @@ perguntar outro nome antes de seguir.
   preencher depois com o `/atualizar`, dentro da pasta do projeto (nomear o
   comando; sem isso a frase vira lacuna e sai um chute).
 - `dados/README.md` (e a pasta `dados/` que ele documenta).
+- `_memoria/` inteira, como está no molde: `diario/`, `recados/` e
+  `arquivo/` com o `.gitkeep` e o `decisoes.md` só com o cabeçalho. Nunca o
+  diário nem as decisões de outro projeto: cada projeto começa o registro dele
+  do zero.
+- `.origem`: se um projeto irmão tem `.origem` (olhar na pasta dele), criar igual,
+  porque é o nome desta máquina; sem irmão com `.origem`, gravar `dono`.
 - As skills base do dia a dia: `iniciar`, `conectar`, `mapear`, `atualizar`,
-  `syncar`, `bastao`, `checar`, `agendar`, `atualizar-sabinos`, `find-skills` e
-  `aprender-curso` (o `AGENTS.md` do projeto e o `/mapear`
+  `syncar`, `bastao`, `checar`, `agendar`, `atualizar-sabinos`, `find-skills`,
+  `faxina`, `compartilhar`, `segunda-opiniao` (o `AGENTS.md` do projeto manda
+  passar todo pedido de ok por ela) e `aprender-curso` (o `AGENTS.md` do
+  projeto e o `/mapear`
   mandam rodar a `find-skills` lá dentro, então ela vai junto, senão a
   instrução aponta pra uma skill que não existe na pasta), mais a `assistir-video`
   e a `transcribe`, que a `aprender-curso` usa pra estudar um curso em vídeo e
@@ -393,15 +446,15 @@ perguntar outro nome antes de seguir.
 
 ### `AGENTS.md` do projeto (com `CLAUDE.md` de ponteiro)
 
-Partir de `_modelo/AGENTS.md` inteiro e mexer só na abertura (o título e o
-parágrafo que hoje traz o comentário `NOT CONFIGURED`): trocar pelo nome do
-projeto novo e por um resumo real do que ele é, vindo das respostas do Passo
-1. As seções depois disso ("Compatibilidade com outros agentes", "Início de conversa",
-"Fluxo de trabalho", "Regras de operação", "Aprender e atualizar contexto",
-"Criação de skills") não se mexem. "Fluxo de trabalho" e "Criação de skills"
-já citam a biblioteca pelo caminho certo, `../_modelo/templates/skills/` (o
-relativo da pasta do projeto
-até a pasta-mãe, já que `templates/` não é copiada): só conferir que continua
+Partir de `_modelo/AGENTS.md` inteiro e mexer só no título e na seção
+`## Sobre este negócio` (a que traz o comentário `NOT CONFIGURED`): trocar
+pelo nome do projeto novo e por um resumo real do que ele é, vindo das
+respostas do Passo 1. As outras seções (`## Mapa`, `## Tabela de destinos`,
+`## Gatilhos`, `## Recall`, `## Rotinas`, `## Regras de operação`,
+`## Estrutura de pastas`) não se mexem, tirando a Estrutura de pastas (abaixo)
+e a regra 5 quando o auto-sync foi recusado (acima). Onde o texto cita a
+biblioteca por `../_modelo/templates/skills/` (o relativo da pasta do projeto
+até a pasta-mãe, já que `templates/` não é copiada), só conferir que continua
 assim e deixar como está. Reescrever esse caminho de novo gera
 `../_modelo/../_modelo/`, que não resolve.
 
@@ -418,8 +471,12 @@ inspiração a lista do template de perfil correspondente em
 `_modelo/templates/perfis/agents-md-<perfil>.md` (`agencia`, `freelancer`,
 `solopreneur` e `empresa` têm modelo pronto; `criador` parte do de
 `solopreneur`; `profissional` usa uma estrutura simples:
-`trabalho/projetos/`, `trabalho/reunioes/`, `anotacoes/` e `tarefas.md`).
-Mostrar a estrutura de pastas proposta e só criar depois da pessoa confirmar.
+`trabalho/projetos/`, `trabalho/reunioes/`, `anotacoes/` e `tarefas.md`). O template de perfil traz também uma `## Tabela de destinos` com linhas
+próprias do perfil: elas entram dentro da `## Tabela de destinos` do `AGENTS.md`,
+nunca como um segundo título igual.
+Passar a estrutura de pastas proposta, junto com as skills e os pacotes
+escolhidos, pela `/segunda-opiniao` (a skill desta pasta-mãe), mostrar e só
+criar depois da pessoa confirmar.
 
 Pasta que nasce agora e ainda não tem arquivo leva um `README.md` de uma linha
 dizendo pra que serve, no mesmo espírito do `dados/README.md`. Sem isso ela cai

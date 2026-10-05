@@ -1,54 +1,23 @@
 # [Nome da Agência], SabinOS
 
-> Template pra agências que atendem clientes (freelancer tem modelo próprio).
-> Preencha os campos com colchetes e delete este aviso.
+> Perfil agência. O /setup usa estas três seções como inspiração dentro do `_modelo/AGENTS.md`; as outras seções vêm de lá.
 
-## O que é esse workspace
+## Sobre este negócio
 
-[Descreve em uma ou duas frases o que essa pasta representa. Ex: "Workspace de operações da agência. Aqui ficam todos os clientes, propostas e entregas."]
+Somos uma agência de [marketing digital, design, conteúdo, consultoria].
+Atendemos [perfil de clientes: PMEs, e-commerces, startups, empresas locais].
+Serviços principais: [3 a 5 serviços].
+Clientes ativos: [tipos de cliente e projetos em andamento].
 
-**Estrutura de pastas:**
-- `_contexto/`, memória do sistema (não apagar)
-- `clientes/`, um subdiretório por cliente
+## Estrutura de pastas
+
+- `clientes/`, uma pasta por cliente
 - `briefings/`, briefings recebidos
 - `propostas/`, propostas em andamento e enviadas
 - `conteudo/`, produção de conteúdo
-- `dados/`, arquivos para análise (CSV, PDF, etc)
-- `tarefas.md`, lista de tarefas corrente
 
-## Sobre o negócio
+## Tabela de destinos
 
-Somos uma [tipo de agência: marketing digital / design / conteúdo / consultoria].
-Atendemos [perfil de clientes: PMEs / e-commerces / startups / empresas locais].
-Nossos principais serviços são: [lista de 3-5 serviços principais].
-
-## Clientes ativos
-
-[Lista ou descrição dos tipos de clientes. Exemplos de projetos em andamento.]
-
-## O que mais produzimos aqui
-
-- Propostas comerciais para novos clientes
-- [outros entregáveis frequentes]
-- [relatórios, apresentações, posts, etc]
-
-## Tom de voz
-
-[Como você escreve e se comunica com clientes e na produção de conteúdo]
-
-Evitar: [palavras, construções ou estilos que não combinam]
-
-## Regras do sistema
-
-- Propostas salvar em `propostas/`
-- Clientes novos criar pasta em `clientes/[nome-cliente]/`
-- [outras regras de organização que fizerem sentido]
-
-## Ferramentas conectadas
-
-- [ ] Notion
-- [ ] Gmail
-- [ ] Google Calendar
-- [ ] Canva
-
-*(Marcar conforme for instalando os MCPs)*
+- proposta → `propostas/`
+- cliente novo → pasta nova em `clientes/<nome-cliente>/`
+- briefing recebido → `briefings/`
