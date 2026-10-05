@@ -34,6 +34,26 @@ test('gate 1 pega termo proibido', () => {
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
+test('na pasta-mae do aluno, projeto e backup do /atualizar-kit ficam fora da varredura', () => {
+  const dir = kitFalso()
+  try {
+    // projeto do aluno: tem _contexto/, .env e codigo MLB, que sao dele e nunca vao no zip
+    mkdirSync(join(dir, 'loja/_contexto'), { recursive: true })
+    writeFileSync(join(dir, 'loja/_contexto/agora.md'), '# agora\n')
+    writeFileSync(join(dir, 'loja/.env'), 'API_KEY=' + 'abc123def456ghi789\n')
+    writeFileSync(join(dir, 'loja/anuncio.md'), 'Anuncio MLB' + '1234567' + '.\n')
+    mkdirSync(join(dir, '_kit-anterior-2026-10-04'), { recursive: true })
+    writeFileSync(join(dir, '_kit-anterior-2026-10-04/x.md'), 'Conta termo-secreto-exemplo.\n')
+    // o _modelo tambem tem _contexto/ e continua sendo varrido
+    mkdirSync(join(dir, '_modelo/_contexto'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/_contexto/a.md'), 'Conta termo-secreto-exemplo.\n')
+    const { falhas } = rodarGates(dir, { proibidos: TERMOS })
+    const g1 = falhas.filter(f => f.gate === 1)
+    assert.ok(g1.some(f => f.arquivo === '_modelo/_contexto/a.md'), 'canario: o _modelo segue varrido')
+    assert.deepEqual(g1.filter(f => /^(loja|_kit-anterior)/.test(f.arquivo)), [])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
 test('carregarProibidos de caminho inexistente devolve lista vazia', () => {
   assert.deepEqual(carregarProibidos(join(tmpdir(), 'nao-existe-proibidos-exemplo.json')), [])
 })

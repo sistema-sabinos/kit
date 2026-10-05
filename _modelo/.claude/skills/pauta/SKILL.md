@@ -30,11 +30,9 @@ Tudo e gratis por padrao: a analise dos videos usa a transcricao (feita no compu
 > Nesta rodada sao <n> videos, uns <m> minutos no total; custa em torno de R$ <x>. Quer, ou sigo no gratis?"
 
 Estimar o valor pela duracao somada e pelo preco por token do modelo que a `/assistir-video` escolhe,
-conferido na pagina de precos do Google na hora (nunca de memoria). So rodar com o "pode ir". Depois,
-registrar o gasto real (a `/assistir-video` imprime os tokens) com:
-```
-node .claude/skills/midia-social/scripts/lib/custos.mjs --servico "gemini (pauta)" --reais <valor> --tokens <n> --nota "<perfil>"
-```
+conferido na pagina de precos do Google na hora (nunca de memoria). So rodar com o "pode ir". O gasto
+real de cada video o `ver-video.mjs` da `/assistir-video` anota sozinho em `dados/custos.jsonl`: nao
+registrar de novo.
 
 ## Como despachar um cargo
 

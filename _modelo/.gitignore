@@ -20,6 +20,8 @@ Thumbs.db
 *.mp3
 *.wav
 *.m4a
+# exceção: a voz de teste do /configurar-video é arquivo do kit (387 KB) e o teste rápido exige ela
+!.claude/skills/configurar-video/referencias/teste-voz.wav
 
 # Perfil do Chrome dedicado do pacote Mercado Livre: guarda o login da conta, nunca sobe
 dados/chrome-perfil/

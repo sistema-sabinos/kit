@@ -2,8 +2,9 @@
 name: iniciar
 description: >
   Inicia a sessão de trabalho carregando o contexto do negócio e mostrando onde o
-  usuário parou. Use no começo de cada sessão nova, quando o usuário chamar /iniciar,
-  disser "bom dia, vamos trabalhar", "o que ficou pendente" ou "onde paramos".
+  usuário parou; se existe um bastão salvo (.claude/bastao.md), oferece retomar por ele.
+  Use no começo de cada sessão nova, quando o usuário chamar /iniciar, disser "bom dia,
+  vamos trabalhar", "o que ficou pendente", "onde paramos" ou "continua de onde paramos".
 ---
 
 # /iniciar, Começo de sessão
@@ -20,7 +21,10 @@ description: >
 3. Verificar se `_contexto/empresa.md` está configurado (sem `<!-- NOT CONFIGURED -->`)
 4. Ler `_contexto/empresa.md`, `_contexto/preferencias.md`, `_contexto/estrategia.md`, `_contexto/agora.md` e `_contexto/trilha.md` (se existir)
 5. Ler `AGENTS.md` (o conteúdo real do projeto; `CLAUDE.md` é só o ponteiro `@AGENTS.md`) e, se existir, `tarefas.md`
-6. Apresentar o resumo e perguntar o que o usuário quer fazer
+6. Apresentar o resumo e perguntar o que o usuário quer fazer. Se existir `.claude/bastao.md`
+   (ponto salvo pelo `/bastao` numa conversa anterior), a pergunta vira: "Tem uma tarefa salva
+   pra continuar: <primeira linha do bastão>. Retomo dela?". Com o sim, seguir a retomada da
+   skill `/bastao`
 7. Se `_contexto/empresa.md` estiver com NOT CONFIGURED, esta pasta é o `_modelo/` ou uma cópia crua: avisar que o lugar de começar é a pasta-mãe, com `primeiro projeto`
 
 ## Se está configurado

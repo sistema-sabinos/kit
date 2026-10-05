@@ -18,8 +18,8 @@ Sem opinar sobre o que a pessoa deve postar; isso e do Garimpeiro.
 2. **Rota com Gemini (so se as entradas disserem `rota: gemini`):** assistir cada Reel com
    `node .claude/skills/assistir-video/ver-video.mjs "<mp4>" --pergunta "<conteudo inteiro de .claude/skills/pauta/prompt-conteudo.md>"`,
    em primeiro plano, um por vez, colhendo o resultado na propria chamada (lote em segundo plano ja foi
-   morto no meio e gastou a toa). Guardar em `analises/<codigo>.md`. Somar os tokens que o script
-   imprime e registrar uma linha por perfil com o `custos.mjs`. Na rota gratis, a leitura sai da
+   morto no meio e gastou a toa). Guardar em `analises/<codigo>.md`. O script anota o custo de
+   cada video sozinho em `dados/custos.jsonl`: nao registrar de novo. Na rota gratis, a leitura sai da
    transcricao e da legenda.
 3. **Carrossel:** ler os slides e a legenda; descrever slide a slide: texto, funcao (capa, problema,
    passo, prova, fecho), estilo visual (cor, fonte, foto ou so texto).

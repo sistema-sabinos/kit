@@ -1,11 +1,16 @@
 ---
 name: transcribe
-description: Transcreve o vídeo de qualquer link (YouTube, Instagram, X/Twitter, TikTok, Facebook, Vimeo etc.) em texto. Use quando o usuário pedir pra transcrever um vídeo, mandar transcribe [link], pedir o texto ou a legenda do vídeo, perguntar o que o vídeo fala, ou colar um link de vídeo/rede social com intenção de transcrição. Cobre mais de 1000 sites via yt-dlp. Não precisa de chave de API. Também dispara com "transcribe install" ou "transcribe setup" pra rodar o assistente de instalação.
+description: >
+  Transcreve o vídeo de qualquer link (YouTube, Instagram, X/Twitter, TikTok, Facebook, Vimeo etc.) ou arquivo do computador em texto, de graça e sem chave de API. É a rota padrão pra vídeo: use quando o usuário pedir pra transcrever, pedir o texto ou a legenda, perguntar o que o vídeo fala, ou colar um link de vídeo querendo saber do que se trata. Quando a pessoa quer o que aparece na tela, é com o /assistir-video; quando quer saber por que o vídeo funciona, com o /decupar-referencia. Também dispara com "transcribe install" ou "transcribe setup" pra rodar o assistente de instalação.
 ---
 
 # Video Transcriber
 
 Transcribe any video URL into text using yt-dlp (download) + faster-whisper (transcription).
+
+**Windows:** o comando é `python` (e `python -m pip` no lugar de `pip3`); `python3` no Windows não existe ou abre a Microsoft Store. Onde abaixo aparecer `python3`/`pip3`, usar `python`/`python -m pip` no Windows. Respostas pro usuário saem em português.
+
+**YouTube:** antes de baixar e transcrever, tentar a legenda pronta (sai na hora e de graça): `yt-dlp --skip-download --write-auto-subs --write-subs --sub-langs "pt.*" --sub-format vtt "<url>"`. Sem legenda, ou com erro `429`, seguir o fluxo abaixo.
 
 ## Install
 

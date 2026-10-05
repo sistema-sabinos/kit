@@ -147,9 +147,17 @@ function matcherCobreBashEPowerShell(matcher) {
   return partes.includes('Bash') && partes.includes('PowerShell')
 }
 
+// Na pasta-mae do aluno o /atualizar-kit roda o verificador com os projetos dele dentro: projeto
+// (pasta com _contexto/, menos o _modelo) e backup _kit-anterior-* sao do aluno e nunca vao no zip.
+function ehDoAluno(dir, nome) {
+  if (/^_kit-anterior-/.test(nome)) return true
+  return nome !== '_modelo' && existsSync(join(dir, nome, '_contexto'))
+}
+
 function listar(dir, base = dir, acc = []) {
   for (const nome of readdirSync(dir)) {
     if (nome === '.git' || nome === 'node_modules') continue
+    if (dir === base && ehDoAluno(dir, nome)) continue
     const caminho = join(dir, nome)
     if (statSync(caminho).isDirectory()) listar(caminho, base, acc)
     else acc.push(relative(base, caminho).replace(/\\/g, '/'))

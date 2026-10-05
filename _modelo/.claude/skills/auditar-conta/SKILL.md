@@ -5,9 +5,9 @@ description: >
   obrigatório faltando, com tráfego e sem venda, fotos, descrição e título fracos,
   candidato a Full, reputação perto do limite, campanhas de desconto abertas, palavra-
   chave em alta que o título não usa, e o custo pelo Bling quando existe. Só lê a
-  conta. Use quando o usuário chamar /auditar-conta, disser "roda o raio-x da conta",
-  "audita a conta", "o que está puxando a conta pra baixo", "tem anúncio morto?",
-  "como está minha reputação", "vale mandar pro Full?".
+  conta. Use quando o usuário chamar /auditar-conta, disser "roda o raio-x da conta do
+  Mercado Livre", "audita minha conta do Mercado Livre", "o que está puxando a conta pra
+  baixo", "tem anúncio morto?", "como está minha reputação", "vale mandar pro Full?".
 ---
 
 # /auditar-conta, o raio-X da conta

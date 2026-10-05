@@ -1,6 +1,11 @@
 ---
 name: bastao
-description: Use quando o usuário chamar /bastao ou pedir explicitamente pra salvar o ponto exato de um projeto ou tarefa em andamento pra fechar o chat e continuar em outro chat novo (contexto cheio, chat gigante, "passa o bastão", "salva onde paramos", "vamos dividir em outro chat"). Também no chat novo, pra retomar do ponto salvo ("pega o bastão", "retoma", "continua de onde paramos"). Nunca rodar por conta própria sem o usuário pedir.
+description: >
+  Use quando o usuário chamar /bastao ou pedir explicitamente pra salvar o ponto exato
+  de uma tarefa em andamento pra continuar num chat novo ("passa o bastão", "salva pra
+  continuar em outro chat", "vamos dividir em outro chat", contexto cheio). No chat novo,
+  retoma do ponto salvo quando o usuário disser "pega o bastão" ou aceitar a retomada que o
+  /iniciar oferece. Nunca rodar por conta própria sem o usuário pedir.
 ---
 
 # Bastão

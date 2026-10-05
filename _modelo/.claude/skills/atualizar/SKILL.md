@@ -1,11 +1,11 @@
 ---
 name: atualizar
 description: >
-  Mantém a memória do sistema em dia. Compara o estado real do projeto com o que está
-  documentado, fecha a sessão registrando onde parou no _contexto/agora.md, e propõe
-  correções pro usuário aprovar. Use quando o usuário chamar /atualizar, disser
-  "atualiza o contexto", "fecha a sessão", "registra onde paramos", ou ao fim de uma
-  sessão longa com muitas mudanças.
+  Fecha a sessão e mantém a memória do sistema em dia: compara o estado real do projeto
+  com o que está documentado, registra onde parou no _contexto/agora.md e propõe
+  correções pro usuário aprovar. Use quando o usuário chamar /atualizar, disser "fecha a
+  sessão", "encerra por hoje", "registra o que fizemos" ou "arruma o contexto", ou ao fim
+  de uma sessão longa com muitas mudanças. Versão nova do SabinOS é com o /atualizar-sabinos.
 ---
 
 # /atualizar, Manutenção de contexto

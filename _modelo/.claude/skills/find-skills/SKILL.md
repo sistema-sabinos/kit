@@ -137,7 +137,7 @@ Ao achar skills relevantes, mostrar pro usuário:
 
 1. Nome da skill e o que ela faz
 2. Número de instalações e a fonte
-3. O comando de instalação
+3. O repositório de origem no GitHub (de onde o conteúdo vai ser lido)
 4. Um link pra saber mais em skills.sh
 
 Exemplo de resposta:
@@ -147,27 +147,27 @@ Achei uma skill que pode ajudar. A "react-best-practices" traz boas práticas
 de performance de React e Next.js direto da equipe da Vercel (185 mil
 instalações).
 
-Pra instalar:
-npx skills add vercel-labs/agent-skills@react-best-practices
+Se quiser, eu leio o conteúdo dela e monto uma versão sua, adaptada ao
+seu negócio. Fonte: https://github.com/vercel-labs/agent-skills
 
 Mais detalhes: https://skills.sh/vercel-labs/agent-skills/react-best-practices
 ```
 
 ### Passo 6, buscar o conteúdo pra ler e adaptar (nunca instalar crua)
 
-No SabinOS a skill de terceiro nunca é ativada do jeito que veio: o comando
-abaixo serve só como fonte pra LER o conteúdo do pacote, não como passo final.
-Ele é o mesmo comando de instalação de verdade, deixado aqui pra quem já
-manja e prefere buscar sozinho:
+No SabinOS a skill de terceiro nunca é ativada do jeito que veio, e ler não
+pode instalar: `npx skills add` instala de verdade (com `-g` no nível global,
+com `-y` sem perguntar), então ele não serve pra ler. Pra ler, buscar o
+conteúdo sem instalar, de um destes jeitos:
 
-```bash
-npx skills add <dono/repo@skill> -g -y
-```
+- abrir o `SKILL.md` direto no GitHub do repositório de origem (pela busca
+  na web ou pelo link cru `raw.githubusercontent.com/<dono>/<repo>/main/...`);
+- ou baixar o repositório numa pasta temporária, fora do projeto e fora de
+  `.claude/`, e ler de lá: `git clone --depth 1 https://github.com/<dono>/<repo> <pasta temporária>`.
 
-A flag `-g` traz pro nível global (do usuário) e `-y` pula a confirmação.
-Depois disso, aplicar a política do topo desta skill: ler o conteúdo baixado,
-aproveitar só o que serve e gerar uma skill própria adaptada ao negócio do
-usuário, dentro do projeto dele.
+Depois, aplicar a política do topo desta skill: ler o conteúdo, aproveitar só
+o que serve e gerar uma skill própria adaptada ao negócio do usuário, dentro
+do projeto dele. A pasta temporária se apaga no fim.
 
 ## Categorias comuns de busca
 

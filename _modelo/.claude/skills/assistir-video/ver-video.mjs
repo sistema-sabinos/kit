@@ -30,7 +30,9 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import https from 'https';
 import { baixarVideo, ehYoutube } from './baixar-video.mjs';
+import { linhaDeCusto, registrarCusto, tokensDaResposta } from './custo.mjs';
 
 // ---------------- chave ----------------
 function readKeyFrom(file) {
@@ -84,8 +86,9 @@ const prompt = pergunta
   ? `Assista o vídeo (áudio e imagem) e responda em português brasileiro, citando o que aparece na tela e timestamps quando útil:\n${pergunta}`
   : promptPadrao;
 
-const key = loadApiKey();
-const API = 'https://generativelanguage.googleapis.com/v1beta';
+// --so-baixar nunca chama o Gemini: roda sem chave, e a rota gratis de quem usa esta skill depende disso
+const key = has('so-baixar') ? null : loadApiKey();
+const API ='https://generativelanguage.googleapis.com/v1beta';
 
 // ---------------- escolha do modelo (viva, não chumbada) ----------------
 const LIXO = /image|tts|lite|robotics|embedding|computer-use|customtools|deep-research|antigravity|omni|thinking/i;
@@ -168,7 +171,7 @@ async function subirArquivo(arquivo) {
 
 // ---------------- roteiro principal ----------------
 const ehArquivoLocal = fs.existsSync(alvo);
-const usarLinkDireto = !ehArquivoLocal && ehYoutube(alvo) && !has('baixar');
+const usarLinkDireto = !ehArquivoLocal && ehYoutube(alvo) && !has('baixar') && !has('so-baixar');
 
 let filePart;
 let temporario = null;
@@ -197,20 +200,46 @@ if (usarLinkDireto) {
 const corpo = { contents: [{ parts: [{ text: prompt }, filePart] }] };
 if (has('lowres')) corpo.generationConfig = { mediaResolution: 'MEDIA_RESOLUTION_LOW' };
 
+// Aula longa (20 min ou mais) faz o Gemini pensar mais de 5 minutos antes de responder, e o fetch
+// do Node desiste nos 5 minutos (HeadersTimeoutError). Aqui vai https puro, com teto de 30 minutos.
+function postarJson(url, dados, tetoMs = 30 * 60 * 1000) {
+  return new Promise((ok, falha) => {
+    const corpoTxt = JSON.stringify(dados);
+    const req = https.request(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(corpoTxt) } }, (r) => {
+      let txt = '';
+      r.setEncoding('utf8');
+      r.on('data', (c) => { txt += c; });
+      r.on('end', () => { try { ok({ status: r.statusCode, json: JSON.parse(txt) }); } catch { ok({ status: r.statusCode, json: { error: { message: txt.slice(0, 300) } } }); } });
+    });
+    req.setTimeout(tetoMs, () => req.destroy(new Error(`o Gemini passou de ${tetoMs / 60000} minutos sem responder`)));
+    req.on('error', falha);
+    req.end(corpoTxt);
+  });
+}
+
 const modelo = await escolherModelo();
-const resp = await fetch(`${API}/models/${modelo}:generateContent?key=${key}`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(corpo),
-});
-const j = await resp.json();
+let status, j;
+try {
+  ({ status, json: j } = await postarJson(`${API}/models/${modelo}:generateContent?key=${key}`, corpo));
+} catch (e) {
+  console.error(`ERRO: [${modelo}] a chamada caiu antes da resposta (${e.message}). Pode ter sido cobrada: confira o uso em aistudio.google.com antes de tentar de novo. Vídeo muito longo: tente com --pergunta focada num trecho.`);
+  process.exit(1);
+}
+
+// a cobranca ja aconteceu quando vem uso de tokens: anota antes de olhar se a resposta presta
+// --sem-registro: quem chamou anota o custo ele mesmo (o fiscal do /editar-video), pra nao contar em dobro
+let custo = null;
+if (j.usageMetadata) {
+  custo = linhaDeCusto({ modelo, uso: j.usageMetadata, contexto: `assistir-video ${alvo}`, hoje: new Date().toISOString().slice(0, 10), agora: new Date().toISOString() });
+  if (!has('sem-registro')) try { registrarCusto(custo); } catch (e) { console.error(`[custo] chamada cobrada mas nao anotada em dados/custos.jsonl (${e.message}); anote a mao: ${JSON.stringify(custo)}`); }
+}
 
 // faxina: arquivo temporário local e cópia no servidor do Gemini
 if (temporario) { try { fs.unlinkSync(temporario); } catch {} }
 if (nomeRemoto) { fetch(`${API}/${nomeRemoto}?key=${key}`, { method: 'DELETE' }).catch(() => {}); }
 
-if (resp.status !== 200) {
-  console.error(`ERRO: [${modelo}] HTTP ${resp.status}: ${(j.error && j.error.message) || JSON.stringify(j).slice(0, 300)}`);
+if (status !== 200) {
+  console.error(`ERRO: [${modelo}] HTTP ${status}: ${(j.error && j.error.message) || JSON.stringify(j).slice(0, 300)}`);
   process.exit(1);
 }
 const txt = j.candidates?.[0]?.content?.parts?.map((p) => p.text).filter(Boolean).join('\n');
@@ -218,6 +247,6 @@ if (!txt) {
   console.error(`ERRO: [${modelo}] resposta vazia: ${JSON.stringify(j).slice(0, 400)}`);
   process.exit(1);
 }
-const u = j.usageMetadata || {};
-console.error(`(modelo: ${modelo} | tokens entrada: ${u.promptTokenCount ?? '?'} | saída: ${u.candidatesTokenCount ?? '?'})`);
+const t = tokensDaResposta(j.usageMetadata);
+console.error(`(modelo: ${modelo} | tokens entrada: ${t.entrada} | saída com raciocínio: ${t.saida} | custo: ${custo?.usd == null ? 'preço fora da tabela, conferir' : `US$ ${custo.usd}`})`);
 console.log(txt);

@@ -106,6 +106,10 @@ na pasta do projeto. O `-a claude-code` instala só pro Claude Code e o `-y` res
 aos avisos. Ele põe umas 12 skills do Remotion em `.claude/skills/` deste projeto e um
 arquivo `skills-lock.json` na pasta do projeto, sem mexer nos outros projetos.
 
+Esta é a exceção escrita à regra de nunca instalar skill de terceiro do jeito que veio: o
+pacote é o oficial dos próprios autores do Remotion e ensina a biblioteca deles, então entra
+sem adaptar (decisão de 2026-10-05). Qualquer outra skill de fora segue a regra.
+
 ### 6. Teste curtinho de uns 8 segundos
 
 Antes, rode `sincronizar-motor.mjs` de novo (e `instalar-motor.mjs` se ele pedir). O teste se recusa a carimbar se o motor de `_video` estiver diferente do kit. Rode `node .claude/skills/configurar-video/scripts/teste-rapido.mjs`. Ele monta um vídeo de

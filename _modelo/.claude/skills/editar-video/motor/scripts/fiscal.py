@@ -126,7 +126,8 @@ def olho_final(falhas, avisos):
             "Grave e o que faria a pessoa recusar o video, e so e grave o que voce confirma em mais de um quadro seguido (animacao de "
             "entrada, giro ou transicao de 0,3 s nao conta). Sem problema grave, o veredito e APROVADO.\n\nROTEIRO:\n"
             + ROTEIRO.read_text(encoding="utf-8"))
-        r = subprocess.run(["node", VER_VIDEO, str(FINAL), "--pergunta", pergunta],
+        # --sem-registro: o ver-video anotaria o custo dele tambem, e a linha abaixo ja anota uma vez
+        r = subprocess.run(["node", VER_VIDEO, str(FINAL), "--pergunta", pergunta, "--sem-registro"],
                            capture_output=True, text=True, errors="replace", encoding="utf-8")
         (SAIDA / "olho-final.md").write_text(r.stdout, encoding="utf-8")
         if r.returncode != 0:

@@ -3,8 +3,8 @@ name: midia-social
 description: >
   Porta de entrada do pacote de midia social: configura na primeira vez (perfil da loja ou marca
   pessoal), cria as pastas do aluno e mostra o que falta e o proximo passo. Use quando o usuario
-  chamar /midia-social, disser "quero postar nas redes", "configura minhas redes", "como estao
-  minhas redes".
+  chamar /midia-social, disser "quero comecar nas redes", "configura minhas redes", "como estao
+  minhas redes". Agendar um post pronto e com a /publicar-social.
 ---
 
 # /midia-social, as redes da loja (ou suas) no lugar
@@ -67,9 +67,10 @@ conta o resultado.
 ## Custo
 
 So o Gemini e pago, e e opcional. Antes de qualquer uso, o comando diz quanto vai custar e espera o
-"pode ir". Todo gasto vira uma linha em `dados/custos.jsonl`:
+"pode ir". Todo gasto vira uma linha em `dados/custos.jsonl`. O Gemini assistindo video (pelo
+`ver-video.mjs` da `/assistir-video`) anota sozinho; outro gasto pago anota com:
 ```
-node .claude/skills/midia-social/scripts/lib/custos.mjs --servico "gemini (pauta)" --reais <valor> --tokens <n>
+node .claude/skills/midia-social/scripts/lib/custos.mjs --servico "<servico>" --usd <valor em dolar> --tokens <n>
 ```
 
 ## Chrome dedicado

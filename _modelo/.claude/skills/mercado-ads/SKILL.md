@@ -5,9 +5,9 @@ description: >
   escalar, reduzir ou pausar, montagem da primeira campanha, o freio de ACOS calculado
   pela margem, campanhas de desconto abertas pra conta, e a ata do que foi decidido.
   Só lê a conta: mexer em campanha é no painel, pela pessoa, uma ação por vez. Use
-  quando o usuário chamar /mercado-ads, disser "como estão meus anúncios pagos", "roda o
-  raio-x do ads", "monta minha primeira campanha", "meu ACOS está bom?", "mexe no teto
-  do ads", "tem promoção do Mercado Livre pra entrar?".
+  quando o usuário chamar /mercado-ads, disser "como estão meus anúncios pagos no Mercado
+  Livre", "roda o raio-x do ads", "monta minha primeira campanha", "meu ACOS está bom?",
+  "mexe no teto do ads", "tem promoção do Mercado Livre pra entrar?".
 ---
 
 # /mercado-ads, anúncio pago com freio

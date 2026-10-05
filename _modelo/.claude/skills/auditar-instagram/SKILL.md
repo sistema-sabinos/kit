@@ -4,9 +4,9 @@ description: >
   Raio-x do Instagram com numero real da API oficial (nota de saude, melhores e piores posts com o
   porque, desvio de tema, o que repetir, o que arquivar, como o publico engaja), medicao de um post 7
   dias depois de publicado, renovacao do token e analise de concorrentes pela pagina publica. Use
-  quando o usuario chamar /auditar-instagram, disser "como esta meu instagram", "audita minha conta",
+  quando o usuario chamar /auditar-instagram, disser "como esta meu instagram", "audita meu instagram",
   "quais posts foram melhor", "mede o post", "renova o token do instagram", "quem sao meus
-  concorrentes", "analisa o concorrente X".
+  concorrentes no instagram", "analisa o perfil X".
 ---
 
 # /auditar-instagram, o que funciona na conta e o que fazer

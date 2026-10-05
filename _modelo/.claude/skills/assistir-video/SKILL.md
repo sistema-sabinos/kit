@@ -2,21 +2,18 @@
 name: assistir-video
 description: >
   Assiste um vídeo de verdade (YouTube, Instagram, TikTok, Kwai, Facebook, X,
-  Vimeo ou arquivo local), vendo IMAGEM e ouvindo ÁUDIO via Gemini, não só
-  lendo legenda. Use quando o usuário mandar um link de vídeo e disser
-  "assiste esse vídeo", "vê esse vídeo e me diz o que tem", "o que esse vídeo
-  mostra/faz", "resume esse vídeo", "o que aparece na tela", "esse cara tá
-  falando verdade?", ou colar uma URL de vídeo com intenção de entender o
-  conteúdo. Enxerga o que aparece na tela (painéis, sites, prints,
-  demonstrações), por isso é melhor que uma transcrição pura quando o vídeo
-  mostra algo visual.
+  Vimeo ou arquivo local), vendo IMAGEM e ouvindo ÁUDIO via Gemini (pago, centavos,
+  sempre avisado antes). Use quando o usuário chamar /assistir-video ou quiser o que
+  APARECE NA TELA: "assiste esse vídeo com imagem", "o que aparece na tela", "que site
+  ou painel ele mostra", "esse cara tá falando verdade?" num vídeo que mostra coisa na
+  tela. Pra saber só o que o vídeo fala, a rota padrão é a /transcribe, grátis.
 ---
 
 # Assistir vídeo (com visão, via Gemini)
 
 Manda o **Gemini assistir o vídeo** processando áudio + imagem (~1 frame/seg). Diferente de transcrever (só o áudio vira texto), aqui o modelo **vê a tela**: descreve ferramentas, sites, painéis e demonstrações que aparecem, com timestamps.
 
-Funciona em qualquer pasta/negócio (skill global). Usa a `GEMINI_API_KEY` do arquivo `.env` na raiz do projeto (o `/conectar` ensina a criar a chave; é paga por uso, avisar custo antes).
+Funciona em qualquer projeto que tenha esta skill. Usa a `GEMINI_API_KEY` do arquivo `.env` na raiz do projeto (o `/conectar` ensina a criar a chave; é paga por uso).
 
 ## Quando usar
 
@@ -25,7 +22,7 @@ Funciona em qualquer pasta/negócio (skill global). Usa a `GEMINI_API_KEY` do ar
 - Tutorial onde o que importa está na tela (painel, software, passo a passo).
 - Resumo, perguntas específicas, ou achar o timestamp de um trecho.
 
-Para áudio puro (podcast, vídeo sem nada visual relevante), a skill global `transcribe` também serve; esta aqui ganha quando a TELA importa.
+Para áudio puro (podcast, vídeo sem nada visual relevante), a skill `transcribe` também serve, e é grátis; esta aqui ganha quando a TELA importa.
 
 ## Como rodar
 
@@ -38,9 +35,9 @@ Opções:
 - `--barato` usa o flash mais novo em vez do pro. **É o que derruba o custo de verdade** (cai a qualidade da leitura de texto miúdo na tela).
 - `--model gemini-3.1-pro-preview` força um modelo específico (normalmente desnecessário, ver abaixo).
 - `--lowres` pede resolução de mídia baixa. Não muda o número de tokens nos modelos 3.x, então não conte com ele pra economizar; use `--barato`.
-- `--baixar` força baixar mesmo sendo YouTube. `--manter` não apaga o arquivo temporário. `--so-baixar` só baixa e imprime o caminho.
+- `--baixar` força baixar mesmo sendo YouTube. `--manter` não apaga o arquivo temporário. `--so-baixar` só baixa e imprime o caminho (grátis: não chama o Gemini nem precisa de chave). `--sem-registro` não grava o custo, pra script que já anota ele mesmo (o fiscal do `/editar-video`).
 
-O texto sai no stdout. O stderr mostra a rota usada, o modelo e o nº de tokens (pra conferir custo).
+O texto sai no stdout. O stderr mostra a rota usada, o modelo, os tokens e o custo em dólar. Cada chamada paga vira uma linha em `dados/custos.jsonl` sozinha.
 
 ## De onde ele aceita vídeo
 
@@ -63,18 +60,15 @@ O script pergunta pra API quais modelos existem e escolhe o melhor disponível (
 
 ## Custo (pay-per-use, na billing Gemini do usuário)
 
-NÃO é grátis, mas é barato. Vídeo é tokenizado por segundo de duração. Referência medida: um reel de 38s consumiu ~3.500 tokens de entrada. Estimativa:
-- Vídeo curto (1-3 min): poucos centavos a 1 real
-- Vídeo médio (10-15 min): alguns reais
-- `--barato` derruba pra uma fração disso.
+NÃO é grátis, mas é barato. Vídeo é cobrado por segundo de duração: medido em 2026-10-04, uns 91 tokens de entrada por segundo de vídeo. Estimativa = segundos × 91 × preço por milhão de tokens de entrada do modelo, conferido no dia na página oficial (ai.google.dev/gemini-api/docs/pricing), nunca de memória. No dia da medição, com `--barato`, uma aula de 8 minutos saiu US$ 0,04 e uma de 28 minutos, US$ 0,13; o pro custa algumas vezes mais.
 
-Sempre relatar ao usuário o custo aproximado quando o vídeo for longo.
+Avisar o custo aproximado antes de toda chamada e esperar o "pode ir" (regra do gate humano).
 
 ## Fluxo da skill
 
 1. Pegar a URL (ou caminho) do argumento. Se não vier, pedir.
 2. Se o usuário fez uma pergunta específica, passar via `--pergunta`. Vídeo longo sem texto miúdo na tela: considerar `--barato`.
-3. Rodar o script e apresentar a análise. Em vídeo longo, avisar o custo aproximado.
+3. Avisar o custo aproximado e esperar o "pode ir". Depois rodar o script e apresentar a análise.
 4. Se o usuário pediu pra checar se o vídeo fala verdade, pegar a seção "afirmações verificáveis" e conferir cada uma com WebSearch/WebFetch antes de responder.
 
 ## Limitações

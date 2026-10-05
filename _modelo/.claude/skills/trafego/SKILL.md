@@ -1,12 +1,14 @@
 ---
 name: trafego
 description: >
-  Cuida do tráfego pago do negócio com método fechado: calcula quanto vale um resultado,
-  mede o ponto de empate, classifica cada anúncio em quatro faixas e propõe o que cortar e
-  o que escalar. Nada é aplicado na conta sem o "pode ir" do usuário.
-  Use quando o usuário chamar /trafego, disser "como estão meus anúncios", "o que está
-  queimando dinheiro", "o que eu devo pausar", "quanto posso pagar por um lead", "meu
-  anúncio não está vendendo" ou "audita minha conta de anúncios".
+  Cuida do tráfego pago no Instagram e no Facebook (Meta Ads) com método fechado: calcula
+  quanto vale um resultado, mede o ponto de empate, classifica cada anúncio em quatro
+  faixas e propõe o que cortar e o que escalar. Nada é aplicado na conta sem o "pode ir"
+  do usuário. Use quando o usuário chamar /trafego ou falar de anúncio pago no Instagram
+  ou no Facebook: "como estão meus anúncios do Instagram", "o que está queimando dinheiro
+  na Meta", "o que eu devo pausar", "quanto posso pagar por um lead", "audita minha conta
+  de anúncios do Facebook". Anúncio pago do Mercado Livre é com o /mercado-ads; se a
+  pessoa disser só "meus anúncios", perguntar de qual plataforma.
 ---
 
 # /trafego, Anúncio julgado por régua

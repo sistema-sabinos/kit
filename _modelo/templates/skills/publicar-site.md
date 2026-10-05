@@ -2,8 +2,9 @@
 name: publicar-site
 description: >
   Publica um arquivo HTML no ar via Cloudflare Pages e retorna um link compartilhável.
-  Use quando o usuário disser "publica", "coloca no ar", "quero um link", "deploy",
-  "publica esse HTML", "publicar-site" ou após criar uma proposta/landing page.
+  Use quando o usuário disser "coloca esse HTML no ar", "quero um link pra essa página",
+  "deploy", "publica esse HTML" ou "publicar-site". Depois de criar proposta ou landing
+  page, só oferecer; nunca publicar sem o "pode ir".
 ---
 
 # /publicar-site, Deploy no Cloudflare Pages
@@ -47,8 +48,9 @@ Se o `.env` não existir, a skill vai guiar você na configuração passo a pass
 
 1. Verificar se o arquivo existe e é um HTML válido
 2. Verificar se `.env` tem as variáveis necessárias, se não tiver, guiar configuração
-3. Fazer upload via Cloudflare Pages API
-4. Retornar a URL pública
+3. Mostrar o que vai pro ar (arquivo e nome do projeto) e avisar que o link fica público pra quem tiver ele. Só seguir com o "pode ir" naquele momento
+4. Fazer upload via Cloudflare Pages API
+5. Retornar a URL pública
 
 **Output:**
 > "Publicado. Link: https://[projeto].pages.dev/[arquivo]"

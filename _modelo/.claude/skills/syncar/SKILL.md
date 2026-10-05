@@ -37,7 +37,7 @@ Explicar em uma frase antes de começar:
      cli.github.com pra quem não tem Homebrew) e rodar `gh auth login`, escolhendo
      GitHub.com, HTTPS e login pelo navegador. Sem esse passo o push pede senha,
      recusa a senha certa e a pessoa acha que errou a conta.
-7. `git add -A`, primeiro commit, `git push -u origin main`
+7. `git add -A`, primeiro commit, `git branch -M main` (o Git de algumas máquinas nasce com o branch `master`, e aí o push pra `main` falha com "src refspec main does not match any"), `git push -u origin main`
 
 ## Vezes seguintes
 

@@ -73,6 +73,8 @@ def download_audio(url: str, output_dir: str) -> tuple[str, dict]:
         "outtmpl": output_template,
         "quiet": True,
         "no_warnings": True,
+        # sem isso a barra de progresso sai no stdout, junto com a transcricao
+        "noprogress": True,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -124,9 +126,12 @@ def main():
     tmp_dir = tempfile.mkdtemp()
 
     try:
-        # Download audio
-        print("Downloading audio...", file=sys.stderr)
-        audio_path, video_info = download_audio(url, tmp_dir)
+        if os.path.isfile(url):
+            # arquivo no computador: transcreve direto, sem baixar
+            audio_path, video_info = url, {"title": os.path.basename(url), "extractor": "arquivo local"}
+        else:
+            print("Downloading audio...", file=sys.stderr)
+            audio_path, video_info = download_audio(url, tmp_dir)
 
         title = video_info.get("title", "Unknown")
         duration = video_info.get("duration", 0)

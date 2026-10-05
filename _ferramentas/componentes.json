@@ -10,6 +10,7 @@
     "trava": { "depende": [], "caminhos": [".claude/hooks/barrar-perigoso.mjs"] },
     "assistir-video": { "depende": [], "caminhos": [".claude/skills/assistir-video/"] },
     "transcribe": { "depende": [], "caminhos": [".claude/skills/transcribe/"] },
+    "aprender-curso": { "depende": ["assistir-video", "transcribe"], "caminhos": [".claude/skills/aprender-curso/"] },
     "find-skills": { "depende": [], "caminhos": [".claude/skills/find-skills/"] },
     "otimizar-pc": { "depende": [], "caminhos": [".claude/skills/otimizar-pc/"] },
     "trafego": { "depende": ["nucleo"], "caminhos": [".claude/skills/trafego/"] },
@@ -33,7 +34,7 @@
     "video": { "depende": ["nucleo", "mercado-livre", "assistir-video"], "caminhos": [
       ".claude/skills/configurar-video/", ".claude/skills/video-produto/", ".claude/skills/editar-video/"
     ] },
-    "midia-social": { "depende": ["nucleo"], "caminhos": [".claude/skills/midia-social/",
+    "midia-social": { "depende": ["nucleo", "assistir-video", "transcribe"], "caminhos": [".claude/skills/midia-social/",
       ".claude/skills/pauta/",
       ".claude/skills/decupar-referencia/",
       ".claude/skills/publicar-social/",

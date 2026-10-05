@@ -15,7 +15,10 @@ Esta skill roda a partir da pasta-mãe (a raiz do SabinOS, onde este arquivo
 mora dentro de `.claude/skills/novo-projeto/`), igual à `/setup`, mas parte do
 princípio de que já existe pelo menos um projeto na casa. Todo caminho abaixo
 é relativo a essa raiz, salvo quando marcado como caminho do projeto ou
-caminho global.
+caminho global. Chamada de dentro de um projeto (regra 13 do `AGENTS.md` do
+projeto: o aluno começou ali um projeto que merece pasta própria), a raiz é a
+pasta de cima (`..`) e o resto segue igual; no fim, avisar pra abrir a pasta
+nova no VS Code e começar um chat novo lá.
 
 ## Regra de formato das perguntas (obrigatória em toda a conversa)
 
@@ -310,7 +313,9 @@ Resposta positiva: copiar pro projeto as seis pastas inteiras de
 `_modelo/.claude/skills/` (`midia-social`, `pauta`, `decupar-referencia`,
 `publicar-social`, `auditar-instagram`, `gerenciar-youtube`). Nunca copiar
 arquivo terminado em `.test.mjs` nem pasta `node_modules/`. O pacote vai
-inteiro ou não vai: as skills dividem a mesma biblioteca de scripts. Depois:
+inteiro ou não vai: as skills dividem a mesma biblioteca de scripts. Copiar
+também, se ainda não estiverem no projeto, a `assistir-video` e a `transcribe`:
+a `decupar-referencia` e a `pauta` usam as duas. Depois:
 
 - Na seção "Estrutura de pastas" do `AGENTS.md` do projeto, uma linha:
 
@@ -362,12 +367,13 @@ perguntar outro nome antes de seguir.
   comando; sem isso a frase vira lacuna e sai um chute).
 - `dados/README.md` (e a pasta `dados/` que ele documenta).
 - As skills base do dia a dia: `iniciar`, `conectar`, `mapear`, `atualizar`,
-  `syncar`, `bastao`, `checar`, `agendar`, `atualizar-sabinos` e `find-skills` (o `AGENTS.md` do projeto e o `/mapear`
+  `syncar`, `bastao`, `checar`, `agendar`, `atualizar-sabinos`, `find-skills` e
+  `aprender-curso` (o `AGENTS.md` do projeto e o `/mapear`
   mandam rodar a `find-skills` lá dentro, então ela vai junto, senão a
-  instrução aponta pra uma skill que não existe na pasta). Das skills copiadas, nunca copiar arquivo terminado em `.test.mjs` (a `trafego` e a `agendar` trazem testes que só servem no kit). Além dessas, copiar
-  `assistir-video` e `transcribe` só
-  se o projeto lidar com vídeo, áudio ou redes sociais (respostas do Passo
-  1), `otimizar-pc` só se o computador da pessoa for Windows (já sabido do
+  instrução aponta pra uma skill que não existe na pasta), mais a `assistir-video`
+  e a `transcribe`, que a `aprender-curso` usa pra estudar um curso em vídeo e
+  virar mentor. Das skills copiadas, nunca copiar arquivo terminado em `.test.mjs` (a `trafego` e a `agendar` trazem testes que só servem no kit). Além dessas, copiar
+  `otimizar-pc` só se o computador da pessoa for Windows (já sabido do
   Passo 0, ou perguntar se não ficou claro), e a pasta `trafego` inteira só se a
   pergunta de anúncio pago acima teve resposta positiva ou "pretendo".
   O pacote de marketplace segue o bloco "Venda em marketplace" acima.
@@ -434,13 +440,14 @@ projeto recém-criada, e também na pasta-mãe, se ainda não existir. É essa
 ponte que deixa o Codex (CLI da OpenAI) enxergar as mesmas skills do Claude
 Code. Rodar pelo comando do sistema operacional da pessoa:
 
-- **Windows:** `cmd /c "if not exist .agents mkdir .agents & mklink /J .agents\skills .claude\skills"`
-  (não precisa de administrador; o `if not exist` cria a pasta `.agents` antes,
-  senão o `mklink` falha porque ele não cria pasta-mãe sozinho).
+- **Windows:** `node -e "const fs=require('fs'),p=require('path');fs.mkdirSync('.agents',{recursive:true});if(!fs.existsSync('.agents/skills'))fs.symlinkSync(p.resolve('.claude/skills'),'.agents/skills','junction')"`
+  (não precisa de administrador; vai pelo Node porque funciona igual no Git Bash e
+  no PowerShell: o `cmd /c` no Git Bash vira `C:/`, não faz nada e ainda sai sem
+  erro; e se o link falhar, o Node sai com erro e a regra da cópia abaixo vale).
 - **Mac/Linux:** `mkdir -p .agents && ln -sfn ../.claude/skills .agents/skills`.
 
 No Mac, usar o comando como está: o alvo é relativo de propósito e sobrevive à
-pasta mudando de lugar. No Windows não existe essa opção: junction (`mklink /J`)
+pasta mudando de lugar. No Windows não existe essa opção: junction
 grava sempre o caminho absoluto, mesmo recebendo alvo relativo, é limitação do
 formato. Consequência prática: se a pessoa mover a pasta do SabinOS de lugar, a
 ponte quebra em silêncio, e o conserto é apagar `.agents\skills` e rodar o mesmo

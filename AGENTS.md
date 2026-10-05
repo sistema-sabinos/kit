@@ -6,6 +6,10 @@ Regra de bolso pro usuário: pasta-mãe é a recepção, pasta do projeto é a s
 
 ## Início de conversa (onboarding)
 
+Esta seção só vale com a pasta-mãe aberta. Se a pasta aberta é um projeto (tem
+`_contexto/` dentro), este arquivo chegou por herança da pasta de cima: ignorar
+esta seção e seguir o `AGENTS.md` do projeto.
+
 Ao abrir conversa aqui, ANTES de qualquer coisa:
 
 1. Listar as pastas desta raiz. Pasta de projeto é a que tem `_contexto/`

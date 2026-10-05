@@ -29,7 +29,7 @@ Ao concluir uma tarefa claramente repetível sem skill correspondente, perguntar
 
 ## Regras de operação
 
-**1. Economia de conversa.** Cada processo fechado é uma conversa nova. Conversa longa reprocessa todo o histórico a cada resposta (ainda mais com imagens, que custam caro), então ao fechar um processo, avisar: "esse processo fechou, pra economizar começa o próximo numa conversa nova". Print: pedir o recorte da parte relevante em vez da tela inteira. Quando o assunto continua em outra conversa, rodar o `/bastao` antes: ele salva o ponto exato pra retomada.
+**1. Economia de conversa.** Cada processo fechado é uma conversa nova. Conversa longa reprocessa todo o histórico a cada resposta (ainda mais com imagens, que custam caro), então ao fechar um processo, avisar: "esse processo fechou, pra economizar começa o próximo numa conversa nova". Print: pedir o recorte da parte relevante em vez da tela inteira. Quando o assunto continua em outra conversa, oferecer o `/bastao`: ele salva o ponto exato pra retomada.
 
 **2. Verificação ao vivo.** Dado que muda com o tempo (preço, taxa, comissão, regra de plataforma, política, limite de API, versão de ferramenta) exige busca real na internet antes de afirmar. Nunca responder isso de memória: memória de treino envelhece e erra com confiança.
 
@@ -52,6 +52,8 @@ Ao concluir uma tarefa claramente repetível sem skill correspondente, perguntar
 **11. Camadas de regra.** Cada regra mora na camada mais alta em que é verdade (global `~/.claude/CLAUDE.md`, pasta-mãe, projeto) e só lá: copiada em várias pastas, arruma-se uma e as outras envelhecem. Arquivo de regra carrega só regra; história, lista de comandos e nota de ferramenta vão pro `_contexto/` e entram só quando a tarefa pede. Curto e ordenado por importância, porque o modelo presta menos atenção no meio da conversa do que no começo e no fim. O `/checar` mede isso.
 
 **12. Trava de comando destrutivo.** Um hook barra comando que apaga pasta inteira, reescreve histórico do Git ou roda script baixado da internet, antes de ele rodar. Quando ele barrar, o certo é parar e explicar pro usuário o que se tentou fazer, nunca procurar outro caminho pra fazer a mesma coisa.
+
+**13. Um projeto por pasta.** Pedido que é outro projeto, sem relação com este negócio (outro negócio, um organizador financeiro pessoal, um mentor de curso de outro assunto), ganha pasta própria antes de começar, senão a memória e as regras dos dois se misturam. Recomendar em uma linha, com esse porquê, e, com o sim, criar a pasta seguindo a skill `../.claude/skills/novo-projeto/SKILL.md` da pasta-mãe (os caminhos dela partem de `..`). No fim, avisar: "Abra a pasta nova no VS Code (Arquivo > Abrir Pasta) e comece um chat novo lá; este chat continua sendo deste projeto." Tarefa nova do mesmo negócio fica aqui.
 
 ## Aprender e atualizar contexto
 

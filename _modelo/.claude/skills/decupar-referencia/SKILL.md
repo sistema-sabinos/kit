@@ -4,8 +4,8 @@ description: >
   Desmonta um video de referencia (Reel, TikTok ou Short de concorrente, loja ou criador) em ficha:
   abertura nos primeiros 3 segundos, estrutura, cortes, texto na tela, som, o que segura a pessoa e o
   que da pra adaptar sem copiar. Gratis por padrao. Use quando o usuario chamar /decupar-referencia,
-  mandar um link de video e disser "decupa isso", "analisa esse Reel", "por que esse video funciona",
-  "engenharia reversa desse video", "estuda esse concorrente".
+  mandar um video de referencia e disser "decupa isso", "analisa esse Reel", "por que esse video
+  funciona", "como esse video prende". Concorrente no Mercado Livre e com a /espionar-concorrente.
 ---
 
 # /decupar-referencia, do video dos outros pro nosso padrao
@@ -52,7 +52,7 @@ So roda com o "pode ir" naquele momento. Usar o prompt inteiro de
 ```
 node .claude/skills/assistir-video/ver-video.mjs "<video>" --pergunta "<prompt inteiro>"
 ```
-Depois, registrar com `node .claude/skills/midia-social/scripts/lib/custos.mjs --servico "gemini (decupagem)" --reais <valor> --tokens <n>`.
+O `ver-video.mjs` anota o custo sozinho em `dados/custos.jsonl`: nao registrar de novo.
 
 ## Antes de comecar
 

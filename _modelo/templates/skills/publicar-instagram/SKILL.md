@@ -11,6 +11,9 @@ description: >
 
 # /publicar, Publicar no Instagram e TikTok
 
+> Alternativa ao pacote de mídia social (`/publicar-social`, pelo Buffer), só pra quem não quer o
+> Buffer. Nunca promover num projeto que já tem o pacote: ficariam duas rotas pro mesmo trabalho.
+
 ## Setup (primeira vez)
 
 Na primeira vez, guiar o usuário pra escolher e configurar o método de publicação.

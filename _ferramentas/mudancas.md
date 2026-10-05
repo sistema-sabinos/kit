@@ -181,3 +181,35 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto vende ou quer vender e quer postar nas redes; pacote opcional, nada muda pra quem não instalar.
 **Como aplicar:** oferecer o pacote como no bloco "Mídia social" do `/setup`; se a pessoa quiser, copiar as seis pastas e rodar `/midia-social`.
 **Como testar:** `/midia-social` cria `_contexto/midia-social.md` e as pastas; com uma pasta em `producao/` que tenha `final/` e `post.md`, o `publicar-social.mjs <pasta> --quando "<data hora>"` mostra o plano sem agendar nada.
+
+## aprender-curso
+
+**O que é:** comando novo `/aprender-curso`: o sistema estuda um curso em vídeo (playlist do YouTube ou vídeos no computador) e vira seu mentor no assunto, citando aula e minuto e conferindo na internet o que pode ter mudado. Vem junto com o `/assistir-video` e o `/transcribe`, que ele usa.
+**Por quê:** curso que você assistiu vira consulta pro dia a dia, aplicada ao seu negócio, em vez de ficar esquecido.
+**Te afeta se:** o projeto não tem `.claude/skills/aprender-curso/`.
+**Como aplicar:** copiar do kit as pastas `aprender-curso`, `assistir-video` e `transcribe` (as que faltarem) pra `.claude/skills/` do projeto, sem os arquivos `.test.mjs`.
+**Como testar:** `node .claude/skills/aprender-curso/scripts/listar-aulas.mjs "<link de uma playlist>"` lista as aulas na ordem, sem gastar nada.
+
+## um-projeto-por-pasta
+
+**O que é:** o `AGENTS.md` ganha a regra "Um projeto por pasta": quando você começa ali um projeto sem relação com aquele negócio, o sistema recomenda criar uma pasta própria e avisa pra abrir ela no VS Code.
+**Por quê:** dois projetos na mesma pasta misturam memória e regras, e o sistema passa a errar nos dois.
+**Te afeta se:** o `AGENTS.md` do projeto não tem o título `Um projeto por pasta`.
+**Como aplicar:** copiar do `_modelo/AGENTS.md` do kit o parágrafo da regra "Um projeto por pasta" pro fim da seção "Regras de operação" do projeto, com o próximo número livre (item 6 do "Como usar" deste arquivo).
+**Como testar:** o `AGENTS.md` do projeto contém `Um projeto por pasta` uma vez só.
+
+## bastao-oferecer
+
+**O que é:** a regra "Economia de conversa" do `AGENTS.md` passa a mandar oferecer o bastão quando o assunto continua em outra conversa, em vez de rodar ele sozinho.
+**Por quê:** a própria skill do bastão diz que nunca roda sem você pedir; as duas regras brigavam.
+**Te afeta se:** a regra "Economia de conversa" do `AGENTS.md` do projeto diz "rodar o" bastão "antes".
+**Como aplicar:** nessa frase, trocar "rodar o `/bastao` antes" por "oferecer o `/bastao`".
+**Como testar:** a regra "Economia de conversa" diz "oferecer o `/bastao`".
+
+## voz-de-teste-no-backup
+
+**O que é:** o `.gitignore` do projeto ganha uma exceção pra voz de teste do `/configurar-video`, que é arquivo do kit e ficava fora do backup por ser `.wav`.
+**Por quê:** num clone em outro computador, o teste rápido do vídeo quebrava por falta desse arquivo.
+**Te afeta se:** o projeto tem `.claude/skills/configurar-video/` e o `.gitignore` não tem `!.claude/skills/configurar-video/referencias/teste-voz.wav`.
+**Como aplicar:** acrescentar essa linha logo abaixo da linha `*.m4a` do `.gitignore`.
+**Como testar:** `git check-ignore .claude/skills/configurar-video/referencias/teste-voz.wav` não imprime nada.

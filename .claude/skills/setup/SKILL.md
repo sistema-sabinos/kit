@@ -39,6 +39,10 @@ que a resposta deixou faltando.
 
 ## Passo 0, ler o questionário
 
+Antes de tudo, rodar `node -v` em silêncio. Sem Node, o Passo 7 falha no fim,
+depois da entrevista inteira: avisar logo, em uma linha, que falta instalar o
+Node.js (passo 3 da seção "Como instalar" do `README.md`), e seguir só depois.
+
 Abrir `RESPONDA-AQUI.txt` e classificar cada uma das 17 perguntas em três estados:
 
 - **Respondida:** tem conteúdo real embaixo de "Sua resposta:", com detalhe suficiente
@@ -399,7 +403,9 @@ Resposta positiva: copiar pro projeto as seis pastas inteiras de
 `_modelo/.claude/skills/` (`midia-social`, `pauta`, `decupar-referencia`,
 `publicar-social`, `auditar-instagram`, `gerenciar-youtube`). Nunca copiar
 arquivo terminado em `.test.mjs` nem pasta `node_modules/`. O pacote vai
-inteiro ou não vai: as skills dividem a mesma biblioteca de scripts. Depois:
+inteiro ou não vai: as skills dividem a mesma biblioteca de scripts. Copiar
+também, se ainda não estiverem no projeto, a `assistir-video` e a `transcribe`:
+a `decupar-referencia` e a `pauta` usam as duas. Depois:
 
 - Na seção "Estrutura de pastas" do `AGENTS.md` do projeto, uma linha:
 
@@ -441,12 +447,13 @@ Windows no git, e o backup passa a ver o mesmo arquivo como dois.
   visual), ou mantido neutro se a pessoa não tinha nada ainda.
 - `dados/README.md` (e a pasta `dados/` que ele documenta).
 - As skills base do dia a dia: `iniciar`, `conectar`, `mapear`, `atualizar`,
-  `syncar`, `bastao`, `checar`, `agendar`, `atualizar-sabinos` e `find-skills` (o `AGENTS.md` do projeto e o `/mapear`
+  `syncar`, `bastao`, `checar`, `agendar`, `atualizar-sabinos`, `find-skills` e
+  `aprender-curso` (o `AGENTS.md` do projeto e o `/mapear`
   mandam rodar a `find-skills` lá dentro, então ela vai junto, senão a instrução
-  aponta pra uma skill que não existe na pasta). Das skills copiadas, nunca copiar arquivo terminado em `.test.mjs` (a `trafego` e a `agendar` trazem testes que só servem no kit). Além dessas, copiar
-  `assistir-video` e `transcribe` só se o
-  negócio lidar com vídeo, áudio ou redes sociais (pergunta 4, 6, 8 ou 15
-  indicando isso), `otimizar-pc` só se o computador da pessoa for Windows, e a
+  aponta pra uma skill que não existe na pasta), mais a `assistir-video` e a
+  `transcribe`, que a `aprender-curso` usa pra estudar um curso em vídeo e virar
+  mentor. Das skills copiadas, nunca copiar arquivo terminado em `.test.mjs` (a `trafego` e a `agendar` trazem testes que só servem no kit). Além dessas, copiar
+  `otimizar-pc` só se o computador da pessoa for Windows, e a
   pasta `trafego` inteira só se a pergunta de anúncio pago acima teve resposta
   positiva ou "pretendo".
   O pacote de marketplace segue o bloco "Venda em marketplace" acima.
@@ -517,13 +524,14 @@ projeto recém-criada, e também na pasta-mãe, se ainda não existir. É essa p
 que deixa o Codex (CLI da OpenAI) enxergar as mesmas skills do Claude Code. Rodar
 pelo comando do sistema operacional da pessoa:
 
-- **Windows:** `cmd /c "if not exist .agents mkdir .agents & mklink /J .agents\skills .claude\skills"`
-  (não precisa de administrador; o `if not exist` cria a pasta `.agents` antes,
-  senão o `mklink` falha porque ele não cria pasta-mãe sozinho).
+- **Windows:** `node -e "const fs=require('fs'),p=require('path');fs.mkdirSync('.agents',{recursive:true});if(!fs.existsSync('.agents/skills'))fs.symlinkSync(p.resolve('.claude/skills'),'.agents/skills','junction')"`
+  (não precisa de administrador; vai pelo Node porque funciona igual no Git Bash e
+  no PowerShell: o `cmd /c` no Git Bash vira `C:/`, não faz nada e ainda sai sem
+  erro; e se o link falhar, o Node sai com erro e a regra da cópia abaixo vale).
 - **Mac/Linux:** `mkdir -p .agents && ln -sfn ../.claude/skills .agents/skills`.
 
 No Mac, usar o comando como está: o alvo é relativo de propósito e sobrevive à
-pasta mudando de lugar. No Windows não existe essa opção: junction (`mklink /J`)
+pasta mudando de lugar. No Windows não existe essa opção: junction
 grava sempre o caminho absoluto, mesmo recebendo alvo relativo, é limitação do
 formato. Consequência prática: se a pessoa mover a pasta do SabinOS de lugar, a
 ponte quebra em silêncio, e o conserto é apagar `.agents\skills` e rodar o mesmo

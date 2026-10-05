@@ -158,7 +158,7 @@ o Codex ou quer os dois disponíveis:
 4. **Conferir a ponte `.agents/skills`.** O `/setup` e o `/novo-projeto` já
    criam essa junction (apontando pra `.claude/skills`) na hora de montar o
    projeto. Se ela não existir por algum motivo, criar na mão:
-   - **Windows:** `cmd /c "if not exist .agents mkdir .agents & mklink /J .agents\skills .claude\skills"`.
+   - **Windows:** `node -e "const fs=require('fs'),p=require('path');fs.mkdirSync('.agents',{recursive:true});if(!fs.existsSync('.agents/skills'))fs.symlinkSync(p.resolve('.claude/skills'),'.agents/skills','junction')"`.
    - **Mac/Linux:** `mkdir -p .agents && ln -sfn ../.claude/skills .agents/skills`.
    - Se o link não puder ser criado (permissão, pendrive, pasta de rede), a
      cópia da pasta `.claude/skills` pra `.agents/skills` funciona igual; só
