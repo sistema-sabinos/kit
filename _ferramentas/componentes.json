@@ -23,11 +23,22 @@
       ".claude/skills/publicar-marketplace/",
       ".claude/skills/pesquisar-tendencia/",
       ".claude/skills/espionar-concorrente/",
+      ".claude/skills/engenharia-reversa/",
       ".claude/skills/cadastrar-bling/",
       ".claude/skills/mercado-ads/",
       ".claude/skills/auditar-conta/",
       ".claude/skills/gerar-imagens/",
       ".claude/agents/ml-minerador.md", ".claude/agents/ml-espiao.md", ".claude/agents/ml-copywriter.md", ".claude/agents/ml-designer.md", ".claude/agents/ml-auditor.md", ".claude/agents/ml-publicador.md"
+    ] },
+    "video": { "depende": ["nucleo", "mercado-livre", "assistir-video"], "caminhos": [
+      ".claude/skills/configurar-video/", ".claude/skills/video-produto/", ".claude/skills/editar-video/"
+    ] },
+    "midia-social": { "depende": ["nucleo"], "caminhos": [".claude/skills/midia-social/",
+      ".claude/skills/pauta/",
+      ".claude/skills/decupar-referencia/",
+      ".claude/skills/publicar-social/",
+      ".claude/skills/auditar-instagram/",
+      ".claude/skills/gerenciar-youtube/"
     ] }
   },
   "mistos": ["AGENTS.md", "CLAUDE.md", ".gitignore", ".claude/settings.json"],

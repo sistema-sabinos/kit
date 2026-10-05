@@ -1,0 +1,16 @@
+{
+  "pessoa": "pessoa.mp4",
+  "voz": "voz.wav",
+  "legendas": "voz.alinhado.json",
+  "duracaoSeg": 3,
+  "alturaTela": 0,
+  "recorteTopoPessoa": 0,
+  "cortesSeg": [1.5],
+  "segmentos": [],
+  "chaves": [
+    { "apoio": "o primeiro criterio", "chave": "PRAZO", "deSeg": 0.5, "ateSeg": 2.5, "topo": 400 }
+  ],
+  "sfx": [
+    { "arquivo": "biblioteca/sfx/pop.wav", "seg": 0.5, "volume": 0.4 }
+  ]
+}

@@ -13,7 +13,7 @@ const EXEMPLO = join(AQUI, '..', '..', 'referencias', 'configuracao-exemplo.md')
 test('o modelo de configuracao que vem no kit se le inteiro e nao traz numero de dinheiro', () => {
   const c = lerConfiguracao(readFileSync(EXEMPLO, 'utf8'))
   assert.equal(c.erp, 'nenhum')
-  assert.equal(c.limite_gasto_usd, 2)
+  assert.equal(c.limite_gasto_usd, 4)
   assert.equal(c.imposto_pct, undefined)
   assert.equal(c.margem_minima_rs, undefined)
   assert.deepEqual(c.fornecedores, [])
@@ -38,7 +38,7 @@ test('campo vazio cai no padrao, e lista vira array', () => {
   const c = lerConfiguracao('```mercado-livre\nerp:\nfornecedores: a, b ,c\n```\n')
   assert.equal(c.erp, PADROES.erp)
   assert.deepEqual(c.fornecedores, ['a', 'b', 'c'])
-  assert.equal(c.limite_gasto_usd, 2)
+  assert.equal(c.limite_gasto_usd, 4)
 })
 
 test('carregarConfiguracao sem arquivo manda rodar /mercado-livre', () => {

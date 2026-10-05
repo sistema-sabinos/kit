@@ -21,7 +21,7 @@ loja_oficial: nao
 full: nao
 guia_de_marca: marca/design-guide.md
 fornecedores:
-limite_gasto_usd: 2
+limite_gasto_usd: 4
 ```
 
 - `erp`: `bling` ou `nenhum`. Com `nenhum`, o anúncio é criado pausado direto no Mercado Livre pela API (ou pelo checklist no painel, quando o produto tem variação)

@@ -245,12 +245,12 @@ test('CLI gemini: sem --autorizado para com saida 3 antes de gastar', () => {
 })
 
 test('CLI gemini: acima do limite para com saida 3 mesmo autorizado, antes de olhar a chave', () => {
-  const r = rodarCli(['--preco-usd', '1', '--autorizado'], 3)
+  const r = rodarCli(['--preco-usd', '1', '--autorizado'], 5)
   assert.equal(r.status, 3, r.stderr)
   assert.ok(r.stdout.trim().length > 0, 'saida vazia')
   const j = JSON.parse(r.stdout)
   assert.ok(j.parou && j.parou.includes('limite_gasto_usd'))
-  assert.equal(j.estimativa_usd, 3)
+  assert.equal(j.estimativa_usd, 5)
   assert.ok(!r.stderr.includes('GEMINI_API_KEY'))
 })
 

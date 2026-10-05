@@ -124,8 +124,9 @@ cada passo:
    guia. Diferença pro Mercado Livre: o código do Bling vale 1 minuto, então
    o receptor (`autorizar.mjs --bling --ouvir`) liga antes de autorizar.
 
-Nada disso custa dinheiro. A única coisa paga no pacote é gerar imagem por IA,
-e ela avisa antes. Sem IA paga, as imagens saem do mesmo jeito, com a foto
+Nada disso custa dinheiro. As únicas coisas pagas no pacote são gerar imagem
+por IA e a leitura das fotos na `/engenharia-reversa`, e as duas avisam o
+custo antes. Sem IA paga, as imagens saem do mesmo jeito, com a foto
 real e fundo liso.
 
 ## A equipe
@@ -136,6 +137,7 @@ real e fundo liso.
 | 1 | `/analisar-catalogo` | no chat |
 | 2 | agente `ml-minerador` | roda a `/pesquisar-tendencia` |
 | 3 | agente `ml-espiao` | roda a `/espionar-concorrente` |
+| 3.5 | `/engenharia-reversa` | opcional, a pedido: campeão contra fraco do mesmo produto, escada do catálogo e dúvidas sem resposta; a `/decidir-anuncio` lê o relatório quando existe |
 | 4 | `/decidir-anuncio` | no chat, com a pessoa: é o gate principal |
 | 5 | agente `ml-copywriter` | roda a `/montar-anuncio` |
 | 5.5 | agente `ml-designer` | roda a `/gerar-imagens`: foto real, cenário pelo melhor motor que houver, prancha pra aprovar |

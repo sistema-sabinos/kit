@@ -1,0 +1,43 @@
+{
+  "produto": "Moedor Eletrico Inox",
+  "voz": "Aoede",
+  "vozUnica": true,
+  "musica": { "estilo": "moderna" },
+  "advertencias": [],
+  "marcasProprias": [],
+  "marcasDeTerceiro": [],
+  "ehKit": false,
+  "ator": {
+    "quem": "moradora de apartamento que gosta de café fresco",
+    "idade": 36,
+    "cenario": "uma cozinha clara de apartamento, de manhã",
+    "genero": "feminino",
+    "sotaque": "brasileiro neutro"
+  },
+  "blocos": [
+    {
+      "etapa": "atencao",
+      "tipo": "pessoa",
+      "cena": "ela segura uma xícara perto da bancada, de boca fechada, com um sorriso de quem acabou de acordar",
+      "fala": "Olha, eu vivia moendo café na mão e cansava rápido, até esse moedor chegar aqui em casa"
+    },
+    {
+      "etapa": "interesse",
+      "tipo": "produto",
+      "cena": "macro do moedor ligado, grãos de café virando pó fino dentro do copo de inox, fundo liso e desfocado",
+      "fala": "É só apertar o botão e o grão vira pó fino em poucos segundos, sem barulho de assustar ninguém"
+    },
+    {
+      "etapa": "desejo",
+      "tipo": "produto",
+      "cena": "macro das mãos tirando o copo de inox e despejando o pó no filtro, sem rosto, fundo liso e desfocado",
+      "fala": "O copo de inox é fácil de lavar e o pó cai direto, sem sujar a bancada da cozinha toda"
+    },
+    {
+      "etapa": "acao",
+      "tipo": "pessoa",
+      "cena": "ela cheira o café recém-passado de olhos fechados e sorri, de boca fechada",
+      "fala": "Dá uma olhada na ficha completa lá na descrição e salva nos favoritos pra não perder de vista"
+    }
+  ]
+}

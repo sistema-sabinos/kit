@@ -15,7 +15,7 @@
 // .andes-table__row/tr da ficha, .ui-pdp-gallery img com data-zoom, .ui-pdp-description__content e o
 // link "Ver todas as perguntas" batem com a pagina real. O seletor de vendedor tinha mudado (a classe
 // antiga sumiu) e foi ajustado pro que existe hoje. A aba de perguntas confere: comeca em "Perguntas
-// neste anuncio" e termina em "Termos mais procurados" ou "Denunciar". O link do produto no formato
+// neste anuncio" e termina no rodape ("Mais informações" ou "Termos mais procurados"). O link do produto no formato
 // produto.mercadolivre.com.br/MLB-<numeros> abre o anuncio, como urlParaAbrir monta pro patrocinado.
 // A rota /reviews/item/<id> devolve 403 sem token, batendo com o uso de mlGet com token aqui; os nomes
 // dos campos da resposta (reviews, rate, title, content, likes, rating_average, rating_levels,
@@ -91,14 +91,21 @@ export function vendidosDe(texto) {
 }
 
 // A aba de perguntas, como a pagina entrega no innerText: o que fica entre o titulo da secao
-// e o rodape de termos. Vazio quando a pagina nao tem a secao.
-export function perguntasDoTexto(texto, limite = 8000) {
+// e o rodape ("Mais informações" na pagina de perguntas, "Termos mais procurados" na de anuncio).
+// Cada pergunta e cada resposta vem seguida de "Denunciar" e "Vai abrir em uma nova janela", entao
+// "Denunciar" fica dentro do texto (cortar nele deixava so a primeira pergunta). Acima do limite,
+// corta no fim do ultimo par inteiro, pra nao sobrar pergunta pela metade. Vazio sem a secao.
+const FIM_DO_PAR = 'Vai abrir em uma nova janela'
+export function perguntasDoTexto(texto, limite = 20000) {
   const s = String(texto ?? '')
   const ini = s.search(/Perguntas neste anúncio|Últimas feitas/i)
   if (ini < 0) return ''
   const resto = s.slice(ini)
-  const fim = resto.search(/Termos mais procurados|Denunciar/i)
-  return (fim > 0 ? resto.slice(0, fim) : resto).trim().slice(0, limite)
+  const fim = resto.search(/\n\s*(Termos mais procurados|Mais informa[cç][oõ]es)\s*(\n|$)/i)
+  const secao = (fim > 0 ? resto.slice(0, fim) : resto).trim()
+  if (secao.length <= limite) return secao
+  const corte = secao.lastIndexOf(FIM_DO_PAR, limite - FIM_DO_PAR.length)
+  return corte > 0 ? secao.slice(0, corte + FIM_DO_PAR.length) : secao.slice(0, limite)
 }
 
 const PARADAS = new Set(['de', 'da', 'do', 'das', 'dos', 'para', 'pra', 'com', 'sem', 'e', 'ou', 'a', 'o', 'as', 'os', 'em', 'no', 'na', 'nos', 'nas', 'um', 'uma', 'por', 'p', 'c', 'un', 'und'])
@@ -195,6 +202,9 @@ export function lerPagina() {
     atributos,
     descricao: txt(q('.ui-pdp-description__content')),
     link_perguntas: link ? link.href : null,
+    // video do VENDEDOR mora na galeria; o de comprador (.ui-video-clips__*) fica nas
+    // avaliacoes e nao conta. [class*="clips"] casa os dois. Conferido em 2026-10-04.
+    video: document.querySelectorAll('.ui-pdp-gallery__figure__clip, .ui-pdp-gallery .clip-picture-icon').length > 0,
   }
 }
 

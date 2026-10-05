@@ -116,7 +116,7 @@ não sabe se foi ouvido, e passa o resto do onboarding na dúvida.
 
 ## Passo 2, perguntas que só funcionam em conversa
 
-Três interações que não têm como vir prontas de um arquivo, sempre em chat,
+Quatro interações que não têm como vir prontas de um arquivo, sempre em chat,
 independente da rota escolhida no Passo 0:
 
 ### Tom (reação ao padrão, não pergunta aberta)
@@ -132,6 +132,19 @@ e perguntar:
 Se a pessoa pedir mudança, guardar a mudança para escrever no `preferencias.md` do
 projeto (Passo 5, não no `_modelo/`, que nunca se edita). Se disser "tá bom assim",
 seguir com o padrão.
+
+### Nome do assistente (opcional)
+
+Logo depois do tom, perguntar no formato de 4 partes:
+
+> "Quer me chamar por algum nome? Pode ser qualquer um, ou nenhum.
+>
+> Pergunto porque tem gente que acha mais fácil conversar com um nome. Ele vale
+> em todo projeto seu, e dá pra trocar quando quiser, é só pedir.
+>
+> Tipo: 'Max', 'Lia', ou 'não precisa'."
+
+Com nome: guardar para o Passo 3. Sem nome: seguir, nada muda.
 
 ### Identidade visual
 
@@ -191,7 +204,10 @@ de forma, nesta ordem de importância:
 
 - **Só regra.** Quem a pessoa é cabe em duas linhas no topo (nome, como prefere
   ser chamada, o que faz, nível de tecnologia: mais simples pra quem nunca usou
-  nada disso, mais direta pra quem já se vira). História, lista de projetos e
+  nada disso, mais direta pra quem já se vira). Se a pessoa deu nome ao
+  assistente no Passo 2, uma linha logo abaixo: "Você se chama <nome>: atenda
+  por esse nome e use ele quando se apresentar." Pedido de troca depois muda
+  só essa linha, entre os marcadores. História, lista de projetos e
   notas de ferramenta não entram: vão pra `~/.claude/contexto/` (criar a pasta,
   um arquivo por assunto) e o bloco aponta pra ela em uma linha, "abrir quando a
   tarefa pedir". Nunca com `@import`, senão volta tudo pra mesa.
@@ -238,7 +254,7 @@ Política obrigatória diante de qualquer skill de terceiro encontrada:
 
 Meta: entre 3 e 6 skills ativadas no projeto novo, escolhidas pela dor (pergunta
 11), pelas entregas (pergunta 12) e pelo quick win (pergunta 17).
-O pacote de marketplace, quando entra, conta como um bloco só e fica fora dessa
+O pacote de marketplace, quando entra, conta como um bloco só (o de vídeo e o de mídia social também) e fica fora dessa
 conta. Menos é mais: skill que a pessoa não vai usar nos primeiros 30 dias fica
 de fora.
 
@@ -295,10 +311,10 @@ Perguntar na conversa, no formato de 4 partes:
 
 > "Vi que você vende ou quer vender em marketplace. Tenho um pacote pronto pra isso: vai do
 > 'posso vender esse produto?' até o anúncio publicado e a conta auditada, e
-> custa zero pra usar (a única parte paga é gerar imagem por IA, opcional e
-> sempre avisada antes de rodar). Quer que eu instale?
+> custa zero pra usar (as partes pagas são opcionais e sempre avisadas antes
+> de rodar: gerar imagem por IA e a leitura das fotos dos concorrentes). Quer que eu instale?
 >
-> Pergunto porque ele é grande (treze comandos que trabalham juntos), então só
+> Pergunto porque ele é grande (catorze comandos que trabalham juntos), então só
 > entra se fizer sentido pra você.
 >
 > Tipo: 'quero, vendo no Mercado Livre', 'vendo na Shopee, serve?', ou 'agora
@@ -313,11 +329,11 @@ usa). Quem vende só em outro marketplace ouve isso numa frase: o método
 (pode vender, análise de catálogo, decisão e montagem do anúncio) serve pra
 qualquer um; pesquisa, simulador, Ads e auditoria são do Mercado Livre.
 
-Resposta positiva: copiar pro projeto as treze pastas inteiras de
+Resposta positiva: copiar pro projeto as catorze pastas inteiras de
 `_modelo/.claude/skills/` (`mercado-livre`, `comecar-a-vender`, `pode-vender`,
 `analisar-catalogo`, `pesquisar-tendencia`, `espionar-concorrente`,
 `decidir-anuncio`, `montar-anuncio`, `cadastrar-bling`, `publicar-marketplace`,
-`mercado-ads`, `auditar-conta`, `gerar-imagens`) e os seis agentes de `_modelo/.claude/agents/`
+`mercado-ads`, `auditar-conta`, `gerar-imagens`, `engenharia-reversa`) e os seis agentes de `_modelo/.claude/agents/`
 (`ml-minerador.md`, `ml-espiao.md`, `ml-copywriter.md`, `ml-designer.md`,
 `ml-auditor.md`, `ml-publicador.md`) pra `.claude/agents/` do projeto. Nunca
 copiar arquivo terminado em `.test.mjs` nem pasta `node_modules/`. O pacote vai
@@ -332,6 +348,68 @@ inteiro ou não vai: as skills dividem a mesma biblioteca de scripts. Depois:
 
 Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o pacote de
 marketplace existe e pode ser instalado depois pelo `/mapear`.
+
+### Vídeo (depois do marketplace)
+
+Só quando o pacote de marketplace acabou de entrar. Perguntar na conversa, no
+formato de 4 partes:
+
+> "Tenho também um pacote de vídeo: faz o vídeo do produto sem você filmar nada,
+> a partir das dúvidas que os compradores deixam nos concorrentes, e edita o
+> vídeo que você grava no celular, com corte, legenda e música. Editar o que você
+> gravou é grátis; gerar vídeo por IA custa alguns dólares por vídeo, sempre
+> mostrado antes de gastar. Quer que eu instale?
+>
+> Pergunto porque ele pede uns 4 GB livres no computador na instalação (uns 3 GB
+> depois), então só entra se fizer sentido. Música e efeito sonoro você baixa
+> grátis nos sites certos; eu mostro onde.
+>
+> Tipo: 'quero', 'quero, mas configuro outro dia', ou 'agora não'."
+
+Resposta positiva: copiar pro projeto as três pastas inteiras de
+`_modelo/.claude/skills/` (`configurar-video`, `video-produto`, `editar-video`)
+e, se ainda não estiver no projeto, a `assistir-video` (o vídeo usa ela na
+conferência final). Nunca copiar arquivo terminado em `.test.mjs` nem pasta
+`node_modules/`. Depois:
+
+- Em `_contexto/ferramentas.md`: `| pacote de vídeo | instalado, motor ainda não | <AAAA-MM-DD> | o motor entra pela /configurar-video, uma vez |`
+- Em `tarefas.md`: "rodar `/configurar-video` num dia com tempo e internet boa (baixa uns 4 GB); ele termina com um vídeo de teste".
+
+Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o pacote de
+vídeo existe e pode ser instalado depois pelo `/mapear`.
+
+### Mídia social (depois do marketplace)
+
+Quando a pergunta 4 ou a 6 do questionário cita Instagram, TikTok, YouTube, rede social, post ou vídeo, ou
+quando o pacote de marketplace acabou de entrar. Perguntar na conversa, no
+formato de 4 partes:
+
+> "Tenho também um pacote de redes sociais: sugere os posts da semana olhando o
+> que funciona no seu nicho e o que os seus compradores perguntam, agenda no
+> Instagram, TikTok e YouTube de uma vez e mede o resultado depois. É grátis pra
+> usar; a única parte paga é uma análise de vídeo mais caprichada, opcional e
+> sempre avisada antes. Quer que eu instale?
+>
+> Pergunto porque ele é grande (seis comandos que trabalham juntos), então só
+> entra se fizer sentido.
+>
+> Tipo: 'quero, pra loja', 'quero, mas pro meu perfil pessoal', ou 'agora não'."
+
+Resposta positiva: copiar pro projeto as seis pastas inteiras de
+`_modelo/.claude/skills/` (`midia-social`, `pauta`, `decupar-referencia`,
+`publicar-social`, `auditar-instagram`, `gerenciar-youtube`). Nunca copiar
+arquivo terminado em `.test.mjs` nem pasta `node_modules/`. O pacote vai
+inteiro ou não vai: as skills dividem a mesma biblioteca de scripts. Depois:
+
+- Na seção "Estrutura de pastas" do `AGENTS.md` do projeto, uma linha:
+
+    - pacote de mídia social: `perfis/`, `inteligencia/`, `biblioteca/`, `producao/` e `_contexto/midia-social.md`, criados pela `/midia-social` na primeira vez
+
+- Em `_contexto/ferramentas.md`: `| pacote de mídia social | instalado | <AAAA-MM-DD> | contas se ligam pela /midia-social, uma por vez |`
+- Em `tarefas.md`: "rodar `/midia-social` (ele pergunta se o perfil é da loja ou pessoal e cria as pastas) e ligar o Buffer pelo guia que ele abre".
+
+Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o pacote de
+mídia social existe e pode ser instalado depois pelo `/mapear`.
 
 ### Nome da pasta
 
@@ -487,6 +565,9 @@ faz na prática (não o nome do arquivo nem termo técnico), cobrindo tanto as s
 base quanto as escolhidas ou criadas no Passo 4.
 O pacote de marketplace entra como uma linha só: "/mercado-livre, a sua esteira
 de marketplace, do produto novo ao anúncio publicado".
+O de vídeo e o de mídia social, quando entram, também: "/configurar-video, que
+prepara o vídeo (depois /video-produto e /editar-video)" e "/midia-social, os
+seus posts da semana, agendados e medidos".
 
 ## Passo 7, registrar e encerrar
 

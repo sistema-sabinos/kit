@@ -1,0 +1,9 @@
+{
+  "name": "sabinos-midia-social",
+  "private": true,
+  "description": "Dependencias dos scripts do pacote de midia social do SabinOS. Instalar da raiz do projeto: npm install --prefix .claude/skills/midia-social",
+  "type": "module",
+  "dependencies": {
+    "playwright": "^1.63.0"
+  }
+}

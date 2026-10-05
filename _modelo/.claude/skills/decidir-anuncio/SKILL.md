@@ -25,6 +25,10 @@ final é da pessoa. Nada aqui é limiar automático.
 - `fornecedores/<f>/concorrentes/<categoria>/`: briefings dos finalistas, mais
   `vocabulario.txt` e `atributos.json` (a `/espionar-concorrente` rodou nos
   produtos do topo; não precisa em todos)
+- `dados/engenharia-reversa/<termo>/resultado.json` e o relatório
+  `relatorios/engenharia-reversa-<termo>-<data>.md`, quando existirem (a
+  `/engenharia-reversa` rodou no termo do produto; opcional). Rodada com
+  `inconclusivo: true` não entra como evidência.
 - `_contexto/mercado-livre.md`: o piso de margem (`margem_minima_rs`,
   `margem_minima_pct`, `margem_minima_kit_rs`), `imposto_pct`, `reputacao` e
   `loja_oficial`
@@ -85,6 +89,9 @@ Premium. Guia: margem na mediana folgada dá pra Premium (sobra pra anúncio e
 frete grátis); topo dominado por loja oficial torna o popular briga perdida, e
 o caminho é Premium com posicionamento diferente; conta com reputação baixa
 exige foto e copy acima da média pra sustentar Premium.
+Com engenharia reversa válida do termo, a escada do catálogo entra aqui: o
+menor preço e o primeiro quartil dizem quanto custa brigar no popular, e
+catálogo tomado por Full ou loja oficial pesa contra entrar nele.
 
 **C. Palavras-chave do título.** As que aparecem em 3 ou mais títulos do topo
 (`vocabulario.txt`), garantindo nome do produto, característica-chave e
@@ -101,6 +108,10 @@ Direção específica: qual composição de capa domina no nicho, que diferencia
 visual o topo não usa, e cada objeção recorrente do briefing (perguntas e
 opiniões reais) que dá pra responder com imagem vira um slot. Referência
 visual: as URLs das capas dos concorrentes que melhor representam o padrão.
+Com engenharia reversa válida: cada dúvida "repetida" sem resposta vira slot
+de foto; o que saiu `regra` entra no plano; `custo-de-entrada` é obrigação;
+`anti-padrao` se evita. Nenhum outro veredito vira instrução, e rodada que
+estudou o PRODUTO (maioria em catálogo) não ensina foto de anúncio.
 
 ### 4. Kits prováveis
 

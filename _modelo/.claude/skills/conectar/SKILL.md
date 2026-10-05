@@ -123,6 +123,17 @@ Só aparece se o projeto tem `.claude/skills/mercado-livre/`. Sem o pacote, pula
 
 O MCP só lê. Cadastro continua pela `/cadastrar-bling`, que mostra antes e espera o "pode ir".
 
+### 9. Redes sociais (pra quem instalou o pacote de mídia social)
+
+Só aparece se o projeto tem `.claude/skills/midia-social/`. Sem o pacote, pular.
+
+- **O que te deixa fazer:** agendar post no Instagram, TikTok e YouTube de uma vez pelo Buffer, medir o resultado de cada post e ler o canal do YouTube.
+- **Grátis ou pago:** grátis (Buffer, Cloudinary e as APIs do Instagram e do YouTube no plano grátis). O R2, se for preciso, pede cartão pra ativar, sem cobrar até 10 GB.
+- **Precisa de quê:** conta no Buffer com as redes ligadas, um depósito pro vídeo, e, pra medir, o Instagram profissional e um projeto no Google Cloud.
+- **Hoje ou depois:** o Buffer e o depósito antes do primeiro post; Instagram e YouTube quando for medir.
+
+O passo a passo, uma conta por vez, está em `.claude/skills/midia-social/referencias/configurar.md`: abrir a seção da conta que a pessoa quer ligar e seguir com ela, clique a clique.
+
 ## Orçamento (no fim, não no começo)
 
 Depois de apresentar o que interessou:

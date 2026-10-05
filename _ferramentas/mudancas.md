@@ -165,3 +165,19 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o `.env` tem `ML_CLIENT_ID` e o projeto tem `.claude/skills/publicar-marketplace/scripts/publicar-ml.mjs`.
 **Como aplicar:** abrir com a pessoa o portal de desenvolvedor do Mercado Livre, no aplicativo dela, e conferir na tela que a permissão é de leitura e escrita; se for só leitura, trocar e autorizar a conta de novo com o `autorizar.mjs --ml --url`, como no `/conectar`.
 **Como testar:** o `publicar-ml.mjs --montar` de um anúncio auditado termina sem erro de permissão (a validação do Mercado Livre é uma escrita que não cria nada).
+
+## video
+
+**O que é:** três skills novas de vídeo: `/configurar-video` (instala o motor de vídeo uma vez, medindo a máquina), `/video-produto` (vídeo do produto sem filmar, a partir das perguntas e opiniões do concorrente) e `/editar-video` (edita o vídeo que você gravou, com fundo verde ou no seu cenário). O teto padrão de gasto (`limite_gasto_usd`) passou de US$ 2 pra US$ 4.
+**Por quê:** vídeo é o que mais move venda e perfil, e agora sai pelo sistema com aviso de custo antes de qualquer gasto.
+**Te afeta se:** você quer fazer vídeo de produto ou editar vídeo gravado. O teto novo vale pra quem não escreveu `limite_gasto_usd` no `_contexto/mercado-livre.md`.
+**Como aplicar:** `/atualizar-sabinos` traz as skills; depois rode `/configurar-video` uma vez (uns 4 GB livres na instalação, uns 3 GB depois). Música e efeito sonoro não vêm no kit: cada pessoa baixa os seus, e o `/editar-video` mostra onde colocar.
+**Como testar:** `/configurar-video` termina com um vídeo de teste de uns 8 segundos com legenda.
+
+## pacote-midia-social
+
+**O que é:** pacote novo de redes sociais, com seis comandos: `/midia-social` (configura e mostra o estado), `/pauta` (posts da semana com roteiro), `/decupar-referencia` (ficha de vídeo que funcionou), `/publicar-social` (agenda no Instagram, TikTok e YouTube pelo Buffer), `/auditar-instagram` (raio-x da conta e resultado de cada post) e `/gerenciar-youtube` (canal pela API).
+**Por quê:** levar pro aluno o fluxo de redes sociais que roda na operação do criador do SabinOS, com perfil da loja como padrão e marca pessoal como opção.
+**Te afeta se:** o projeto vende ou quer vender e quer postar nas redes; pacote opcional, nada muda pra quem não instalar.
+**Como aplicar:** oferecer o pacote como no bloco "Mídia social" do `/setup`; se a pessoa quiser, copiar as seis pastas e rodar `/midia-social`.
+**Como testar:** `/midia-social` cria `_contexto/midia-social.md` e as pastas; com uma pasta em `producao/` que tenha `final/` e `post.md`, o `publicar-social.mjs <pasta> --quando "<data hora>"` mostra o plano sem agendar nada.

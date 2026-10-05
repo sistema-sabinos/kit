@@ -6,7 +6,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { argumentos, lerEntrada, urlDaBusca, chaveDoAnuncio, deduplicar, coletarBusca, coletar, mesclarBruto, oQueFalta } from './coletar-cdp.mjs'
+import { argumentos, lerEntrada, urlDaBusca, chaveDoAnuncio, tipoDoLink, deduplicar, coletarBusca, coletar, mesclarBruto, oQueFalta } from './coletar-cdp.mjs'
 
 const L = 'MLB'
 const id = n => L + n
@@ -61,6 +61,25 @@ test('deduplicar mantem patrocinados diferentes com a mesma URL limpa e tira a U
   assert.deepEqual(r.map(i => i.titulo), ['a', 'b', 'c', 'sem codigo'])
   assert.deepEqual(r.map(i => i.id), [id('1111111'), id('2222222'), id('3333333'), null])
   assert.ok(r.every(i => !('urlCompleta' in i)))
+})
+
+test('tipoDoLink: /p/ e catalogo, /up/ e produto de um vendedor, patrocinado esconde', () => {
+  assert.equal(tipoDoLink(`https://www.mercadolivre.com.br/garrafa/p/${L}5779784#polycard`), 'catalogo')
+  assert.equal(tipoDoLink(`https://www.mercadolivre.com.br/garrafa/up/${L}U4840018`), 'produto')
+  assert.equal(tipoDoLink(`https://produto.mercadolivre.com.br/${L}-5832565-caneca-_JM`), 'tradicional')
+  assert.equal(tipoDoLink(`https://click1.mercadolivre.com.br/mclics/clicks/external/count?x=item_id%3A${L}1234567`), null)
+  assert.equal(tipoDoLink('https://exemplo.com/x'), null)
+})
+
+test('deduplicar acrescenta tipo e vendidos (os formatos que a busca mostra) e tira o texto cru', () => {
+  const r = deduplicar([
+    { titulo: 'a', url: `https://www.mercadolivre.com.br/a/p/${L}1111111`, preco: 10, vendidos_texto: '| +10mil vendidos' },
+    { titulo: 'b', url: `https://produto.mercadolivre.com.br/${L}-2222222-b`, preco: 10, vendidos_texto: '+1.234 vendidos' },
+    { titulo: 'c', url: `https://produto.mercadolivre.com.br/${L}-3333333-c`, preco: 10, vendidos_texto: null },
+    { titulo: 'd', url: `https://produto.mercadolivre.com.br/${L}-4444444-d`, preco: 10, vendidos_texto: '+50 vendidos' },
+  ])
+  assert.deepEqual(r.map(i => [i.tipo, i.vendidos]), [['catalogo', 10000], ['tradicional', 1234], ['tradicional', null], ['tradicional', 50]])
+  assert.ok(r.every(i => !('vendidos_texto' in i)))
 })
 
 // Pagina falsa: cada "tela" e o que extrairCards devolveria; clicar em Seguinte anda uma tela.
@@ -159,4 +178,15 @@ test('coletar grava cada item assim que termina (retomavel) e marca coletado_em'
   assert.deepEqual(salvos, ['A', 'B'])
   assert.equal(r[0].coletado_em, '2026-09-25')
   assert.equal(r[1].coletado_em, '2026-09-25')
+})
+
+// Regressao da revisao final de 2026-10-04: o mesmo anuncio patrocinado e organico na busca.
+test('deduplicar: na colisao fica o destino conhecido, e o anuncio segue marcado como patrocinado', () => {
+  const patro = { titulo: 'a', url: 'https://click1.mercadolivre.com.br/mclics/clicks/external/count', urlCompleta: `https://click1.mercadolivre.com.br/mclics/clicks/external/count?x=item_id%3A${id('7777777')}`, preco: 10, patrocinado: true, vendidos_texto: null }
+  const organico = { titulo: 'a', url: `https://produto.mercadolivre.com.br/${L}-7777777-a`, preco: 10, patrocinado: false, vendidos_texto: '+500 vendidos' }
+  const r = deduplicar([patro, organico])
+  assert.equal(r.length, 1)
+  assert.deepEqual([r[0].tipo, r[0].patrocinado, r[0].vendidos, r[0].url], ['tradicional', true, 500, `https://produto.mercadolivre.com.br/${L}-7777777-a`])
+  const r2 = deduplicar([organico, patro])
+  assert.deepEqual([r2[0].tipo, r2[0].patrocinado, r2[0].vendidos], ['tradicional', true, 500])
 })

@@ -12,9 +12,9 @@
 // Conferido ao vivo em 2026-09-24: o layout da busca (Playwright contra
 // lista.mercadolivre.com.br/bala-de-coco, os seletores de extrairCards e o clique do "Seguinte")
 // e a rota /products/search, contra a doc oficial (developers.mercadolibre.com.ar/en_us/products-search).
-// A rota /products/<id>/items NAO foi confirmada: sem token o api.mercadolibre.com devolveu 403,
-// e nao achei pagina de doc oficial pra ela; conferir na fumaca do plano D. Se o Mercado Livre
-// mudar a pagina, extrairCards e o clique do "Seguinte" sao o que precisa de ajuste.
+// A rota /products/<id>/items foi confirmada com token em 2026-10-04 (preco, listing_type_id,
+// shipping e official_store_id em todos os itens). Se o Mercado Livre mudar a pagina,
+// extrairCards e o clique do "Seguinte" sao o que precisa de ajuste.
 import { readFileSync, existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -24,6 +24,7 @@ import { tokenMl } from '../../mercado-livre/scripts/lib/tokens.mjs'
 import { mlGet } from '../../mercado-livre/scripts/lib/ml-api.mjs'
 import { gravarJson, dataLocal } from '../../mercado-livre/scripts/lib/pipeline.mjs'
 import { processar } from './pesquisar.mjs'
+import { vendidosDe } from '../../espionar-concorrente/scripts/espionar.mjs'
 
 export function argumentos(argv) {
   const pega = (nome, padrao) => {
@@ -67,16 +68,34 @@ export function chaveDoAnuncio(item) {
   return alvo
 }
 
+// Que pagina o card abre. /p/ e catalogo (varios vendedores na mesma pagina, a foto e a mesma
+// pra todos); /up/ e produto de UM vendedor, que conta como anuncio; o resto com codigo e
+// anuncio tradicional. Patrocinado (/mclics/) esconde o destino: null. Conferido em 2026-10-04.
+export function tipoDoLink(url) {
+  const s = String(url ?? '')
+  if (/\/mclics\//.test(s)) return null
+  if (/\/p\/MLB\d/.test(s)) return 'catalogo'
+  if (/\/up\/MLBU\d/.test(s)) return 'produto'
+  return /MLB-?\d/.test(s) ? 'tradicional' : null
+}
+
 // Guarda o codigo do anuncio em `id` (a URL limpa do patrocinado nao tem), porque a
-// /espionar-concorrente abre o anuncio por ele. Sem codigo, `id` fica null.
+// /espionar-concorrente abre o anuncio por ele. Sem codigo, `id` fica null. O texto de
+// vendidos do card vira numero (null quando o card nao mostra).
+// O mesmo anuncio pode vir patrocinado (link de clique, destino escondido) e organico (link
+// direto). Na colisao fica a copia com destino conhecido, e o anuncio continua patrocinado.
 export function deduplicar(itens) {
-  const vistos = new Set()
+  const porChave = new Map()
   const saida = []
-  for (const { urlCompleta, ...resto } of itens) {
+  for (const { urlCompleta, vendidos_texto, ...resto } of itens) {
     const k = chaveDoAnuncio({ urlCompleta, ...resto })
-    if (vistos.has(k)) continue
-    vistos.add(k)
-    saida.push({ ...resto, id: /^MLBU?\d+$/.test(k) ? k : null })
+    const novo = { ...resto, id: /^MLBU?\d+$/.test(k) ? k : null, tipo: tipoDoLink(urlCompleta || resto.url), vendidos: vendidosDe(vendidos_texto) }
+    const ja = porChave.get(k)
+    if (!ja) { porChave.set(k, novo); saida.push(novo); continue }
+    const patrocinado = Boolean(ja.patrocinado || novo.patrocinado)
+    if (ja.tipo == null && novo.tipo != null) Object.assign(ja, novo, { vendidos: novo.vendidos ?? ja.vendidos })
+    else if (ja.vendidos == null) ja.vendidos = novo.vendidos
+    ja.patrocinado = patrocinado
   }
   return saida
 }
@@ -108,7 +127,11 @@ export function extrairCards() {
       preco,
       vendedor: vendedorEl ? vendedorEl.textContent.replace(/^Por\s+/i, '').trim() : null,
       frete_gratis: /frete grátis|chegará grátis/i.test(card.textContent),
-      patrocinado: /patrocinado/i.test(card.textContent),
+      // o rotulo saiu do texto do card: hoje e um selo "Ad" com aria-label "Patrocinado", e o
+      // link e de clique (/mclics/). Qualquer um dos tres basta. Conferido em 2026-10-04.
+      patrocinado: /patrocinado/i.test(card.textContent) || Boolean(card.querySelector('.poly-component__ads-promotions, [aria-label="Patrocinado"]')) || /\/mclics\//.test(url),
+      // "| +10mil vendidos" no rodape do card; o selo "MAIS VENDIDO" nao tem numero e nao casa
+      vendidos_texto: (card.textContent.match(/\+?\s*\d[\d.,]*\s*(mil)?\s+vendid\w*/i) || [null])[0],
     })
   }
   return saida

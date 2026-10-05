@@ -357,3 +357,8 @@ test('registrar mudanca sem id recusa antes de gravar', () => comPasta(raiz => {
   aplicarPlano({ kit, projeto, plano: montarPlano({ kit, projeto }) })
   assert.throws(() => registrarMudanca({ projeto, estado: 'aplicada' }), /id obrigatorio/)
 }))
+
+test('componente video depende do assistir-video (o olho final do editar-video usa ele)', () => {
+  const real = JSON.parse(readFileSync(fileURLToPath(new URL('./componentes.json', import.meta.url)), 'utf8'))
+  assert.deepEqual(real.componentes.video.depende, ['nucleo', 'mercado-livre', 'assistir-video'])
+})

@@ -1,0 +1,5 @@
+Modelo: face_detection_yunet_2023mar.onnx (YuNet, detector de rosto)
+Origem: OpenCV Zoo, https://github.com/opencv/opencv_zoo (pasta models/face_detection_yunet)
+Licenca: MIT (o texto completo esta na pasta do modelo no repositorio acima)
+Conferida em: 2026-10-04
+Uso no kit: filtro_pessoa.py, verificar-video.py e fiscal.py acham o rosto da pessoa com ele, localmente.

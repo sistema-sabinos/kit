@@ -57,15 +57,35 @@ test('vendedorDe tira o rotulo do texto bruto do innerText e diz se e loja ofici
   assert.deepEqual(vendedorDe(null), { nome: null, loja_oficial: false })
 })
 
-// Formato do innerText da aba de perguntas: uma linha por elemento.
-const ABA = ['Bala de Coco 500 g', 'Perguntas neste anúncio', 'É sem glúten?', 'Sim, não contém glúten. 12/08/2026', 'Faz kit de 10?', 'Não fazemos. 03/09/2026', 'Termos mais procurados', 'bala de coco caseira'].join('\n')
+// Formato REAL do innerText da aba de perguntas (estrutura copiada de uma pagina lida, textos
+// inventados): pergunta, "Denunciar" e "Vai abrir em uma nova janela", resposta, a data numa
+// linha so dela, "Denunciar" e "Vai abrir..." de novo. A secao acaba no rodape "Mais informacoes".
+const D = ['Denunciar', 'Vai abrir em uma nova janela']
+const ABA = [
+  'Bala de Coco 500 g', 'Perguntas neste anúncio',
+  'É sem glúten?', ...D, 'Sim, não contém glúten.', '12/08/2026', ...D,
+  'Faz kit de 10', ...D, 'Não fazemos. Quer o de 5?', '03/09/2026', ...D,
+  '', '', 'Mais informações', 'Copyright © 1999-2026 Exemplo LTDA.', 'Termos e condições',
+].join('\n')
 
-test('perguntasDoTexto corta entre a secao e o rodape, e devolve vazio sem a secao', () => {
+test('perguntasDoTexto pega a secao inteira, passando pelos "Denunciar", e para no rodape', () => {
   const p = perguntasDoTexto(ABA)
   assert.ok(p.length > 0)
-  assert.match(p, /Faz kit de 10\?/)
-  assert.doesNotMatch(p, /mais procurados/)
+  assert.match(p, /^Perguntas neste anúncio/)
+  assert.match(p, /Faz kit de 10/)
+  assert.match(p, /03\/09\/2026/)
+  assert.doesNotMatch(p, /Mais informações|Copyright|Termos e condições/)
   assert.equal(perguntasDoTexto('Bala de Coco\nComprar agora'), '')
+  // o rodape antigo da pagina de anuncio tambem fecha a secao
+  const antigo = ['Perguntas neste anúncio', 'Tem sem açúcar?', ...D, 'Não.', '01/09/2026', ...D, 'Termos mais procurados', 'bala de coco caseira'].join('\n')
+  assert.doesNotMatch(perguntasDoTexto(antigo), /mais procurados|caseira/)
+})
+
+test('perguntasDoTexto acima do limite corta no fim de um par, sem pergunta pela metade', () => {
+  const pares = Array.from({ length: 40 }, (_, i) => [`Pergunta numero ${i}`, ...D, `Resposta numero ${i}.`, '01/09/2026', ...D]).flat()
+  const p = perguntasDoTexto(['Perguntas neste anúncio', ...pares, 'Mais informações'].join('\n'), 600)
+  assert.ok(p.length <= 600, `passou do limite: ${p.length}`)
+  assert.ok(p.endsWith('Vai abrir em uma nova janela'), p.slice(-80))
 })
 
 test('vocabulario conta titulo, nao repeticao, e ignora palavra de ligacao', () => {
