@@ -213,6 +213,16 @@ test('registrar mudanca grava no recibo e recusa estado invalido', () => comPast
   assert.throws(() => registrarMudanca({ projeto, id: 'x', estado: 'talvez' }), /estado invalido/)
 }))
 
+test('recibo e mudanca levam a data do relogio da pessoa, nunca a de UTC', () => comPasta(raiz => {
+  const { kit, projeto } = cenario(raiz)
+  const noite = new Date(2026, 9, 5, 23, 30)   // 23h30 local: em UTC no Brasil ja seria dia 6
+  aplicarPlano({ kit, projeto, plano: montarPlano({ kit, projeto }), agora: noite })
+  registrarMudanca({ projeto, id: 'regra-trava', estado: 'aplicada', agora: noite })
+  const r = JSON.parse(ler(projeto, '.sabinos/instalado.json'))
+  assert.equal(r.data, '2026-10-05')
+  assert.equal(r.mudancas['regra-trava'], 'aplicada 2026-10-05')
+}))
+
 // linha de comando: roda o motor de verdade, como a skill roda
 function rodar(args) {
   try {
@@ -221,6 +231,29 @@ function rodar(args) {
     return { saida: (e.stdout || '') + (e.stderr || ''), codigo: e.status }
   }
 }
+
+test('linha de comando: opcao digitada errada ou sem valor para com erro, sem mexer em nada', () => comPasta(raiz => {
+  const { kit, projeto } = cenario(raiz)
+  const errada = rodar(['aplicar', projeto, '--kit', kit, '--tambme', 'checar'])
+  assert.equal(errada.codigo, 1)
+  assert.match(errada.saida, /opcao desconhecida: --tambme/)
+  const sem = rodar(['plano', projeto, '--kit'])
+  assert.equal(sem.codigo, 1)
+  assert.match(sem.saida, /--kit precisa de um valor/)
+  assert.ok(!existsSync(join(projeto, '.sabinos')), 'nada foi gravado')
+}))
+
+test('duas copias no mesmo segundo ganham nomes diferentes, na ordem certa', () => comPasta(raiz => {
+  const { kit, projeto } = cenario(raiz)
+  const mesmo = new Date(2026, 8, 22, 10, 0, 0)
+  const a = aplicarPlano({ kit, projeto, plano: montarPlano({ kit, projeto }), agora: mesmo })
+  const b = aplicarPlano({ kit, projeto, plano: montarPlano({ kit, projeto }), agora: mesmo })
+  assert.notEqual(a.backup, b.backup)
+  assert.ok(b.backup > a.backup, 'a segunda fica com o carimbo um segundo depois')
+  const d1 = desfazer({ projeto, backup: b.backup, agora: mesmo })
+  const d2 = desfazer({ projeto, backup: a.backup, agora: mesmo })
+  assert.notEqual(d1.seguranca, d2.seguranca)
+}))
 
 test('linha de comando: plano mostra resumo, aplicar copia o motor pro projeto, conferir fica verde', () => comPasta(raiz => {
   const { kit, projeto } = cenario(raiz)

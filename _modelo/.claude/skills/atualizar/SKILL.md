@@ -10,19 +10,18 @@ description: >
 
 # /atualizar, Manutenção de contexto
 
-Duas funções em uma: fechar a sessão (passar o que aconteceu nesta conversa pela tabela de destinos do `AGENTS.md`) e auditar a memória (comparar o estado real das pastas com o que os arquivos de contexto dizem).
+Duas funções em uma: fechar a sessão (passar o que aconteceu nesta conversa pela tabela de destinos do `AGENTS.md`) e conferir que o que a sessão tocou ficou coerente com os arquivos de contexto. A auditoria da pasta inteira é da `/faxina`.
 
 ## Passo 1: Levantar o estado real
 
-1. **Estrutura de pastas**, listar os diretórios de primeiro nível (ignorar `.git`, `node_modules`, `.claude`, `templates`, `dados`, `_memoria`)
-2. **Skills ativas**, listar `.claude/skills/*/`
-3. **MCPs configurados**, ler `.mcp.json` na raiz do workspace, se existir
-4. **Mudanças recentes**, `git diff --name-only HEAD~5..HEAD` (ou menos commits se não houver 5) e `git status`
-5. **Ponte do Codex**, se `.agents/skills` existir como pasta comum (cópia, não link ou junction): copiar `.claude/skills` por cima, em silêncio, pra skill nova aparecer no Codex
+A fonte do fechamento é a conversa: o que foi feito, decidido e criado nela. O inventário da pasta inteira (pastas soltas, skills, MCPs, backup) é da `/faxina` e do `/checar`, que rodam quando a pessoa pede ou uma vez por mês, nunca aqui em todo fim de sessão.
+
+1. **Ponte do Codex**, se `.agents/skills` existir como pasta comum (cópia, não link ou junction): copiar `.claude/skills` por cima, em silêncio, pra skill nova aparecer no Codex
+2. **Pasta ou skill nova desta sessão**: se a conversa criou pasta de primeiro nível ou skill, conferir que ela tem linha no `AGENTS.md` (Estrutura de pastas) e anotar pro plano do Passo 3
 
 ## Passo 2: Ler os arquivos de contexto
 
-Esta skill roda em todo fim de sessão: ler sempre o `AGENTS.md`, o `agora.md` e o diário de hoje, e dos outros só os que esta sessão vai tocar (o destino sai da Tabela, no Passo 3). Auditoria da memória inteira é da `/faxina`. A lista:
+Esta skill roda em todo fim de sessão, então lê pouco. O `AGENTS.md` e os quatro do começo de conversa já estão na conversa: não reler, a não ser que outro computador tenha mudado algum deles nesta sessão (veio no pull do `/iniciar` ou do `/syncar`). Ler o diário de hoje e, dos outros, só os que esta sessão vai tocar (o destino sai da Tabela, no Passo 3). Auditoria da memória inteira é da `/faxina`. A lista de onde mora cada coisa:
 
 1. `AGENTS.md` (conteúdo real do projeto; `CLAUDE.md` é só o ponteiro `@AGENTS.md`), estrutura de pastas, regras
 2. `_contexto/empresa.md`, negócio, ferramentas, equipe
@@ -38,11 +37,11 @@ Esta skill roda em todo fim de sessão: ler sempre o `AGENTS.md`, o `agora.md` e
 
 A fonte aqui é **esta conversa**. Listar o que aconteceu e dar a cada item um destino pela seção "Tabela de destinos" do `AGENTS.md`, numa passada só:
 
-- **Decisão:** linha nova no `_memoria/decisoes.md`, no formato do cabeçalho dele, com o motivo que apareceu na conversa. Muda uma decisão anterior: linha nova com `substitui: <data da velha> "<começo da velha>"`; a velha fica onde está.
+- **Decisão:** decisão e fato do negócio já entram na hora, pela Tabela do `AGENTS.md`; aqui só entra a que escapou (conferir as linhas de hoje do `decisoes.md` antes, pra nunca duplicar). Linha nova no `_memoria/decisoes.md`, no formato do cabeçalho dele, com o motivo que apareceu na conversa. Muda uma decisão anterior: linha nova com `substitui: <data da velha> "<começo da velha>"`; a velha fica onde está.
 - **Diário:** o que foi feito e ainda não tem linha no diário de hoje entra agora, uma linha por tarefa fechada.
-- **`_contexto/`:** fato do negócio, rumo, jeito, ferramenta, automação e hospedagem vão pro arquivo que a tabela manda.
+- **`_contexto/`:** rumo, jeito, ferramenta, automação e hospedagem vão pro arquivo que a tabela manda, e o fato do negócio que escapou do "na hora".
 - **`agora.md`:** "Onde paramos" é a última coisa em andamento (substitui a anterior); "Pendências" ganha o que abriu e perde o que fechou; "Quente agora" se ajusta. Higiene: pendência fechada e prazo vencido saem, cada uma com o motivo dito à pessoa e anotado no diário (feito, virou projeto, mandaram soltar), nunca em silêncio; data relativa que sobrou ("sexta", "semana que vem") vira AAAA-MM-DD.
-- **Contato:** fornecedor, parceiro ou outra pessoa que não é cliente nem equipe, citado nesta sessão e já presente num diário anterior (buscar o nome em `_memoria/diario/`): propor a ficha `_contexto/pessoas/<nome>.md` (nome em minúscula, sem acento, com hífen), com quem é, como fala com ele e o que já se combinou, cada linha com data.
+- **Contato:** fornecedor, parceiro ou outra pessoa que não é cliente nem equipe, citado nesta sessão com telefone, email ou preço, ou já presente num diário anterior (buscar o nome em `_memoria/diario/`): propor a ficha `_contexto/pessoas/<nome>.md` (nome em minúscula, sem acento, com hífen), com quem é, como fala com ele e o que já se combinou, cada linha com data. Preço entra com a data em que foi dito, porque envelhece.
 - **Trivial:** não salva. **Não coube:** perguntar, nunca inventar gaveta.
 
 Projeto de antes da 4.3 com a seção "Decisões recentes" no `agora.md`: cada linha dela vai pro `decisoes.md` com a data que tinha (origem `dono`, motivo "não registrado") e a seção sai do `agora.md`.
@@ -51,7 +50,7 @@ Montar o plano arquivo por arquivo, com as linhas que vão entrar, sem mostrar a
 
 ## Passo 3.5: Lição repetida vira regra na skill
 
-O `licoes.md` registra; este passo é quem fecha o ciclo. Ler o arquivo inteiro e, em cada seção, procurar lições que falam do mesmo erro (mesma skill, mesmo tipo de dado, mesma etapa), mesmo com palavras diferentes. Duas ou mais sobre a mesma coisa é sinal de que a regra ainda não chegou onde precisava.
+O `licoes.md` registra; este passo é quem fecha o ciclo. Só roda quando esta sessão escreveu linha nova no `licoes.md` (repetição nova só nasce de lição nova): aí ler o arquivo inteiro e, em cada seção, procurar lições que falam do mesmo erro (mesma skill, mesmo tipo de dado, mesma etapa), mesmo com palavras diferentes. Duas ou mais sobre a mesma coisa é sinal de que a regra ainda não chegou onde precisava.
 
 Pra cada repetição encontrada:
 
@@ -66,7 +65,7 @@ Só propõe; nunca edita skill sem aprovação. Sem repetição encontrada, não
 
 Memória que só cresce fica cara. Os quatro arquivos lidos em toda conversa (`empresa.md`, `preferencias.md`, `estrategia.md`, `agora.md`) entram inteiros antes da primeira palavra do usuário, e o `licoes.md` entra inteiro no passo acima. Cada um tem teto de 800 tokens, escrito no topo do próprio arquivo.
 
-Rodar `node <pasta-mãe>/_ferramentas/medir-mesa.mjs .` e olhar as linhas marcadas `[contexto]`. Arquivo em amarelo ou vermelho se consolida ANTES de receber linha nova, nunca depois:
+Só roda quando esta sessão vai escrever num desses quatro (ou no `licoes.md`). Aí rodar `node <pasta-mãe>/_ferramentas/medir-mesa.mjs .` e olhar só as linhas marcadas `[contexto]`; a linha do `AGENTS.md` não é deste passo (arquivo de regra do kit, quem mede é o `/checar`). Arquivo em amarelo ou vermelho se consolida ANTES de receber linha nova, nunca depois:
 
 1. Ler o arquivo inteiro e separar o que ainda muda uma decisão hoje do que já virou história
 2. Fundir linhas que dizem a mesma coisa com palavras diferentes
@@ -77,7 +76,7 @@ Mostrar o antes e o depois e só gravar com aprovação. Todos verdes, não dize
 
 ## Passo 4: Diagnóstico
 
-Comparar o que foi lido no Passo 2 com o estado real e apresentar:
+Comparar o que foi lido no Passo 2 com o que a conversa mostrou e apresentar:
 
 ```
 ## Diagnóstico de contexto

@@ -34,6 +34,12 @@ parte de leitura.
 
 Se o `.env` já tem `TELEGRAM_TOKEN` e `TELEGRAM_CHAT_ID`, pular esta seção.
 
+Sem Telegram por enquanto (a pessoa não quer ou não pode agora): seguir pra
+"Montar um robô" assim mesmo. O aviso que não sai pelo Telegram vira um recado em
+`_memoria/recados/`, e o `/iniciar` mostra na próxima sessão. Dizer isso em uma
+frase ("sem o Telegram, o robô te avisa quando você abrir o projeto; dá pra ligar
+o Telegram depois") e anotar no `tarefas.md` "ligar o Telegram do robô".
+
 1. Explicar: "O robô te avisa por um bot seu no Telegram. É grátis e leva uns
    5 minutos."
 2. Guiar: no Telegram, procurar `@BotFather` (com o selo azul de verificado),
@@ -114,7 +120,8 @@ roda) e esperar o "pode ir".
 `node .claude/skills/agendar/scripts/motor.mjs robos/<nome>.mjs --teste`
 
 O modo teste avisa mesmo sem problema (a mensagem começa com `[teste]`) e não
-conta como a rodada do dia. Conferir com o usuário que a mensagem chegou e que o
+conta como a rodada do dia. Sem Telegram, o aviso do teste sai na tela, nunca como
+recado. Conferir com o usuário que a mensagem chegou (ou apareceu na tela) e que o
 conteúdo faz sentido. Anotar quanto tempo levou: `prazoMinutos` fica no dobro
 disso, no mínimo 2. Deu erro: consertar a receita e testar de novo antes de
 agendar.

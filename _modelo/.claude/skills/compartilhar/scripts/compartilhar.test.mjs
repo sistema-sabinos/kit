@@ -144,9 +144,21 @@ test('varrer lista em naoVarridos o arquivo binario que nao leu', () => {
 test('conferir aponta caminho que sai da pasta', () => {
   comProjeto({
     'acme/AGENTS.md': 'Marca em `../../marca/design-guide.md`.\nTabela em ../AGENTS.md\n',
-    'acme/contexto.md': 'versão 1..2 e reticências... nada de caminho\n', 'acme/x.txt': '../fora',
+    'acme/contexto.md': 'versão 1..2 e reticências... nada de caminho\n', 'acme/foto.csv': '../fora',
   }, raiz => {
     assert.deepEqual(conferir(join(raiz, 'acme')), [{ arquivo: 'AGENTS.md', linha: 1 }, { arquivo: 'AGENTS.md', linha: 2 }])
+  })
+})
+
+test('conferir le tambem script e configuracao da skill da pasta', () => {
+  comProjeto({
+    'acme/.claude/skills/posts/SKILL.md': 'Rodar o script da pasta.\n',
+    // caminho de disco montado por partes: escrito inteiro, o Gate 6 acusaria este teste
+    'acme/.claude/skills/posts/scripts/posts.mjs': "import x from '../../../../../lib.mjs'\nconst base = '" + 'E' + ":/Clientes/loja'\n",
+    'acme/.claude/skills/posts/config.json': '{ "marca": "../../../../marca" }\n',
+  }, raiz => {
+    const r = conferir(join(raiz, 'acme')).map(f => `${f.arquivo}:${f.linha}`).sort()
+    assert.deepEqual(r, ['.claude/skills/posts/config.json:1', '.claude/skills/posts/scripts/posts.mjs:1', '.claude/skills/posts/scripts/posts.mjs:2'])
   })
 })
 
@@ -156,7 +168,9 @@ test('CLI: varrer sai 2 com segredo, conferir sai 1 com caminho de fora, 0 limpo
     assert.throws(() => execFileSync('node', [SCRIPT, 'conferir', 'fora'], { cwd: raiz, stdio: 'pipe' }), e => e.status === 1)
     const r = JSON.parse(execFileSync('node', [SCRIPT, 'varrer', 'limpa'], { cwd: raiz, encoding: 'utf8' }))
     assert.deepEqual(r, { segredos: [], envs: [], ilegiveis: [], naoVarridos: [] })
-    assert.throws(() => execFileSync('node', [SCRIPT, 'varrer', 'nao-existe'], { cwd: raiz, stdio: 'pipe' }), e => e.status === 2)
+    // erro de uso sai 3: o 2 fica so pra "achou segredo"
+    assert.throws(() => execFileSync('node', [SCRIPT, 'varrer', 'nao-existe'], { cwd: raiz, stdio: 'pipe' }), e => e.status === 3)
+    assert.throws(() => execFileSync('node', [SCRIPT, 'decisoes', 'limpa'], { cwd: raiz, stdio: 'pipe' }), e => e.status === 3)
   })
 })
 
@@ -173,6 +187,23 @@ test('extrairDecisoes com tag so na primeira linha, nao em corpo', () => {
     const d = readFileSync(join(pasta, 'decisoes.md'), 'utf8')
     assert.ok(d.includes('base'))
     assert.ok(!d.includes('outro'))
+  })
+})
+
+test('paraConferir respeita o trecho citado: decisao interna do mesmo dia nao vai pro cliente', () => {
+  const decisoes = [
+    '# Decisões', '',
+    '- 2026-10-05, dono: parar de vender bolo de pote. Por quê: margem.',
+    '- 2026-10-05, bia, [projeto] buffet-lirio: sinal de 50% no pedido. Por quê: casamento.',
+    '- 2026-10-07, dono: bolo de pote só pra evento acima de 30. Por quê: pedido grande compensa. substitui: 2026-10-05 "parar de vender bolo de pote"',
+    '- 2026-10-08, dono: sinal de 30% pro Buffet. Por quê: cliente antigo. substitui: 2026-10-05 "sinal de 50% no pedido"', '',
+  ].join('\r\n')
+  comProjeto({ '_memoria/decisoes.md': decisoes }, raiz => {
+    const pasta = join(raiz, 'projetos', 'buffet-lirio')
+    mkdirSync(pasta, { recursive: true })
+    const r = extrairDecisoes(raiz, pasta, 'buffet-lirio', '2026-10-09')
+    assert.equal(r.copiadas, 1)
+    assert.deepEqual(r.paraConferir, ['- 2026-10-08, dono: sinal de 30% pro Buffet. Por quê: cliente antigo. substitui: 2026-10-05 "sinal de 50% no pedido"'])
   })
 })
 

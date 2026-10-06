@@ -4,6 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync
 import { tmpdir } from 'node:os'
 import { join, dirname, resolve, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { spawnSync } from 'node:child_process'
 import { rodarGates, carregarProibidos, foraDoBackup } from './verificar-kit.mjs'
 import { hashArquivo } from './atualizar-projeto.mjs'
 
@@ -237,6 +238,57 @@ test('gate 5 tambem confere o settings.json do _modelo', () => {
   const { falhas } = rodarGates(dir)
   assert.ok(falhas.some(f => f.gate === 5 && f.arquivo === '_modelo/.claude/settings.json'))
   rmSync(dir, { recursive: true, force: true })
+})
+
+test('gate 1 acusa a mesma cara de chave que o backup do aluno seguraria', () => {
+  const dir = kitFalso()
+  // montados por partes: escritos inteiros, este teste teria cara de chave
+  const corpo = n => 'Ab1Cd2Ef3G'.repeat(Math.ceil(n / 10)).slice(0, n)
+  try {
+    writeFileSync(join(dir, 'nota.md'), 'solta ' + 'sk-' + corpo(33) + '\n')
+    writeFileSync(join(dir, 'gh.md'), 'ok\n' + 'gh' + 'p_' + corpo(36) + '\n')
+    writeFileSync(join(dir, 'ig.md'), 'token: ' + 'IGQV' + corpo(120) + '\n')
+    writeFileSync(join(dir, 'limpo.md'), 'hash ' + 'a3f9'.repeat(16) + '\n')
+    const { falhas } = rodarGates(dir, { proibidos: TERMOS })
+    const g1 = falhas.filter(f => f.gate === 1).map(f => `${f.arquivo}: ${f.detalhe}`).sort()
+    assert.deepEqual(g1, ['gh.md: cara de token do GitHub (linha 2)', 'ig.md: cara de token do Instagram (linha 1)', 'nota.md: cara de chave de API (linha 1)'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 3 exige o .gitattributes do _modelo (merge=union do auto-sync de equipe)', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo'), { recursive: true })
+    const sem = rodarGates(dir).falhas.filter(f => f.gate === 3).map(f => f.detalhe)
+    assert.ok(sem.includes('faltando: _modelo/.gitattributes'))
+    writeFileSync(join(dir, '_modelo/.gitattributes'), '_memoria/decisoes.md merge=union\n')
+    assert.ok(!rodarGates(dir).falhas.some(f => f.gate === 3 && f.detalhe === 'faltando: _modelo/.gitattributes'))
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 5 so aceita o auto-sync.mjs chamado pelo Stop, nunca citado em outro evento', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo/.claude/hooks'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/.claude/hooks/auto-sync.mjs'), "git(['rev-parse', '--git-dir']); git(['remote', 'get-url', 'origin'])\n")
+    const cmd = 'node "${CLAUDE_PROJECT_DIR}/.claude/hooks/auto-sync.mjs"'
+    writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify({ hooks: { PreToolUse: [{ hooks: [{ type: 'command', command: cmd }] }] } }))
+    assert.ok(rodarGates(dir).falhas.some(f => f.gate === 5 && /Stop do _modelo sem/.test(f.detalhe)))
+    writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify({ hooks: { Stop: [{ hooks: [{ type: 'command', command: cmd }] }] } }))
+    assert.ok(!rodarGates(dir).falhas.some(f => f.gate === 5))
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate que nao rodou inteiro vem em naoRodou, e a linha de comando nunca diz ok calado', () => {
+  const dir = kitFalso()
+  try {
+    const { naoRodou } = rodarGates(dir, { proibidos: [] })
+    assert.deepEqual(naoRodou.map(n => n.gate).sort(), [1, 7])
+    assert.ok(naoRodou.find(n => n.gate === 1).parcial)
+    const cli = spawnSync(process.execPath, [fileURLToPath(new URL('./verificar-kit.mjs', import.meta.url)), dir], { encoding: 'utf8' })
+    assert.match(cli.stdout, /n\/a +Gate 7: Empacotamento do zip: sem zip ao lado do kit/)
+    assert.match(cli.stdout, /\nResultado: \d+ verdes, \d+ com falha, \d+ sem rodar inteiro/)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
 test('gate 6 acusa caminho windows chumbado dentro de _modelo', () => {

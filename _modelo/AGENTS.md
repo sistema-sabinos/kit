@@ -31,7 +31,7 @@ Pra saber X, leia Y. Única fonte de caminho do sistema: skill e regra dizem "a 
 
 ## Tabela de destinos
 
-Aconteceu X, escreve em Y. Diário e `licoes.md` vão na hora; o resto o `/atualizar` passa pela tabela no fim. Instrução permanente ("sempre que", "prefiro assim") é a exceção ao "no fim": perguntar; com o sim, gravar na hora. Sempre linha nova, sem reformatar o arquivo, mostrando o que entrou. Data sempre absoluta (AAAA-MM-DD, nunca "semana passada"). Pasta que falta se cria antes de salvar; pasta que nasce vazia leva `.gitkeep`.
+Aconteceu X, escreve em Y. Diário, `licoes.md`, decisão e fato do negócio vão na hora (sessão que cai antes do fim não perde o que se decidiu); o resto o `/atualizar` passa pela tabela no fim. Instrução permanente ("sempre que", "prefiro assim") é a exceção ao "no fim": perguntar; com o sim, gravar na hora. Sempre linha nova, sem reformatar o arquivo, mostrando o que entrou. Data sempre absoluta (AAAA-MM-DD, nunca "semana passada"). Pasta que falta se cria antes de salvar; pasta que nasce vazia leva `.gitkeep`.
 
 - fato do negócio → `empresa.md`
 - rumo → `estrategia.md`
@@ -39,7 +39,7 @@ Aconteceu X, escreve em Y. Diário e `licoes.md` vão na hora; o resto o `/atual
 - ferramenta → `ferramentas.md`
 - automação → `automacoes.md`
 - hospedagem → `infra.md`
-- contato que aparece pela segunda vez → `pessoas/<nome>.md`
+- contato com telefone, email ou preço, ou que aparece pela segunda vez → `pessoas/<nome>.md`
 - onde paramos → `agora.md`
 - pendência pra depois → `tarefas.md`
 - erro corrigido → `licoes.md`, na hora
@@ -49,6 +49,7 @@ Aconteceu X, escreve em Y. Diário e `licoes.md` vão na hora; o resto o `/atual
 - visual ou jeito de falar com o cliente → a marca
 - regra desta pasta → este `AGENTS.md`
 - trabalho de projeto → a pasta dele
+- cliente, encomenda grande ou campanha que vai durar → pasta própria, pela rota leve de `../.claude/skills/novo-projeto/SKILL.md`
 - material bruto → a pasta do projeto, destilado no `contexto.md` dela com data e caminho da fonte
 - trivial → não salva
 - não coube → pergunta, nunca inventa gaveta
@@ -63,7 +64,7 @@ Diário: `- HH:MM, <o que foi feito> (<arquivo>)`; origem diferente de `dono` es
 - vai dizer "não consigo" → `ferramentas.md` antes
 - vai entregar texto que sai pro cliente (anúncio, post, email, proposta) → reler contra a voz da marca antes
 - vai trabalhar numa pasta de projeto → `AGENTS.md`, `contexto.md` e `andamento.md` dela
-- vai pedir o ok da pessoa (plano, mudança, gasto, publicação, qualquer tamanho) → `/segunda-opiniao` antes, sempre
+- vai pedir o ok de algo que gasta, publica, envia pra fora, apaga ou muda estrutura, ou a pessoa pediu revisão ("revisa", "se autoverifica") → `/segunda-opiniao` antes; o resto segue sem revisão
 - deu erro → dizer o que aconteceu, o que continua seguro e o próximo passo; erro cru só se pedirem; nunca parar calado
 - sinal de encerramento ("valeu", "até amanhã") ou sessão que mudou contexto → oferecer o `/atualizar` em uma linha; sessão trivial, não
 

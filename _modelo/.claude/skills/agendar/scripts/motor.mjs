@@ -81,11 +81,17 @@ export async function rodarRobo({
   esperarRede = esperarRedePadrao,
   armar = armarCaoDeGuarda,
   pastaTrava,
+  naTela = (texto) => console.log(texto),
 }) {
   validarReceita(receita)
   const nome = receita.nome
   const teste = argv.includes('--teste')
-  const falar = (texto) => avisar(texto, { env, raiz, robo: nome })
+  // Teste sem Telegram ligado: o aviso sai na tela de quem esta testando e nunca vira
+  // recado (recado de teste com "precisa de acao" confundia o /iniciar do dia seguinte)
+  const semTelegram = !(env.TELEGRAM_TOKEN && env.TELEGRAM_CHAT_ID)
+  const falar = (texto) => (teste && semTelegram
+    ? (naTela(texto), Promise.resolve({ entregue: false, naTela: true }))
+    : avisar(texto, { env, raiz, robo: nome }))
 
   await esperarBoot(MINUTOS_BOOT, nome, { argv, soAgendado: true })
 

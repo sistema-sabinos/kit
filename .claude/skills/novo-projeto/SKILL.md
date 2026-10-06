@@ -208,6 +208,10 @@ Antes de buscar fora, consultar a biblioteca local em
 `_modelo/templates/skills/`: o que já existe pronto ali cobre boa parte dos
 casos comuns.
 
+Sem internet, ou com o `npx` falhando: anotar no `tarefas.md` do projeto "buscar
+skills prontas com o /find-skills", dizer isso em uma linha e seguir só com a
+biblioteca local; nunca pular o passo calado.
+
 Depois, rodar a skill `find-skills` com termos do projeto, em português **e**
 em inglês (exemplo: pra um cliente de estética facial, buscar tanto "estética
 facial" quanto "aesthetics clinic"; pra um projeto de agendamento, tanto
@@ -449,7 +453,7 @@ perguntar outro nome antes de seguir.
   mandam rodar a `find-skills` lá dentro, então ela vai junto, senão a
   instrução aponta pra uma skill que não existe na pasta), mais a `assistir-video`
   e a `transcribe`, que a `aprender-curso` usa pra estudar um curso em vídeo e
-  virar mentor. Das skills copiadas, nunca copiar arquivo terminado em `.test.mjs` (a `trafego` e a `agendar` trazem testes que só servem no kit). Além dessas, copiar
+  virar mentor. Das skills copiadas, nunca copiar arquivo terminado em `.test.mjs` (várias trazem testes que só servem no kit: `trafego`, `agendar`, `faxina`, `compartilhar` e outras; conferir no fim com uma busca por `.test.mjs` dentro do projeto, que tem que voltar vazia). Além dessas, copiar
   `otimizar-pc` só se o computador da pessoa for Windows (já sabido do
   Passo 0, ou perguntar se não ficou claro), e a pasta `trafego` inteira só se a
   pergunta de anúncio pago acima teve resposta positiva ou "pretendo".

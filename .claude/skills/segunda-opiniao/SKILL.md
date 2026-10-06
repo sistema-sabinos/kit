@@ -1,13 +1,13 @@
 ---
 name: segunda-opiniao
 description: >
-  Antes de pedir o ok da pessoa pra qualquer coisa (plano, mudança, gasto,
-  publicação, estrutura de pasta), passa a proposta por um revisor que não viu a
-  conversa e tem a ordem de derrubar: contradição, furo, suposição sem prova e o
-  que quebra na prática. Cada achado se confere nos arquivos; o que se sustenta
-  se corrige antes de mostrar. Use sempre antes de pedir aprovação, quando o
-  usuário chamar /segunda-opiniao, ou disser "revisa isso antes", "tem furo
-  nisso?", "pede uma segunda opinião".
+  Passa a proposta por um revisor que não viu a conversa, com ordem de derrubar:
+  contradição, furo, suposição sem prova e o que quebra na prática. Cada achado se
+  confere nos arquivos; o que se sustenta se corrige antes de mostrar. Use sempre
+  antes de pedir o ok de algo que gasta dinheiro, publica, envia pra fora, apaga ou
+  muda a estrutura de pastas e skills; quando a skill da tarefa mandar; e quando o
+  usuário chamar /segunda-opiniao ou disser "revisa isso", "se autorrevisa", "se
+  autoverifica", "tem furo nisso?", "pede uma segunda opinião".
 ---
 
 # /segunda-opiniao, um olhar de fora antes do ok
@@ -18,8 +18,18 @@ limpo: alguém que não viu a conversa, recebe só o que a pessoa pediu e o que 
 ser feito, e tem a ordem de achar o que está errado. A pessoa recebe a proposta
 já corrigida e, em linguagem simples, se o revisor aprovaria e por quê.
 
-Vale pra todo pedido de ok, de qualquer tamanho. O tamanho muda a dose, nunca
-pula a revisão.
+Uma revisão custa caro (uma rodada medida passou de 100 mil tokens e um minuto e
+meio de espera), então ela fica pro que pesa e pro que a pessoa pede. Entra
+sempre, sem precisar pedir:
+
+- antes do ok de tudo que gasta dinheiro, publica, envia mensagem pra fora, apaga
+  ou muda a estrutura de pastas e skills;
+- quando a skill da tarefa manda passar por aqui num passo dela;
+- quando a pessoa pede ("revisa", "se autorrevisa", "se autoverifica", "tem furo
+  nisso?").
+
+O resto (uma linha de memória, um texto curto, uma mudança pequena e fácil de
+desfazer) segue sem revisão: o ok da pessoa basta.
 
 ## Passo 1, o pacote
 
@@ -42,15 +52,17 @@ com ela.
 
 ## Passo 2, a dose
 
-- **Rápida**, pra proposta pequena (uma mudança, um arquivo, um texto curto,
-  nada que gaste ou publique): uma volta só, com o pedido de no máximo três
-  achados.
-- **Completa**, pra proposta grande (várias etapas, dinheiro, publicação, algo
-  difícil de desfazer, mudança de estrutura): até três revisões no total,
-  contando a primeira; uma nova só depois de uma correção que mudou a proposta
-  de verdade.
+- **Rápida**, uma volta só (no máximo três achados), quando a pessoa pede a
+  revisão de algo que não gasta, não publica, não manda nada pra fora e não apaga,
+  ou quando a skill da tarefa diz "dose rápida".
+- **Completa**, com revisor separado e até três revisões no total, contando a
+  primeira, pra tudo que gasta dinheiro, publica, envia pra fora, apaga ou muda a
+  estrutura de pastas e skills; uma nova volta só depois de uma correção que mudou
+  a proposta de verdade.
 
-Na dúvida, completa.
+Várias confirmações da mesma tarefa (o `/setup` pergunta várias coisas seguidas)
+viram um pacote só, revisado uma vez antes do ok final, nunca uma revisão por
+pergunta. Na dúvida entre duas doses, a maior.
 
 ## Passo 3, o revisor
 
@@ -117,12 +129,16 @@ A proposta corrigida e, embaixo, duas ou três linhas em linguagem simples:
 
 > **Segunda opinião:** nada a derrubar, eu aprovaria como está.
 
+
 A linha aparece sempre, mesmo quando nada mudou: é ela que mostra que a revisão
 rodou. Depois disso, pedir o ok normalmente.
 
 ## Regras
 
-- Nunca pular, nem em proposta pequena: dose rápida, sim; nenhuma, nunca.
+- Gasto, publicação, envio pra fora, apagar e estrutura nunca pulam a revisão, por
+  menores que pareçam.
+- Coisa pequena que ninguém pediu pra revisar não chama revisor: custa caro e
+  atrasa sem ganho.
 - Nunca passar sua conclusão pro revisor; só o pedido, a proposta e os arquivos.
 - Nunca aceitar achado sem abrir o arquivo; nunca descartar sem dizer por quê.
 - No máximo três revisões no total, contando a primeira. Se depois da terceira

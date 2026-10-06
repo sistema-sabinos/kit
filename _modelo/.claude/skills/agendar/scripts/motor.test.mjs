@@ -175,11 +175,29 @@ test('trava de rodada viva segura mesmo depois de a primeira ter comecado ha pou
   } finally { viva.soltar(); c.limpar() }
 })
 
+test('modo teste sem Telegram mostra o aviso na tela e nunca grava recado', async () => {
+  const c = cenario()
+  const { r } = receita({ async rodar() { return { avisos: ['farinha acaba na quinta'] } } })
+  const tela = []
+  try {
+    const res = await rodarRobo({ ...c.base, argv: ['node', 'motor.mjs', '--teste'], receita: r, naTela: (t) => tela.push(t) })
+    assert.deepEqual(res, { resultado: 'feito', codigo: 0 })
+    assert.deepEqual(c.falas, [], 'nao chamou o aviso, que gravaria recado')
+    assert.equal(tela.length, 1)
+    assert.match(tela[0], /^\[teste\] robo-teste:\nfarinha acaba na quinta/)
+    assert.equal(existsSync(join(c.raiz, '_memoria', 'recados')), false)
+    // rodada de verdade sem Telegram continua virando recado pelo aviso
+    await rodarRobo({ ...c.base, receita: r, naTela: (t) => tela.push(t) })
+    assert.equal(c.falas.length, 1)
+  } finally { c.limpar() }
+})
+
 test('modo teste avisa mesmo sem problema e nao conta como a rodada do dia', async () => {
   const c = cenario()
   const { r, estado } = receita()
   try {
-    const res = await rodarRobo({ ...c.base, argv: ['node', 'motor.mjs', '--teste'], receita: r })
+    const env = { TELEGRAM_TOKEN: 'x', TELEGRAM_CHAT_ID: '1' }
+    const res = await rodarRobo({ ...c.base, env, argv: ['node', 'motor.mjs', '--teste'], receita: r })
     assert.deepEqual(res, { resultado: 'feito', codigo: 0 })
     assert.equal(c.falas.length, 1)
     assert.match(c.falas[0], /^\[teste\] robo-teste/)

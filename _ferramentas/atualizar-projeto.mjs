@@ -13,6 +13,9 @@ import { join, dirname, resolve, relative, sep } from 'node:path'
 import { createHash } from 'node:crypto'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
+// data do relogio da pessoa: em UTC, 22h no Brasil ja e o dia seguinte
+const diaLocal = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
 // CRLF e LF contam como o mesmo conteudo: o git do aluno troca o final de linha sozinho.
 // latin1 guarda cada byte como esta, entao arquivo binario tambem passa sem estragar.
 export function hashArquivo(buf) {
@@ -175,6 +178,15 @@ export function garantirGitignore(projeto) {
 
 // hora local, com segundos: AAAAMMDD-HHMMSS. Usado no nome de todo backup, pra
 // a ordem por data bater com a ordem alfabetica e nunca colidir entre chamadas.
+// Nome de copia livre: duas rodadas no mesmo segundo nunca colidem. Avanca um segundo
+// no carimbo (e nao um sufixo), pra ordem por data do desfazer continuar valendo.
+function nomeLivre(projeto, prefixo, agora) {
+  for (let s = 0; ; s++) {
+    const nome = `${prefixo}-${carimboDe(new Date(agora.getTime() + s * 1000))}`
+    if (!existsSync(join(projeto, '.sabinos', nome))) return nome
+  }
+}
+
 function carimboDe(agora) {
   const z = n => String(n).padStart(2, '0')
   return `${agora.getFullYear()}${z(agora.getMonth() + 1)}${z(agora.getDate())}-${z(agora.getHours())}${z(agora.getMinutes())}${z(agora.getSeconds())}`
@@ -189,9 +201,8 @@ export function aplicarPlano({ kit, projeto, plano, tambem = [], agora = new Dat
   const copiar = plano.itens.filter(i => ['adicionar', 'trocar'].includes(i.acao) || (i.acao === 'perguntar' && tambem.includes(i.caminho)))
   const remover = plano.itens.filter(i => i.acao === 'sugerir-remover' && tambem.includes(i.caminho))
 
-  const backup = `antes-${plano.versaoKit}-${carimboDe(agora)}`
+  const backup = nomeLivre(projeto, `antes-${plano.versaoKit}`, agora)
   const pasta = join(projeto, '.sabinos', backup)
-  if (existsSync(pasta)) throw new Error(`ja existe ${pasta}`)
   garantirGitignore(projeto)
   mkdirSync(pasta, { recursive: true })
   // misto e recibo entram sempre: a conversa mexe nos mistos depois do motor
@@ -222,7 +233,7 @@ export function aplicarPlano({ kit, projeto, plano, tambem = [], agora = new Dat
   const iguais = plano.itens.filter(i => i.acao === 'igual').concat(copiar)
   for (const i of iguais) arquivos[i.caminho] = hashArquivo(readFileSync(join(projeto, i.caminho)))
   writeFileSync(join(projeto, RECIBO), JSON.stringify({
-    versao: plano.versaoKit, data: agora.toISOString().slice(0, 10), arquivos, mudancas: anterior.mudancas ?? {},
+    versao: plano.versaoKit, data: diaLocal(agora), arquivos, mudancas: anterior.mudancas ?? {},
   }, null, 2) + '\n')
   return { backup, copiados: copiar.map(i => i.caminho), removidos: remover.map(i => i.caminho) }
 }
@@ -236,9 +247,8 @@ export function desfazer({ projeto, backup, agora = new Date() }) {
   // antes de mexer, guarda o que esta ai agora no mesmo formato de backup, pra
   // este desfazer tambem poder ser desfeito (por exemplo, um misto editado depois
   // do aplicar seria perdido na restauracao abaixo se nao fosse salvo aqui antes)
-  const seguranca = `antes-desfazer-${carimboDe(agora)}`
+  const seguranca = nomeLivre(projeto, 'antes-desfazer', agora)
   const pastaSeguranca = join(projeto, '.sabinos', seguranca)
-  if (existsSync(pastaSeguranca)) throw new Error(`ja existe ${pastaSeguranca}`)
   mkdirSync(pastaSeguranca, { recursive: true })
   for (const rel of [...new Set([...apagados, ...restaurados])]) {
     const origem = join(projeto, rel)
@@ -272,15 +282,21 @@ export function registrarMudanca({ projeto, id, estado, agora = new Date() }) {
   const p = join(projeto, RECIBO)
   if (!existsSync(p)) throw new Error('sem recibo: rode "aplicar" antes')
   const r = lerJson(p)
-  r.mudancas = { ...(r.mudancas ?? {}), [id]: `${estado} ${agora.toISOString().slice(0, 10)}` }
+  r.mudancas = { ...(r.mudancas ?? {}), [id]: `${estado} ${diaLocal(agora)}` }
   writeFileSync(p, JSON.stringify(r, null, 2) + '\n')
 }
 
+// So as opcoes que o motor conhece, sempre com valor. Opcao digitada errada (--tambme)
+// para com erro: em silencio ela engolia o valor e nada era aprovado.
+const OPCOES = ['kit', 'componentes', 'tambem', 'backup']
 function lerArgs(argv) {
   const o = { _: [] }
   for (let i = 0; i < argv.length; i++) {
-    if (argv[i].startsWith('--')) o[argv[i].slice(2)] = argv[++i]
-    else o._.push(argv[i])
+    if (!argv[i].startsWith('--')) { o._.push(argv[i]); continue }
+    const nome = argv[i].slice(2)
+    if (!OPCOES.includes(nome)) throw new Error(`opcao desconhecida: --${nome} (as que existem: ${OPCOES.map(x => '--' + x).join(', ')})`)
+    if (i + 1 >= argv.length || argv[i + 1].startsWith('--')) throw new Error(`--${nome} precisa de um valor`)
+    o[nome] = argv[++i]
   }
   return o
 }

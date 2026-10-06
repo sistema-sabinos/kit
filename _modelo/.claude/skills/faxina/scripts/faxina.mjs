@@ -9,6 +9,15 @@ import { join, relative, sep, basename, resolve } from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { homedir } from 'node:os'
 import { pathToFileURL, fileURLToPath } from 'node:url'
+// A lista de cara de chave mora no hook do backup. Projeto sem o hook (auto-sync recusado
+// numa versao antiga do setup) cai na lista minima abaixo, em vez de a faxina nao rodar.
+let CHAVES = [
+  ['chave de API', /\bsk-[A-Za-z0-9_-]{20,}/],
+  ['token do GitHub', /\b(?:ghp|gho|ghs)_[A-Za-z0-9]{20,}|\bgithub_pat_[A-Za-z0-9_]{20,}/],
+  ['chave da AWS', /\bAKIA[0-9A-Z]{16}\b/],
+  ['chave privada', new RegExp('-----BEGIN [A-Z ]*PRIVATE ' + 'KEY-----')],
+]
+try { ({ CHAVES } = await import(new URL('../../../hooks/auto-sync.mjs', import.meta.url).href)) } catch {}
 
 const DIA = 24 * 60 * 60 * 1000
 const RE_DATA = /^(\d{4})-(\d{2})-(\d{2})/
@@ -47,10 +56,24 @@ export function lerDecisoes(texto) {
     while (e.fim > e.inicio && !linhas[e.fim].trim()) e.fim--
     const corpo = linhas.slice(e.inicio, e.fim + 1).join('\n')
     e.texto = corpo
-    e.substitui = [...corpo.matchAll(/substitui:\s*(\d{4}-\d{2}-\d{2})/gi)].map(m => m[1])
+    // substitui: AAAA-MM-DD "<comeco da velha>": o trecho separa duas decisoes do mesmo dia
+    e.subs = [...corpo.matchAll(/substitui:\s*(\d{4}-\d{2}-\d{2})(?:\s*["“]([^"”\n]+)["”])?/gi)].map(m => ({ data: m[1], trecho: m[2] || '' }))
+    e.substitui = e.subs.map(s => s.data)
     e.tags = [...corpo.matchAll(/\[([a-z0-9][a-z0-9-]*)\]/gi)].map(m => m[1].toLowerCase())
   }
   return entradas
+}
+
+// reticencias no fim do trecho citado ("Paramos de vender...") nao contam
+const normal = s => s.toLowerCase().replace(/\*+/g, '').replace(/(\.\.\.|…)+\s*$/, '').replace(/\s+/g, ' ').trim()
+// Entradas que um "substitui:" aponta: mesma data; com trecho citado, so a que contem o
+// trecho. Trecho que nao casa nenhuma (citado de outro jeito) volta pra regra da data, pra
+// a decisao cair em arquivar ou em ambiguas e nunca sumir calada. Nunca a propria entrada.
+export function alvosDe(entradas, sub, quem) {
+  const daData = entradas.filter(e => e !== quem && e.data === sub.data && !e.substitui.includes(sub.data))
+  if (!sub.trecho) return daData
+  const comTrecho = daData.filter(e => normal(e.texto).includes(normal(sub.trecho)))
+  return comTrecho.length ? comTrecho : daData
 }
 
 // ---------- arquivar ----------
@@ -67,13 +90,20 @@ export function planoArquivo(raiz, hoje) {
   const arqDec = join(raiz, '_memoria', 'decisoes.md')
   if (existsSync(arqDec)) {
     const entradas = lerDecisoes(readFileSync(arqDec, 'utf8'))
-    const substituidas = new Set(entradas.flatMap(e => e.substitui))
-    for (const data of [...substituidas].sort()) {
-      if (diasEntre(data, hoje) <= 90) continue
-      const daData = entradas.filter(e => e.data === data && !e.substitui.includes(data))
-      if (daData.length === 1) plano.decisoes.push({ data, para: `_memoria/arquivo/${data.slice(0, 4)}/decisoes-substituidas.md` })
-      else if (daData.length > 1) plano.ambiguas.push({ data, quantas: daData.length })
+    const vistas = new Set()
+    const ambiguas = new Map()
+    for (const quem of entradas) {
+      for (const sub of quem.subs) {
+        if (diasEntre(sub.data, hoje) <= 90) continue
+        const alvos = alvosDe(entradas, sub, quem)
+        if (alvos.length > 1) { ambiguas.set(sub.data, Math.max(ambiguas.get(sub.data) || 0, alvos.length)); continue }
+        if (alvos.length !== 1 || vistas.has(alvos[0].inicio)) continue
+        vistas.add(alvos[0].inicio)
+        plano.decisoes.push({ data: sub.data, ...(sub.trecho && { trecho: sub.trecho }), para: `_memoria/arquivo/${sub.data.slice(0, 4)}/decisoes-substituidas.md` })
+      }
     }
+    plano.decisoes.sort((a, b) => a.data.localeCompare(b.data))
+    for (const [data, quantas] of [...ambiguas].sort()) plano.ambiguas.push({ data, quantas })
   }
   const dRecados = join(raiz, '_memoria', 'recados')
   if (existsSync(dRecados)) {
@@ -102,8 +132,8 @@ export function aplicarArquivo(raiz, hoje) {
     const linhas = texto.split(/\r?\n/)
     const entradas = lerDecisoes(texto)
     const tirar = new Set()
-    for (const { data, para } of plano.decisoes) {
-      const e = entradas.find(x => x.data === data && !x.substitui.includes(data))
+    for (const { data, trecho, para } of plano.decisoes) {
+      const [e] = alvosDe(entradas, { data, trecho })
       const destino = join(raiz, para)
       mkdirSync(join(destino, '..'), { recursive: true })
       const jaTem = existsSync(destino) && readFileSync(destino, 'utf8').replace(/\r\n/g, '\n').includes(e.texto)
@@ -123,11 +153,10 @@ export function aplicarArquivo(raiz, hoje) {
 
 // ---------- segredos ----------
 const PULAR_PASTAS = new Set(['.git', 'node_modules', '.venv', '__pycache__', '.agents', 'chrome-perfil'])
+// cara de chave: a mesma lista do backup automatico (hook auto-sync), mais as duas
+// formas largas abaixo, que so a faxina usa porque ela so relata e nunca segura arquivo
 const PADROES = [
-  ['chave de API (sk-)', /\bsk-[A-Za-z0-9_-]{20,}/],
-  ['token do GitHub', /\b(?:ghp|gho|ghs)_[A-Za-z0-9]{20,}|\bgithub_pat_[A-Za-z0-9_]{20,}/],
-  ['chave da AWS', /\bAKIA[0-9A-Z]{16}\b/],
-  ['chave privada', new RegExp('-----BEGIN [A-Z ]*PRIVATE ' + 'KEY-----')],
+  ...CHAVES,
   // valor de chave parece chave: 16+ caracteres sem ponto (ponto e acesso a campo no codigo), com letra e digito
   ['token ou chave escrita', /\b[a-z0-9_]*(?:key|token|secret)\s*[:=]\s*['"]?([A-Za-z0-9_\-/+=]{16,})/i, v => /\d/.test(v) && /[a-z]/i.test(v)],
   ['senha escrita', /\b(?:password|senha|passwd)\s*[:=]\s*['"]?([^\s'"`,;()[\]{}.]{6,})/i, v => !/^(env|process|args|config|opcoes)$/i.test(v)],
@@ -160,14 +189,16 @@ export function varrerSegredos(raiz, ilegiveis = [], pulados = []) {
   const achados = []
   for (const { p, st } of andar(raiz)) {
     const nome = basename(p)
-    if (nome.startsWith('.env') || nome.endsWith('.test.mjs')) continue
+    // .env.example sobe pro GitHub (o .gitignore libera), entao e varrido como texto comum
+    if ((nome.startsWith('.env') && nome !== '.env.example') || nome.endsWith('.test.mjs')) continue
     if (st.size > 2 * 1024 * 1024) { pulados.push(rel(raiz, p)); continue }
     try {
       if (ehBinario(p)) { pulados.push(rel(raiz, p)); continue }
       readFileSync(p, 'utf8').split(/\r?\n/).forEach((l, i) => {
         for (const [tipo, re, parece] of PADROES) {
           const m = re.exec(l)
-          if (m && !(m[1] && (PLACEHOLDER.test(m[1]) || (parece && !parece(m[1]))))) achados.push({ arquivo: rel(raiz, p), linha: i + 1, tipo })
+          // um achado por linha: a mesma chave casa a assinatura e a forma larga
+          if (m && !(m[1] && (PLACEHOLDER.test(m[1]) || (parece && !parece(m[1]))))) { achados.push({ arquivo: rel(raiz, p), linha: i + 1, tipo }); break }
         }
         for (const m of l.matchAll(/\b\d{3}\.\d{3}\.\d{3}-\d{2}\b/g)) {
           if (cpfValido(m[0])) achados.push({ arquivo: rel(raiz, p), linha: i + 1, tipo: 'CPF' })
@@ -214,7 +245,9 @@ function textoDasSkills(raiz) {
   for (const nome of readdirSync(d)) {
     if (nome === 'faxina') continue
     const p = join(d, nome, 'SKILL.md')
-    try { if (existsSync(p)) texto += readFileSync(p, 'utf8') + '\n' } catch {}
+    // linha de citacao (>) e exemplo de fala, nunca pasta de trabalho do pacote: o
+    // `propostas/` de exemplo do /mapear escondia a pasta solta de todo projeto
+    try { if (existsSync(p)) texto += readFileSync(p, 'utf8').split(/\r?\n/).filter(l => !/^\s*>/.test(l)).join('\n') + '\n' } catch {}
   }
   return texto
 }
@@ -472,10 +505,12 @@ export function relatorio(raiz, hoje = dataLocal(), home) {
   const dDiario = join(raiz, '_memoria', 'diario')
   const ultimos = existsSync(dDiario) ? readdirSync(dDiario).filter(f => RE_DATA.test(f)).sort().slice(-3).map(f => `_memoria/diario/${f}`) : []
   const ilegiveis = []
+  const naoVarridos = []
   return {
     hoje,
     arquivar: planoArquivo(raiz, hoje),
-    segredos: varrerSegredos(raiz, ilegiveis),
+    segredos: varrerSegredos(raiz, ilegiveis, naoVarridos),
+    naoVarridos,
     orfaos: orfaos(raiz),
     automacoes: automacoes(raiz, hoje),
     backup: foraDoBackup(raiz),
@@ -508,6 +543,9 @@ if (process.argv[1]) {
     if (args[0] === 'arquivar') {
       if (!args.includes('--sim')) { console.error('arquivar so roda com --sim, depois do sim da pessoa'); process.exitCode = 2 }
       else console.log(JSON.stringify(aplicarArquivo(raiz, hoje), null, 1))
+    } else if (args[0] && args[0] !== 'relatorio' && args[0] !== '--hoje') {
+      console.error(`comando desconhecido: ${args[0]} (use relatorio ou arquivar --sim)`)
+      process.exitCode = 3
     } else console.log(JSON.stringify(relatorio(raiz, hoje), null, 1))
   }
 }

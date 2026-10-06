@@ -65,6 +65,10 @@ __pycache__/
 .venv/
 dist/
 build/
+# atualizador do kit: copia de seguranca e motor valem so neste computador; o recibo
+# (versao instalada) sobe, pra o outro computador saber de onde parte
+.sabinos/*
+!.sabinos/instalado.json
 # ponte pro Codex, criada em tempo de uso
 .agents/
 # perfil do Chrome dedicado do pacote Mercado Livre: guarda o login da conta

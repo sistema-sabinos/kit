@@ -30,19 +30,32 @@ Da raiz do projeto:
 node .claude/skills/faxina/scripts/faxina.mjs
 ```
 
-Sai um JSON. Ele só lê; não mexe em nada. O que cada parte quer dizer:
+Sai um JSON. Ele só lê; não mexe em nada. (`relatorio` como primeira palavra dá o
+mesmo; `--hoje AAAA-MM-DD` troca a data de referência, pra conferir um dia
+passado; palavra desconhecida sai com erro 3 e não roda nada.) O que cada parte quer dizer:
 
 - `arquivar.diarios`: dia do diário com mais de 90 dias, com o destino.
 - `arquivar.decisoes`: decisão com mais de 90 dias que uma mais nova já
   substituiu (`substitui:` com a data dela). Decisão que ainda vale fica onde
   está, por mais velha que seja.
-- `arquivar.ambiguas`: data substituída que tem mais de uma decisão naquele dia.
-  Nunca arquivar sozinho: perguntar qual das duas saiu de cena.
+- `arquivar.ambiguas`: data substituída que tem mais de uma decisão naquele dia,
+  quando o `substitui:` não cita o começo da velha entre aspas (o formato do
+  `decisoes.md`, que separa as duas). Nunca arquivar sozinho: perguntar qual das
+  duas saiu de cena, e sugerir completar o `substitui:` com o trecho.
 - `arquivar.recadosVelhos`: recado com mais de 30 dias na pasta de recados. Só
   avisar: quem trata é a pessoa (tratou, apaga).
 - `segredos`: arquivo e linha com cara de chave, token, senha ou CPF fora do
-  `.env`. CPF só é pego no formato com pontos e traço (`000.000.000-00`). O
-  valor nunca aparece no relatório, e não deve aparecer no chat.
+  `.env`, inclusive dentro do `.env.example` (ele sobe pro GitHub, e é onde chave
+  de verdade costuma ficar esquecida). A lista de cara de chave é a mesma do backup
+  automático (OpenAI, GitHub, AWS, Meta, Instagram, Google, Telegram, Mercado Livre
+  e outros, mais sequência longa logo depois de "token", "chave" ou "senha"). CPF
+  só é pego no formato com pontos e traço (`000.000.000-00`). O valor nunca
+  aparece no relatório, e não deve aparecer no chat. Ficam fora da varredura, de
+  propósito: `.env`, arquivo de teste (`.test.mjs`) e as pastas `node_modules`,
+  `.venv`, `.agents` e `chrome-perfil`.
+- `naoVarridos`: arquivo que a varredura de segredo não leu (acima de 2 MB ou
+  binário, como planilha e PDF). Se é de texto e sobe pro backup (export em `.csv`
+  ou `.txt`), pedir que a pessoa confirme que não tem senha nem CPF dentro.
 - `orfaos`: arquivo ou pasta que o Mapa, a Tabela de destinos e a Estrutura de pastas do `AGENTS.md` não citam (projeto antigo, sem essas seções, conta o texto inteiro). O que o `SKILL.md` de outra skill instalada cita pelo caminho, entre crases, já não entra: é contexto ou pasta de trabalho de um pacote.
 - `automacoes.semSinal`: rotina do inventário que não deixou sinal (diário,
   recado ou rodada no livro dos robôs) nos últimos 30 dias.
@@ -156,8 +169,10 @@ Um item por vez, ou tudo de uma vez se a pessoa disser "aplica tudo":
 - Extensão liberada no `.gitignore`: uma linha `!*.<extensão>` no fim, com o
   aviso dos 100 MB.
 
-No fim, uma linha no diário de hoje, no formato que o `AGENTS.md` manda,
-dizendo o que a faxina aplicou. O diário
+No fim, sempre, uma linha no diário de hoje, no formato que o `AGENTS.md` manda,
+com a palavra `/faxina` e o que ela aplicou ("`/faxina` rodou, nada a aplicar"
+quando não mexeu em nada): é por essa linha que o `/iniciar` sabe que a faxina do
+mês foi feita. O diário
 do dia é `_memoria/diario/AAAA-MM-DD.md` (com `-<origem>` no fim do nome quando
 o `.origem` desta máquina não é `dono`); se ainda não existe, criar com o título
 `# AAAA-MM-DD`.

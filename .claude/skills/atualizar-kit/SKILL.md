@@ -70,7 +70,7 @@ Se a pessoa pedir detalhe, mostrar o diff daquele arquivo resumido em prosa (o q
 1. Antes de substituir qualquer coisa, guardar cópia da versão atual em `_kit-anterior-<AAAA-MM-DD>/` dentro da pasta-mãe, só das áreas que vão mudar. Adicionar essa pasta ao `.gitignore` da pasta-mãe, uma linha.
 2. Copiar os arquivos aprovados por cima. Arquivo "sumiu" só se apaga com aprovação explícita e nominal.
 3. `RESPONDA-AQUI.txt`: substituir só se o atual estiver em branco (nenhuma resposta escrita).
-4. Rodar `node _ferramentas/verificar-kit.mjs .` (obrigatório, não pular: em teste real este passo ficou pra trás) e mostrar ao usuário a linha de resultado, do tipo "verificador do kit: todas as conferências verdes" (o número de gates cresce, então leia o que a saída disser em vez de esperar um número fixo). Se algum gate falhar, dizer qual e o que fazer; não desfazer sozinho.
+4. Rodar `node _ferramentas/verificar-kit.mjs .` (obrigatório, não pular: em teste real este passo ficou pra trás) e mostrar ao usuário a última linha da saída, a que começa com `Resultado:` (quantas conferências ficaram verdes, quantas falharam e quantas não rodaram inteiras). Na pasta-mãe é normal o Gate 1 sair `parcial` (a lista de termos só existe na bancada de quem faz o kit) e o Gate 7 sair `n/a` (sem zip ao lado): dizer isso em uma frase, sem tratar como problema. Se algum gate falhar, dizer qual e o que fazer; não desfazer sozinho.
 
 ## Passo 4, levar pros projetos (opcional, um projeto de cada vez)
 

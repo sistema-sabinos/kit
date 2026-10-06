@@ -5,11 +5,13 @@
 //   node .claude/skills/compartilhar/scripts/compartilhar.mjs decisoes <pasta> <etiqueta>
 //     copia as entradas [etiqueta] do _memoria/decisoes.md pro decisoes.md da pasta
 //   node .claude/skills/compartilhar/scripts/compartilhar.mjs conferir <pasta>
-//     caminho que sai da pasta (../) ou absoluto (E:/, /Users/) num .md dela, que quebra fora do projeto (sai 1 se achou)
+//     caminho que sai da pasta (../) ou absoluto (E:/, /Users/) num texto dela (.md, script,
+//     configuracao), ou link quebrado: tudo que falha fora do projeto (sai 1 se achou)
+//   erro de uso sai 3, pra nunca se confundir com o 2 de "achou segredo"
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { lerDecisoes, varrerSegredos, dataLocal } from '../../faxina/scripts/faxina.mjs'
+import { lerDecisoes, alvosDe, varrerSegredos, dataLocal } from '../../faxina/scripts/faxina.mjs'
 
 const eol = txt => ((txt.match(/\r\n/g) || []).length * 2 > (txt.match(/\n/g) || []).length ? '\r\n' : '\n')
 
@@ -38,9 +40,9 @@ export function extrairDecisoes(raiz, pasta, etiqueta, hoje = dataLocal()) {
   const tagRe = new RegExp(`\\[${tag}\\]|\\[projeto\\]\\s+(?:[^\\s\\]]*/)?${tag}(?=[:\\s,)]|$)`, 'i')
   const primeira = e => e.texto.split('\n')[0]
   const selecionadas = todas.filter(e => tagRe.test(primeira(e)))
-  const datas = new Set(selecionadas.map(e => e.data))
   // decisao de fora da pasta que troca uma da pasta: a pessoa decide se vai junto
-  const paraConferir = todas.filter(e => !selecionadas.includes(e) && e.substitui.some(d => datas.has(d))).map(primeira)
+  // casa a data e, quando citado, o trecho: decisao de outro assunto do mesmo dia fica de fora
+  const paraConferir = todas.filter(e => !selecionadas.includes(e) && e.subs.some(s => alvosDe(todas, s, e).some(a => selecionadas.includes(a)))).map(primeira)
   const destino = join(pasta, 'decisoes.md')
   const atual = existsSync(destino) ? readFileSync(destino, 'utf8') : ''
   const novas = selecionadas.filter(e => !atual.replace(/\r\n/g, '\n').includes(e.texto))
@@ -72,7 +74,10 @@ export function conferir(pasta) {
   const andar = dir => {
     for (const nome of readdirSync(dir)) {
       const p = join(dir, nome)
-      if (statSync(p).isDirectory()) {
+      let st
+      // link quebrado (pasta movida no Windows) quebra igual do outro lado: aponta
+      try { st = statSync(p) } catch { fora.push({ arquivo: relative(pasta, p).split(sep).join('/'), linha: 0, motivo: 'link quebrado' }); continue }
+      if (st.isDirectory()) {
         if (nome === '.git' || nome === 'node_modules') continue
         // de .claude/ so as skills, que viajam com a pasta e podem citar caminho do
         // projeto-pai; a syncar e a copia do kit que a propria /compartilhar traz
@@ -81,7 +86,8 @@ export function conferir(pasta) {
         andar(p)
         continue
       }
-      if (!nome.endsWith('.md')) continue
+      // tudo que a skill da pasta pode usar: instrucao, script e configuracao
+      if (!/\.(md|mjs|cjs|js|json|ya?ml|txt|sh|ps1|py)$/.test(nome)) continue
       readFileSync(p, 'utf8').split(/\r?\n/).forEach((l, i) => {
         // ../ sai da pasta; E:/ ou E:\ e /Users/, /home/, /c/Users/ sao caminho absoluto desta maquina
         if (/(^|[\s(`'"])\.\.[\\/]/.test(l) || /(^|[^A-Za-z0-9])[A-Za-z]:[\\/]/.test(l) || /(^|[\s(`'"])(\/c)?\/(Users|home)\//.test(l)) fora.push({ arquivo: relative(pasta, p).split(sep).join('/'), linha: i + 1 })
@@ -94,7 +100,7 @@ export function conferir(pasta) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [cmd, pasta, etiqueta] = process.argv.slice(2)
-  if (!pasta || !existsSync(pasta)) { console.error('uso: compartilhar.mjs varrer|decisoes|conferir <pasta> [etiqueta]'); process.exitCode = 2 }
+  if (!pasta || !existsSync(pasta)) { console.error('uso: compartilhar.mjs varrer|decisoes|conferir <pasta> [etiqueta]'); process.exitCode = 3 }
   else if (cmd === 'varrer') {
     const r = varrer(pasta)
     console.log(JSON.stringify(r, null, 1))
@@ -104,5 +110,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const r = conferir(pasta)
     console.log(JSON.stringify(r, null, 1))
     if (r.length) process.exitCode = 1
-  } else { console.error('comando desconhecido'); process.exitCode = 2 }
+  } else { console.error('comando desconhecido (ou decisoes sem etiqueta)'); process.exitCode = 3 }
 }

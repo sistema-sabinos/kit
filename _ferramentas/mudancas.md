@@ -85,9 +85,9 @@
 
 **O que é:** o backup automático passa a deixar um aviso (`.backup-falhou`) quando não consegue subir pro GitHub.
 **Por quê:** hoje, quando o envio falha, ninguém fica sabendo.
-**Te afeta se:** o `settings.json` tem hook `Stop` com `git push` e o comando dele não tem `.backup-falhou`.
-**Como aplicar:** mostrar o `command` atual desse hook `Stop` e o do `_modelo/.claude/settings.json` do kit, lado a lado. Se o atual não tem nada além do padrão do kit, trocar pelo do kit. Se tem algum pedaço que a pessoa acrescentou, perguntar antes e juntar os dois textos, mantendo o que é dela. Se a pessoa desligou o auto-sync (não tem `Stop`), não se aplica.
-**Como testar:** JSON válido e o `command` do `Stop` contém `.backup-falhou`.
+**Te afeta se:** o `settings.json` tem hook `Stop` que roda `git push` direto na linha de comando, em vez de chamar o `.claude/hooks/auto-sync.mjs`.
+**Como aplicar:** mostrar o `command` atual desse hook `Stop` e o do `_modelo/.claude/settings.json` do kit, lado a lado. Se o atual não tem nada além do padrão antigo do kit, trocar pelo do kit. Se tem algum pedaço que a pessoa acrescentou, perguntar antes e juntar os dois textos, mantendo o que é dela. Se a pessoa desligou o auto-sync (não tem `Stop`), não se aplica.
+**Como testar:** JSON válido, o `command` do `Stop` cita `.claude/hooks/auto-sync.mjs`, e esse arquivo existe no projeto. (O aviso `.backup-falhou` hoje mora dentro do script, nunca na linha do `command`.)
 
 ## regra-bastao
 
@@ -294,6 +294,38 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o `AGENTS.md` do projeto não tem o texto `data sempre absoluta` (sem diferenciar maiúscula).
 **Como aplicar:** no `AGENTS.md` do projeto, achando cada trecho pelo texto: no parágrafo de abertura da Tabela de destinos, acrescentar no fim as duas frases do `_modelo/AGENTS.md` do kit que começam com "Data sempre absoluta" e "Pasta que falta"; nos Gatilhos, acrescentar o gatilho que começa com "deu erro" antes do de encerramento; em Rotinas, trocar as frases sobre mudança em `_contexto/` e sobre recado tratado pelas do `_modelo/AGENTS.md` do kit (arquivo de trabalho que a rotina não criou vira recado, entregável novo ela cria e avisa, sessão sem gente na frente nunca grava sozinha em `_contexto/`, decisões ou memória do assistente, recado tratado apaga ou vai pro diário). No `_memoria/decisoes.md`, acrescentar ao cabeçalho a linha que começa com "O que entra", do `_modelo/_memoria/decisoes.md` do kit. No `_contexto/agora.md`, se a seção "Pendências" ainda tem o texto de exemplo entre colchetes, trocar pelo do kit; se já tem pendência de verdade, não mexer. Mostrar o antes e o depois.
 **Como testar:** o `AGENTS.md` do projeto tem "Data sempre absoluta", "deu erro" e "nunca grava sozinha"; o cabeçalho do `decisoes.md` tem "O que entra".
+
+## chave-de-rede-social
+
+**O que é:** o backup automático, a `/faxina`, o `/compartilhar` e o `/checar` passam a reconhecer a mesma lista de cara de chave, agora com token da Meta, do Instagram, do Google, do Telegram, do Slack, do Stripe e do Mercado Livre, mais sequência longa logo depois de "token", "chave" ou "senha". Também olham dentro do `.env.example`, que sobe pro GitHub, e o backup passa a ler texto de qualquer tamanho até 50 MB.
+**Por quê:** num teste com uma loja inventada, o token do Instagram colado numa nota foi pro GitHub sem nenhum aviso: a lista antiga só conhecia chave de OpenAI, GitHub e AWS. Resposta de API salva em `dados/` também carrega o token no link da próxima página.
+**Te afeta se:** o `.claude/hooks/auto-sync.mjs` do projeto não contém a palavra `conferirPreparados` (hook antigo). Nunca testar rodando o hook antigo: ele não conhece o `--conferir` e faria o backup de verdade.
+**Como aplicar:** o `.claude/hooks/auto-sync.mjs`, o script da `/faxina` e o do `/compartilhar` novos chegam pelo atualizador junto do núcleo. Depois de aplicar, rodar `node .claude/skills/faxina/scripts/faxina.mjs` e olhar a lista `segredos`: arquivo que já estava no backup e agora aparece ali tem a chave no histórico do GitHub, então a chave tem que ser trocada no serviço (gerar uma nova, gravar no `.env`, apagar a velha). Explicar isso em uma frase por arquivo.
+**Como testar:** `node .claude/hooks/auto-sync.mjs --conferir` imprime `[]` (ou a lista do que está preparado com cara de chave) e não cria commit.
+
+## atualizador-fora-do-backup
+
+**O que é:** a pasta `.sabinos/`, onde o atualizador guarda a cópia de segurança e o próprio motor, passa a ficar fora do backup, menos o recibo `instalado.json`, que diz qual versão está instalada.
+**Por quê:** o motor e o `.gitignore` interno subiam pro GitHub a cada atualização sem servir pra nada fora deste computador, e a `/faxina` achava que a pasta inteira estava fora.
+**Te afeta se:** `git check-ignore -q .sabinos/atualizar-projeto.mjs` falha no projeto.
+**Como aplicar:** no `.gitignore` do projeto, logo acima da linha `# ponte pro Codex, criada em tempo de uso` (sem ela, no fim da lista de bloqueio), acrescentar três linhas: `# atualizador do kit: copia de seguranca e motor valem so neste computador; o recibo sobe`, `.sabinos/*` e `!.sabinos/instalado.json`. Se `git ls-files .sabinos` lista mais que o `instalado.json`, tirar os outros do backup com `git rm --cached <arquivo>` (o arquivo continua no disco).
+**Como testar:** `git check-ignore .sabinos/atualizar-projeto.mjs` imprime o caminho e `git check-ignore .sabinos/instalado.json` não imprime nada.
+
+## segunda-opiniao-na-dose
+
+**O que é:** a segunda opinião deixa de rodar antes de todo ok. Ela entra sozinha antes do ok do que gasta dinheiro, publica, envia pra fora, apaga ou muda a estrutura de pastas e skills, e quando a pessoa pede ("revisa", "se autoverifica"); o resto segue sem revisão. O `/iniciar` e o `/atualizar` param de reler o que já chegou no começo da conversa.
+**Por quê:** cada revisão com revisor separado custou perto de 100 mil tokens e um minuto e meio de espera num teste, e um dia comum tinha 18 pedidos de ok. Reler o `AGENTS.md` e os arquivos do começo de conversa custava mais de 4 mil tokens por sessão sem trazer nada novo.
+**Te afeta se:** o `AGENTS.md` do projeto tem, nos Gatilhos, a linha que começa com "- vai pedir o ok da pessoa".
+**Como aplicar:** a skill `segunda-opiniao`, o `/iniciar` e o `/atualizar` novos chegam pelo atualizador junto do núcleo. No `AGENTS.md` do projeto, na seção Gatilhos, trocar a linha inteira que começa com "- vai pedir o ok da pessoa" pela linha de mesmo assunto do `_modelo/AGENTS.md` do kit (a que começa com "- vai pedir o ok de algo que gasta"). Mostrar o antes e o depois.
+**Como testar:** o `AGENTS.md` do projeto contém "vai pedir o ok de algo que gasta" e não contém mais "vai pedir o ok da pessoa".
+
+## memoria-na-hora
+
+**O que é:** decisão e fato do negócio passam a ser gravados na hora, como o diário, em vez de esperar o fim da sessão; fornecedor ou contato com telefone, email ou preço ganha ficha em `_contexto/pessoas/` já na primeira vez; e cliente, encomenda grande ou campanha que vai durar ganha pasta própria pela rota leve do `/novo-projeto`.
+**Por quê:** num teste com uma loja inventada, sessão que caísse antes do `/atualizar` perdia a decisão do dia; o fornecedor com telefone e preço ficou preso numa linha de diário que a `/faxina` arquivaria em 90 dias; e nada no projeto dizia como nasce a pasta de um cliente.
+**Te afeta se:** a Tabela de destinos do `AGENTS.md` do projeto não tem a frase "decisão e fato do negócio vão na hora".
+**Como aplicar:** no `AGENTS.md` do projeto, seção Tabela de destinos, achando cada trecho pelo texto: na primeira frase, trocar "Diário e `licoes.md` vão na hora;" por "Diário, `licoes.md`, decisão e fato do negócio vão na hora (sessão que cai antes do fim não perde o que se decidiu);"; trocar a linha "contato que aparece pela segunda vez →" por "contato com telefone, email ou preço, ou que aparece pela segunda vez →" (o destino continua igual); e logo abaixo da linha "trabalho de projeto → a pasta dele", acrescentar "- cliente, encomenda grande ou campanha que vai durar → pasta própria, pela rota leve de `../.claude/skills/novo-projeto/SKILL.md`". O `/atualizar` novo chega pelo atualizador. Mostrar o antes e o depois.
+**Como testar:** o `AGENTS.md` do projeto contém "decisão e fato do negócio vão na hora", "contato com telefone, email ou preço" e "pela rota leve".
 
 ## contatos-e-prazo
 

@@ -222,7 +222,8 @@ test('cara de chave fica fora do backup, o resto sobe, e o recado some quando re
     assert.match(readFileSync(join(r.a, 'config.md'), 'utf8'), /chave = sk-/, 'o arquivo continua no disco')
     const recado = join(r.a, '_memoria', 'recados', '2026-10-05-dono-auto-sync-segurou.md')
     const texto = readFileSync(recado, 'utf8')
-    assert.match(texto, /^de: dono\ndesde: 2026-10-05\nprecisa de ação: sim\n/)
+    // o mesmo cabecalho de todo recado (de, quando, precisa de acao), que o /iniciar le
+    assert.match(texto, /^de: dono\nquando: 2026-10-05\nprecisa de ação: sim\n/)
     assert.match(texto, /- config\.md: tem cara de chave de API/)
     assert.ok(!texto.includes(CHAVE_FALSA), 'o recado nunca repete a chave')
     // a resposta seguinte, sem nada novo, nao reescreve o recado nem faz commit
@@ -233,6 +234,59 @@ test('cara de chave fica fora do backup, o resto sobe, e o recado some quando re
     assert.ok(!existsSync(recado), 'resolvido, o recado sai')
     assert.ok(!temNoRemoto(r, '_memoria/recados/2026-10-05-dono-auto-sync-segurou.md'))
   } finally { rmSync(r.raiz, { recursive: true, force: true }) }
+})
+
+test('token do Instagram, chave no .env.example e chave em texto grande ficam fora; hash e exemplo sobem', () => {
+  const r = montar()
+  // montados por partes: maiuscula, minuscula e digito, nunca um token inteiro escrito
+  const corpo = n => 'Ab1Cd2Ef3G'.repeat(Math.ceil(n / 10)).slice(0, n)
+  try {
+    writeFileSync(join(r.a, 'notas-instagram.md'), 'Token de acesso do Instagram: ' + 'IGQV' + corpo(120) + '\n')
+    writeFileSync(join(r.a, '.env.example'), 'OPENAI_API_KEY=' + CHAVE_FALSA + '\n')
+    writeFileSync(join(r.a, 'export.csv'), 'a,b\n'.repeat(700000) + 'segredo,' + CHAVE_FALSA + '\n')
+    writeFileSync(join(r.a, 'hash.md'), 'key sha256 ' + 'a3f9'.repeat(16) + '\n')
+    writeFileSync(join(r.a, 'doc.md'), 'Authorization: Bearer ' + 'APP_' + 'USR-12345678-031820-X-12345678\n')
+    assert.equal(autoSync(r.a, AGORA), 'enviado')
+    assert.ok(temNoRemoto(r, 'hash.md') && temNoRemoto(r, 'doc.md'), 'canario: o que nao e chave subiu')
+    for (const arq of ['notas-instagram.md', '.env.example', 'export.csv']) assert.ok(!temNoRemoto(r, arq), `${arq} nao subiu`)
+    const texto = readFileSync(join(r.a, '_memoria', 'recados', '2026-10-05-dono-auto-sync-segurou.md'), 'utf8')
+    assert.match(texto, /- notas-instagram\.md: tem cara de token do Instagram/)
+    assert.match(texto, /- \.env\.example: tem cara de chave de API/)
+  } finally { rmSync(r.raiz, { recursive: true, force: true }) }
+})
+
+test('--conferir lista o preparado com cara de chave, sai 1, e nao commita nem tira do stage', () => {
+  const r = montar()
+  try {
+    writeFileSync(join(r.a, 'config.md'), `chave = ${CHAVE_FALSA}\n`)
+    writeFileSync(join(r.a, 'ok.md'), 'normal\n')
+    git(r.a, 'add', '-A')
+    const s = spawnSync(process.execPath, [SCRIPT, '--conferir'], { cwd: r.a, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: r.a } })
+    assert.equal(s.status, 1)
+    assert.deepEqual(JSON.parse(s.stdout), [{ rel: 'config.md', motivo: 'tem cara de chave de API' }])
+    assert.match(git(r.a, 'diff', '--cached', '--name-only'), /config\.md/, 'continua preparado: quem decide e a skill')
+    assert.equal(git(r.a, 'log', '--format=%s', '-1'), 'inicio', 'nada commitado')
+    git(r.a, 'reset', '-q', '--', 'config.md')
+    const limpo = spawnSync(process.execPath, [SCRIPT, '--conferir'], { cwd: r.a, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: r.a } })
+    assert.equal(limpo.status, 0)
+    assert.deepEqual(JSON.parse(limpo.stdout), [])
+  } finally { rmSync(r.raiz, { recursive: true, force: true }) }
+})
+
+test('--conferir sem git sai 2 (nunca verde sem conferir) e opcao errada nunca faz backup', () => {
+  const solta = mkdtempSync(join(tmpdir(), 'auto-sync-'))
+  const r = montar()
+  try {
+    writeFileSync(join(solta, 'x.md'), 'chave = ' + CHAVE_FALSA + '\n')
+    const s = spawnSync(process.execPath, [SCRIPT, '--conferir'], { cwd: solta, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: solta } })
+    assert.equal(s.status, 2)
+    assert.match(s.stderr, /nao consegui listar/)
+    writeFileSync(join(r.a, 'novo.md'), 'algo\n')
+    const e = spawnSync(process.execPath, [SCRIPT, '--conferi'], { cwd: r.a, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: r.a } })
+    assert.equal(e.status, 3)
+    assert.equal(git(r.a, 'log', '--format=%s', '-1'), 'inicio', 'nada commitado')
+    assert.ok(!temNoRemoto(r, 'novo.md'), 'nada enviado')
+  } finally { rmSync(solta, { recursive: true, force: true }); rmSync(r.raiz, { recursive: true, force: true }) }
 })
 
 test('arquivo acima do limite fica fora do backup e o recado diz o tamanho', () => {

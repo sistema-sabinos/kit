@@ -20,13 +20,41 @@ const REDE_MS = 60000
 const LIMITE_BYTES = 50 * 1024 * 1024
 const TRAVA_VELHA_MS = 10 * 60 * 1000
 const SEM_INTERNET_TOLERA_MS = 24 * 60 * 60 * 1000
-// so assinatura forte de chave: falso positivo aqui segura arquivo bom do backup
-const CHAVES = [
+// Lista unica de cara de chave do kit: a /faxina, o /compartilhar e o verificar-kit
+// importam daqui. So assinatura forte: falso positivo segura arquivo bom do backup.
+// Formatos conferidos em 2026-10-05, a partir das regras do gitleaks (github.com/gitleaks/
+// gitleaks, config/gitleaks.toml) pra Meta EAA, Google AIza, Telegram, Slack e Stripe, mas
+// nao iguais a elas: aqui sao mais largas (a Meta aceita qualquer EAA com 80+, o Telegram
+// nao exige a palavra telegram perto). Instagram IGQV (curto) e IGAA (longo) pela doc da
+// Meta; Mercado Livre e Mercado Pago APP_USR- pela doc de autenticacao do Mercado Livre.
+// Cada item: [tipo, regex por linha, confere(grupo 1)]. O ultimo pega o resto: palavra de
+// chave e, logo depois, sequencia longa com maiuscula, minuscula e digito. Hash hexadecimal
+// fica de fora pela falta de maiuscula; linha com codigo Pix copia e cola (br.gov.bcb, que e
+// publico de proposito) ou com imagem embutida (;base64,) fica de fora pelo comeco da regex.
+export const CHAVES = [
   ['chave de API', /\bsk-[A-Za-z0-9_-]{20,}/],
   ['token do GitHub', /\b(?:ghp|gho|ghs)_[A-Za-z0-9]{20,}|\bgithub_pat_[A-Za-z0-9_]{20,}/],
   ['chave da AWS', /\bAKIA[0-9A-Z]{16}\b/],
   ['chave privada', new RegExp('-----BEGIN [A-Z ]*PRIVATE ' + 'KEY-----')],
+  ['token da Meta', /\bEAA[A-Za-z0-9]{80,}/],
+  ['token do Instagram', /\bIG(?:QV|AA)[A-Za-z0-9_-]{80,}/],
+  ['chave do Google', /\bAIza[A-Za-z0-9_-]{35}/],
+  ['token do Telegram', /\b\d{5,16}:A[A-Za-z0-9_-]{34}(?![A-Za-z0-9_-])/],
+  ['token do Slack', /\bxox[abeprs]-[A-Za-z0-9-]{10,}/],
+  ['chave do Stripe', /\b(?:sk|rk)_(?:live|prod)_[A-Za-z0-9]{10,}/],
+  ['token do Mercado Livre', /\bAPP_USR-\d+-\d{6}-[0-9a-f]{20,}-\d+/],
+  ['token ou chave colada', /^(?!.*(?:br\.gov\.bcb|;base64,))[^\n]*?\b(?:[A-Za-z0-9]+_)*(?:token|chave|senha|secret|key|password|bearer)\b[^\n]{0,40}?(?<![A-Za-z0-9_-])([A-Za-z0-9_-]{60,})/i,
+    v => /[a-z]/.test(v) && /[A-Z]/.test(v) && /\d/.test(v)],
 ]
+
+// Primeira cara de chave numa linha, ou null.
+export function caraDeChave(linha) {
+  for (const [tipo, re, confere] of CHAVES) {
+    const m = re.exec(linha)
+    if (m && (!confere || confere(m[1]))) return tipo
+  }
+  return null
+}
 
 // Pela mensagem do git (LC_ALL=C fixa o idioma) so se escolhe o texto do aviso,
 // nunca se decide conflito.
@@ -109,31 +137,44 @@ function deixarRecado(dir, origem, dia, hora, conflitos) {
     `quando: ${dia} ${hora}`,
     'precisa de ação: sim',
     '',
-    `O envio automático parou porque o outro lado mudou o mesmo arquivo antes (${lista}), e o sistema nunca junta duas versões sozinho.`,
+    `O envio automático parou porque o outro lado mudou o mesmo trecho antes (${lista}), e o sistema nunca escolhe sozinho entre duas versões do mesmo trecho. Linhas diferentes do mesmo arquivo, e diário e decisões, ele junta sozinho.`,
     'Nada se perdeu: o trabalho daqui está salvo neste computador, num commit que ainda não subiu.',
     'Rodar /syncar, que resolve junto com a pessoa e apaga este recado no fim.',
     '',
   ].join('\n'))
 }
 
-// Tira do commit o que esta preparado e nao pode subir. O arquivo continua no disco,
-// intacto; so fica fora do backup ate a pessoa resolver.
-function segurar(dir, limite) {
-  const preparados = git(dir, ['-c', 'core.quotepath=false', 'diff', '--cached', '--name-only', '-z', '--diff-filter=ACMR'], 30000, true).out.split('\0').filter(Boolean)
+// O que esta preparado (git add) e nao pode subir: cara de chave ou acima do limite.
+// So lista; o /syncar manual usa isto pela linha de comando (--conferir).
+export function conferirPreparados(dir, limite = LIMITE_BYTES) {
+  const lista = git(dir, ['-c', 'core.quotepath=false', 'diff', '--cached', '--name-only', '-z', '--diff-filter=ACMR'], 30000, true)
+  // sem git, ou o git falhou: nunca devolver lista vazia, que pareceria "nada a segurar"
+  if (!lista.ok) throw new Error(`nao consegui listar o que esta preparado: ${lista.err || 'pasta sem git'}`)
+  const preparados = lista.out.split('\0').filter(Boolean)
   const segurados = []
   for (const rel of preparados) {
     let st
     try { st = statSync(join(dir, rel)) } catch { continue }
     if (st.size > limite) { segurados.push({ rel, motivo: `passa de ${Math.round(limite / 1024 / 1024)} MB` }); continue }
-    // .env nunca chega aqui (o .gitignore barra); teste traz chave falsa de proposito
-    if (basename(rel).startsWith('.env') || rel.endsWith('.test.mjs') || st.size > 2 * 1024 * 1024) continue
+    // .env nunca chega aqui (o .gitignore barra), mas o .env.example sobe e e onde chave
+    // de verdade costuma ficar esquecida; teste traz chave falsa de proposito. Texto de
+    // qualquer tamanho abaixo do limite e lido: so o que mudou passa por aqui.
+    const nome = basename(rel)
+    if ((nome.startsWith('.env') && nome !== '.env.example') || rel.endsWith('.test.mjs')) continue
     let buf
     try { buf = readFileSync(join(dir, rel)) } catch { continue }
     if (buf.subarray(0, 8000).includes(0)) continue
-    const txt = buf.toString('utf8')
-    const achou = CHAVES.find(([, re]) => re.test(txt))
-    if (achou) segurados.push({ rel, motivo: `tem cara de ${achou[0]}` })
+    let achou = null
+    for (const linha of buf.toString('utf8').split(/\r?\n/)) if ((achou = caraDeChave(linha))) break
+    if (achou) segurados.push({ rel, motivo: `tem cara de ${achou}` })
   }
+  return segurados
+}
+
+// Tira do commit o que nao pode subir. O arquivo continua no disco, intacto; so fica
+// fora do backup ate a pessoa resolver.
+function segurar(dir, limite) {
+  const segurados = conferirPreparados(dir, limite)
   for (const s of segurados) git(dir, ['reset', '-q', '--', s.rel])
   return segurados
 }
@@ -152,7 +193,7 @@ function avisarSegurados(dir, origem, dia, segurados) {
   const nome = existente || `${dia}${fim}`
   const texto = [
     `de: ${origem}`,
-    `desde: ${nome.slice(0, 10)}`,
+    `quando: ${nome.slice(0, 10)}`,
     'precisa de ação: sim',
     '',
     'Estes arquivos ficaram fora do backup no GitHub (o resto subiu normal):',
@@ -285,6 +326,22 @@ function rodada(dir, agora, limiteBytes) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  try { autoSync(process.env.CLAUDE_PROJECT_DIR || process.cwd()) } catch {}
-  process.exitCode = 0
+  const dir = process.env.CLAUDE_PROJECT_DIR || process.cwd()
+  if (process.argv[2] === '--conferir') {
+    // /syncar: lista o que nao pode subir do que ja esta preparado, sem commitar nada.
+    // Sai 1 quando acha, 2 quando nao conseguiu conferir, pra a skill nao seguir no automatico.
+    try {
+      const r = conferirPreparados(dir)
+      console.log(JSON.stringify(r, null, 1))
+      process.exitCode = r.length ? 1 : 0
+    } catch (e) { console.error(`erro: ${e.message}`); process.exitCode = 2 }
+  } else if (process.argv[2]) {
+    // o Stop do Claude Code nunca passa argumento: argumento estranho e digitacao errada,
+    // e digitacao errada nunca pode virar backup de verdade
+    console.error(`opcao desconhecida: ${process.argv[2]} (a unica e --conferir)`)
+    process.exitCode = 3
+  } else {
+    try { autoSync(dir) } catch {}
+    process.exitCode = 0
+  }
 }

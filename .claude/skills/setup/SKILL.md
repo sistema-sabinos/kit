@@ -65,10 +65,11 @@ Com a classificação em mãos, escolher a rota:
   Se a pessoa escolher preencher sozinha, encerrar a sessão e esperar ela chamar de
   novo. Se escolher a conversa, oferecer o ritmo antes de começar, com este texto:
 
-  > "Dois ritmos: o completo, com 17 perguntas (uns 20 minutos, e a memória fica
-  > bem melhor), ou o rápido, com as 11 que eu não consigo trabalhar sem (uns 10
-  > minutos; as outras 6 ficam anotadas pra você responder depois, quando quiser).
-  > Qual prefere?"
+  > "Dois ritmos: o completo, com 17 perguntas (uns 20 minutos só nelas, e a
+  > memória fica bem melhor), ou o rápido, com as 11 que eu não consigo trabalhar
+  > sem (uns 10 minutos; as outras 6 ficam anotadas pra você responder depois,
+  > quando quiser). Depois das perguntas ainda vêm umas confirmações rápidas e eu
+  > monto tudo: conte uns 40 minutos no completo e uns 25 no rápido. Qual prefere?"
 
   Seguir então a **rota conversa**: fazer as perguntas na ordem dos blocos (A a F),
   no formato de 4 partes. No ritmo completo, são as 17, pulando as marcadas como
@@ -284,6 +285,10 @@ clientes com processo de entrega), `freelancer` (solo, vende serviço), `solopre
 Antes de buscar fora, consultar a biblioteca local em `_modelo/templates/skills/`:
 o que já existe pronto ali cobre boa parte dos casos comuns.
 
+Sem internet, ou com o `npx` falhando: anotar no `tarefas.md` do projeto "buscar
+skills prontas com o /find-skills", dizer isso em uma linha e seguir só com a
+biblioteca local; nunca pular o passo calado.
+
 Depois, rodar a skill `find-skills` com termos do negócio da pessoa, em português
 **e** em inglês (exemplo: para uma clínica de estética facial, buscar tanto
 "estética facial" quanto "aesthetics clinic"; para agendamento, tanto "agendamento
@@ -334,7 +339,7 @@ Perguntar na conversa, no formato de 4 partes:
 > computador mexendo nesse projeto?
 >
 > Pergunto porque, com mais de um, cada computador assina o que faz com um nome
-> curto, e o backup sabe parar e te avisar quando dois mexerem no mesmo arquivo,
+> curto, e o backup sabe parar e te avisar quando dois mexerem no mesmo pedaço de arquivo,
 > em vez de um apagar o outro.
 >
 > Tipo: 'só eu, no notebook', 'eu e minha sócia, cada uma no seu', ou 'eu, no
@@ -547,7 +552,7 @@ Windows no git, e o backup passa a ver o mesmo arquivo como dois.
   mandam rodar a `find-skills` lá dentro, então ela vai junto, senão a instrução
   aponta pra uma skill que não existe na pasta), mais a `assistir-video` e a
   `transcribe`, que a `aprender-curso` usa pra estudar um curso em vídeo e virar
-  mentor. Das skills copiadas, nunca copiar arquivo terminado em `.test.mjs` (a `trafego` e a `agendar` trazem testes que só servem no kit). Além dessas, copiar
+  mentor. Das skills copiadas, nunca copiar arquivo terminado em `.test.mjs` (várias trazem testes que só servem no kit: `trafego`, `agendar`, `faxina`, `compartilhar` e outras; conferir no fim com uma busca por `.test.mjs` dentro do projeto, que tem que voltar vazia). Além dessas, copiar
   `otimizar-pc` só se o computador da pessoa for Windows, e a
   pasta `trafego` inteira só se a pergunta de anúncio pago acima teve resposta
   positiva ou "pretendo".
@@ -601,7 +606,9 @@ parte do de `solopreneur`; `profissional` usa uma estrutura simples: `trabalho/p
 próprias do perfil: elas entram dentro da `## Tabela de destinos` do `AGENTS.md`,
 nunca como um segundo título igual. Passar a
 estrutura de pastas proposta pela `/segunda-opiniao` (a skill desta pasta-mãe),
-mostrar e só criar depois da pessoa confirmar.
+mostrar e só criar depois da pessoa confirmar. É a única revisão com revisor
+separado do setup: a estrutura, as skills escolhidas e as respostas das outras
+confirmações do Passo 5 vão juntas, num pacote só.
 
 Pasta que nasce agora e ainda não tem arquivo (ex: `conteudo/`, `clientes/`)
 leva um `README.md` de uma linha dizendo pra que serve, no mesmo espírito do
@@ -745,7 +752,9 @@ seus posts da semana, agendados e medidos".
   4. Nunca criar arquivo por arquivo durante a entrevista. As cinco confirmações
   do Passo 5 (auto-sync, equipe e computadores, anúncio pago, Windows quando nenhuma resposta deixou
   isso claro, e a estrutura de pastas proposta) vêm antes de gerar, em bloco, e
-  não contam como quebrar essa regra.
+  não contam como quebrar essa regra. As quatro primeiras saem juntas, numa
+  mensagem só, cada uma com a resposta já sugerida pelo que a pessoa disse
+  ("backup automático: sim; computadores: notebook e o da Bia; ...; muda alguma?").
 - Depois de gerar, mostrar só o resumo do que foi criado, não o conteúdo de cada
   arquivo linha por linha.
 - Resposta vaga ou em branco não essencial, perguntada uma vez e ainda vaga: aceitar

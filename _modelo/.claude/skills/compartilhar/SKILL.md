@@ -51,13 +51,17 @@ Passo 6.
 node .claude/skills/compartilhar/scripts/compartilhar.mjs varrer <pasta>
 ```
 
-Saída 2 quer dizer que achou: `segredos` (arquivo, linha e tipo, nunca o valor)
-e `envs` (arquivo `.env` dentro da pasta). `naoVarridos` e `ilegiveis`
+Saída 2 quer dizer que achou: `segredos` (arquivo, linha e tipo, nunca o valor,
+inclusive dentro de um `.env.example`) e `envs` (arquivo `.env` dentro da pasta).
+Saída 3 é erro de digitação no comando (pasta que não existe, comando errado):
+corrigir e rodar de novo. `naoVarridos` e `ilegiveis`
 são arquivos que a varredura não conseguiu ler (planilha, PDF, arquivo grande):
 mostrar a lista e pedir que a pessoa confirme que não tem senha nem dado de
 cliente neles antes de seguir. Parar e mostrar onde está (arquivo e linha, nunca o valor), e oferecer tirar
 dali: com o sim, a chave ou senha vai pro `.env` do projeto, que não viaja, e no
-arquivo da pasta fica só o nome do serviço. Se o arquivo já estava no backup do
+arquivo da pasta fica só o nome do serviço. CPF ou dado de cliente não vai pro
+`.env`: sai do arquivo que viaja (fica só no projeto, ou some, se não é mais
+necessário). Se o arquivo já estava no backup do
 projeto (aparece em `git log --oneline -- <arquivo>`), avisar: tirar daqui não
 apaga do histórico do GitHub, então a senha tem que ser trocada no serviço. Rodar de novo até sair 0. Sem isso, nada segue.
 
@@ -119,7 +123,10 @@ Conferir:
 node .claude/skills/compartilhar/scripts/compartilhar.mjs conferir <pasta>
 ```
 
-Saída 1 lista arquivo e linha com caminho que sai da pasta. Corrigir até sair 0.
+Saída 1 lista arquivo e linha com caminho que sai da pasta (`../`) ou que só existe
+neste computador (`E:/`, `/Users/`), em `.md`, script (`.mjs`, `.js`, `.py`, `.sh`,
+`.ps1`) ou configuração (`.json`, `.yaml`, `.txt`); `linha: 0` é atalho quebrado.
+Corrigir até sair 0.
 
 ## Passo 4, conferência final
 

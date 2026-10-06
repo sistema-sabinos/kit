@@ -36,8 +36,8 @@ Rodar os comandos de leitura e classificar cada item em verde, amarelo ou vermel
 ### 3. Chaves e segredos
 
 - `.gitignore` existe e bloqueia o `.env` e as variações dele? Vale `.env*` numa linha só (o do molde) ou `.env` e `.env.*` em duas.
-- `git ls-files | grep -i "\.env"` volta vazio? (nenhum arquivo de chave rastreado)
-- `git grep -I -n -E "(API_KEY|ACCESS_TOKEN|CLIENT_SECRET|_PASSWORD)\s*[:=]\s*['\"]?[A-Za-z0-9._-]{12,}"` volta vazio? (nenhuma chave colada em arquivo versionado)
+- `git ls-files | grep -i "\.env"` volta vazio, ou só com `.env.example`? (nenhum arquivo de chave rastreado)
+- Rodar `node .claude/skills/faxina/scripts/faxina.mjs` e olhar só a lista `segredos`: é a mesma conferência de cara de chave do backup automático (OpenAI, GitHub, AWS, Meta, Instagram, Google, Telegram, Mercado Livre e outros). Pra cada arquivo da lista, `git ls-files <arquivo>` diz se ele já está no backup. Nunca procurar prefixo de chave com `grep` à mão: os próprios arquivos do kit citam os prefixos.
 - **Vermelho:** `.env` rastreado ou chave em arquivo. Conserto: mover a chave pro `.env`, tirar do arquivo, `git rm --cached` no `.env` se estiver rastreado, e avisar que a chave exposta deve ser trocada no provedor (uma vez no GitHub, considerar vazada).
 
 ### 4. Comandos (skills)

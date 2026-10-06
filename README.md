@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 4.4 (2026-10-05)
+Versão 4.5 (2026-10-06)
 
 Um sistema de trabalho com IA pro seu negócio, rodando dentro do VS Code com o Claude Code.
 
@@ -48,7 +48,7 @@ Todo o passo a passo de leigo está no [COMECE-AQUI.md](COMECE-AQUI.md): respond
 
 Dentro de cada projeto criado, outro conjunto de comandos entra em ação (`/iniciar`, `/conectar`, `/mapear`, `/atualizar`, `/checar` e mais), explicado no guia de instalação (seção 7.3); dentro do projeto, digite `/` pra ver a lista.
 
-O projeto guarda o que foi feito e por quê em `_memoria/` (diário, decisões e recados dos robôs), e vem com `/faxina` (confere uma vez por mês se a memória envelheceu e só mexe com o seu sim), `/compartilhar` (manda a pasta de um cliente ou sócio pro GitHub dela, sem senha e sem o resto do projeto) e `/segunda-opiniao` (um revisor que não viu a conversa confere toda proposta antes de você dar o ok).
+O projeto guarda o que foi feito e por quê em `_memoria/` (diário, decisões e recados dos robôs), e vem com `/faxina` (confere uma vez por mês se a memória envelheceu e só mexe com o seu sim), `/compartilhar` (manda a pasta de um cliente ou sócio pro GitHub dela, sem senha e sem o resto do projeto) e `/segunda-opiniao` (um revisor que não viu a conversa confere a proposta antes de você aprovar gasto, publicação, envio pra fora ou mudança de pasta, ou quando você pede).
 
 A marca tem duas metades em `marca/`: o visual e a voz com que o sistema escreve pro seu cliente, separada do jeito que ele fala com você. O backup automático segura arquivo com cara de senha ou grande demais, manda o resto e deixa um recado dizendo o que ficou.
 

@@ -60,6 +60,52 @@ test('planoArquivo: decisao ativa nunca arquiva, por mais velha que seja', () =>
   })
 })
 
+test('substitui com trecho citado separa duas decisoes do mesmo dia e arquiva so a certa', () => {
+  const txt = [
+    '# Decisões', '',
+    '- 2026-01-10, dono: frete grátis acima de 99. Por quê: margem.',
+    '- 2026-01-10, dono: prazo de entrega 2 dias. Por quê: forno.',
+    '- 2026-03-01, dono: frete grátis acima de 79. Por quê: concorrência. substitui: 2026-01-10 "frete grátis acima de 99"', '',
+  ].join('\r\n')
+  comProjeto({ '_memoria/decisoes.md': txt }, raiz => {
+    const p = planoArquivo(raiz, HOJE)
+    assert.deepEqual(p.ambiguas, [])
+    assert.deepEqual(p.decisoes.map(d => d.trecho), ['frete grátis acima de 99'])
+    aplicarArquivo(raiz, HOJE)
+    const fica = readFileSync(join(raiz, '_memoria', 'decisoes.md'), 'utf8')
+    assert.ok(fica.includes('prazo de entrega 2 dias'), 'a outra do mesmo dia fica')
+    assert.ok(!fica.includes('acima de 99. Por'), 'a substituida saiu')
+    assert.ok(readFileSync(join(raiz, '_memoria', 'arquivo', '2026', 'decisoes-substituidas.md'), 'utf8').includes('acima de 99'))
+  })
+})
+
+test('substitui com trecho que nao casa literal cai na regra da data, nunca some calado', () => {
+  const txt = [
+    '# Decisões', '',
+    '- 2026-01-10, dono: Parar de vender bolo de pote. Por quê: margem.',
+    '- 2026-03-01, dono: pote só em evento. Por quê: pedido grande. substitui: 2026-01-10 "Paramos de vender bolo de pote..."',
+    '- 2026-02-02, dono: a. Por quê: x.', '- 2026-02-02, dono: b. Por quê: y.',
+    '- 2026-04-01, dono: c. Por quê: z. substitui: 2026-02-02 "outra coisa"', '',
+  ].join('\n')
+  comProjeto({ '_memoria/decisoes.md': txt }, raiz => {
+    const p = planoArquivo(raiz, HOJE)
+    assert.deepEqual(p.decisoes.map(d => d.data), ['2026-01-10'], 'trecho parafraseado, uma so no dia: arquiva')
+    assert.deepEqual(p.ambiguas, [{ data: '2026-02-02', quantas: 2 }], 'trecho que nao casa, duas no dia: pergunta')
+  })
+})
+
+test('faxina roda em projeto sem o hook do backup (auto-sync recusado), com a lista minima', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'faxina-sem-hook-'))
+  try {
+    const destino = join(dir, '.claude', 'skills', 'faxina', 'scripts')
+    mkdirSync(destino, { recursive: true })
+    writeFileSync(join(destino, 'faxina.mjs'), readFileSync(fileURLToPath(new URL('./faxina.mjs', import.meta.url))))
+    writeFileSync(join(dir, 'notas.md'), 'chave ' + 'sk-' + 'a1B2c3D4e5F6g7H8i9J0k1L2' + '\n')
+    const r = JSON.parse(execFileSync(process.execPath, [join(destino, 'faxina.mjs')], { cwd: dir, encoding: 'utf8' }))
+    assert.deepEqual(r.segredos.map(s => `${s.arquivo}:${s.tipo}`), ['notas.md:chave de API'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
 test('planoArquivo: duas entradas na mesma data substituida viram ambigua, sem mover', () => {
   const txt = '## 2026-01-10, a\n\n## 2026-01-10, b\n\n## 2026-05-01, c\nsubstitui: 2026-01-10\n'
   comProjeto({ '_memoria/decisoes.md': txt }, raiz => {
@@ -113,9 +159,52 @@ test('varrerSegredos acha chave, token, CPF e pula .env, placeholder e teste', (
     const a = varrerSegredos(raiz)
     assert.ok(a.length > 0, 'canario: achou alguma coisa')
     assert.deepEqual(a.map(x => `${x.arquivo}:${x.linha}:${x.tipo}`).sort(), [
-      'acesso.md:2:senha escrita', 'cliente.md:1:CPF', 'config.txt:1:token ou chave escrita', 'notas.md:2:chave de API (sk-)',
+      'acesso.md:2:senha escrita', 'cliente.md:1:CPF', 'config.txt:1:token ou chave escrita', 'notas.md:2:chave de API',
     ])
     assert.ok(!JSON.stringify(a).includes('Zx9Qw8'), 'relatorio nunca carrega o valor')
+  })
+})
+
+// tokens falsos montados por partes, com maiuscula, minuscula e digito
+const corpo = n => 'Ab1Cd2Ef3G'.repeat(Math.ceil(n / 10)).slice(0, n)
+test('varrerSegredos pega token de Meta, Instagram, Google, Mercado Livre e chave colada sem nome', () => {
+  comProjeto({
+    'conteudo/notas-instagram.md': 'Token de acesso do Instagram (vale 60 dias): ' + 'IGQV' + corpo(120) + '\n',
+    'conteudo/meta.md': 'uso no gerenciador: ' + 'EA' + 'AB' + corpo(150) + '\n',
+    'dados/google.txt': 'gemini ' + 'AI' + 'za' + corpo(35) + '\n',
+    'dados/ml.md': 'acesso ' + 'APP_' + 'USR-1234567-031820-' + 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6' + '-123456789\n',
+    'dados/colada.md': 'a chave do Buffer: ' + corpo(70) + '\n',
+    'dados/telegram.md': 'bot ' + '1234567890:' + 'A' + corpo(34) + '\n',
+    'dados/slack.md': 'webhook ' + 'xo' + 'xb-' + '1234567890-' + corpo(24) + '\n',
+    'dados/stripe.md': 'pagamento ' + 'sk' + '_live_' + corpo(24) + '\n',
+    // nao e chave: codigo Pix copia e cola (publico de proposito) e imagem embutida
+    'dados/pix.md': '- chave pix: 00020126580014br.gov.bcb.pix0136' + 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d' + '5204000053039865802BR5913DOCE' + corpo(70) + '\n',
+    'dados/logo.md': 'key: data:image/png;base64,' + corpo(90) + '\n',
+    // nao e chave: hash hexadecimal perto da palavra, base64 de imagem, exemplo de doc
+    'dados/hash.md': 'key sha256 ' + 'a3f9'.repeat(16) + '\n',
+    'dados/doc.md': 'exemplo: Authorization: Bearer ' + 'APP_' + 'USR-12345678-031820-X-12345678\n',
+  }, raiz => {
+    const a = varrerSegredos(raiz).map(x => `${x.arquivo}:${x.tipo}`).sort()
+    assert.deepEqual(a, [
+      'conteudo/meta.md:token da Meta', 'conteudo/notas-instagram.md:token do Instagram',
+      'dados/colada.md:token ou chave colada', 'dados/google.txt:chave do Google', 'dados/ml.md:token do Mercado Livre',
+      'dados/slack.md:token do Slack', 'dados/stripe.md:chave do Stripe', 'dados/telegram.md:token do Telegram',
+    ])
+  })
+})
+
+test('varrerSegredos olha dentro do .env.example e devolve o que nao deu pra varrer', () => {
+  const chave = 'sk-' + 'a1B2c3D4e5F6g7H8i9J0k1L2'
+  comProjeto({
+    '.env.example': 'OPENAI_API_KEY=' + chave + '\n',
+    'clientes/acme/.env.example': 'GEMINI_API_KEY=sua_chave_aqui\n',
+    'dados/grande.txt': 'x'.repeat(2 * 1024 * 1024 + 10),
+  }, raiz => {
+    const naoVarridos = []
+    const a = varrerSegredos(raiz, [], naoVarridos)
+    assert.deepEqual(a.map(x => `${x.arquivo}:${x.tipo}`), ['.env.example:chave de API'])
+    assert.deepEqual(naoVarridos, ['dados/grande.txt'])
+    assert.deepEqual(relatorio(raiz, '2026-10-05').naoVarridos, ['dados/grande.txt'])
   })
 })
 
@@ -194,6 +283,13 @@ test('orfaos: so SKILL.md de outra skill, com o caminho entre crases, tira do or
   // codigo, exemplo e comentario de script nao contam
   comProjeto({ ...base, '.claude/skills/video/scripts/x.mjs': "// grava em `producao/` e `_contexto/mercado-livre.md`" }, raiz => {
     assert.deepEqual(orfaos(raiz).sort(), esperado)
+  })
+  // linha de citacao (exemplo de fala, como o do /mapear) nao conta; a mesma pasta fora da citacao conta
+  comProjeto({ ...base, '.claude/skills/mapear/SKILL.md': '> - [Salva o resultado em `producao/`]\n' }, raiz => {
+    assert.deepEqual(orfaos(raiz).sort(), esperado)
+  })
+  comProjeto({ ...base, '.claude/skills/video/SKILL.md': 'O vídeo sai em `producao/`.\n' }, raiz => {
+    assert.deepEqual(orfaos(raiz).sort(), ['_contexto/mercado-livre.md', 'meus-videos/'])
   })
   // citar videos/ nao tira meus-videos/; caminho sem crase nao conta
   comProjeto({ ...base, '.claude/skills/video/SKILL.md': 'Salva em `videos/` e em producao/ solto.' }, raiz => {

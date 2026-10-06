@@ -16,8 +16,8 @@ description: >
    automático não subiu pra nuvem, e isso entra no resumo como primeira linha
 2. Ler os recados: cada arquivo `.md` de `_memoria/recados/` (o `.gitkeep` não conta) é um aviso de robô ou de outra máquina, com `de:`, `quando:` e `precisa de ação:` no topo. Entram no resumo logo depois do backup. Projeto de antes da 4.3 pode ainda ter `robos/avisos-pendentes.md`: entra junto, e depois do resumo oferecer passar cada linha dele pra um recado. Se existir a pasta `robos/` com receitas (`.mjs`), rodar `node .claude/skills/agendar/scripts/agendador.mjs atrasados`: robô que parou de rodar entra no mesmo campo
 3. Verificar se `_contexto/empresa.md` está configurado (sem `<!-- NOT CONFIGURED -->`)
-4. Ler `_contexto/empresa.md`, `_contexto/preferencias.md`, `_contexto/estrategia.md`, `_contexto/agora.md` e `_contexto/trilha.md` (se existir)
-5. Ler `AGENTS.md` (o conteúdo real do projeto; `CLAUDE.md` é só o ponteiro `@AGENTS.md`) e, se existir, `tarefas.md`
+4. O `AGENTS.md` e os quatro do começo de conversa (`_contexto/empresa.md`, `preferencias.md`, `estrategia.md`, `agora.md`) já chegaram pela regra do começo de conversa: usar o que está na conversa, sem reler (reler custa mais de 4 mil tokens por sessão e não traz nada novo). Ler só o que ainda não foi lido nesta conversa, e o que o passo 0 trouxe de outro computador (`git diff --name-only ORIG_HEAD HEAD`, quando o pull trouxe alguma coisa)
+5. Ler, se existirem, `_contexto/trilha.md` e `tarefas.md`
 6. Apresentar o resumo e perguntar o que o usuário quer fazer. Se existir `.claude/bastao.md`
    (ponto salvo pelo `/bastao` numa conversa anterior), a pergunta vira: "Tem uma tarefa salva
    pra continuar: <primeira linha do bastão>. Retomo dela?". Com o sim, seguir a retomada da

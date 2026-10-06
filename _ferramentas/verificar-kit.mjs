@@ -7,6 +7,9 @@ import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { pathToFileURL, fileURLToPath } from 'node:url'
 import { hashArquivo, ignorado, componenteDe } from './atualizar-projeto.mjs'
+// a mesma lista de cara de chave do backup automatico do aluno: o zip nunca sai com o que
+// o backup dele seguraria
+import { caraDeChave } from '../_modelo/.claude/hooks/auto-sync.mjs'
 
 const CAMPOS_MUDANCA = ['O que é', 'Por quê', 'Te afeta se', 'Como aplicar', 'Como testar']
 
@@ -48,6 +51,10 @@ export function vazamentosNoTexto(txt, proibidos) {
   for (const m of txt.matchAll(RE_SEGREDO)) {
     if (!RE_PLACEHOLDER.test(m[2])) achados.push(`valor de segredo atribuido (${m[1]})`)
   }
+  txt.split(/\r?\n/).forEach((l, i) => {
+    const tipo = caraDeChave(l)
+    if (tipo) achados.push(`cara de ${tipo} (linha ${i + 1})`)
+  })
   return achados
 }
 
@@ -63,6 +70,8 @@ const OBRIGATORIOS = [
   '_ferramentas/lib/backup-env.mjs',
   'docs/roadmap-avancado.md',
   '_modelo/CLAUDE.md', '_modelo/AGENTS.md', '_modelo/.gitignore', '_modelo/.claude/settings.json',
+  // merge=union do diario e das decisoes: sem ele o auto-sync de equipe para em todo diario
+  '_modelo/.gitattributes',
   '_modelo/.claude/hooks/barrar-perigoso.mjs',
   '_modelo/.claude/hooks/auto-sync.mjs',
   '_modelo/_contexto/empresa.md', '_modelo/_contexto/preferencias.md',
@@ -219,6 +228,8 @@ function ehTexto(rel) {
 export function rodarGates(dirKit, opcoes = {}) {
   const falhas = []
   const avisos = []
+  // gate que nao rodou (ou rodou pela metade) nunca imprime ok calado: a regra da bancada
+  const naoRodou = []
   const arquivos = existsSync(dirKit) ? listar(dirKit) : []
   const set = new Set(arquivos)
 
@@ -230,6 +241,7 @@ export function rodarGates(dirKit, opcoes = {}) {
     // dele. Na bancada (a pasta existe e o arquivo sumiu) o aviso continua, porque ai o gate ficou cego.
     if (!PROIBIDOS.length && existsSync(dirname(caminho))) avisos.push(`Gate 1: lista de termos da bancada nao encontrada em ${caminho}; so os detectores estruturais rodaram`)
   }
+  if (!PROIBIDOS.length) naoRodou.push({ gate: 1, parcial: true, motivo: 'sem a lista de termos da bancada: rodaram so os detectores de chave e de id (normal fora da bancada)' })
 
   // Gate 1: vazamento de informacao nossa
   for (const rel of arquivos) {
@@ -341,7 +353,10 @@ export function rodarGates(dirKit, opcoes = {}) {
   if (set.has('_modelo/.claude/settings.json')) {
     const txt = readFileSync(join(dirKit, '_modelo/.claude/settings.json'), 'utf8')
     const falha5 = detalhe => falhas.push({ gate: 5, arquivo: '_modelo/.claude/settings.json', detalhe })
-    if (!txt.includes('.claude/hooks/auto-sync.mjs')) falha5('Stop do _modelo sem o auto-sync.mjs')
+    let stop = []
+    try { stop = (JSON.parse(txt).hooks?.Stop || []).flatMap(h => h.hooks || []).map(h => h.command || '') } catch { falha5('settings.json nao e JSON valido') }
+    // so vale chamado do Stop: citado em outro evento, o backup nunca roda
+    if (!stop.some(c => c.includes('.claude/hooks/auto-sync.mjs'))) falha5('Stop do _modelo sem o auto-sync.mjs')
     else if (!set.has('_modelo/.claude/hooks/auto-sync.mjs')) falha5('settings.json chama o auto-sync.mjs, que nao existe')
     else {
       const s = readFileSync(join(dirKit, '_modelo/.claude/hooks/auto-sync.mjs'), 'utf8')
@@ -392,6 +407,7 @@ export function rodarGates(dirKit, opcoes = {}) {
         })
     : []
   const nomeZip = zips[0]
+  if (!nomeZip) naoRodou.push({ gate: 7, motivo: 'sem zip ao lado do kit (normal fora da hora de empacotar)' })
   if (zips.length > 1)
     falhas.push({ gate: 7, arquivo: nomeZip, detalhe: `${zips.length} zips na pasta (${zips.join(', ')}); conferindo so o mais novo. Apagar os antigos pra nao distribuir o errado` })
   const zipDist = nomeZip ? join(pastaPai, nomeZip) : null
@@ -551,7 +567,7 @@ export function rodarGates(dirKit, opcoes = {}) {
       falhas.push({ gate: 13, arquivo: '_modelo/AGENTS.md', detalhe: `${caminho}: ${detalhe}` })
   }
 
-  return { falhas, avisos, total: arquivos.length }
+  return { falhas, avisos, naoRodou, total: arquivos.length }
 }
 
 // Gate 13. Gaveta que a Tabela de destinos e os Gatilhos chamam pelo apelido do Mapa, e nao
@@ -617,14 +633,19 @@ const NOMES = {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const dir = process.argv[2] || resolve(dirname(fileURLToPath(import.meta.url)), '..')
-  const { falhas, avisos, total } = rodarGates(dir)
+  const { falhas, avisos, total, naoRodou = [] } = rodarGates(dir)
   console.log(`Kit: ${dir} (${total} arquivos)\n`)
   for (const a of avisos) console.log(`aviso: ${a}\n`)
   for (const g of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]) {
     const desse = falhas.filter(f => f.gate === g)
-    console.log(`${desse.length ? 'FALHOU' : 'ok    '}  Gate ${g}: ${NOMES[g]}${desse.length ? ` (${desse.length})` : ''}`)
+    const nr = naoRodou.find(n => n.gate === g)
+    const estado = desse.length ? 'FALHOU' : !nr ? 'ok    ' : nr.parcial ? 'parcial' : 'n/a   '
+    console.log(`${estado}  Gate ${g}: ${NOMES[g]}${desse.length ? ` (${desse.length})` : ''}${nr && !desse.length ? `: ${nr.motivo}` : ''}`)
     for (const f of desse.slice(0, 15)) console.log(`        ${f.arquivo}: ${f.detalhe}`)
     if (desse.length > 15) console.log(`        ... e mais ${desse.length - 15}`)
   }
+  const vermelhos = new Set(falhas.map(f => f.gate)).size
+  const fora = naoRodou.filter(n => !falhas.some(f => f.gate === n.gate)).length
+  console.log(`\nResultado: ${13 - vermelhos - fora} verdes, ${vermelhos} com falha, ${fora} sem rodar inteiro${vermelhos ? '' : ' (nenhuma conferencia falhou)'}`)
   process.exit(falhas.length ? 1 : 0)
 }
