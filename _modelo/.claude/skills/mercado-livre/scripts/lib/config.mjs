@@ -8,7 +8,7 @@ import { RAIZ } from './raiz.mjs'
 export const CAMINHO_CONFIG = join(RAIZ, '_contexto', 'mercado-livre.md')
 export const NUMERICOS = new Set(['imposto_pct', 'margem_minima_rs', 'margem_minima_pct', 'margem_minima_kit_rs', 'limite_gasto_usd'])
 export const LISTAS = new Set(['fornecedores'])
-export const PADROES = { erp: 'nenhum', modelo: 'estoque', limite_gasto_usd: 4, loja_oficial: 'nao', full: 'nao', guia_de_marca: 'marca/design-guide.md' }
+export const PADROES = { erp: 'nenhum', modelo: 'estoque', limite_gasto_usd: 4, loja_oficial: 'nao', full: 'nao' }
 export const VALORES = { modelo: ['dropshipping', 'estoque'] }
 
 export function lerConfiguracao(texto) {

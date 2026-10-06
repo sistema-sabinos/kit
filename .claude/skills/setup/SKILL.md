@@ -3,8 +3,8 @@ name: setup
 description: >
   Conduz o fluxo de primeiro projeto do SabinOS. Lê o RESPONDA-AQUI.txt (ou entrevista
   na conversa quando ele está em branco), confirma o entendimento, resolve em chat o
-  que não dá pra responder num arquivo (tom, identidade visual, importação de
-  ChatGPT/Gemini), grava a identidade global do usuário em ~/.claude/CLAUDE.md,
+  que não dá pra responder num arquivo (tom, identidade visual, voz da marca),
+  grava a identidade global do usuário em ~/.claude/CLAUDE.md,
   descobre skills prontas com a find-skills, e cria o projeto novo por cópia seletiva
   do _modelo/. Use quando o usuário chamar /setup, disser "primeiro projeto",
   "configura o sistema", "vamos começar", ou quando esta pasta-mãe ainda não tiver
@@ -121,7 +121,7 @@ não sabe se foi ouvido, e passa o resto do onboarding na dúvida.
 
 ## Passo 2, perguntas que só funcionam em conversa
 
-Seis interações que não têm como vir prontas de um arquivo, sempre em chat,
+Cinco interações que não têm como vir prontas de um arquivo, sempre em chat,
 independente da rota escolhida no Passo 0:
 
 ### Tom (reação ao padrão, não pergunta aberta)
@@ -170,6 +170,10 @@ Oferecer as 4 rotas em conversa:
 Em todos os casos, perguntar pelo logo (PNG ou SVG), com variação para fundo claro
 e escuro se existir.
 
+Essa identidade vale pro conteúdo da marca (post, carrossel, proposta, slide).
+Foto de anúncio de marketplace usa as cores e as letras da categoria do produto,
+sem cor, letra ou logo da marca, e quem resolve é a `/mercado-livre`.
+
 ### Voz da marca (como escrevo no seu lugar, pro seu cliente)
 
 Logo depois do visual, no formato de 4 partes:
@@ -202,35 +206,6 @@ de escrita (nunca no tom simples do chat).
 > tenho site'."
 
 Vira o `_contexto/infra.md` do Passo 5. "Não tenho" é resposta: a seção diz "não tem".
-
-### Importação de ChatGPT/Gemini (atalho, uma linha)
-
-> "Última coisa: se você já usa ChatGPT ou Gemini com frequência, tenho um atalho
-> pra puxar o que eles já sabem de você e completar o que faltou. Quer?"
-
-Se sim, mostrar o prompt pra colar lá, sem alterar nada:
-
-```
-Preciso exportar o contexto do meu negócio das nossas conversas para configurar
-uma nova ferramenta. Responda com o que sabe sobre mim nas categorias abaixo.
-Se não souber algo, deixe em branco:
-
-NOME / NEGÓCIO / O QUE FAZ / PRINCIPAIS ATIVIDADES / CLIENTES / EQUIPE /
-FERRAMENTAS / IDENTIDADE VISUAL / TOM DE VOZ / O QUE EVITAR / OUTROS DETALHES
-```
-
-Com a resposta colada, extrair o que complementa as respostas já colhidas, mostrar
-o resumo do que muda e confirmar antes de usar. Se a pessoa não usar outro
-assistente, seguir direto sem essa etapa.
-
-Quem já usa o Claude Code ou o Codex neste computador tem memória pronta aqui
-mesmo: existe conteúdo próprio em `~/.claude/CLAUDE.md` (fora dos marcadores do
-SabinOS), arquivos em `~/.claude/projects/*/memory/` ou um `~/.codex/AGENTS.md`.
-Nesse caso, na mesma mensagem do atalho: "Vi que você já usa o Claude Code (ou o
-Codex) aqui. Posso ler o que ele já guardou de você pra não te perguntar de novo?"
-Com o sim, ler só esses arquivos, mostrar em até 6 linhas o que serve pro negócio
-e confirmar antes de usar; o resto (outros projetos, assunto pessoal) fica de fora.
-Sem o sim, nada se lê.
 
 ## Passo 3, identidade global
 
@@ -517,22 +492,32 @@ terminado em `.test.mjs`. O pacote vai inteiro ou não vai: o atendimento e o
 cobrar usam os scripts do caixa. Quem só quer uma parte recebe as três e começa
 pela que quer; as outras ficam quietas até serem chamadas. Depois, uma pergunta só, no formato de 4 partes:
 
-> "Seu negócio tem CNPJ hoje? Pergunto porque, se você é MEI, eu cuido também do DAS
-> de todo mês, da declaração anual e do teto de faturamento.
+> "Seu negócio tem CNPJ? Se tem, ele é MEI, Simples Nacional ou outro regime? Pergunto
+> porque, se você é MEI, eu cuido também do DAS de todo mês, da declaração anual e do teto
+> de faturamento. Nos outros regimes o imposto muda com o que você vende, e quem faz essa
+> conta é o contador.
 >
-> Tipo: 'sou MEI', 'ainda não tenho CNPJ', 'tenho empresa com contador' ou 'não sei'."
+> Tipo: 'sou MEI', 'Simples Nacional, tenho contador' ou 'ainda não tenho CNPJ'."
 
 - **MEI:** copiar também a pasta `mei` e anotar `**Registro:** MEI` no
   `_contexto/empresa.md` (data de abertura e tipo, a `/mei` pergunta na primeira vez).
+- **Simples Nacional:** se a pessoa disser só "Simples", confirmar se ela paga um valor
+  fixo todo mês (aí é MEI) ou uma parte de cada venda. Anotar `**Registro:** Simples
+  Nacional, com contador` ou `**Registro:** Simples Nacional, procurando contador`. A
+  `mei` fica de fora.
+- **Outro regime (Lucro Presumido, Lucro Real):** anotar `**Registro:** <regime>, com
+  contador` (ou `procurando contador`). A `mei` fica de fora.
+- **Sem contador no Simples ou em outro regime:** dizer com todas as letras que ela
+  precisa procurar um contador com urgência, e anotar no `tarefas.md` "achar um contador".
 - **Ainda não tem CNPJ:** anotar `**Registro:** sem CNPJ, vende como pessoa física`.
   A `mei` fica de fora; o `/caixa` avisa uma vez quando o Pix na conta pessoal passa do
   ponto em que o banco pode cobrar tarifa, e oferece a `mei` só se a pessoa quiser
   formalizar.
-- **Empresa com contador:** anotar `**Registro:** <o tipo que ela disser>, com contador`.
-  A `mei` fica de fora: as regras são outras e quem cuida é o contador.
-- **Não sei:** explicar em uma frase que dá pra ver no cartão do CNPJ, no site da
-  Receita, e anotar no `tarefas.md` "descobrir se o negócio é MEI e rodar `/mapear` pra
-  instalar a `/mei` se for".
+- **Não sei:** perguntar se ela paga um valor fixo todo mês (MEI) ou uma parte de cada
+  venda. Seguindo sem saber, explicar que a Consulta Optantes da Receita mostra de graça,
+  só com o CNPJ, se a empresa é MEI ou Simples (`regime-consulta`, no fatos.md da
+  `/comecar-a-vender`), anotar `**Registro:** regime a conferir` e, no `tarefas.md`,
+  "descobrir o regime do CNPJ e me contar".
 
 E em seguida:
 

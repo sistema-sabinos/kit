@@ -439,6 +439,36 @@ test('entrada pasta-secrets-protegida procura chave versionada em qualquer profu
   }
 })
 
+test('entrada estilo-do-anuncio junta no bloco estilo-anuncio que ja existe', () => {
+  const txt = readFileSync(fileURLToPath(new URL('./mudancas.md', import.meta.url)), 'utf8')
+  const ini = txt.indexOf('## estilo-do-anuncio')
+  assert.ok(ini >= 0, 'canario: a entrada existe')
+  const resto = txt.slice(ini + 3)
+  const fim = resto.indexOf('\n## ')
+  const entrada = fim < 0 ? resto : resto.slice(0, fim)
+  const aplicar = entrada.split(/\r?\n/).find(l => l.startsWith('**Como aplicar:**')) || ''
+  assert.ok(aplicar, 'canario: a entrada tem Como aplicar')
+  assert.match(aplicar, /se o bloco `estilo-anuncio` já existe/)
+  assert.match(aplicar, /dentro dele/)
+  assert.match(aplicar, /nunca um segundo bloco/)
+})
+
+test('entrada estilo-do-anuncio so afeta projeto com a skill gerar-imagens', () => {
+  const txt = readFileSync(fileURLToPath(new URL('./mudancas.md', import.meta.url)), 'utf8')
+  const ini = txt.indexOf('## estilo-do-anuncio')
+  assert.ok(ini >= 0, 'canario: a entrada existe')
+  const resto = txt.slice(ini + 3)
+  const fim = resto.indexOf('\n## ')
+  const entrada = fim < 0 ? resto : resto.slice(0, fim)
+  const afeta = entrada.split(/\r?\n/).find(l => l.startsWith('**Te afeta se:**')) || ''
+  assert.ok(afeta, 'canario: a entrada tem Te afeta se')
+  // a skill vem antes dos dois bracos, senao o braco do guia vale pra projeto sem o pacote
+  const ou = afeta.indexOf(' ou ')
+  assert.ok(ou > 0, 'canario: o Te afeta se tem os dois bracos')
+  assert.match(afeta.slice(0, ou), /o projeto tem `\.claude\/skills\/gerar-imagens\/` e:/)
+  assert.match(afeta.slice(ou), /## Estilo por categoria/)
+})
+
 test('gate 3 exige .secrets/ e secrets/ no .gitignore da pasta-mae', () => {
   const dir = kitFalso()
   try {
@@ -967,7 +997,8 @@ test('o .gitignore do _modelo libera o que o aluno produz e bloqueia o de propos
       'marca/FOTO.JPG', 'marca/anim.gif', 'docs/contrato.pdf', 'docs/proposta.docx', '.env.example',
       '_memoria/recados/.gitkeep', '.claude/skills/x/scripts/a.mjs', '.claude/settings.json', 'bem-vindo.html',
       '.claude/skills/configurar-video/referencias/teste-voz.wav',
-      '.claude/skills/video-produto/scripts/fontes/Montserrat-Bold.ttf', 'x.json']
+      '.claude/skills/video-produto/scripts/fontes/Montserrat-Bold.ttf',
+      '.claude/skills/gerar-imagens/scripts/fontes/Manrope.ttf', 'x.json']
     const fica = ['.env', '.env.local', '.origem', '.backup-falhou', '.claude/settings.local.json', 'video.mp4',
       'audio.wav', 'arte.psd', 'pacote.zip', 'node_modules/x/a.js', 'dados/chrome-perfil/Default/Preferences.json',
       'dist/a.js', '.agents/skills/x.md', 'robos/vigia.log', '.secrets/x.json', 'secrets/x.json']

@@ -51,6 +51,13 @@ qualquer outra coisa. Uma pergunta por mensagem, no formato de 4 partes
 (pergunta simples, por que pergunto, dois exemplos, repergunta se vier vago).
 Pular o que `empresa.md` já responde.
 
+Se já existir, conferir o imposto antes de qualquer conta de preço: quando o
+`imposto_fonte` gravado começa por `MEI` e a linha `**Registro:**` do
+`empresa.md` não diz MEI (ou não existe), fazer uma vez a pergunta 3 abaixo,
+gravar a linha `**Registro:**` e refazer `imposto_pct` e `imposto_fonte` pela
+regra dela, mostrando à pessoa o antes e o depois; versões antigas do kit
+gravavam esse 0 pra todo mundo, e sem isso ele seguiria nas contas de margem.
+
 1. **Quem te fornece, e como chega o catálogo?** Por que pergunto: cada
    fornecedor vira uma pasta em `fornecedores/`, e o jeito que o catálogo chega
    (PDF, planilha, site) muda a primeira skill que roda. Exemplos: "um
@@ -59,11 +66,27 @@ Pular o que `empresa.md` já responde.
 2. **Você usa algum sistema de gestão, tipo Bling?** Por que pergunto: com ERP
    o cadastro sai por API e o anúncio nasce de lá; sem ERP você publica direto
    no painel pelo checklist. Exemplos: "uso o Bling" / "nada, faço na mão".
-3. **Você é MEI? Se não, qual a alíquota de imposto sobre a venda neste mês,
-   e quem te passou?** Por que pergunto: o imposto entra em toda conta de
-   margem. MEI paga um valor fixo por mês (o DAS), então a alíquota sobre a
-   venda fica 0. Exemplos: "sou MEI" / "6%, minha contadora". Sem resposta, o
-   campo fica vazio e toda skill de preço para até ele existir.
+3. **Seu CNPJ é MEI, Simples Nacional ou outro regime? E quanto de imposto sai
+   de cada venda neste mês?** Antes, ler a linha `**Registro:**` do
+   `empresa.md` e o `regime` do `_contexto/trilha.md`; o que já estiver lá não
+   se pergunta. Por que pergunto: o imposto entra em toda conta de margem. MEI
+   paga um valor fixo por mês (o DAS), então a alíquota sobre a venda fica 0;
+   no Simples e nos outros regimes vale a alíquota do mês que o contador passa
+   ou que está no extrato do PGDAS-D. Simples sem esse número: perguntar se o
+   CNPJ tem 12 meses ou mais e se vendeu mais de R$ 180 mil nos últimos 12
+   meses; com 12 meses ou mais e até R$ 180 mil, gravar a alíquota do fato
+   `simples-anexo1` de `.claude/skills/comecar-a-vender/referencias/fatos.md`
+   com `imposto_fonte: estimativa, conferir com o contador`; nos outros casos,
+   o campo fica vazio e vira pendência pro contador. Essa estimativa só vale
+   pra quem revende produto comprado pronto (dropshipping e revenda): quem
+   fabrica ou monta o que vende cai noutro anexo do Simples, e o campo fica
+   vazio com pendência pro contador. Exemplos: "sou MEI" /
+   "Simples, 6%, minha contadora". Sem resposta, o campo fica vazio e toda
+   skill de preço para até ele existir. Sem linha `**Registro:**` no
+   `empresa.md`, gravá-la com os valores do bloco Loja do `/setup` (`MEI`;
+   `sem CNPJ, vende como pessoa física`; `Simples Nacional, com contador` ou
+   `procurando contador`; `<regime>, com contador` ou `procurando contador`;
+   `regime a conferir`).
 4. **Quanto você precisa lucrar por venda, no mínimo, em reais e em
    porcentagem?** Por que pergunto: é o piso que reprova anúncio novo antes de
    gastar tempo nele. Exemplos: "R$ 8 e 15%" / "R$ 12 num kit".
@@ -75,9 +98,7 @@ Pular o que `empresa.md` já responde.
 6. **Como está a sua conta: reputação, loja oficial, Full?** Por que pergunto:
    reputação muda o desconto de frete, e loja oficial muda como você briga em
    catálogo. Exemplos: "verde, sem loja oficial, sem Full" / "conta nova".
-7. **Qual guia de marca manda nas fotos?** Por que pergunto: o agente `ml-designer` lê esse
-   arquivo antes de qualquer imagem. Padrão: o guia visual da marca (linha "a marca" do Mapa no `AGENTS.md`).
-8. **Você vende pelo dropshipping (o fornecedor despacha em seu nome) ou com
+7. **Você vende pelo dropshipping (o fornecedor despacha em seu nome) ou com
    estoque seu? E em que estado é o seu CNPJ?** Por que pergunto: no drop a
    auditoria confere o fornecedor (mesmo estado, prazo de despacho), e a foto e
    o estoque vêm dele. Exemplos: "drop, SP" / "estoque próprio, MG".
@@ -185,6 +206,14 @@ ler `dados/pipeline/<slug>/status.json` e continuar da etapa atual:
    seguir (se a pessoa quiser revisar, pausar).
 2. Imagens pendentes: conferir `anuncios/<slug>/fotos-cruas/`. Vazia é
    bloqueio: pedir as fotos e parar. Senão, antes de despachar, rodar
+   `node .claude/skills/gerar-imagens/scripts/estilo.mjs --slug <slug>`. Saída 2
+   (a categoria do produto ainda sem estilo): sugerir o estilo pelo tipo de
+   produto (a lista no topo de cada estilo em
+   `.claude/skills/gerar-imagens/referencias/estilos.md`), mostrar as cores e as
+   letras dele, e com o sim da pessoa gravar a linha `<categoria>: <estilo>` no
+   bloco `estilo-anuncio` do `_contexto/mercado-livre.md` (sem o bloco, copiar o
+   do `referencias/configuracao-exemplo.md`). Rodar de novo até sair 0 e só então
+   seguir. Depois rodar
    `node .claude/skills/gerar-imagens/scripts/motor.mjs` e ver o degrau:
    - `gemini`: conferir na web, hoje, o preço por imagem na página oficial de
      preços do Google AI, contar as fotos de clima do `mapa_fotos`, mostrar a

@@ -24,12 +24,17 @@ autoral e dá ao dono o botão de derrubar o seu anúncio.
 
 ## Antes de começar
 
-1. Ler `dados/pipeline/<slug>/copy.json` (o `mapa_fotos`), o guia de marca
-   (`guia_de_marca` em `_contexto/mercado-livre.md`, padrão
-   o guia visual da marca, linha "a marca" do Mapa no `AGENTS.md`; pasta de
-   projeto com `marca/` própria usa a dela; seção "Estilo por categoria") e
-   `referencias/estilos.md` desta skill. Guia sem a seção "Estilo por
-   categoria": usar o estilo Limpo.
+1. Ler `dados/pipeline/<slug>/copy.json` (o `mapa_fotos`) e
+   `referencias/estilos.md` desta skill, e rodar
+   `node .claude/skills/gerar-imagens/scripts/estilo.mjs --slug <slug>`. Ele lê a
+   `categoria` do `dados/pipeline/<slug>/status.json` e devolve o estilo, as
+   cores e as letras dessa categoria, que são o que as fotos usam (cor, letra e
+   logo da loja ficam de fora). Saída 2 (a categoria ainda sem estilo): numa
+   chamada direta desta skill, sugerir o estilo pelo tipo de produto (a lista no
+   topo de cada estilo), mostrar as cores e as letras dele e, com o sim da
+   pessoa, gravar a linha `<categoria>: <estilo>` no bloco `estilo-anuncio` do
+   `_contexto/mercado-livre.md`; rodar de novo até sair 0. Pelo `ml-designer`:
+   parar e devolver a saída 2 como bloqueio no recibo.
 2. Listar `anuncios/<slug>/fotos-cruas/`. Vazia: parar e explicar como
    fotografar (produto inteiro, fundo branco ou bem claro, luz de janela, de
    frente e um pouco de cima, celular na horizontal da mesa). No dropshipping, a
@@ -86,7 +91,8 @@ as imagens finais em `anuncios/<slug>/imagens/NN-papel.jpg`, na ordem do mapa.
    ponto de partida. Cenario escuro e borda clara em volta do produto: refazer o
    recorte com `--feather 0` e `--limiar 248`.
 5. **Peça com texto** (infográfico, medidas, modo de uso): escrever
-   `anuncios/<slug>/pecas/NN-papel.html` no estilo da categoria, com a foto
+   `anuncios/<slug>/pecas/NN-papel.html` com as cores e as letras do estilo
+   (a letra só pelo nome e pelo peso, sem caminho; nenhum logo da loja), com a foto
    composta ou o recorte como `<img>` relativo, e rodar
    `node .claude/skills/gerar-imagens/scripts/montar-peca.mjs --html anuncios/<slug>/pecas/NN-papel.html --out anuncios/<slug>/imagens/NN-papel.jpg`.
    Texto curto, grande, no máximo 3 cores. Todo número vem da ficha do
@@ -101,7 +107,7 @@ Abrir cada imagem (Read) e conferir, refazendo sozinho o que falhar:
 - Escala: um objeto de 18 cm não pode parecer gigante perto de uma porta.
 - Cenário: nenhum produto, pote, texto ou pessoa em lugar nenhum da imagem,
   inclusive desfocado no fundo. Achou: gerar de novo esse cenário.
-- Cores dentro do estilo, no máximo 3 por peça.
+- Cores e letras do estilo, no máximo 3 cores por peça, nenhum logo da loja.
 
 ## Prancha e aprovação
 

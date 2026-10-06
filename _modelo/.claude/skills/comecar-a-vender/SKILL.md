@@ -47,6 +47,14 @@ Se `_contexto/trilha.md` existe, ler o bloco `trilha` e a tabela, dizer em uma
 frase em que etapa ela está e continuar dali. Se não existe, criar copiando
 `referencias/trilha-modelo.md` e começar pela etapa 0.
 
+Trilha sem a linha `regime` (começou antes da versão 4.9): antes de seguir, fazer
+a pergunta do regime da etapa 0 ("Você já tem CNPJ?") e gravar a linha. Se a
+resposta não for MEI e o `_contexto/mercado-livre.md` já tem `imposto_fonte`
+começando por `MEI` (a etapa 6 antiga gravava assim pra todo mundo), apagar
+`imposto_pct` e `imposto_fonte` e refazer pela regra do item 6 da etapa 6,
+mostrando à pessoa o antes e o depois; sem isso o 0 velho seguiria nas contas de
+margem, porque a etapa 8 não pergunta o que já está gravado.
+
 Ao fim de cada etapa: marcar `feito` com a data na tabela, atualizar
 `etapa_atual` e dizer qual é a próxima em uma frase.
 
@@ -70,15 +78,31 @@ Perguntas, nesta ordem, uma por mensagem:
    `investimento`.
 4. **Quantas horas por semana você tem pra isso?** Exemplos: "10 horas" / "só fim
    de semana". Gravar em `horas`.
-5. **Você tem emprego com carteira assinada?** Por que pergunto: dá pra ser MEI
-   tendo carteira, mas isso pode mexer em direitos como o seguro-desemprego, e
-   quem confirma é o contador. Exemplos: "tenho, CLT" / "não, sou autônomo".
-   Gravar em `carteira`. Se tiver, acrescentar na seção "Sem validação do
-   contador" da trilha a linha "MEI com carteira assinada: efeitos em direitos".
-6. **Você tem conta gov.br? Sabe o nível (bronze, prata, ouro)?** Exemplos: "tenho,
+5. **Você já tem CNPJ? Se tem, ele é MEI, Simples Nacional ou outro regime?**
+   Por que pergunto: quem ainda não tem abre o MEI na etapa 4; quem já tem segue
+   com o CNPJ dele, e no Simples e nos outros regimes o imposto sai de cada
+   venda. Exemplos: "não tenho" / "Simples, tenho contador". Vago ou "não sei":
+   reperguntar se paga um valor fixo todo mês (é MEI) ou uma parte de cada
+   venda; sem resposta, explicar que a Consulta Optantes da Receita mostra de
+   graça, só com o CNPJ, se a empresa é MEI ou Simples (`regime-consulta`), e
+   gravar `a conferir`. Gravar em `regime`: `sem CNPJ`, `MEI`,
+   `Simples Nacional`, `outro: <nome>` ou `a conferir`.
+6. Só com `regime` `sem CNPJ`: **Você tem emprego com carteira assinada?** Por
+   que pergunto: dá pra ser MEI tendo carteira, mas isso pode mexer em direitos
+   como o seguro-desemprego, e quem confirma é o contador. Exemplos: "tenho,
+   CLT" / "não, sou autônomo". Gravar em `carteira`. Se tiver, acrescentar na
+   seção "Sem validação do contador" da trilha a linha "MEI com carteira
+   assinada: efeitos em direitos".
+7. **Você tem conta gov.br? Sabe o nível (bronze, prata, ouro)?** Exemplos: "tenho,
    não sei o nível" / "não tenho". Gravar em `govbr`.
-7. **Você já tem contador?** Exemplos: "não tenho" / "tenho, o da minha mãe".
+8. **Você já tem contador?** Exemplos: "não tenho" / "tenho, o da minha mãe".
    Gravar em `contador`.
+
+Se o `_contexto/empresa.md` ainda não tem a linha `**Registro:**`, gravá-la
+depois da pergunta do contador, com os mesmos valores do bloco Loja do
+`/setup`: `MEI`; `sem CNPJ, vende como pessoa física`; `Simples Nacional, com
+contador` ou `Simples Nacional, procurando contador`; `<regime>, com contador`
+ou `<regime>, procurando contador`; `regime a conferir`.
 
 Quando o `contador` vier `não tem` ou `procurando`, já nesta etapa acrescentar
 na seção "Sem validação do contador" da trilha as linhas "inscrição municipal"
@@ -101,9 +125,11 @@ pode acabar entrando antes.
 Regra: nunca apresentar um total que omita um custo que depende; o total
 sempre vem junto com a frase do que ficou de fora.
 
-**Nos dois modelos:** conta gov.br prata ou ouro (grátis); MEI com ocupação de
-comércio (abrir é grátis, `mei-das` por mês); inscrição estadual (grátis,
-obrigatória pra quem vende mercadoria, `ie-comercio`); inscrição municipal
+**Nos dois modelos:** conta gov.br prata ou ouro (grátis); CNPJ: quem ainda não
+tem abre MEI com ocupação de comércio (abrir é grátis, `mei-das` por mês); quem
+já tem no Simples ou em outro regime segue com ele, o imposto sai de cada venda
+e precisa de um contador, que vale procurar com urgência; inscrição estadual
+(grátis, obrigatória pra quem vende mercadoria, `ie-comercio`); inscrição municipal
 (verificar com o contador); nota fiscal desde a primeira venda (`ml-nota-mei`),
 pelo app Nota Fiscal Fácil se o estado dela tiver (`nff`, conferir o estado na
 hora) ou pelo emissor do Mercado Livre com certificado A1 (`ml-emissor`,
@@ -132,8 +158,8 @@ escolher. Guiar pelo print. Anotar o nível alcançado em `govbr`.
 
 ## Etapa 2: nicho e produto
 
-O nicho vem antes do MEI porque a ocupação do MEI sai do produto
-(`mei-ocupacao`). Com o dinheiro e as horas da etapa 0:
+Pra quem ainda não tem CNPJ, o nicho vem antes do MEI porque a ocupação do MEI
+sai do produto (`mei-ocupacao`). Com o dinheiro e as horas da etapa 0:
 
 1. Conversar 3 a 5 ideias de nicho (gosto dela, o que ela conhece, ticket que
    cabe no investimento).
@@ -148,12 +174,17 @@ O nicho vem antes do MEI porque a ocupação do MEI sai do produto
 
 Ler `referencias/fornecedor.md` e seguir. No dropshipping, fornecedor do mesmo
 estado dela, sempre. A mensagem de primeiro contato sai pronta; quem manda é ela.
-Avisar que fechar com o fornecedor pode esperar o CNPJ da etapa 4: fornecedor
-de drop costuma pedir.
+Fornecedor de drop costuma pedir CNPJ pra fechar: quem ainda não tem CNPJ pode
+esperar o da etapa 4; quem já tem usa o dele.
 Fornecedor aprovado no checklist vira `fornecedores/<nome>/fornecedor.md`,
 copiado de `referencias/fornecedor-modelo.md` e preenchido.
 
 ## Etapa 4: MEI e inscrições
+
+Com `regime` MEI, Simples Nacional ou outro: confirmar que o CNPJ existe, pular
+os itens 1 e 2, conferir no cartão do CNPJ se as atividades cobrem o produto
+(se não cobrem, falar com o contador antes de anunciar) e seguir do 3. Com
+`a conferir`, resolver antes pela Consulta Optantes (`regime-consulta`).
 
 1. Portal do Empreendedor no gov.br, "Quero ser MEI". Avisar antes: anúncio
    patrocinado que cobra pra abrir MEI é golpe (`mei-abrir`).
@@ -163,7 +194,9 @@ copiado de `referencias/fornecedor-modelo.md` e preenchido.
    automática com o MEI ou se pede no portal da SEFAZ), com fonte, e guiar.
 4. Inscrição municipal: "confirme com o seu contador se a sua prefeitura exige".
 5. Anotar o CNPJ em `cnpj` e o número da inscrição estadual em
-   `inscricao_estadual` na trilha (são públicos; senha nunca).
+   `inscricao_estadual` na trilha (são públicos; senha nunca). Só quando o MEI
+   foi aberto nesta etapa: gravar `regime: MEI` na trilha e `**Registro:** MEI`
+   no `_contexto/empresa.md`; quem chegou com Simples ou outro regime mantém o dele.
 
 ## Etapa 5: como emitir nota
 
@@ -180,7 +213,8 @@ Decidir com ela:
 
 ## Etapa 6: conta no Mercado Livre e Mercado Pago
 
-1. Criar a conta já como empresa, com o CNPJ do MEI.
+1. Criar a conta já como empresa, com o CNPJ (o do MEI aberto na etapa 4, ou o
+   que ela já tinha).
 2. Validação de identidade (`ml-identidade`): documento e rosto; até 72 horas.
 3. Conta Negócio no Mercado Pago (`mp-conta-pj`).
 4. Apresentar o Programa Decola (`ml-decola`) com o custo: é dinheiro parado de
@@ -191,9 +225,22 @@ Decidir com ela:
    precisa cobrir o DAS.
 6. Gravar o `_contexto/mercado-livre.md` mínimo, copiando
    `.claude/skills/mercado-livre/referencias/configuracao-exemplo.md` e
-   preenchendo `modelo` e `estado` do bloco `trilha`, `erp: nenhum`,
-   `imposto_pct: 0`, `imposto_fonte: MEI, imposto fixo no DAS` e
-   `reputacao: nova`. A etapa 8 completa o resto pela entrevista.
+   preenchendo `modelo` e `estado` do bloco `trilha`, `erp: nenhum` e
+   `reputacao: nova`. O imposto sai pelo `regime` da trilha:
+   - MEI: `imposto_pct: 0` e `imposto_fonte: MEI, imposto fixo no DAS`.
+   - Simples Nacional: a alíquota do mês que o contador passou. Sem ela,
+     perguntar se o CNPJ tem 12 meses ou mais e se vendeu mais de R$ 180 mil
+     nos últimos 12 meses. Com 12 meses ou mais e até R$ 180 mil, a do
+     `simples-anexo1`, com `imposto_fonte: estimativa, conferir com o contador`.
+     Nos outros casos, deixar vazio e acrescentar na seção "Sem validação do
+     contador" a linha "alíquota do Simples": empresa com menos de 12 meses
+     entra na faixa pela receita proporcional, e essa conta é do contador.
+     A estimativa só vale pra quem revende produto comprado pronto
+     (dropshipping e revenda): quem fabrica ou monta o que vende cai noutro
+     anexo do Simples, então o campo fica vazio com a mesma linha pro contador.
+   - Outro regime e `a conferir`: a alíquota que o contador passou, ou vazio, e
+     a etapa 8 pergunta de novo.
+   A etapa 8 completa o resto pela entrevista.
 
 ## Etapa 7: só no produto próprio, primeiro lote e material
 
@@ -249,7 +296,7 @@ Gravar na trilha, como gatilhos:
 - Full: só pra produto próprio, porque é o Mercado Livre guardando e
   despachando o seu estoque.
 - Contador: se ainda não tem, agora.
-- Sair do MEI: média acima de R$ 6.750 por mês, conversar com o contador
+- Sair do MEI (só quem é MEI): média acima de R$ 6.750 por mês, conversar com o contador
   (`mei-teto`).
 
 Fechar dizendo que dali em diante o trabalho é na esteira: `/mercado-livre`.

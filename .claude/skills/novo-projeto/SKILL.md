@@ -407,22 +407,32 @@ terminado em `.test.mjs`. O pacote vai inteiro ou não vai: o atendimento e o
 cobrar usam os scripts do caixa. Quem só quer uma parte recebe as três e começa
 pela que quer; as outras ficam quietas até serem chamadas. Depois, uma pergunta só, no formato de 4 partes:
 
-> "Seu negócio tem CNPJ hoje? Pergunto porque, se você é MEI, eu cuido também do DAS
-> de todo mês, da declaração anual e do teto de faturamento.
+> "Seu negócio tem CNPJ? Se tem, ele é MEI, Simples Nacional ou outro regime? Pergunto
+> porque, se você é MEI, eu cuido também do DAS de todo mês, da declaração anual e do teto
+> de faturamento. Nos outros regimes o imposto muda com o que você vende, e quem faz essa
+> conta é o contador.
 >
-> Tipo: 'sou MEI', 'ainda não tenho CNPJ', 'tenho empresa com contador' ou 'não sei'."
+> Tipo: 'sou MEI', 'Simples Nacional, tenho contador' ou 'ainda não tenho CNPJ'."
 
 - **MEI:** copiar também a pasta `mei` e anotar `**Registro:** MEI` no
   `_contexto/empresa.md` (data de abertura e tipo, a `/mei` pergunta na primeira vez).
+- **Simples Nacional:** se a pessoa disser só "Simples", confirmar se ela paga um valor
+  fixo todo mês (aí é MEI) ou uma parte de cada venda. Anotar `**Registro:** Simples
+  Nacional, com contador` ou `**Registro:** Simples Nacional, procurando contador`. A
+  `mei` fica de fora.
+- **Outro regime (Lucro Presumido, Lucro Real):** anotar `**Registro:** <regime>, com
+  contador` (ou `procurando contador`). A `mei` fica de fora.
+- **Sem contador no Simples ou em outro regime:** dizer com todas as letras que ela
+  precisa procurar um contador com urgência, e anotar no `tarefas.md` "achar um contador".
 - **Ainda não tem CNPJ:** anotar `**Registro:** sem CNPJ, vende como pessoa física`.
   A `mei` fica de fora; o `/caixa` avisa uma vez quando o Pix na conta pessoal passa do
   ponto em que o banco pode cobrar tarifa, e oferece a `mei` só se a pessoa quiser
   formalizar.
-- **Empresa com contador:** anotar `**Registro:** <o tipo que ela disser>, com contador`.
-  A `mei` fica de fora: as regras são outras e quem cuida é o contador.
-- **Não sei:** explicar em uma frase que dá pra ver no cartão do CNPJ, no site da
-  Receita, e anotar no `tarefas.md` "descobrir se o negócio é MEI e rodar `/mapear` pra
-  instalar a `/mei` se for".
+- **Não sei:** perguntar se ela paga um valor fixo todo mês (MEI) ou uma parte de cada
+  venda. Seguindo sem saber, explicar que a Consulta Optantes da Receita mostra de graça,
+  só com o CNPJ, se a empresa é MEI ou Simples (`regime-consulta`, no fatos.md da
+  `/comecar-a-vender`), anotar `**Registro:** regime a conferir` e, no `tarefas.md`,
+  "descobrir o regime do CNPJ e me contar".
 
 E em seguida:
 
@@ -483,7 +493,10 @@ perguntar outro nome antes de seguir.
   senão as skills visuais vão perguntar cor e fonte de novo. Só fica neutro se
   ela ainda não tiver visual definido em lugar nenhum, avisando que dá pra
   preencher depois com o `/atualizar`, dentro da pasta do projeto (nomear o
-  comando; sem isso a frase vira lacuna e sai um chute).
+  comando; sem isso a frase vira lacuna e sai um chute). Essa identidade vale
+  pro conteúdo da marca (post, carrossel, proposta, slide). Foto de anúncio de
+  marketplace usa as cores e as letras da categoria do produto, sem cor, letra
+  ou logo da marca, e quem resolve é a `/mercado-livre`.
 - `marca/tom-de-voz.md`: na mesma pergunta do visual, perguntar se este projeto
   fala com o cliente de outro jeito (outro público, outro tratamento). Mesma voz,
   copiar o `tom-de-voz.md` preenchido do projeto irmão; voz própria, as três

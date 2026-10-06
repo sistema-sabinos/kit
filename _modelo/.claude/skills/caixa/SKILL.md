@@ -60,6 +60,7 @@ saber se sobrou dinheiro depois do custo, oferecer o template financeiro pelo `/
 (ele precifica e calcula a margem); o caixa só conta o que entrou.
 
 Projeto com contador: oferecer mandar o `mes` mais os dois arquivos do mês pra ele.
+`procurando contador` não conta.
 
 ## Conta pessoal e o 31º Pix
 

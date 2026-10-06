@@ -13,7 +13,7 @@ description: >
 
 ## Dependências
 
-- `_contexto/empresa.md`: o que vende, por onde vende (cada canal tem taxa própria), regime tributário se estiver anotado
+- `_contexto/empresa.md`: o que vende, por onde vende (cada canal tem taxa própria), regime tributário (a linha **Registro:**)
 - `dados/`: planilha de custos, de vendas, extrato do banco ou do marketplace, o que existir
 - `_contexto/licoes.md`, seção "Dados e análise": erros de cálculo já cometidos antes
 

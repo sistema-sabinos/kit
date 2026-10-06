@@ -43,13 +43,17 @@ export async function comPagina(fazer, { viewport, raiz, carregar } = {}) {
   }
 }
 
-export async function fotografar(fonte, { saida, largura, altura, raiz, carregar }) {
+// css: estilo extra (as fontes embutidas) colado depois de abrir a pagina.
+// conferir(pagina): roda antes da foto; se lancar, a foto nao sai.
+export async function fotografar(fonte, { saida, largura, altura, raiz, carregar, css, conferir }) {
   const opcoes = opcoesDaFoto(saida)
   mkdirSync(dirname(saida), { recursive: true })
   await comPagina(async pagina => {
     if (fonte.startsWith('file:')) await pagina.goto(fonte, { waitUntil: 'networkidle' })
     else await pagina.setContent(fonte, { waitUntil: 'networkidle' })
+    if (css) await pagina.addStyleTag({ content: css })
     await pagina.evaluate(() => document.fonts.ready)
+    if (conferir) await conferir(pagina)
     await pagina.screenshot({ path: saida, ...opcoes })
   }, { viewport: { width: largura, height: altura }, raiz, carregar })
 }

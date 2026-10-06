@@ -13,6 +13,7 @@ horas:
 govbr:
 carteira:
 contador:
+regime:
 cnpj:
 inscricao_estadual:
 ```
@@ -20,6 +21,8 @@ inscricao_estadual:
 `modelo`: dropshipping ou estoque (produto próprio grava estoque).
 
 `contador`: tem, não tem ou procurando.
+
+`regime`: sem CNPJ, MEI, Simples Nacional, outro: <nome> ou a conferir.
 
 | Etapa | Situação | Data | Nota |
 |---|---|---|---|

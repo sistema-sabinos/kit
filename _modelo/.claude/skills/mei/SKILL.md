@@ -10,8 +10,9 @@ description: >
 
 # /mei, DAS, declaração e teto
 
-Esta skill é só pra quem é MEI. Quem ainda não tem CNPJ usa o `/caixa` sem ela; quem é
-microempresa tem contador cuidando disso.
+Esta skill é só pra quem é MEI. Quem ainda não tem CNPJ usa o `/caixa` sem ela; no
+Simples Nacional e nos outros regimes o imposto sai de cada venda, e quem faz a conta é o
+contador.
 
 Todo valor e prazo vem do `referencias/fatos.md`, com a fonte oficial e o dia em que foi
 conferido. O faturamento do ano vem do `/caixa`. Comandos rodam da raiz do projeto, com

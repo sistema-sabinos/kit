@@ -34,7 +34,7 @@ A própria tela `vendedores.mercadolivre.com.br/video/creator/upload` traz 3 avi
 
 - **Grave na vertical:** o vídeo tem que ocupar a tela toda, **sem bordas** (nada de letterbox nem pillarbox).
 - **Exclua marcas d'água:** sem logotipos ou selos **de outros aplicativos** (ex.: marca de editor de vídeo ou de rede social).
-- **Foque no produto: "não divulgue seu negócio nem outras marcas".** Consequência dura: o vídeo não leva a marca da sua loja nem a identidade visual das suas peças. Nada de logo no clipe. Isso é o contrário das imagens do anúncio, que costumam levar identidade.
+- **Foque no produto: "não divulgue seu negócio nem outras marcas".** Consequência dura: o vídeo não leva a marca da sua loja nem a identidade visual das suas peças. Nada de logo no clipe. As fotos do anúncio seguem a mesma regra: estilo da categoria do produto, sem a marca da loja.
 - **Tamanho máximo: 280 MB.**
 - O upload **exige o link do anúncio** que será mostrado no vídeo.
 

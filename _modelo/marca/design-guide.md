@@ -2,6 +2,7 @@
 
 > Você pode editar esse arquivo a qualquer momento.
 > As skills de carrossel, proposta e slide leem este arquivo antes de criar qualquer visual.
+> As fotos do anúncio seguem a categoria do produto (`/gerar-imagens`) e usam outro arquivo.
 
 ---
 
@@ -39,15 +40,6 @@
 - Border-radius dos cards:
 - Botões:
 - Sombras:
-
----
-
-## Estilo por categoria
-
-> Lido pela /gerar-imagens nas fotos do anúncio. Estilos de partida: Limpo,
-> Colorido e Natural (explicados na própria skill). Uma linha por categoria.
-
-- **Padrão:** Limpo
 
 ---
 

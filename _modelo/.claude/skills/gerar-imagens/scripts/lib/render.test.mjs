@@ -19,6 +19,7 @@ function falso(registro, { launchFalha = false, screenshotFalha = false } = {}) 
             return {
               goto: async (u, op) => registro.push(['goto', u, op]),
               setContent: async (h) => registro.push(['setContent', h]),
+              addStyleTag: async (op) => registro.push(['addStyleTag', op]),
               evaluate: async () => {},
               screenshot: async (op) => {
                 if (screenshotFalha) throw new Error('quebrou')
@@ -92,4 +93,29 @@ test('fotografar cria a pasta de saida quando ela ainda nao existe', async () =>
     await fotografar('<p>oi</p>', { saida, largura: 100, altura: 100, carregar: falso([]) })
     assert.ok(existsSync(dirname(saida)))
   } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('fotografar com css injeta o estilo depois do goto e confere antes da foto', async () => {
+  const r = []
+  const conferir = async pagina => { assert.ok(pagina.screenshot); r.push(['conferir']) }
+  await fotografar('file:///a/peca.html', { saida: 'x/p.jpg', largura: 100, altura: 100, css: '@font-face {}', conferir, carregar: falso(r) })
+  const ordem = r.map(x => x[0]).filter(n => ['goto', 'addStyleTag', 'conferir', 'screenshot'].includes(n))
+  assert.deepEqual(ordem, ['goto', 'addStyleTag', 'conferir', 'screenshot'])
+  assert.deepEqual(r.find(x => x[0] === 'addStyleTag')[1], { content: '@font-face {}' })
+})
+
+test('fotografar com conferir que lanca nao tira a foto', async () => {
+  const r = []
+  const conferir = async () => { r.push(['conferir']); throw new Error('letra "Poppins" nao esta embutida') }
+  await assert.rejects(fotografar('<p>oi</p>', { saida: 'x/p.jpg', largura: 100, altura: 100, conferir, carregar: falso(r) }), /Poppins/)
+  assert.ok(r.some(x => x[0] === 'conferir'), 'o conferir precisa ter rodado')
+  assert.ok(!r.some(x => x[0] === 'screenshot'))
+  assert.deepEqual(r.at(-1), ['close'])
+})
+
+test('fotografar sem css nao chama addStyleTag', async () => {
+  const r = []
+  await fotografar('<p>oi</p>', { saida: 'x/p.jpg', largura: 100, altura: 100, carregar: falso(r) })
+  assert.ok(r.some(x => x[0] === 'screenshot'), 'a foto precisa ter saido')
+  assert.ok(!r.some(x => x[0] === 'addStyleTag'))
 })

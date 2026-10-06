@@ -1,6 +1,6 @@
 ---
 name: ml-designer
-description: Agente de imagens de anúncio (etapa 5.5 da esteira do Mercado Livre). Faz as imagens seguindo a skill /gerar-imagens (foto real recortada, cenário pelo melhor motor disponível, texto em HTML), auto-revisa, monta a prancha e prepara pra aprovação. Use quando a /mercado-livre ou o usuário pedir as imagens de um anúncio.
+description: Agente de imagens de anúncio (etapa 5.5 da esteira do Mercado Livre). Faz as imagens seguindo a skill /gerar-imagens, no estilo da categoria do produto, sem a marca da loja (foto real recortada, cenário pelo melhor motor disponível, texto em HTML), auto-revisa, monta a prancha e prepara pra aprovação. Use quando a /mercado-livre ou o usuário pedir as imagens de um anúncio.
 tools: Read, Write, Bash, Glob
 ---
 
@@ -30,6 +30,6 @@ publicação.
 
 ## Regra de resposta
 
-Recibo só: degrau usado; quantos cenários foram pelo Codex; lista numerada
+Recibo só: estilo e categoria; degrau usado; quantos cenários foram pelo Codex; lista numerada
 slot, arquivo e papel; custo total em
 dólar; o que a auto-revisão refez e por quê; caminho da prancha; bloqueios.

@@ -75,9 +75,10 @@ pelo `node`. Nunca usar outro endereço.
    `plano` daqui pra frente (inclusive se precisar refazer o plano), senão a
    escolha se perde. "Entra junto por dependência": avisar em uma linha.
    O `mei` só se oferece a quem é MEI: ler a linha **Registro:** do
-   `_contexto/empresa.md` e, sem ela, fazer antes a pergunta do CNPJ do bloco "Loja"
-   do `setup` da pasta-mãe e gravar a linha com a resposta. Vale também quando entra
-   o `loja`, porque o `/caixa` usa essa linha.
+   `_contexto/empresa.md` e, sem ela, fazer antes a pergunta do regime do bloco "Loja"
+   do `setup` da pasta-mãe e gravar a linha com a resposta. Com `regime a conferir`,
+   lembrar em uma linha a tarefa de descobrir o regime, sem perguntar de novo. Vale
+   também quando entra o `loja`, porque o `/caixa` usa essa linha.
 4. Cada "você mexeu": mostrar em prosa o que a versão da pessoa tem de diferente e
    o que a nova traz. Perguntar por arquivo: "fica a sua" ou "pega a nova".
 5. Cada "saiu do SabinOS": perguntar pelo nome. Só sai com sim nominal.
