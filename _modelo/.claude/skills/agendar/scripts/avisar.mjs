@@ -26,7 +26,7 @@ export function caminhoRecados(raiz) {
 
 // nome de arquivo seguro no Windows e no Mac: minuscula sem acento, numero e hifen
 export function origemDoRobo(robo) {
-  const limpo = String(robo).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  const limpo = String(robo).normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
   return `robo-${limpo || 'sem-nome'}`
 }

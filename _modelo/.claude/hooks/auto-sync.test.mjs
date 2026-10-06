@@ -155,6 +155,27 @@ test('rebase pela metade (o /syncar resolvendo) nao e tocado', () => {
   } finally { rmSync(r.raiz, { recursive: true, force: true }) }
 })
 
+test('revert pela metade (REVERT_HEAD) nao e tocado', () => {
+  const r = montar()
+  try {
+    const gd = git(r.a, 'rev-parse', '--absolute-git-dir')
+    writeFileSync(join(gd, 'REVERT_HEAD'), git(r.a, 'rev-parse', 'HEAD') + '\n')
+    writeFileSync(join(r.a, 'x.md'), 'x\n')
+    assert.equal(autoSync(r.a, AGORA), 'em-andamento')
+    assert.equal(git(r.a, 'status', '--porcelain', 'x.md'), '?? x.md', 'nao commitou os marcadores do revert')
+  } finally { rmSync(r.raiz, { recursive: true, force: true }) }
+})
+
+test('revert ou cherry-pick de varios commits pela metade (sequencer) nao e tocado', () => {
+  const r = montar()
+  try {
+    mkdirSync(join(git(r.a, 'rev-parse', '--absolute-git-dir'), 'sequencer'))
+    writeFileSync(join(r.a, 'x.md'), 'x\n')
+    assert.equal(autoSync(r.a, AGORA), 'em-andamento')
+    assert.equal(git(r.a, 'status', '--porcelain', 'x.md'), '?? x.md', 'nao commitou no meio da sequencia')
+  } finally { rmSync(r.raiz, { recursive: true, force: true }) }
+})
+
 test('em-andamento escreve .backup-falhou so quando nao existe e nao commita', () => {
   const r = montar()
   try {

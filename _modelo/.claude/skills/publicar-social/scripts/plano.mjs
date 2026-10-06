@@ -26,7 +26,7 @@ export function brasiliaParaUTC(quando, agora = new Date()) {
   return utc
 }
 
-const semAcento = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+const semAcento = s => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim()
 
 export function lerTextoDoPost(texto) {
   const linhas = String(texto).replace(/^﻿/, '').split(/\r?\n/)

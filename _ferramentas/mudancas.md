@@ -1,6 +1,6 @@
 # Mudanças que pedem conversa
 
-> Este arquivo é lido pelo `/atualizar-sabinos` (e pela `/atualizar-kit`), nunca
+> Este arquivo é lido pelo `/atualizar-sabinos`, nunca
 > pelo aluno direto. O motor cuida de arquivo inteiro; aqui fica o que mexe num
 > arquivo que é metade do kit e metade da pessoa (`AGENTS.md`, `settings.json`,
 > `.gitignore`) ou que muda estrutura.
@@ -342,3 +342,19 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto tem a pasta `.claude/skills/triagem-atendimento/` e ainda não tem a `.claude/skills/atendimento/`.
 **Como aplicar:** oferecer o componente `loja` (que o atualizador já lista entre os que o projeto não tem) dizendo que ele substitui a triagem. Com o sim, instalar o componente, levar pro `/atendimento` o que a pessoa adaptou na triagem dela (tom, regra de política, respostas prontas), e só então mover a pasta `.claude/skills/triagem-atendimento/` pra `_contexto/arquivo/triagem-atendimento/`. O `dados/respostas-padrao.md` fica onde está, o `/atendimento` usa o mesmo arquivo. Sem o sim, nada muda.
 **Como testar:** existe `.claude/skills/atendimento/SKILL.md` e não existe `.claude/skills/triagem-atendimento/`.
+
+## equipe-se-apresenta
+
+**O que é:** computador da equipe que ainda não tem o `.origem` pergunta, logo na primeira resposta da conversa, qual nome da linha "Equipe e máquinas" ele é e grava o `.origem` antes de escrever no diário; e o Mapa passa a dar o nome do diário de quem não é o `dono`.
+**Por quê:** a regra só estava no `/iniciar`, e conversa que começava sem ele escrevia o diário e fazia o backup assinados como `dono`, misturando o trabalho de duas máquinas.
+**Te afeta se:** o `_contexto/ferramentas.md` do projeto tem a linha "Equipe e máquinas" e a linha de começo de conversa do `AGENTS.md` ainda não fala do `.origem`.
+**Como aplicar:** no `AGENTS.md` do projeto, achando cada trecho pelo texto: na seção Gatilhos, no fim da linha que começa com "começo de conversa", acrescentar a frase que começa com "Sem `.origem` na raiz", copiada da mesma linha do `_modelo/AGENTS.md` do kit; e na seção Mapa, na linha "o que foi feito em cada dia (o diário)", acrescentar depois do caminho "(`AAAA-MM-DD-<origem>.md` quando o `.origem` não é `dono`)". O `/iniciar` novo chega pelo atualizador. Mostrar o antes e o depois.
+**Como testar:** a linha de começo de conversa do `AGENTS.md` do projeto contém `.origem` e "Equipe e máquinas"; a linha do diário no Mapa contém `AAAA-MM-DD-<origem>.md`.
+
+## pasta-secrets-protegida
+
+**O que é:** as pastas `.secrets/` (onde algumas skills de fora guardam chave) e `secrets/` passam a ficar fora do backup, e o sistema fica proibido de ler o que tem dentro delas, como já era com a `secrets/`.
+**Por quê:** o `.gitignore` não conhecia nenhuma das duas, e o `!*.json` liberava o arquivo de chave, então uma chave gravada em `.secrets/` ou `secrets/` subia pro GitHub no backup automático seguinte, sem aviso.
+**Te afeta se:** `git check-ignore -q .secrets/x.json` ou `git check-ignore -q secrets/x.json` falha no projeto, ou o `deny` do `.claude/settings.json` não tem `Read(./.secrets/**)`.
+**Como aplicar:** no `.gitignore` do projeto, acrescentar as linhas `.secrets/` e `secrets/` logo abaixo de `!.env.example` (sem ela, no fim da lista de bloqueio). No `.claude/settings.json`, acrescentar `"Read(./.secrets/**)"` ao `deny`, juntando ao que já está lá e sem tirar o `Read(./secrets/**)` (mostrar o antes e o depois do `deny`). Depois rodar `git ls-files -ci --exclude-standard`, que lista tudo o que está no backup e agora fica de fora, em qualquer pasta (uma `.secrets/` dentro de skill também): se listar algum arquivo dentro de `.secrets/` ou `secrets/`, as linhas novas sozinhas não bastam, porque o backup automático continua levando o que já está no backup. Com o sim da pessoa, tirar com `git rm --cached <caminho>` só esses arquivos, um por um como a lista mostrou (o arquivo continua no disco; o resto da lista fica como está) e avisar que a chave ficou no histórico do GitHub e precisa ser trocada no serviço (gerar uma nova, guardar no `.env`, apagar a velha), como na `gitignore-fechado`. Skill da pessoa que grava em `.secrets/` passa a ser barrada na hora de ler a chave: oferecer mover a chave pro `.env` e ajustar a skill pra ler de lá.
+**Como testar:** `git check-ignore .secrets/x.json secrets/x.json` imprime os dois caminhos e `git ls-files -ci --exclude-standard` não lista nenhum arquivo dentro de `.secrets/` ou `secrets/`.

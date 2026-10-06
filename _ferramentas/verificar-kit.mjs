@@ -324,6 +324,19 @@ export function rodarGates(dirKit, opcoes = {}) {
       falhas.push({ gate: 3, arquivo: rel, detalhe: '.gitignore precisa da linha .agents/' })
     }
   }
+  // .secrets/ e onde skill de terceiro costuma gravar chave, e secrets/ e a pasta de chave do
+  // deny: as duas fora do backup do projeto (sem a linha, o !*.json leva a chave). Na pasta-mae
+  // o * so segura a da raiz; em .claude/skills/<x>/.secrets/ o !*.json vence sem a linha
+  for (const rel of ['.gitignore', '_modelo/.gitignore']) {
+    if (!set.has(rel)) continue
+    const txt = readFileSync(join(dirKit, rel), 'utf8')
+    if (!/^\.secrets\/\s*$/m.test(txt)) {
+      falhas.push({ gate: 3, arquivo: rel, detalhe: '.gitignore precisa da linha .secrets/' })
+    }
+    if (!/^secrets\/\s*$/m.test(txt)) {
+      falhas.push({ gate: 3, arquivo: rel, detalhe: '.gitignore precisa da linha secrets/' })
+    }
+  }
 
   // Gate 4: links internos resolvem
   for (const rel of arquivos) {
@@ -436,9 +449,10 @@ export function rodarGates(dirKit, opcoes = {}) {
   // a leitura do .env fica em "ask" (pergunta antes de ler, e a doc confirma que uma
   // regra de Read tambem e a que se consulta pra Edit/Write no mesmo caminho), nunca em
   // "deny", porque "deny" bloquearia de vez a escrita da chave pelo /conectar. Read(./secrets/**)
-  // continua em "deny" porque o kit nunca escreve nessa pasta.
+  // continua em "deny" porque o kit nunca escreve nessa pasta; Read(./.secrets/**) tambem,
+  // pela mesma razao (chave de skill de terceiro vai pro .env).
   const ASK_OBRIGATORIO = ['Read(./.env)', 'Read(./.env.*)']
-  const DENY_OBRIGATORIO = ['Read(./secrets/**)']
+  const DENY_OBRIGATORIO = ['Read(./secrets/**)', 'Read(./.secrets/**)']
   for (const rel of ['.claude/settings.json', '_modelo/.claude/settings.json']) {
     const settings = join(dirKit, rel)
     if (!existsSync(settings)) continue
@@ -537,26 +551,40 @@ export function rodarGates(dirKit, opcoes = {}) {
 
   // Gate 11: backup do aluno. O .gitignore do _modelo nega tudo e libera por tipo, entao
   // arquivo do kit de tipo fora da lista nasceria fora do backup de todo projeto, calado.
+  // Sem git a conferencia nao roda: vira naoRodou (uma entrada so), nunca ok com aviso.
+  const semGit11 = qual => {
+    if (!naoRodou.some(n => n.gate === 11)) naoRodou.push({ gate: 11, motivo: `git nao encontrado: ${qual} nao foi conferido; instalar o git e rodar de novo` })
+  }
   if (set.has('_modelo/.gitignore')) {
     const doModelo = arquivos.filter(r => r.startsWith('_modelo/')).map(r => r.slice('_modelo/'.length))
     const fora = foraDoBackup(join(dirKit, '_modelo'), doModelo)
-    if (fora === null) avisos.push('Gate 11: git nao encontrado; a conferencia do backup do aluno nao rodou')
+    if (fora === null) semGit11('o backup do aluno')
     else for (const r of fora) falhas.push({ gate: 11, arquivo: `_modelo/${r}`, detalhe: 'fora do backup do aluno: liberar o tipo ou o caminho no _modelo/.gitignore' })
   }
   // O .gitignore da pasta-mae tambem e fechado por padrao: arquivo do kit fora do _modelo/
   // que ele deixa fora some do repositorio da pasta-mae do aluno, calado.
   if (set.has('.gitignore')) {
+    // .gitignore de antes da 4.4 era aberto (lista do que fica fora): o /atualizar-kit antigo
+    // nao o troca, entao a conferencia final acusa. Fora do ramo do git, pra rodar sem ele.
+    const primeira = readFileSync(join(dirKit, '.gitignore'), 'utf8').split('\n').map(l => l.trim())
+      .find(l => l && !l.startsWith('#'))
+    if (primeira !== '*') falhas.push({ gate: 11, arquivo: '.gitignore', detalhe: "é o antigo (aberto); seguir o passo 'Arquivos misturados da pasta-mãe' do .claude/skills/atualizar-kit/SKILL.md" })
     const fora = foraDoBackup(dirKit, arquivos.filter(r => !r.startsWith('_modelo/')))
-    if (fora === null) avisos.push('Gate 11: git nao encontrado; a conferencia do .gitignore da pasta-mae nao rodou')
+    if (fora === null) semGit11('o .gitignore da pasta-mae')
     else for (const r of fora) falhas.push({ gate: 11, arquivo: r, detalhe: 'fora do repositorio da pasta-mae: liberar o tipo ou o caminho no .gitignore da pasta-mae' })
   }
 
   // Gate 12: travessao (U+2014 e U+2013) em qualquer texto do kit. O bem-vindo e os guias
   // ja tinham teste proprio; o resto do kit passou calado com ele dentro ate a 4.3.
+  // Tambem a faixa de acento literal (U+0300 a U+036F entre colchetes) em .mjs e .js: invisivel
+  // no editor e facil de quebrar numa camada de escape; o conserto e a classe p{M} com a flag u.
+  const faixaAcento = '[' + String.fromCharCode(0x300) + '-' + String.fromCharCode(0x36f) + ']'
   for (const rel of arquivos) {
     if (!ehTexto(rel) && !rel.endsWith('.html')) continue
+    const ehCodigo = /\.(mjs|js)$/i.test(rel)
     readFileSync(join(dirKit, rel), 'utf8').split('\n').forEach((l, i) => {
       if (/[\u2013\u2014]/.test(l)) falhas.push({ gate: 12, arquivo: rel, detalhe: `linha ${i + 1}: travessao (U+2014 ou U+2013)` })
+      if (ehCodigo && l.includes(faixaAcento)) falhas.push({ gate: 12, arquivo: rel, detalhe: `linha ${i + 1}: faixa de acento literal (U+0300 a U+036F); usar a classe p{M} com a flag u` })
     })
   }
 

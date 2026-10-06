@@ -634,6 +634,9 @@ seus posts da semana, agendados e medidos".
 
 1. Adicionar a pasta do projeto no `.gitignore` da pasta-mãe, uma linha só
    (ex: `padaria-central/`).
+   Nota: no `.gitignore` fechado (o de hoje, que começa com `*`) essa linha é
+   redundante e inofensiva, porque a pasta de projeto já fica fora; ela segura
+   o `.gitignore` antigo, aberto, de quem veio de versão anterior à 4.4.
 2. Semear `_contexto/agora.md` do projeto:
    - **Onde paramos:** "Projeto recém-criado pelo SabinOS."
    - **Pendências:** "Abrir esta pasta no VS Code e rodar /iniciar",

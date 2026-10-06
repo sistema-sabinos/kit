@@ -98,10 +98,10 @@ export function carimbo(d = new Date()) {
   return { dia: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`, hora: `${p(d.getHours())}:${p(d.getMinutes())}` }
 }
 
-// rebase ou merge pela metade: alguem (o /syncar, a pessoa) esta resolvendo, nao mexer
+// rebase, merge, revert ou cherry-pick pela metade: alguem (o /syncar, a pessoa) esta resolvendo, nao mexer
 function emAndamento(dir) {
   const g = git(dir, ['rev-parse', '--absolute-git-dir']).out
-  return ['rebase-merge', 'rebase-apply', 'MERGE_HEAD', 'CHERRY_PICK_HEAD'].some(n => existsSync(join(g, n)))
+  return ['rebase-merge', 'rebase-apply', 'MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'sequencer'].some(n => existsSync(join(g, n)))
 }
 
 function contar(dir, intervalo) {

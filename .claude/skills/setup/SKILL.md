@@ -735,6 +735,9 @@ seus posts da semana, agendados e medidos".
 
 1. Adicionar a pasta do projeto no `.gitignore` da pasta-mãe, uma linha só (ex:
    `loja-de-bolos/`).
+   Nota: no `.gitignore` fechado (o de hoje, que começa com `*`) essa linha é
+   redundante e inofensiva, porque a pasta de projeto já fica fora; ela segura
+   o `.gitignore` antigo, aberto, de quem veio de versão anterior à 4.4.
 2. Semear `_contexto/agora.md` do projeto:
    - **Onde paramos:** "Sistema recém-criado pelo SabinOS."
    - **Pendências:** "Abrir esta pasta no VS Code e rodar /iniciar", "/conectar
@@ -767,7 +770,8 @@ seus posts da semana, agendados e medidos".
      `{{FONTE_CORPO}}` pelas fontes dele. Guia vazio: visual neutro (`#FAFAF7`,
      `#2F5D50`, `#1F2328`, `#FFFFFF`, fonte `Inter` nas duas);
    - `{{LINK_FONTES}}` pela linha `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=<Fonte>:wght@400;700&display=swap">`
-     quando a fonte existe no Google Fonts (uma por fonte), ou por nada;
+     quando a fonte existe no Google Fonts (uma por fonte), ou por nada. Espaço no
+     nome da fonte vira `+` na URL (`Crimson Pro` fica `family=Crimson+Pro`);
    - `{{LOGO}}` por `<img class="logo" src="marca/<arquivo do logo>" alt="">` quando a
      pessoa mandou o logo no Passo 2 (o arquivo vai pra `marca/` do projeto), ou por nada;
    - `{{FATO_QUEM}}`, `{{FATO_FOCO}}` e `{{FATO_JEITO}}` pelos três fatos do teste
@@ -775,6 +779,11 @@ seus posts da semana, agendados e medidos".
    - `{{COMANDOS}}` por um `<li>` por comando da lista final do Passo 6, na mesma
      linguagem simples;
    - `{{PROXIMO_PASSO}}` pela primeira pendência do `agora.md`.
+
+   Todo texto que vem das respostas da pessoa (nome, fatos, comandos, próximo passo)
+   entra com `&` trocado por `&amp;` e `<` por `&lt;`, senão o navegador lê como
+   código e a página quebra. As tags que este passo manda pôr (`<link>`, `<img>`,
+   `<li>`) ficam como estão.
 
    Antes de mostrar, conferir no arquivo gravado que não sobrou nenhum `{{` e
    nenhum travessão (os caracteres U+2014 e U+2013; resposta colada do

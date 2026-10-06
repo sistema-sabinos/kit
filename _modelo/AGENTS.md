@@ -18,7 +18,7 @@ Pra saber X, leia Y. Única fonte de caminho do sistema: skill e regra dizem "a 
 - o que roda sozinho: `_contexto/automacoes.md`
 - site, domínio, servidor, banco, DNS: `_contexto/infra.md`
 - contato que volta (fornecedor, parceiro, quem não é cliente nem equipe): `_contexto/pessoas/`, um arquivo por nome
-- o que foi feito em cada dia (o diário): `_memoria/diario/AAAA-MM-DD.md`
+- o que foi feito em cada dia (o diário): `_memoria/diario/AAAA-MM-DD.md` (`AAAA-MM-DD-<origem>.md` quando o `.origem` não é `dono`)
 - decisão e o porquê: `_memoria/decisoes.md`
 - recado de robô ou de outra máquina: `_memoria/recados/`
 - memória fria: `_contexto/arquivo/` e `_memoria/arquivo/AAAA/`
@@ -58,7 +58,7 @@ Diário: `- HH:MM, <o que foi feito> (<arquivo>)`; origem diferente de `dono` es
 
 ## Gatilhos
 
-- começo de conversa → ler em background, sem confirmar, `empresa.md`, `preferencias.md`, `estrategia.md` e `agora.md`; tarefa visual ou texto pro cliente, também a marca. Existe `.backup-falhou` na raiz: avisar na primeira resposta, em uma linha, "Seu último backup no GitHub falhou, o trabalho está só neste computador. Rode `/syncar` pra resolver." e seguir. Buscar `precisa de ação: sim` nos recados de `_memoria/recados/`: avisar em uma linha.
+- começo de conversa → ler em background, sem confirmar, `empresa.md`, `preferencias.md`, `estrategia.md` e `agora.md`; tarefa visual ou texto pro cliente, também a marca. Existe `.backup-falhou` na raiz: avisar na primeira resposta, em uma linha, "Seu último backup no GitHub falhou, o trabalho está só neste computador. Rode `/syncar` pra resolver." e seguir. Buscar `precisa de ação: sim` nos recados de `_memoria/recados/`: avisar em uma linha. Sem `.origem` na raiz e com a linha "Equipe e máquinas" no `_contexto/ferramentas.md`: perguntar na primeira resposta qual nome da linha é este computador e gravar o `.origem` (regra do `/syncar`, seção "Outro computador") antes de escrever no diário.
 - antes de tarefa → skill de `.claude/skills/` que cubra o pedido; tarefa repetível sem skill: "Isso pode virar um comando pra próxima vez. Quer que eu crie?" (nunca pra coisa pontual)
 - "por quê", ou vai mudar algo decidido → `decisoes.md` antes
 - vai dizer "não consigo" → `ferramentas.md` antes

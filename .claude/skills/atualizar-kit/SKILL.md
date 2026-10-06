@@ -19,13 +19,14 @@ O kit instalado é uma foto do dia em que foi baixado. Toda melhoria nova (skill
 
 - Toda pasta de projeto (as que têm `_contexto/` dentro) e tudo dentro delas
 - `RESPONDA-AQUI.txt` preenchido
-- `.gitignore` da pasta-mãe (tem a lista de projetos)
 - `.git/`, `.env`, `.agents/`
 - `~/.claude/CLAUDE.md` (identidade global)
 
 ## O que é do kit e pode ser atualizado
 
 `_modelo/` inteiro, `.claude/skills/` da pasta-mãe, `_ferramentas/`, `docs/`, `VERSAO`, `README.md`, `COMECE-AQUI.md`, `AGENTS.md` e `CLAUDE.md` da pasta-mãe, e o texto do `RESPONDA-AQUI.txt` **só se ainda estiver em branco**.
+
+O `.gitignore` e o `.claude/settings.json` da pasta-mãe são metade do kit e metade da pessoa: seguem o passo "Arquivos misturados da pasta-mãe", logo depois do Passo 3.
 
 ## Passo 1, onde está o zip novo
 
@@ -70,7 +71,14 @@ Se a pessoa pedir detalhe, mostrar o diff daquele arquivo resumido em prosa (o q
 1. Antes de substituir qualquer coisa, guardar cópia da versão atual em `_kit-anterior-<AAAA-MM-DD>/` dentro da pasta-mãe, só das áreas que vão mudar. Adicionar essa pasta ao `.gitignore` da pasta-mãe, uma linha.
 2. Copiar os arquivos aprovados por cima. Arquivo "sumiu" só se apaga com aprovação explícita e nominal.
 3. `RESPONDA-AQUI.txt`: substituir só se o atual estiver em branco (nenhuma resposta escrita).
-4. Rodar `node _ferramentas/verificar-kit.mjs .` (obrigatório, não pular: em teste real este passo ficou pra trás) e mostrar ao usuário a última linha da saída, a que começa com `Resultado:` (quantas conferências ficaram verdes, quantas falharam e quantas não rodaram inteiras). Na pasta-mãe é normal o Gate 1 sair `parcial` (a lista de termos só existe na bancada de quem faz o kit) e o Gate 7 sair `n/a` (sem zip ao lado): dizer isso em uma frase, sem tratar como problema. Se algum gate falhar, dizer qual e o que fazer; não desfazer sozinho.
+4. Rodar `node _ferramentas/verificar-kit.mjs .` (obrigatório, não pular: em teste real este passo ficou pra trás) e mostrar ao usuário a última linha da saída, a que começa com `Resultado:` (quantas conferências ficaram verdes, quantas falharam e quantas não rodaram inteiras). Na pasta-mãe é normal o Gate 1 sair `parcial` (a lista de termos só existe na bancada de quem faz o kit) e o Gate 7 sair `n/a` (sem zip ao lado): dizer isso em uma frase, sem tratar como problema. Gate 11 `n/a` (git não encontrado) fica fora desse normal: o backup não foi conferido; ligar o git pelo passo de primeira vez do `/syncar` e rodar de novo. Se algum gate falhar, dizer qual e o que fazer; não desfazer sozinho. Gate 11, Gate 9 ou Gate 3 (linha que falta no `.gitignore`) vermelho na pasta-mãe: fazer o passo dos arquivos misturados (abaixo) e rodar de novo.
+
+## Arquivos misturados da pasta-mãe
+
+O `.gitignore` e o `.claude/settings.json` da pasta-mãe têm parte do kit e parte da pessoa. Cada um se mostra antes e depois, e só se grava com o sim.
+
+1. **`.gitignore`:** mostrar o atual e o da versão nova, lado a lado. Trocar pelo do kit, mantendo no fim as linhas que a pessoa acrescentou por conta própria (pastas de projeto, `_kit-anterior-*`). Depois rodar `git ls-files -ci --exclude-standard`, que lista o que já está no backup e agora ficaria de fora. Se aparecer `.env` ou arquivo de chave, avisar: tirar o arquivo do backup não apaga o histórico do GitHub, a chave vazou e precisa ser trocada no serviço (gerar uma nova, guardar no `.env`, apagar a velha), e ajudar a pessoa a fazer isso. Tirar do backup (`git rm --cached`, com `-r` pra pasta) só o que for segredo ou arquivo pesado, nunca a lista inteira.
+2. **`.claude/settings.json`:** juntar ao atual o que falta das listas `permissions.ask` e `permissions.deny` e dos hooks do kit, sem tirar nada que a pessoa já tinha.
 
 ## Passo 4, levar pros projetos (opcional, um projeto de cada vez)
 

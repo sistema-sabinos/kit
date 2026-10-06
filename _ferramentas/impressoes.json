@@ -1,5 +1,5 @@
 {
- "versao": "4.7",
+ "versao": "4.8",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -17,88 +17,91 @@
    "848c9a437716d43b": "anterior-3.6"
   },
   ".claude/agents/ml-auditor.md": {
-   "896a90d939508e2d": "3.6",
    "0de5e38e1939ac20": "3.8",
-   "e180a758f9f5209d": "anterior-3.6",
    "19b89027b7127854": "anterior-3.6",
+   "509f0235f98e0b25": "anterior-3.8",
    "563640d696ed2e32": "anterior-3.6",
-   "509f0235f98e0b25": "anterior-3.8"
+   "896a90d939508e2d": "3.6",
+   "e180a758f9f5209d": "anterior-3.6"
   },
   ".claude/agents/ml-copywriter.md": {
+   "09f87517a4ae4100": "anterior-3.6",
    "2c048d53ee9ad906": "3.6",
-   "e4606b9929b99b01": "4.4",
    "3cafe53b3db2e792": "anterior-3.6",
-   "09f87517a4ae4100": "anterior-3.6"
+   "e4606b9929b99b01": "4.4"
   },
   ".claude/agents/ml-designer.md": {
+   "25abc9c2852e43d8": "anterior-3.9",
    "6e8aeac398026c73": "3.6",
-   "c2fe6f2b676b3eac": "3.9",
    "b63973056f47eed0": "anterior-3.6",
-   "25abc9c2852e43d8": "anterior-3.9"
+   "c2fe6f2b676b3eac": "3.9"
   },
   ".claude/agents/ml-espiao.md": {
-   "4030e3a06dede856": "3.6",
    "0edf46e3e9566758": "3.7",
-   "6b831cecd3f97856": "anterior-3.6",
-   "5ee12932db20e426": "anterior-3.6"
+   "4030e3a06dede856": "3.6",
+   "5ee12932db20e426": "anterior-3.6",
+   "6b831cecd3f97856": "anterior-3.6"
   },
   ".claude/agents/ml-minerador.md": {
-   "fe27c970306a4b38": "3.6",
    "2efdfeea6ba8f9c1": "3.7",
-   "7b9919dcd0dd3402": "anterior-3.6"
+   "7b9919dcd0dd3402": "anterior-3.6",
+   "fe27c970306a4b38": "3.6"
   },
   ".claude/agents/ml-publicador.md": {
-   "6f1c76350342c5bd": "3.6",
-   "d9cb8ad16c1c9dda": "3.11",
-   "0e3adaa402164f5b": "anterior-3.6",
    "0db7b9513f4a028b": "anterior-3.6",
-   "4237889cb328b390": "anterior-3.11"
+   "0e3adaa402164f5b": "anterior-3.6",
+   "4237889cb328b390": "anterior-3.11",
+   "6f1c76350342c5bd": "3.6",
+   "d9cb8ad16c1c9dda": "3.11"
   },
   ".claude/agents/publicador.md": {
    "67eff73d42085e8f": "anterior-3.6"
   },
   ".claude/hooks/auto-sync.mjs": {
+   "184ea5a646a6c74d": "4.8",
    "366ebb77ab7292bf": "4.3",
    "9c6f23a6ca72e04e": "4.4",
-   "e8c34202348717e9": "4.5",
    "dd71c594aab6fed3": "anterior-4.3",
+   "e8c34202348717e9": "4.5",
    "ecffeb632e233c63": "anterior-4.5"
   },
   ".claude/hooks/barrar-perigoso.mjs": {
-   "b9a2703d4bb40fdc": "3.4",
-   "e01b1eb119cc7801": "anterior-3.4",
+   "5c10d1994106faa7": "anterior-3.4",
+   "69abaccc92f8f447": "anterior-3.4",
    "80c28918c3dbcf24": "anterior-3.4",
    "97d787854e560346": "anterior-3.4",
+   "b9a2703d4bb40fdc": "3.4",
    "c18cb4d20ca7ec60": "anterior-3.4",
-   "69abaccc92f8f447": "anterior-3.4",
-   "5c10d1994106faa7": "anterior-3.4"
+   "e01b1eb119cc7801": "anterior-3.4"
   },
   ".claude/settings.json": {
-   "ed9cc88d1091f7c5": "3.0",
+   "41d9cd645c4ce95f": "anterior-3.0",
    "48f7184c1a3c84e9": "3.4",
    "82960e08b81e28d2": "4.3",
-   "41d9cd645c4ce95f": "anterior-3.0",
    "b5ad0fe052a59403": "anterior-3.4",
-   "d2abfb67c3a33556": "anterior-3.4"
+   "d2abfb67c3a33556": "anterior-3.4",
+   "d7142796568316bc": "4.8",
+   "ed9cc88d1091f7c5": "3.0"
   },
   ".claude/skills/agendar/SKILL.md": {
-   "f36add9b42324990": "3.7",
-   "aadd8d45a14f5b4b": "4.3",
    "1f9101fa4c546fdd": "4.5",
+   "2cb43f7e65a01a9e": "anterior-3.7",
    "5c2b406782b75d73": "anterior-3.7",
-   "2cb43f7e65a01a9e": "anterior-3.7"
+   "aadd8d45a14f5b4b": "4.3",
+   "f36add9b42324990": "3.7"
   },
   ".claude/skills/agendar/scripts/agendador.mjs": {
-   "a48bb50be24605fa": "3.7",
    "29e54bc4034e92fe": "anterior-3.7",
-   "73a9800dea52c97d": "anterior-3.7",
    "2e545cffe3cb8714": "anterior-3.7",
+   "73a9800dea52c97d": "anterior-3.7",
    "8c77cfb666185930": "anterior-3.7",
+   "a48bb50be24605fa": "3.7",
    "e64a878ba493146c": "anterior-3.7"
   },
   ".claude/skills/agendar/scripts/avisar.mjs": {
    "4499fac96a3135ef": "3.7",
-   "920fc394f8f96463": "4.3"
+   "920fc394f8f96463": "4.3",
+   "aa73633937dbf0c0": "4.8"
   },
   ".claude/skills/agendar/scripts/lib/boot-guard.mjs": {
    "299f9655d154e046": "3.7"
@@ -107,9 +110,9 @@
    "3b6843c89acf5a72": "3.7"
   },
   ".claude/skills/agendar/scripts/lib/fetch-timeout.mjs": {
-   "5580a5dce7142ef5": "3.7",
    "11170fec3b2600fb": "anterior-3.7",
-   "3ce36ba54deb9071": "anterior-3.7"
+   "3ce36ba54deb9071": "anterior-3.7",
+   "5580a5dce7142ef5": "3.7"
   },
   ".claude/skills/agendar/scripts/lib/raiz.mjs": {
    "24315e648d3bc99b": "3.7"
@@ -118,14 +121,14 @@
    "fe414adc881c6168": "3.7"
   },
   ".claude/skills/agendar/scripts/motor.mjs": {
-   "60be9d6b2afc394c": "3.7",
-   "e1c571faa624e334": "4.5",
-   "9e3891459a5146f7": "anterior-3.7",
-   "8813119eac2b92bc": "anterior-3.7",
+   "23e692e1adffdbec": "anterior-3.7",
    "44581b9c86a05730": "anterior-3.7",
-   "8912d283a5e1732f": "anterior-3.7",
+   "60be9d6b2afc394c": "3.7",
    "7ddc7ea741a4b158": "anterior-3.7",
-   "23e692e1adffdbec": "anterior-3.7"
+   "8813119eac2b92bc": "anterior-3.7",
+   "8912d283a5e1732f": "anterior-3.7",
+   "9e3891459a5146f7": "anterior-3.7",
+   "e1c571faa624e334": "4.5"
   },
   ".claude/skills/agendar/scripts/receita.mjs": {
    "8e0be49926a14a32": "3.7"
@@ -137,10 +140,10 @@
    "3e6ef227381bfbfc": "3.7"
   },
   ".claude/skills/analisar-catalogo/SKILL.md": {
-   "f74338832024c2cf": "3.6",
-   "3e018ef77aca3df8": "3.7",
    "1e934d412055e623": "3.8",
-   "a374e9a55941b540": "anterior-3.6"
+   "3e018ef77aca3df8": "3.7",
+   "a374e9a55941b540": "anterior-3.6",
+   "f74338832024c2cf": "3.6"
   },
   ".claude/skills/aprender-curso/SKILL.md": {
    "e1cbe1503267dc8c": "4.1",
@@ -159,71 +162,72 @@
    "e39bc94607a74937": "4.1"
   },
   ".claude/skills/assistir-video/SKILL.md": {
-   "3e7de8a47d7b1311": "3.0",
-   "d68821f13b061e31": "4.1",
-   "749721e4c2975f7f": "anterior-3.0",
    "2dd20161ca456395": "anterior-3.0",
-   "7827d2b8f787da7f": "anterior-4.1"
+   "3e7de8a47d7b1311": "3.0",
+   "749721e4c2975f7f": "anterior-3.0",
+   "7827d2b8f787da7f": "anterior-4.1",
+   "d68821f13b061e31": "4.1"
   },
   ".claude/skills/assistir-video/baixar-video.mjs": {
-   "fe02e3001c46a952": "3.0",
+   "8b3d049d06db0f19": "4.4",
    "93d5f87ec7995e1c": "4.2",
-   "8b3d049d06db0f19": "4.4"
+   "fe02e3001c46a952": "3.0"
   },
   ".claude/skills/assistir-video/custo.mjs": {
    "d93b5119aa6e5622": "4.1"
   },
   ".claude/skills/assistir-video/ver-video.mjs": {
-   "13507add02843971": "3.0",
    "051353134e5b8e3c": "4.1",
+   "13507add02843971": "3.0",
    "af0b72edfe666262": "4.4",
    "e3bef37187fcaf2f": "anterior-3.0"
   },
   ".claude/skills/atendimento/SKILL.md": {
-   "b9bfe428f58351cd": "4.6",
-   "094be7ce59ff4827": "anterior-4.6"
+   "094be7ce59ff4827": "anterior-4.6",
+   "b9bfe428f58351cd": "4.6"
   },
   ".claude/skills/atendimento/referencias/catalogo-exemplo.csv": {
    "678663dcb4625ecc": "4.6"
   },
   ".claude/skills/atendimento/scripts/atendimento.mjs": {
-   "ead52a84d74d9acd": "4.6",
    "2db33ebe8c929d73": "anterior-4.6",
    "49297760a39c08e4": "anterior-4.6",
-   "5bcd0286ebac2f80": "anterior-4.6"
+   "5bcd0286ebac2f80": "anterior-4.6",
+   "ead52a84d74d9acd": "4.6"
   },
   ".claude/skills/atualizar-sabinos/SKILL.md": {
-   "925ddd431692f47b": "3.5",
+   "1766e31e3190aaff": "anterior-4.3",
+   "633a1e98070a1a6a": "anterior-3.5",
    "6adc00353b88ae00": "4.3",
    "6b7eb2e2adf9e3a8": "4.4",
    "7951e2a6424bc272": "4.6",
-   "633a1e98070a1a6a": "anterior-3.5",
-   "1766e31e3190aaff": "anterior-4.3",
+   "925ddd431692f47b": "3.5",
    "ce4d6bc10ddee07a": "anterior-4.6"
   },
   ".claude/skills/atualizar/SKILL.md": {
-   "6e59beac2d32c3fa": "3.0",
-   "f7c2c3597c86650d": "3.1",
-   "847b1c82510b9fb7": "4.1",
-   "d8f453458b0c9477": "4.3",
-   "fa331dafde951e1c": "4.4",
-   "8c584a09e89228ce": "4.5",
    "03694d94ed398d4b": "anterior-3.0",
    "2bdcd778ff9a2a6a": "anterior-3.0",
    "4528ce98f080867d": "anterior-4.3",
-   "e01941735e19daf8": "anterior-4.3",
+   "6e59beac2d32c3fa": "3.0",
    "7e82d529aef5254d": "anterior-4.3",
    "81ad7a7e94d4d26e": "anterior-4.3",
+   "847b1c82510b9fb7": "4.1",
    "86f229e656258c90": "anterior-4.4",
-   "ec11856c8715039a": "anterior-4.4"
+   "8c584a09e89228ce": "4.5",
+   "aec1cb70945b3a81": "4.8",
+   "d8f453458b0c9477": "4.3",
+   "e01941735e19daf8": "anterior-4.3",
+   "ec11856c8715039a": "anterior-4.4",
+   "f7c2c3597c86650d": "3.1",
+   "fa331dafde951e1c": "4.4"
   },
   ".claude/skills/auditar-conta/SKILL.md": {
    "d80727c54f1b0026": "3.6",
    "faca5d3b7a0ae4d7": "4.1"
   },
   ".claude/skills/auditar-conta/scripts/coletar.mjs": {
-   "8fff5ec1dd6f82ea": "3.6",
-   "68596341887758b7": "anterior-3.6"
+   "68596341887758b7": "anterior-3.6",
+   "8fff5ec1dd6f82ea": "3.6"
   },
   ".claude/skills/auditar-conta/scripts/diagnosticar.mjs": {
    "52b32fe6a67833be": "3.6"
@@ -232,12 +236,12 @@
    "a70e2c3b8204cad0": "3.6"
   },
   ".claude/skills/auditar-conta/scripts/rodar.mjs": {
-   "8b046e98057d7e50": "3.6",
-   "80a89d423887b3b1": "anterior-3.6"
+   "80a89d423887b3b1": "anterior-3.6",
+   "8b046e98057d7e50": "3.6"
   },
   ".claude/skills/auditar-instagram/SKILL.md": {
-   "df34095379fa52f4": "4.1",
-   "018aaeb5c83ae633": "anterior-4.1"
+   "018aaeb5c83ae633": "anterior-4.1",
+   "df34095379fa52f4": "4.1"
   },
   ".claude/skills/auditar-instagram/cargos/auditor.md": {
    "bf193d5a45974910": "4.1"
@@ -249,23 +253,23 @@
    "5a1fa8c41d8d6e41": "4.1"
   },
   ".claude/skills/auditar-instagram/scripts/auditar-instagram.mjs": {
-   "533d847dfe2be388": "4.1",
-   "408cdc4e35bf7506": "anterior-4.1"
+   "408cdc4e35bf7506": "anterior-4.1",
+   "533d847dfe2be388": "4.1"
   },
   ".claude/skills/auditar-instagram/scripts/regua.mjs": {
    "5449f11364e741e0": "4.1"
   },
   ".claude/skills/bastao/SKILL.md": {
-   "e3cdf27c533918aa": "3.0",
+   "a79d594c61376eea": "4.4",
    "abb90aea898ce0ad": "4.1",
-   "a79d594c61376eea": "4.4"
+   "e3cdf27c533918aa": "3.0"
   },
   ".claude/skills/cadastrar-bling/SKILL.md": {
-   "716c4332751ba383": "3.6",
+   "3ef51871150f421d": "anterior-3.7",
    "687ca83ce1b51841": "3.7",
+   "716c4332751ba383": "3.6",
    "d4402882805dba6b": "3.11",
-   "e151da239726cdc0": "anterior-3.6",
-   "3ef51871150f421d": "anterior-3.7"
+   "e151da239726cdc0": "anterior-3.6"
   },
   ".claude/skills/cadastrar-bling/mcp/ferramentas.mjs": {
    "f46fe4522a85686f": "3.6"
@@ -277,28 +281,28 @@
    "a16a7dbc908df56c": "3.6"
   },
   ".claude/skills/cadastrar-bling/scripts/cadastrar.mjs": {
-   "94d029075dce891e": "3.6",
-   "648bc4d9d6032825": "3.7",
    "2bc811d1d2cd1db6": "anterior-3.6",
    "3d9a731bca37cbaf": "anterior-3.6",
-   "a54dc34e5aa7dacb": "anterior-3.6",
-   "7cb20b6493b8ad9e": "anterior-3.6",
-   "86d8007f89991ed3": "anterior-3.6",
    "4cc1b7e1399a26c4": "anterior-3.6",
+   "648bc4d9d6032825": "3.7",
+   "7cb20b6493b8ad9e": "anterior-3.6",
    "80488f0adb6aeb18": "anterior-3.7",
+   "86d8007f89991ed3": "anterior-3.6",
+   "94d029075dce891e": "3.6",
+   "a54dc34e5aa7dacb": "anterior-3.6",
    "d82a0f43327c7789": "anterior-3.7"
   },
   ".claude/skills/caixa/SKILL.md": {
-   "a590223e4dc89879": "4.6",
-   "56ea82762fce1b08": "anterior-4.6"
+   "56ea82762fce1b08": "anterior-4.6",
+   "a590223e4dc89879": "4.6"
   },
   ".claude/skills/caixa/referencias/fatos.md": {
    "8c4fddbfcddbc1da": "4.6"
   },
   ".claude/skills/caixa/scripts/caixa.mjs": {
-   "8821de999d33bbdb": "4.6",
    "024088d438fb0fe3": "anterior-4.6",
-   "78aabdc58188d216": "anterior-4.6"
+   "78aabdc58188d216": "anterior-4.6",
+   "8821de999d33bbdb": "4.6"
   },
   ".claude/skills/caixa/scripts/lib/csv.mjs": {
    "060846ddec1ce0f2": "4.6",
@@ -312,103 +316,104 @@
    "3c10157b3ecf9771": "4.6"
   },
   ".claude/skills/checar/SKILL.md": {
-   "6778eecd23dad6c6": "3.0",
-   "973227ebd8cd3b57": "3.1",
-   "f1325173a0832f80": "3.4",
-   "437ef0e3af1d1ac6": "3.7",
-   "bcc1dd7b75e16c9c": "4.1",
-   "ea7cb1f99b0863e4": "4.3",
-   "6ba12868ca4c4869": "4.4",
-   "b9269d733929e216": "4.5",
-   "859f9b51056f0d66": "anterior-3.4",
+   "130e9648b75765a6": "4.8",
    "1ad4b7bf727ecad0": "anterior-3.4",
-   "e3b9acc8664f6320": "anterior-3.7",
+   "437ef0e3af1d1ac6": "3.7",
+   "6778eecd23dad6c6": "3.0",
    "688b533e3d3481bd": "anterior-3.7",
-   "bb0630a2a770e236": "anterior-4.3"
+   "6ba12868ca4c4869": "4.4",
+   "859f9b51056f0d66": "anterior-3.4",
+   "973227ebd8cd3b57": "3.1",
+   "b9269d733929e216": "4.5",
+   "bb0630a2a770e236": "anterior-4.3",
+   "bcc1dd7b75e16c9c": "4.1",
+   "e3b9acc8664f6320": "anterior-3.7",
+   "ea7cb1f99b0863e4": "4.3",
+   "f1325173a0832f80": "3.4"
   },
   ".claude/skills/cobrar/SKILL.md": {
-   "b8f34c2b1b4879c0": "4.6",
-   "b64b71d424fc22ad": "anterior-4.6"
+   "b64b71d424fc22ad": "anterior-4.6",
+   "b8f34c2b1b4879c0": "4.6"
   },
   ".claude/skills/cobrar/referencias/fatos.md": {
    "1855a35e47507a0d": "4.6"
   },
   ".claude/skills/comecar-a-vender/SKILL.md": {
-   "851b4a1d8a039a29": "3.8",
-   "aa8bbf715a47f876": "3.11",
-   "a5739cbc3d21ac6b": "anterior-3.8",
+   "08880383d2424db0": "anterior-3.8",
    "47a85174db8f911f": "anterior-3.8",
-   "f065a0745513fcc6": "anterior-3.8",
-   "08880383d2424db0": "anterior-3.8"
+   "851b4a1d8a039a29": "3.8",
+   "a5739cbc3d21ac6b": "anterior-3.8",
+   "aa8bbf715a47f876": "3.11",
+   "f065a0745513fcc6": "anterior-3.8"
   },
   ".claude/skills/comecar-a-vender/referencias/fatos.md": {
-   "dd876ed6fe956222": "3.8",
    "3684da02cb3db118": "4.6",
    "8fecbfb5ba1601e3": "anterior-3.8",
+   "dd876ed6fe956222": "3.8",
    "e687fe93ae2b05a3": "anterior-3.8"
   },
   ".claude/skills/comecar-a-vender/referencias/fornecedor-modelo.md": {
    "6d659fe495065edb": "3.8"
   },
   ".claude/skills/comecar-a-vender/referencias/fornecedor.md": {
-   "9780f01cdb79cda8": "3.8",
-   "89e4dc89d09a8ac2": "anterior-3.8"
+   "89e4dc89d09a8ac2": "anterior-3.8",
+   "9780f01cdb79cda8": "3.8"
   },
   ".claude/skills/comecar-a-vender/referencias/trilha-modelo.md": {
+   "9188a59cd6a88e4e": "anterior-3.8",
    "94bf06c63eeeff4a": "3.8",
-   "d0929f3a7e6867b7": "anterior-3.8",
-   "9188a59cd6a88e4e": "anterior-3.8"
+   "d0929f3a7e6867b7": "anterior-3.8"
   },
   ".claude/skills/comecar-a-vender/scripts/fatos.mjs": {
    "45b3454154506af9": "3.8"
   },
   ".claude/skills/compartilhar/SKILL.md": {
-   "9e0b2909b9036646": "4.3",
-   "fb82a7610bcbf39c": "4.4",
-   "8d0da74de4d40454": "4.5",
-   "79da263ebdbc8789": "anterior-4.3",
-   "6f31562549b4be0f": "anterior-4.3",
    "0f6c34a5067f63f6": "anterior-4.3",
+   "37b95bc89f243468": "anterior-4.4",
+   "6f31562549b4be0f": "anterior-4.3",
+   "79da263ebdbc8789": "anterior-4.3",
+   "8d0da74de4d40454": "4.5",
+   "9e0b2909b9036646": "4.3",
    "aab0de264ef9832f": "anterior-4.3",
-   "37b95bc89f243468": "anterior-4.4"
+   "fb82a7610bcbf39c": "4.4"
   },
   ".claude/skills/compartilhar/scripts/compartilhar.mjs": {
-   "9cd25318ee15b1e0": "4.3",
+   "31edb2701c995ee8": "anterior-4.3",
    "477d8982fe70edeb": "4.4",
    "5089cd50f5eb632c": "4.5",
-   "d2552786b0e21378": "anterior-4.3",
-   "d801c3503802f7c4": "anterior-4.3",
    "7f60b1b99aa57164": "anterior-4.3",
-   "31edb2701c995ee8": "anterior-4.3"
+   "9cd25318ee15b1e0": "4.3",
+   "d2552786b0e21378": "anterior-4.3",
+   "d801c3503802f7c4": "anterior-4.3"
   },
   ".claude/skills/conectar/SKILL.md": {
    "00ce3a2576a89169": "3.0",
-   "96efa3b18305e191": "3.1",
-   "cf6c2654215b51df": "3.6",
-   "565a327091a62a23": "3.7",
-   "cd9b1de6a860745d": "3.11",
-   "8ff86dfa3dff582f": "4.1",
-   "afc4edbb1dad5917": "4.4",
+   "06ac729775e074be": "anterior-3.6",
    "1d6396880425d2da": "4.6",
-   "06ac729775e074be": "anterior-3.6"
+   "565a327091a62a23": "3.7",
+   "8ff86dfa3dff582f": "4.1",
+   "96efa3b18305e191": "3.1",
+   "afc4edbb1dad5917": "4.4",
+   "cd9b1de6a860745d": "3.11",
+   "cf6c2654215b51df": "3.6"
   },
   ".claude/skills/configurar-video/SKILL.md": {
-   "65b9510e6d597851": "4.1",
-   "cb1b8e9aecd1815c": "4.2",
-   "66ea8160e98d55fc": "anterior-4.1",
-   "da23fb7faf5b1f1f": "anterior-4.1",
-   "88d396d7c2ece819": "anterior-4.1",
-   "c6f1609608b21fc9": "anterior-4.1",
-   "552cc44a12557f79": "anterior-4.1",
    "2a23e655e557ee84": "anterior-4.1",
+   "552cc44a12557f79": "anterior-4.1",
    "58e6941b7f33136a": "anterior-4.1",
-   "c60a74eac85d8bb8": "anterior-4.1"
+   "65b9510e6d597851": "4.1",
+   "66ea8160e98d55fc": "anterior-4.1",
+   "88d396d7c2ece819": "anterior-4.1",
+   "c60a74eac85d8bb8": "anterior-4.1",
+   "c6f1609608b21fc9": "anterior-4.1",
+   "cb1b8e9aecd1815c": "4.2",
+   "da23fb7faf5b1f1f": "anterior-4.1"
   },
   ".claude/skills/configurar-video/referencias/midia-manifesto.json": {
-   "e6409f8f3a873307": "anterior-4.1",
-   "f304be35ec7ec713": "anterior-4.1",
+   "71ae16a3f28e1b0f": "anterior-4.1",
    "be734b09ed5b4b0c": "anterior-4.1",
-   "71ae16a3f28e1b0f": "anterior-4.1"
+   "e6409f8f3a873307": "anterior-4.1",
+   "f304be35ec7ec713": "anterior-4.1"
   },
   ".claude/skills/configurar-video/referencias/teste-voz.wav": {
    "04db4a15f53ef8ad": "4.1"
@@ -417,18 +422,18 @@
    "57ffbef09c575970": "4.1"
   },
   ".claude/skills/configurar-video/scripts/baixar-midia.mjs": {
-   "dcf3ad831bd7442c": "anterior-4.1",
-   "dcd8b8f0140cf6ad": "anterior-4.1",
-   "be707d9cb1bbb290": "anterior-4.1",
    "217d895b6a25144e": "anterior-4.1",
-   "8b599b03b3ea0a89": "anterior-4.1"
+   "8b599b03b3ea0a89": "anterior-4.1",
+   "be707d9cb1bbb290": "anterior-4.1",
+   "dcd8b8f0140cf6ad": "anterior-4.1",
+   "dcf3ad831bd7442c": "anterior-4.1"
   },
   ".claude/skills/configurar-video/scripts/conferir.mjs": {
    "222e49bc6fe552b8": "4.1",
    "2780b743f33c0f2e": "anterior-4.1",
+   "366876561076e1b5": "anterior-4.1",
    "8d79b7abc7cb540d": "anterior-4.1",
-   "c8617b37e7fceb8a": "anterior-4.1",
-   "366876561076e1b5": "anterior-4.1"
+   "c8617b37e7fceb8a": "anterior-4.1"
   },
   ".claude/skills/configurar-video/scripts/instalar-motor.mjs": {
    "ad1088940c18bf5b": "4.1"
@@ -438,8 +443,8 @@
    "2600f6c7f59cee84": "anterior-4.1"
   },
   ".claude/skills/configurar-video/scripts/lib/pasta-video.mjs": {
-   "f37f780fcf759a8e": "4.1",
-   "b8f5ba120d2948db": "anterior-4.1"
+   "b8f5ba120d2948db": "anterior-4.1",
+   "f37f780fcf759a8e": "4.1"
   },
   ".claude/skills/configurar-video/scripts/lib/plataforma.mjs": {
    "f7ea43c8d1e0cbde": "4.1",
@@ -449,43 +454,44 @@
    "001f8a8088e3a364": "4.1"
   },
   ".claude/skills/configurar-video/scripts/medir-maquina.mjs": {
-   "944e5efd942e15d6": "4.1",
-   "e883814cfc6e926c": "anterior-4.1",
+   "5a665f0f57158ad3": "anterior-4.1",
    "5fa14f73d466b236": "anterior-4.1",
-   "5a665f0f57158ad3": "anterior-4.1"
+   "944e5efd942e15d6": "4.1",
+   "e883814cfc6e926c": "anterior-4.1"
   },
   ".claude/skills/configurar-video/scripts/sincronizar-motor.mjs": {
-   "bef9417ec6c11d48": "4.1",
    "426343a1e9d1066b": "anterior-4.1",
    "47dcf3f0b7b11bb5": "anterior-4.1",
-   "96ccb0db874000b0": "anterior-4.1"
+   "96ccb0db874000b0": "anterior-4.1",
+   "bef9417ec6c11d48": "4.1"
   },
   ".claude/skills/configurar-video/scripts/teste-rapido.mjs": {
-   "ff75ecd69edf1585": "4.1",
+   "5b8687f8118fa5c8": "4.8",
+   "785b3791e57e8d71": "anterior-4.1",
    "7f11c2c6231d9613": "anterior-4.1",
    "93c27285805830cf": "anterior-4.1",
-   "785b3791e57e8d71": "anterior-4.1"
+   "ff75ecd69edf1585": "4.1"
   },
   ".claude/skills/decidir-anuncio/SKILL.md": {
    "029b44e5fbab2166": "3.6",
-   "41d0275df2b76c21": "4.1",
    "216427de500eb9a8": "anterior-3.6",
+   "3fbfb3ffa4874b8f": "anterior-3.6",
+   "41d0275df2b76c21": "4.1",
    "84fad1af7affcbff": "anterior-3.6",
-   "eebf2ed617a9f09d": "anterior-3.6",
-   "3fbfb3ffa4874b8f": "anterior-3.6"
+   "eebf2ed617a9f09d": "anterior-3.6"
   },
   ".claude/skills/decupar-referencia/SKILL.md": {
    "a369f9498e68fc06": "4.1",
-   "f27c4f3877570426": "anterior-4.1",
-   "dbf0f848b48b5ee5": "anterior-4.1"
+   "dbf0f848b48b5ee5": "anterior-4.1",
+   "f27c4f3877570426": "anterior-4.1"
   },
   ".claude/skills/decupar-referencia/prompt-decupagem.md": {
    "0c572de570e9c39b": "4.1"
   },
   ".claude/skills/editar-video/SKILL.md": {
-   "3e36f035602f746f": "4.1",
    "113e26c3d74ccd8e": "4.2",
    "347d70d8a587e38e": "anterior-4.1",
+   "3e36f035602f746f": "4.1",
    "62b3bfd574d0bfc1": "anterior-4.1",
    "96fe5d0b9a91ed63": "anterior-4.1",
    "a018092b341be72e": "anterior-4.1"
@@ -497,9 +503,9 @@
    "58fae59b12600777": "4.1"
   },
   ".claude/skills/editar-video/motor/exemplos/camadas-exemplo.tsx": {
+   "41e3442689ca5f3f": "anterior-4.1",
    "4d99820daece8045": "4.1",
-   "c2c29dca35b7924d": "anterior-4.1",
-   "41e3442689ca5f3f": "anterior-4.1"
+   "c2c29dca35b7924d": "anterior-4.1"
   },
   ".claude/skills/editar-video/motor/exemplos/videov2-exemplo.json": {
    "b1015492cb4a467d": "4.1"
@@ -514,12 +520,12 @@
    "7525129bcb03d971": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/alinhar.py": {
-   "c33e6cf4672f6e13": "4.1",
-   "95a9d2b48fc12534": "anterior-4.1"
+   "95a9d2b48fc12534": "anterior-4.1",
+   "c33e6cf4672f6e13": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/blocos.py": {
-   "83e5770487c547c3": "4.1",
-   "1d15f5c7a2702fb3": "anterior-4.1"
+   "1d15f5c7a2702fb3": "anterior-4.1",
+   "83e5770487c547c3": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/chroma.py": {
    "190946038dc26fc6": "4.1",
@@ -531,20 +537,20 @@
   ".claude/skills/editar-video/motor/scripts/fiscal.py": {
    "2aa86b5d1b2883ee": "4.1",
    "3676aee8951000fc": "anterior-4.1",
+   "7b600056cf4b2441": "anterior-4.1",
    "e62124f59dbe498b": "anterior-4.1",
-   "eef4b11468e80c54": "anterior-4.1",
-   "7b600056cf4b2441": "anterior-4.1"
+   "eef4b11468e80c54": "anterior-4.1"
   },
   ".claude/skills/editar-video/motor/scripts/instalar-whisper.mjs": {
-   "8c7b959f6c816daa": "4.1",
-   "6d4da7b08c825f84": "anterior-4.1"
+   "6d4da7b08c825f84": "anterior-4.1",
+   "8c7b959f6c816daa": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/loudness.py": {
    "9263123ab49c8b2c": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/mix-final.py": {
-   "e03d1f56390279d1": "4.1",
-   "2d28374dd0e0c2cf": "anterior-4.1"
+   "2d28374dd0e0c2cf": "anterior-4.1",
+   "e03d1f56390279d1": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/modelos/LICENSE-yunet.txt": {
    "24e9d503beb7a89b": "4.1"
@@ -553,20 +559,20 @@
    "9d01c91dadd2dca5": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/montar-blocos.py": {
-   "f7c7f34b1b2accf3": "4.1",
-   "46a792634d2ae125": "anterior-4.1"
+   "46a792634d2ae125": "anterior-4.1",
+   "f7c7f34b1b2accf3": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/paginas-camadas.py": {
    "59f49acdc1c78407": "4.1",
    "c72db6dab889c1f5": "anterior-4.1"
   },
   ".claude/skills/editar-video/motor/scripts/paginas-legenda.py": {
-   "537457835dff9853": "4.1",
-   "4f389b5d35eb37e7": "anterior-4.1"
+   "4f389b5d35eb37e7": "anterior-4.1",
+   "537457835dff9853": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/preparar-props.py": {
-   "f6373708fd11e7a3": "4.1",
-   "99c697a4b0d33a0b": "anterior-4.1"
+   "99c697a4b0d33a0b": "anterior-4.1",
+   "f6373708fd11e7a3": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/profundidade.py": {
    "02a3807d2e4f6f3c": "4.1",
@@ -577,24 +583,24 @@
    "aea527c53ab1476b": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/sincronizar-bruto.py": {
-   "9dd9e2e016306a7a": "4.1",
-   "62090cda9f201808": "anterior-4.1"
+   "62090cda9f201808": "anterior-4.1",
+   "9dd9e2e016306a7a": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/transcrever.mjs": {
-   "959e1a718580327f": "4.1",
-   "0df8c5d1553a7d37": "anterior-4.1"
+   "0df8c5d1553a7d37": "anterior-4.1",
+   "959e1a718580327f": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/tratar-voz.py": {
-   "b2c742716dfbf1b3": "4.1",
-   "583d5f5b457b1a29": "anterior-4.1"
+   "583d5f5b457b1a29": "anterior-4.1",
+   "b2c742716dfbf1b3": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/verificar-video.py": {
    "9578ee9667627e19": "4.1",
    "f00c23635e238126": "anterior-4.1"
   },
   ".claude/skills/editar-video/motor/scripts/zona-segura.py": {
-   "7a959366fcbe9eac": "4.1",
-   "488140d7fd6765d6": "anterior-4.1"
+   "488140d7fd6765d6": "anterior-4.1",
+   "7a959366fcbe9eac": "4.1"
   },
   ".claude/skills/editar-video/motor/src/Legendas.tsx": {
    "898e2997d31f8395": "4.1"
@@ -633,59 +639,59 @@
    "9d54c9c7fed7337c": "4.1"
   },
   ".claude/skills/editar-video/referencias/acabamento.md": {
-   "f08f0be7949badec": "4.1",
-   "1630e33c2a23991e": "anterior-4.1"
+   "1630e33c2a23991e": "anterior-4.1",
+   "f08f0be7949badec": "4.1"
   },
   ".claude/skills/editar-video/referencias/camadas.md": {
-   "abc180760077d1f6": "4.1",
-   "7e4899664fd08e3d": "anterior-4.1"
+   "7e4899664fd08e3d": "anterior-4.1",
+   "abc180760077d1f6": "4.1"
   },
   ".claude/skills/editar-video/referencias/checklist-qc.md": {
-   "e8d9b98fa7170f83": "4.1",
-   "bf06b79b9e4d3817": "anterior-4.1"
+   "bf06b79b9e4d3817": "anterior-4.1",
+   "e8d9b98fa7170f83": "4.1"
   },
   ".claude/skills/editar-video/referencias/movimento.md": {
    "f56c6ba8a159cfe1": "4.1"
   },
   ".claude/skills/editar-video/referencias/receita-gravacao.md": {
-   "ccf32302761cbe6b": "4.1",
-   "2b22b103030ba5b3": "anterior-4.1"
+   "2b22b103030ba5b3": "anterior-4.1",
+   "ccf32302761cbe6b": "4.1"
   },
   ".claude/skills/editar-video/referencias/som.md": {
-   "e1bd56f85d076205": "4.1",
    "aa24e2ec2d5a0897": "anterior-4.1",
-   "d12263b1b591ccc0": "anterior-4.1"
+   "d12263b1b591ccc0": "anterior-4.1",
+   "e1bd56f85d076205": "4.1"
   },
   ".claude/skills/editar-video/referencias/videov2.md": {
    "87c5eb5e67774aa2": "4.1"
   },
   ".claude/skills/editar-video/referencias/zona-segura.md": {
-   "e7cc8392fb79ad96": "4.1",
-   "0afbfa907b4b0eb2": "anterior-4.1"
+   "0afbfa907b4b0eb2": "anterior-4.1",
+   "e7cc8392fb79ad96": "4.1"
   },
   ".claude/skills/editar-video/scripts/conferir-final.mjs": {
+   "0c7d0c1de282db00": "anterior-4.1",
    "1877c6b9e2401369": "4.1",
-   "302ddc96a3251b97": "anterior-4.1",
-   "0c7d0c1de282db00": "anterior-4.1"
+   "302ddc96a3251b97": "anterior-4.1"
   },
   ".claude/skills/editar-video/scripts/preparar-public.mjs": {
-   "b2ea86c90ba94bb1": "4.1",
    "3c878ddc9d041e79": "anterior-4.1",
+   "b2ea86c90ba94bb1": "4.1",
    "d1d4142676440e48": "anterior-4.1"
   },
   ".claude/skills/editar-video/scripts/py.mjs": {
-   "c092525dae1c34f4": "4.1",
    "31991e0ef8d3a94d": "anterior-4.1",
-   "b1bde4bd0275dca2": "anterior-4.1"
+   "b1bde4bd0275dca2": "anterior-4.1",
+   "c092525dae1c34f4": "4.1"
   },
   ".claude/skills/editar-video/scripts/render.mjs": {
    "b1f4d5ef63a2c457": "4.1",
-   "fff5c752f62888e0": "anterior-4.1",
-   "b46fc47ae6eccbd2": "anterior-4.1"
+   "b46fc47ae6eccbd2": "anterior-4.1",
+   "fff5c752f62888e0": "anterior-4.1"
   },
   ".claude/skills/engenharia-reversa/SKILL.md": {
-   "608a46e53d3cb405": "4.1",
    "214dad63b9615ebe": "anterior-4.1",
+   "608a46e53d3cb405": "4.1",
    "c14c688042a736bf": "anterior-4.1"
   },
   ".claude/skills/engenharia-reversa/scripts/fixtures/busca.html": {
@@ -728,101 +734,103 @@
    "ae5252d045f53653": "anterior-4.1"
   },
   ".claude/skills/engenharia-reversa/scripts/rx.mjs": {
-   "f482021e4aace71c": "4.1",
+   "5344cce994af7caa": "anterior-4.1",
    "9fad01ab77765b3b": "anterior-4.1",
    "b7693bee4584baff": "anterior-4.1",
-   "5344cce994af7caa": "anterior-4.1"
+   "f482021e4aace71c": "4.1"
   },
   ".claude/skills/espionar-concorrente/SKILL.md": {
+   "cf85adfe6fcc1c68": "anterior-3.7",
    "d1370fb2113cc514": "3.6",
-   "d29f06e9c6110898": "3.7",
-   "cf85adfe6fcc1c68": "anterior-3.7"
+   "d29f06e9c6110898": "3.7"
   },
   ".claude/skills/espionar-concorrente/scripts/espionar.mjs": {
-   "deb336201ed77f7a": "3.6",
-   "d926994dec5817be": "3.7",
-   "ae734dffef0d8596": "4.1",
-   "180849aeca7c65b9": "anterior-3.6",
-   "9ae5a6be02812e52": "anterior-3.6",
-   "cc5bd9ba0be2b15f": "anterior-3.6",
    "04611e9d5010c7b1": "anterior-3.7",
+   "07a36da8d565fa10": "anterior-4.1",
+   "180849aeca7c65b9": "anterior-3.6",
    "69004ec1c5eb2d73": "anterior-3.7",
-   "e78746e54bdc6f85": "anterior-3.7",
+   "9ae5a6be02812e52": "anterior-3.6",
+   "ae734dffef0d8596": "4.1",
    "c375b93cc3691952": "anterior-4.1",
-   "07a36da8d565fa10": "anterior-4.1"
+   "cc5bd9ba0be2b15f": "anterior-3.6",
+   "d926994dec5817be": "3.7",
+   "deb336201ed77f7a": "3.6",
+   "e78746e54bdc6f85": "anterior-3.7"
   },
   ".claude/skills/faxina/SKILL.md": {
+   "20f72cca57f7a2cf": "anterior-4.3",
+   "50c496df3bce1b2d": "anterior-4.3",
+   "519445c2314b6833": "anterior-4.3",
    "5d2d757a790d36d4": "4.3",
    "69daa56b5fc0eac6": "4.4",
    "79c5dff3bccaba21": "4.5",
-   "519445c2314b6833": "anterior-4.3",
-   "20f72cca57f7a2cf": "anterior-4.3",
    "a79278f238a0d29e": "anterior-4.3",
-   "50c496df3bce1b2d": "anterior-4.3",
-   "d407e86cab10c6cd": "anterior-4.3",
-   "d30618b6919700f4": "anterior-4.5"
+   "d30618b6919700f4": "anterior-4.5",
+   "d407e86cab10c6cd": "anterior-4.3"
   },
   ".claude/skills/faxina/scripts/faxina.mjs": {
-   "9abf4aa31716801c": "4.3",
-   "be0ce4c57e03d423": "4.4",
    "071fa2bce43d55aa": "4.5",
-   "bb8cfee3e3c12df9": "anterior-4.3",
-   "ff724cdf05da2ebb": "anterior-4.3",
+   "104fa4e008649e85": "anterior-4.3",
+   "144f7a02c8b71dcd": "anterior-4.5",
    "2baa31b048b98bb9": "anterior-4.3",
    "55d2a7afcbe6be05": "anterior-4.3",
-   "d15c6aa078703e80": "anterior-4.3",
-   "de06cdb2d2bcc008": "anterior-4.3",
-   "104fa4e008649e85": "anterior-4.3",
+   "9abf4aa31716801c": "4.3",
    "b2057eae076b3334": "anterior-4.3",
-   "144f7a02c8b71dcd": "anterior-4.5"
+   "bb8cfee3e3c12df9": "anterior-4.3",
+   "be0ce4c57e03d423": "4.4",
+   "ca2e7544d37300d8": "4.8",
+   "d15c6aa078703e80": "anterior-4.3",
+   "d34ffe0969625181": "4.8",
+   "de06cdb2d2bcc008": "anterior-4.3",
+   "ff724cdf05da2ebb": "anterior-4.3"
   },
   ".claude/skills/find-skills/SKILL.md": {
    "5924ba36058bcb50": "3.0",
+   "739d439c198aa6ae": "anterior-3.0",
    "97e6537b2ec76001": "3.1",
-   "f9a2ec0dd47c6cfb": "4.1",
    "e51509163c3950cf": "anterior-3.0",
-   "739d439c198aa6ae": "anterior-3.0"
+   "f9a2ec0dd47c6cfb": "4.1"
   },
   ".claude/skills/gerar-imagens/SKILL.md": {
-   "4d9613bd46433985": "3.9",
    "0ede41dc238bba7a": "4.2",
-   "b7e3f15d3eb8422c": "4.4",
+   "4d9613bd46433985": "3.9",
+   "774bba6bf16360f2": "anterior-3.9",
    "79b208a3578ac0d1": "anterior-3.9",
-   "774bba6bf16360f2": "anterior-3.9"
+   "b7e3f15d3eb8422c": "4.4"
   },
   ".claude/skills/gerar-imagens/referencias/estilos.md": {
    "422779be6e0606ef": "3.9",
    "d4c226d5d5ef5534": "4.4"
   },
   ".claude/skills/gerar-imagens/scripts/compor-cena.mjs": {
-   "fca5299a9e124e21": "3.9",
-   "222ea95709454dd9": "anterior-3.9"
+   "222ea95709454dd9": "anterior-3.9",
+   "fca5299a9e124e21": "3.9"
   },
   ".claude/skills/gerar-imagens/scripts/gerar-cenario.mjs": {
-   "22f39f97b7384ac7": "3.9",
    "122fb92a0205d93f": "anterior-3.9",
-   "935589122a28b89a": "anterior-3.9",
+   "22f39f97b7384ac7": "3.9",
    "4b87267b5e5f9c96": "anterior-3.9",
-   "6d45de1dc1e8eb40": "anterior-3.9"
+   "6d45de1dc1e8eb40": "anterior-3.9",
+   "935589122a28b89a": "anterior-3.9"
   },
   ".claude/skills/gerar-imagens/scripts/lib/args.mjs": {
    "dee4b0ddcaf19852": "3.9"
   },
   ".claude/skills/gerar-imagens/scripts/lib/render.mjs": {
-   "f5aedd3650245885": "3.9",
-   "7cc05061aa391aa2": "anterior-3.9"
+   "7cc05061aa391aa2": "anterior-3.9",
+   "f5aedd3650245885": "3.9"
   },
   ".claude/skills/gerar-imagens/scripts/montar-peca.mjs": {
    "8d12b9a5c3fc24c9": "3.9"
   },
   ".claude/skills/gerar-imagens/scripts/motor.mjs": {
-   "e073cf3a704a0ec1": "3.9",
+   "0a5474abf9f7b1c0": "anterior-3.9",
    "a45ae761754b5224": "anterior-3.9",
-   "0a5474abf9f7b1c0": "anterior-3.9"
+   "e073cf3a704a0ec1": "3.9"
   },
   ".claude/skills/gerar-imagens/scripts/prancha.mjs": {
-   "5d1752169b237d02": "3.9",
    "0157562818bcf6bc": "anterior-3.9",
+   "5d1752169b237d02": "3.9",
    "732cb97fbcac99d7": "anterior-3.9"
   },
   ".claude/skills/gerar-imagens/scripts/recortar-fundo.mjs": {
@@ -838,60 +846,62 @@
    "2ea250408038c976": "anterior-4.1"
   },
   ".claude/skills/iniciar/SKILL.md": {
-   "4cfe5288be5dce49": "3.0",
-   "463dd3b295ef70c8": "3.7",
-   "5963badd9af5e8a8": "3.8",
-   "58d747b708c19793": "4.1",
-   "e5d4f045eef169c3": "4.3",
+   "125b0d71fd20698f": "anterior-3.0",
    "277acdba56845c48": "4.4",
+   "463dd3b295ef70c8": "3.7",
+   "4cfe5288be5dce49": "3.0",
+   "58d747b708c19793": "4.1",
+   "5963badd9af5e8a8": "3.8",
+   "6bef6171079f5ca8": "anterior-3.7",
+   "7d536d2d06fb730f": "anterior-4.3",
+   "86354aabf68b5cd5": "anterior-3.8",
    "918b870ee31d6c18": "4.5",
    "986220bebabad7a2": "4.6",
-   "c9e24c717aa054aa": "anterior-3.0",
-   "125b0d71fd20698f": "anterior-3.0",
-   "e51d6dcb94ed19e3": "anterior-3.0",
    "a4cd35c64db21898": "anterior-3.0",
-   "6bef6171079f5ca8": "anterior-3.7",
-   "86354aabf68b5cd5": "anterior-3.8",
-   "7d536d2d06fb730f": "anterior-4.3",
+   "bcaea1aa7cb0f35b": "4.8",
+   "c9e24c717aa054aa": "anterior-3.0",
+   "e51d6dcb94ed19e3": "anterior-3.0",
+   "e5d4f045eef169c3": "4.3",
+   "f04d308f5895aa64": "4.8",
    "f3014dab4a373500": "anterior-4.4"
   },
   ".claude/skills/mapear/SKILL.md": {
-   "1d0419caf131bf61": "3.0",
-   "5352c3e61aed01d3": "3.3",
+   "195d9042cd960fe6": "anterior-4.4",
    "1cf67d5152ddba0f": "3.6",
-   "9e09d235dd6db29b": "3.7",
-   "eef1db36ea6393bc": "3.8",
-   "f276430b523cbce5": "3.9",
-   "34945e77bbbee3f8": "4.1",
+   "1d0419caf131bf61": "3.0",
    "2862961c24f75234": "4.4",
+   "34945e77bbbee3f8": "4.1",
+   "3562251338e486db": "anterior-3.6",
+   "358cc7008a186c99": "anterior-3.0",
+   "3943a5e1d6463145": "anterior-4.1",
+   "5352c3e61aed01d3": "3.3",
    "82098af067130e51": "4.6",
-   "dfe4ec8c7f33a7fd": "anterior-3.0",
+   "9e09d235dd6db29b": "3.7",
+   "ac9ad1eb1c247134": "anterior-4.1",
    "b969939ed785aca8": "anterior-3.0",
    "bd28fbcbd7ce716c": "anterior-3.0",
-   "358cc7008a186c99": "anterior-3.0",
-   "3562251338e486db": "anterior-3.6",
-   "ac9ad1eb1c247134": "anterior-4.1",
-   "3943a5e1d6463145": "anterior-4.1",
-   "195d9042cd960fe6": "anterior-4.4"
+   "dfe4ec8c7f33a7fd": "anterior-3.0",
+   "eef1db36ea6393bc": "3.8",
+   "f276430b523cbce5": "3.9"
   },
   ".claude/skills/mei/SKILL.md": {
    "3493a95761683f5f": "4.6",
-   "5e8d43b2654d1a5f": "anterior-4.6",
-   "56c33f95e3215ff0": "anterior-4.6"
+   "56c33f95e3215ff0": "anterior-4.6",
+   "5e8d43b2654d1a5f": "anterior-4.6"
   },
   ".claude/skills/mei/referencias/fatos.md": {
    "46397e33455b3689": "4.6",
    "fe132253089fc930": "anterior-4.6"
   },
   ".claude/skills/mei/scripts/mei.mjs": {
-   "cc57a5fc3f617800": "4.6",
-   "63325585362fe8be": "anterior-4.6"
+   "63325585362fe8be": "anterior-4.6",
+   "cc57a5fc3f617800": "4.6"
   },
   ".claude/skills/mercado-ads/SKILL.md": {
-   "8e1ec4283727ac91": "3.6",
-   "a8b1fc4dd7781380": "4.1",
    "0bace000b62da161": "anterior-3.6",
-   "6ef53747e8b38eba": "anterior-3.6"
+   "6ef53747e8b38eba": "anterior-3.6",
+   "8e1ec4283727ac91": "3.6",
+   "a8b1fc4dd7781380": "4.1"
   },
   ".claude/skills/mercado-ads/referencias/estrategia.md": {
    "2f895f8750f59ec6": "3.6",
@@ -905,32 +915,32 @@
    "ef78e5fd60139ebb": "3.6"
   },
   ".claude/skills/mercado-ads/scripts/estrategia.mjs": {
-   "7009351a96041e25": "3.6",
-   "62c844d4a02b5b40": "anterior-3.6"
+   "62c844d4a02b5b40": "anterior-3.6",
+   "7009351a96041e25": "3.6"
   },
   ".claude/skills/mercado-ads/scripts/rodar.mjs": {
    "308ebaa8e16dcfab": "3.6"
   },
   ".claude/skills/mercado-livre/SKILL.md": {
-   "e3d24ddb4c89fea9": "3.6",
-   "3d3284bc731bccdd": "3.7",
-   "d7ea2d6bdc66a22a": "3.8",
-   "1330610a1516b64b": "3.9",
-   "82a7e03582dbdb6c": "3.10",
    "00ea6fb563289474": "3.11",
-   "246e4d8b0a7c0484": "4.1",
-   "7f8cd34d9d1e9f1a": "4.4",
-   "63401f20e683f3d1": "anterior-3.6",
-   "8e18cd1d70f35c8b": "anterior-3.6",
    "11ff80e36fb2467d": "anterior-3.6",
-   "f340dafbfc94d36e": "anterior-3.6",
-   "a1e3d592072ff1f6": "anterior-3.6",
-   "f3924f28ed8ddf39": "anterior-3.6",
-   "9b9653e75ead70d1": "anterior-3.6",
-   "723151824f9afd33": "anterior-3.7",
-   "f7b46d82c671513e": "anterior-3.8",
    "12528baa824325ba": "anterior-3.9",
-   "af80b6ad8878513a": "anterior-3.11"
+   "1330610a1516b64b": "3.9",
+   "246e4d8b0a7c0484": "4.1",
+   "3d3284bc731bccdd": "3.7",
+   "63401f20e683f3d1": "anterior-3.6",
+   "723151824f9afd33": "anterior-3.7",
+   "7f8cd34d9d1e9f1a": "4.4",
+   "82a7e03582dbdb6c": "3.10",
+   "8e18cd1d70f35c8b": "anterior-3.6",
+   "9b9653e75ead70d1": "anterior-3.6",
+   "a1e3d592072ff1f6": "anterior-3.6",
+   "af80b6ad8878513a": "anterior-3.11",
+   "d7ea2d6bdc66a22a": "3.8",
+   "e3d24ddb4c89fea9": "3.6",
+   "f340dafbfc94d36e": "anterior-3.6",
+   "f3924f28ed8ddf39": "anterior-3.6",
+   "f7b46d82c671513e": "anterior-3.8"
   },
   ".claude/skills/mercado-livre/package.json": {
    "e5484cc3ba438b4d": "3.6"
@@ -942,36 +952,36 @@
   ".claude/skills/mercado-livre/referencias/configuracao-exemplo.md": {
    "601e155f7f98de49": "3.6",
    "6db7134ef57bb90b": "3.8",
-   "ce907b9ef5313c6a": "3.9",
+   "91a55cfebae76c07": "anterior-3.6",
    "a419b7ed0776c366": "3.11",
    "cca6c16ecb102d8f": "4.1",
-   "91a55cfebae76c07": "anterior-3.6"
+   "ce907b9ef5313c6a": "3.9"
   },
   ".claude/skills/mercado-livre/referencias/contratos.md": {
-   "cd7ec87a2948ec8c": "3.6",
-   "5c885fb59ae9b1a6": "3.8",
+   "018a14d831a02d7b": "anterior-3.6",
    "2e9b0069cf8f0e4c": "3.9",
+   "35dfe8168a5d3e6a": "anterior-3.9",
+   "415226e22c145ba4": "anterior-3.6",
+   "488208f27400e75b": "anterior-3.6",
+   "5614c8432b6e5836": "anterior-3.11",
+   "5c885fb59ae9b1a6": "3.8",
+   "90f07e840d998791": "anterior-3.6",
+   "cd7ec87a2948ec8c": "3.6",
    "d7eb464178c6f3d5": "3.11",
    "ef5326dd6e26cd91": "4.2",
-   "018a14d831a02d7b": "anterior-3.6",
-   "fbd39de8bbe11e2b": "anterior-3.6",
-   "488208f27400e75b": "anterior-3.6",
-   "90f07e840d998791": "anterior-3.6",
-   "415226e22c145ba4": "anterior-3.6",
-   "35dfe8168a5d3e6a": "anterior-3.9",
-   "5614c8432b6e5836": "anterior-3.11"
+   "fbd39de8bbe11e2b": "anterior-3.6"
   },
   ".claude/skills/mercado-livre/referencias/navegador.md": {
    "028bc14577b03c93": "3.7"
   },
   ".claude/skills/mercado-livre/referencias/precificacao.md": {
-   "6125ed0a540a3b1b": "3.6",
-   "2748f4d1d5313904": "anterior-3.6"
+   "2748f4d1d5313904": "anterior-3.6",
+   "6125ed0a540a3b1b": "3.6"
   },
   ".claude/skills/mercado-livre/referencias/regras-ml.md": {
-   "ece7c01b318c4b8e": "3.6",
-   "9f48f73d1e952c22": "anterior-3.6",
    "6453c8fff72f6b7c": "anterior-3.6",
+   "9f48f73d1e952c22": "anterior-3.6",
+   "ece7c01b318c4b8e": "3.6",
    "efaba0b5b5a949e1": "anterior-3.6"
   },
   ".claude/skills/mercado-livre/scripts/abrir-chrome.mjs": {
@@ -990,10 +1000,10 @@
    "96fd691d08740769": "anterior-3.6"
   },
   ".claude/skills/mercado-livre/scripts/lib/config.mjs": {
+   "13f1de5dc1610a5b": "anterior-3.6",
    "1baa437aaf3dfcfd": "3.6",
-   "baba727d9455c966": "3.8",
    "1c581e65e4598972": "4.1",
-   "13f1de5dc1610a5b": "anterior-3.6"
+   "baba727d9455c966": "3.8"
   },
   ".claude/skills/mercado-livre/scripts/lib/decisoes.mjs": {
    "12c4b25041705774": "3.6",
@@ -1006,12 +1016,12 @@
   },
   ".claude/skills/mercado-livre/scripts/lib/fetch-timeout.mjs": {
    "11170fec3b2600fb": "3.6",
-   "5580a5dce7142ef5": "3.7",
-   "3ce36ba54deb9071": "anterior-3.7"
+   "3ce36ba54deb9071": "anterior-3.7",
+   "5580a5dce7142ef5": "3.7"
   },
   ".claude/skills/mercado-livre/scripts/lib/ml-api.mjs": {
-   "f6b2c926a45199c7": "3.6",
-   "39774ede06a74738": "3.11"
+   "39774ede06a74738": "3.11",
+   "f6b2c926a45199c7": "3.6"
   },
   ".claude/skills/mercado-livre/scripts/lib/pipeline.mjs": {
    "794cf5e09fa3c70c": "3.6",
@@ -1021,18 +1031,18 @@
    "24315e648d3bc99b": "3.6"
   },
   ".claude/skills/mercado-livre/scripts/lib/tokens.mjs": {
-   "fa0d373d2bd9b6ac": "3.6",
    "1aea29ee2b9bcf82": "anterior-3.6",
    "81dfaf05db96c36d": "anterior-3.6",
    "c43690d4053dd23e": "anterior-3.6",
-   "e7e24962e2fe928e": "anterior-3.6"
+   "e7e24962e2fe928e": "anterior-3.6",
+   "fa0d373d2bd9b6ac": "3.6"
   },
   ".claude/skills/midia-social/SKILL.md": {
-   "ab8d6c8d68f3f4f6": "4.1",
-   "e2d6e97c050fe702": "anterior-4.1",
-   "c78f5b786b2fd5f9": "anterior-4.1",
+   "872d2a150d454253": "anterior-4.1",
    "8f76e2abc59d083f": "anterior-4.1",
-   "872d2a150d454253": "anterior-4.1"
+   "ab8d6c8d68f3f4f6": "4.1",
+   "c78f5b786b2fd5f9": "anterior-4.1",
+   "e2d6e97c050fe702": "anterior-4.1"
   },
   ".claude/skills/midia-social/moldes/biblioteca/ganchos.md": {
    "1f80c6888f68614c": "4.1"
@@ -1077,8 +1087,8 @@
    "711a987491feb1b7": "4.1"
   },
   ".claude/skills/midia-social/referencias/configurar.md": {
-   "f3cefa4e4cadd47d": "4.1",
-   "9f2167b0570ce525": "anterior-4.1"
+   "9f2167b0570ce525": "anterior-4.1",
+   "f3cefa4e4cadd47d": "4.1"
   },
   ".claude/skills/midia-social/scripts/abrir-chrome.mjs": {
    "a60b54af35c90f48": "4.1"
@@ -1097,12 +1107,12 @@
    "e8366fdf7f8a6064": "4.1"
   },
   ".claude/skills/midia-social/scripts/lib/config.mjs": {
-   "a0d1e805522ccb32": "4.1",
-   "6f3cac16fa23c555": "anterior-4.1"
+   "6f3cac16fa23c555": "anterior-4.1",
+   "a0d1e805522ccb32": "4.1"
   },
   ".claude/skills/midia-social/scripts/lib/custos.mjs": {
-   "deb9fc4eac992106": "4.1",
-   "9fe851b919e5fdbc": "anterior-4.1"
+   "9fe851b919e5fdbc": "anterior-4.1",
+   "deb9fc4eac992106": "4.1"
   },
   ".claude/skills/midia-social/scripts/lib/deposito.mjs": {
    "1830887acd247631": "4.1"
@@ -1111,38 +1121,38 @@
    "980d14385643fb88": "4.1"
   },
   ".claude/skills/montar-anuncio/SKILL.md": {
-   "cc22ee43f46739ad": "3.6",
-   "d5082377528436fb": "3.9",
-   "68e2644cc6437ac6": "4.4",
    "0b9ad82089bdfb8e": "anterior-3.6",
+   "68e2644cc6437ac6": "4.4",
    "973d7f14c36845da": "anterior-3.6",
    "b249d9c45b1d3985": "anterior-3.6",
    "cb489ab1ce18aad6": "anterior-3.6",
+   "cc22ee43f46739ad": "3.6",
+   "d5082377528436fb": "3.9",
    "eef8e6b6842d0656": "anterior-3.6"
   },
   ".claude/skills/montar-anuncio/referencias/modelo-descricao.md": {
-   "3e1555962cc0deb8": "3.6",
-   "b17885ee50ac5adf": "anterior-3.6",
-   "fd2b1aac9ed3c7ab": "anterior-3.6",
    "39dab9cb7506e648": "anterior-3.6",
+   "3e1555962cc0deb8": "3.6",
+   "3e4ec4a6f1c6540e": "anterior-3.6",
+   "b17885ee50ac5adf": "anterior-3.6",
    "fc6f51b731b8fd5a": "anterior-3.6",
-   "3e4ec4a6f1c6540e": "anterior-3.6"
+   "fd2b1aac9ed3c7ab": "anterior-3.6"
   },
   ".claude/skills/montar-anuncio/scripts/simular.mjs": {
-   "1bcd93a0f396b395": "3.6",
-   "8073c67aac72c575": "anterior-3.6",
    "030c62f3cae20154": "anterior-3.6",
+   "10a8c8b96a1b07c9": "anterior-3.6",
+   "1bcd93a0f396b395": "3.6",
+   "3488e1a9b0ff8591": "anterior-3.6",
+   "384a4a182a4945dd": "anterior-3.6",
+   "57e28302bcf3ae39": "anterior-3.6",
+   "5c913f5185c279a2": "anterior-3.6",
+   "791cb4edb6b68585": "anterior-3.6",
+   "7ab9f0b113dfd76d": "anterior-3.6",
+   "7eafbb5f5ddce32c": "anterior-3.6",
+   "8073c67aac72c575": "anterior-3.6",
    "942be6097cb11d82": "anterior-3.6",
    "bf135be353cbf2a8": "anterior-3.6",
-   "57e28302bcf3ae39": "anterior-3.6",
-   "3488e1a9b0ff8591": "anterior-3.6",
-   "10a8c8b96a1b07c9": "anterior-3.6",
-   "7eafbb5f5ddce32c": "anterior-3.6",
-   "7ab9f0b113dfd76d": "anterior-3.6",
-   "d7846532bba4a9b0": "anterior-3.6",
-   "791cb4edb6b68585": "anterior-3.6",
-   "384a4a182a4945dd": "anterior-3.6",
-   "5c913f5185c279a2": "anterior-3.6"
+   "d7846532bba4a9b0": "anterior-3.6"
   },
   ".claude/skills/novo-projeto/SKILL.md": {
    "7496700a3ffa8f7b": "anterior-3.0"
@@ -1172,12 +1182,12 @@
    "a63349066d8643fa": "3.0"
   },
   ".claude/skills/pauta/SKILL.md": {
-   "93e11e3d524221bc": "4.1",
-   "16ce7f4af0fdb7bf": "anterior-4.1"
+   "16ce7f4af0fdb7bf": "anterior-4.1",
+   "93e11e3d524221bc": "4.1"
   },
   ".claude/skills/pauta/cargos/analista.md": {
-   "ba74a63d74e46f63": "4.1",
-   "42ff440574c395b4": "anterior-4.1"
+   "42ff440574c395b4": "anterior-4.1",
+   "ba74a63d74e46f63": "4.1"
   },
   ".claude/skills/pauta/cargos/garimpeiro.md": {
    "d574a797f174a33c": "4.1"
@@ -1225,52 +1235,52 @@
    "be3016087c033e94": "4.1"
   },
   ".claude/skills/pauta/scripts/transcrever.py": {
-   "9ee5da349b52d9f1": "4.1",
-   "8e238e2ebb4c31e4": "anterior-4.1"
+   "8e238e2ebb4c31e4": "anterior-4.1",
+   "9ee5da349b52d9f1": "4.1"
   },
   ".claude/skills/pesquisar-tendencia/SKILL.md": {
    "307da608ba96f832": "3.6",
    "3e7c82c41a2966e1": "3.7",
-   "42e6f329190c7225": "anterior-3.6",
-   "400f3780429aa27e": "anterior-3.7"
+   "400f3780429aa27e": "anterior-3.7",
+   "42e6f329190c7225": "anterior-3.6"
   },
   ".claude/skills/pesquisar-tendencia/scripts/coletar-cdp.mjs": {
-   "bd56f40eb2e51e57": "3.6",
-   "e9152c210ca76e1d": "3.7",
-   "de9a671d869cafa2": "4.1",
-   "8be51af87ba9557f": "anterior-3.6",
    "02dbe5615ef389d3": "anterior-3.7",
+   "85cca1682d3834d5": "anterior-4.1",
+   "8be51af87ba9557f": "anterior-3.6",
    "adbe9181368d46a4": "anterior-4.1",
-   "85cca1682d3834d5": "anterior-4.1"
+   "bd56f40eb2e51e57": "3.6",
+   "de9a671d869cafa2": "4.1",
+   "e9152c210ca76e1d": "3.7"
   },
   ".claude/skills/pesquisar-tendencia/scripts/pesquisar.mjs": {
+   "491427f33e350829": "anterior-3.6",
    "7c59ff5985887871": "3.6",
-   "ff9aa280e4b8e503": "anterior-3.6",
-   "491427f33e350829": "anterior-3.6"
+   "ff9aa280e4b8e503": "anterior-3.6"
   },
   ".claude/skills/pode-vender/SKILL.md": {
-   "9b8cbc21c879f1b2": "3.6",
    "3de1d26b74b97831": "3.10",
-   "93b8fc121feff1ca": "anterior-3.6",
-   "7f7b583f0f2ae9ad": "anterior-3.6",
    "554acd31d9c748fb": "anterior-3.6",
+   "7f7b583f0f2ae9ad": "anterior-3.6",
    "8a14f5412284e2f4": "anterior-3.10",
+   "93b8fc121feff1ca": "anterior-3.6",
+   "9b8cbc21c879f1b2": "3.6",
    "e9b7e067b198e9c2": "anterior-3.10"
   },
   ".claude/skills/pode-vender/referencias/vereditos-exemplo.md": {
-   "660b6d14a540dc40": "3.6",
-   "dd81d668eb01d93e": "3.10",
    "43cc54db1e5c1bf5": "anterior-3.10",
-   "653ec3c141a4a1ef": "anterior-3.10"
+   "653ec3c141a4a1ef": "anterior-3.10",
+   "660b6d14a540dc40": "3.6",
+   "dd81d668eb01d93e": "3.10"
   },
   ".claude/skills/pode-vender/scripts/gate-marca.mjs": {
    "0da37fbfbf92794e": "3.10",
    "5a5da8bdd955b17f": "anterior-3.10"
   },
   ".claude/skills/pode-vender/scripts/lib/anvisa.mjs": {
-   "ffd7d02d1e3f7778": "3.10",
    "1dcfbe30f9d7a8c6": "anterior-3.10",
-   "a566adc3e22a703b": "anterior-3.10"
+   "a566adc3e22a703b": "anterior-3.10",
+   "ffd7d02d1e3f7778": "3.10"
   },
   ".claude/skills/pode-vender/scripts/lib/ml.mjs": {
    "13648d904e52d399": "3.10",
@@ -1280,20 +1290,20 @@
    "6c2add39087bc0d6": "3.10"
   },
   ".claude/skills/pode-vender/scripts/lib/veredito.mjs": {
-   "92fefcff277ac32d": "3.10",
+   "651c216661c4dbf4": "anterior-3.10",
    "793a763843473227": "anterior-3.10",
-   "651c216661c4dbf4": "anterior-3.10"
+   "92fefcff277ac32d": "3.10"
   },
   ".claude/skills/publicar-marketplace/SKILL.md": {
-   "634e77126fa2daa2": "3.6",
    "0c3df3656ef2cb81": "3.8",
-   "c9dad17a9ea7ec61": "3.11",
-   "f25cd9cf9f5086f6": "anterior-3.6",
-   "a8ab146dd8c6d1a7": "anterior-3.6",
-   "a632448656a0338c": "anterior-3.6",
-   "ec044161190dcb0b": "anterior-3.6",
+   "634e77126fa2daa2": "3.6",
    "7fa28e2b220c8f05": "anterior-3.11",
-   "9c8907cca79f042e": "anterior-3.11"
+   "9c8907cca79f042e": "anterior-3.11",
+   "a632448656a0338c": "anterior-3.6",
+   "a8ab146dd8c6d1a7": "anterior-3.6",
+   "c9dad17a9ea7ec61": "3.11",
+   "ec044161190dcb0b": "anterior-3.6",
+   "f25cd9cf9f5086f6": "anterior-3.6"
   },
   ".claude/skills/publicar-marketplace/scripts/lib/erros-ml.mjs": {
    "91c43693ff37b292": "3.11"
@@ -1304,10 +1314,10 @@
   },
   ".claude/skills/publicar-marketplace/scripts/publicar-ml.mjs": {
    "0fa0718b4e8d849c": "3.11",
-   "a23228daee6d771f": "anterior-3.11",
-   "a4a0e00f5311735f": "anterior-3.11",
    "60cb264860947712": "anterior-3.11",
-   "66230d37c07cb5bf": "anterior-3.11"
+   "66230d37c07cb5bf": "anterior-3.11",
+   "a23228daee6d771f": "anterior-3.11",
+   "a4a0e00f5311735f": "anterior-3.11"
   },
   ".claude/skills/publicar-social/SKILL.md": {
    "6624ef83f17dd8cc": "4.1",
@@ -1315,48 +1325,49 @@
   },
   ".claude/skills/publicar-social/scripts/plano.mjs": {
    "075ce17d5f7536f5": "4.1",
-   "b0210f8f35ab2d29": "anterior-4.1",
-   "67257faf1688e0b7": "anterior-4.1"
+   "12dbd54868651ab8": "4.8",
+   "67257faf1688e0b7": "anterior-4.1",
+   "b0210f8f35ab2d29": "anterior-4.1"
   },
   ".claude/skills/publicar-social/scripts/publicar-social.mjs": {
    "56bfec242074b7f1": "4.1",
-   "c737bc4f35efa890": "anterior-4.1",
-   "88ad7cc6ee8040d8": "anterior-4.1"
+   "88ad7cc6ee8040d8": "anterior-4.1",
+   "c737bc4f35efa890": "anterior-4.1"
   },
   ".claude/skills/segunda-opiniao/SKILL.md": {
+   "144de5c122ab5e8a": "anterior-4.3",
+   "a69eb1399eae4a57": "anterior-4.5",
    "d1f038b977bc6ec8": "4.3",
    "d410fb5efbc68214": "4.5",
-   "d8df5b3a197749d6": "anterior-4.3",
-   "144de5c122ab5e8a": "anterior-4.3",
-   "a69eb1399eae4a57": "anterior-4.5"
+   "d8df5b3a197749d6": "anterior-4.3"
   },
   ".claude/skills/setup/SKILL.md": {
    "2b4b146ff8277214": "anterior-3.0"
   },
   ".claude/skills/syncar/SKILL.md": {
-   "b4f4899d262b2d67": "3.0",
-   "17900feef39d7058": "4.1",
-   "a7455357749c4ec4": "4.3",
-   "6061d6e44c7c0ffb": "4.4",
-   "d6a92431f9ddac38": "4.5",
    "1542dc3d412b7095": "anterior-3.0",
+   "17900feef39d7058": "4.1",
+   "1b1d2a7362b798fb": "anterior-4.4",
    "22f1995cd7d253a4": "anterior-4.3",
+   "47d47eb565e4afb3": "anterior-4.5",
+   "6061d6e44c7c0ffb": "4.4",
    "66b7a79ad2babf6a": "anterior-4.3",
    "9071ff69bcaed336": "anterior-4.3",
-   "1b1d2a7362b798fb": "anterior-4.4",
-   "47d47eb565e4afb3": "anterior-4.5"
+   "a7455357749c4ec4": "4.3",
+   "b4f4899d262b2d67": "3.0",
+   "d6a92431f9ddac38": "4.5"
   },
   ".claude/skills/trafego/SKILL.md": {
-   "e3e5e1033b5c6365": "3.3",
-   "e60e3f1eb09e9bfa": "4.1",
-   "a0eaf0558ac80d40": "4.2",
    "005b40a303cb1be0": "anterior-3.3",
-   "3439e02bd69caa6c": "anterior-3.3"
+   "3439e02bd69caa6c": "anterior-3.3",
+   "a0eaf0558ac80d40": "4.2",
+   "e3e5e1033b5c6365": "3.3",
+   "e60e3f1eb09e9bfa": "4.1"
   },
   ".claude/skills/trafego/referencias/metodo.md": {
-   "bb4108df3900381d": "3.3",
    "a256242c8415f80f": "anterior-3.3",
-   "b1d65dea6e21fcc8": "anterior-3.3"
+   "b1d65dea6e21fcc8": "anterior-3.3",
+   "bb4108df3900381d": "3.3"
   },
   ".claude/skills/trafego/referencias/regua-exemplo.md": {
    "43af2666a4ad7f64": "3.3",
@@ -1364,13 +1375,13 @@
    "f2e4bbf8055f922d": "anterior-3.3"
   },
   ".claude/skills/trafego/scripts/faixas.mjs": {
-   "d797c09b79f453eb": "3.3",
-   "20d7eeab0c2e43a1": "anterior-3.3",
-   "48f48781b3f152db": "anterior-3.3",
    "071d10d0944aa62a": "anterior-3.3",
    "081ecbe50f8dba31": "anterior-3.3",
+   "20d7eeab0c2e43a1": "anterior-3.3",
+   "35d911eb759cdd97": "anterior-3.3",
+   "48f48781b3f152db": "anterior-3.3",
    "9ba5b4b2914be697": "anterior-3.3",
-   "35d911eb759cdd97": "anterior-3.3"
+   "d797c09b79f453eb": "3.3"
   },
   ".claude/skills/trafego/scripts/regua.mjs": {
    "606da5b9d0d57212": "3.3",
@@ -1382,28 +1393,28 @@
    "858b393aabaf733f": "anterior-3.0"
   },
   ".claude/skills/transcribe/SKILL.md": {
-   "30a1f4c989a7bc05": "3.0",
-   "0eae47ca101674ee": "4.1",
-   "a41b9b80b91528ff": "4.2",
    "065b184bf20e3dc0": "anterior-3.0",
-   "28e3c9e500cf909f": "anterior-4.1"
+   "0eae47ca101674ee": "4.1",
+   "28e3c9e500cf909f": "anterior-4.1",
+   "30a1f4c989a7bc05": "3.0",
+   "a41b9b80b91528ff": "4.2"
   },
   ".claude/skills/transcribe/scripts/transcribe_url.py": {
    "338c30119514d99f": "3.0",
    "77c77e911bf69fb0": "4.1"
   },
   ".claude/skills/video-produto/SKILL.md": {
-   "ac57890c2217b9d3": "4.1",
-   "f8f9c36fef96c79a": "anterior-4.1",
-   "9df1f72fc6371a70": "anterior-4.1",
    "425d527e44a55e18": "anterior-4.1",
+   "9df1f72fc6371a70": "anterior-4.1",
+   "ac57890c2217b9d3": "4.1",
    "b3e4d4d269e65b52": "anterior-4.1",
-   "c084e63ee2b20f23": "anterior-4.1"
+   "c084e63ee2b20f23": "anterior-4.1",
+   "f8f9c36fef96c79a": "anterior-4.1"
   },
   ".claude/skills/video-produto/referencias/advertencias-categoria.md": {
+   "2b22e6d040c2d579": "anterior-4.1",
    "43defe7afa2cadfa": "4.1",
    "84c92bc1617004f9": "anterior-4.1",
-   "2b22e6d040c2d579": "anterior-4.1",
    "c0e08876d13e0892": "anterior-4.1"
   },
   ".claude/skills/video-produto/referencias/regras-clips-ml.md": {
@@ -1414,13 +1425,13 @@
    "5a3744dde4f705af": "4.1"
   },
   ".claude/skills/video-produto/scripts/clipe.mjs": {
+   "0f90f026c5604b55": "anterior-4.1",
    "62948f82b82ae903": "4.1",
-   "7f5013ba60895af2": "anterior-4.1",
-   "0f90f026c5604b55": "anterior-4.1"
+   "7f5013ba60895af2": "anterior-4.1"
   },
   ".claude/skills/video-produto/scripts/coletar.mjs": {
-   "e49a826d28184869": "4.1",
-   "81f755e664f7bbad": "anterior-4.1"
+   "81f755e664f7bbad": "anterior-4.1",
+   "e49a826d28184869": "4.1"
   },
   ".claude/skills/video-produto/scripts/fontes/Montserrat-Bold.ttf": {
    "4487f14459068173": "4.1"
@@ -1441,16 +1452,16 @@
    "ce8e541435950fe1": "4.1"
   },
   ".claude/skills/video-produto/scripts/lib/de-espionagem.mjs": {
-   "e986536fdcd7c711": "4.1",
    "3bf99c1e85ab2d90": "anterior-4.1",
-   "a3695bc81f973a45": "anterior-4.1"
+   "a3695bc81f973a45": "anterior-4.1",
+   "e986536fdcd7c711": "4.1"
   },
   ".claude/skills/video-produto/scripts/lib/dinheiro.mjs": {
    "3dd5b09c0a160d5c": "4.1"
   },
   ".claude/skills/video-produto/scripts/lib/direcao.mjs": {
-   "6d54b46990bc572c": "4.1",
    "389a02c575070b7a": "anterior-4.1",
+   "6d54b46990bc572c": "4.1",
    "ba1f06c819e10e47": "anterior-4.1"
   },
   ".claude/skills/video-produto/scripts/lib/gate.mjs": {
@@ -1466,11 +1477,12 @@
    "0abcb73d63e142c8": "4.1"
   },
   ".claude/skills/video-produto/scripts/lib/musica.mjs": {
-   "764cf3dd638e2470": "4.1",
-   "41fd2df9e261c87b": "anterior-4.1"
+   "41fd2df9e261c87b": "anterior-4.1",
+   "764cf3dd638e2470": "4.1"
   },
   ".claude/skills/video-produto/scripts/lib/normalizar.mjs": {
-   "08adf1e78fc15e28": "4.1"
+   "08adf1e78fc15e28": "4.1",
+   "9efd9a81ca261971": "4.8"
   },
   ".claude/skills/video-produto/scripts/lib/preparar-imagem.mjs": {
    "d0de87dff5a92079": "4.1"
@@ -1486,77 +1498,81 @@
    "13d31705a6e18c04": "4.1"
   },
   ".claude/skills/video-produto/scripts/montar.mjs": {
-   "81147a5805541fff": "4.1",
-   "600f086dd0aa38cd": "4.2"
+   "600f086dd0aa38cd": "4.2",
+   "81147a5805541fff": "4.1"
   },
   ".claude/skills/video-produto/scripts/narrar.mjs": {
-   "1991c70a454b044c": "4.1",
-   "b5771700111eb732": "anterior-4.1",
-   "dcbb3bc37f745cd0": "anterior-4.1",
    "1473e929710f94c2": "anterior-4.1",
-   "550f6fd2ef556c10": "anterior-4.1"
+   "1991c70a454b044c": "4.1",
+   "550f6fd2ef556c10": "anterior-4.1",
+   "b5771700111eb732": "anterior-4.1",
+   "dcbb3bc37f745cd0": "anterior-4.1"
   },
   ".claude/skills/video-produto/scripts/video-produto.mjs": {
-   "6bfde41974ef4cdc": "4.1",
-   "11de4ab6928e2561": "4.2",
    "0d329c10050860b3": "anterior-4.1",
-   "eeb3dec766b59dba": "anterior-4.1",
-   "be75abf74fb955da": "anterior-4.1",
+   "11de4ab6928e2561": "4.2",
+   "60aa56aee384b50a": "anterior-4.1",
+   "6bfde41974ef4cdc": "4.1",
+   "6d80c9e7941ed7f5": "4.8",
    "b7b938c98ed74917": "anterior-4.1",
+   "be75abf74fb955da": "anterior-4.1",
    "c56c72f23a2ff335": "anterior-4.1",
-   "60aa56aee384b50a": "anterior-4.1"
+   "eeb3dec766b59dba": "anterior-4.1"
   },
   ".gitattributes": {
    "4d04b7e92d8b3ef8": "4.3"
   },
   ".gitignore": {
-   "8c89c21a2e5b5800": "3.0",
-   "338929ffd51c4b86": "3.6",
-   "60b0aa527617d529": "4.1",
    "20e2aaf84973b129": "4.3",
-   "846f2e87fe1a0ee1": "4.4",
-   "c0f11d4cec3eb5b8": "4.5",
-   "f55a864d8d473607": "anterior-3.0",
-   "de7cbfcf414ae059": "anterior-3.0",
-   "8f5ffdc1d73b5b20": "anterior-3.5",
+   "253bb87f8b12c05a": "anterior-4.3",
+   "338929ffd51c4b86": "3.6",
    "3fa975c61d0a27fc": "anterior-4.3",
-   "253bb87f8b12c05a": "anterior-4.3"
+   "60b0aa527617d529": "4.1",
+   "846f2e87fe1a0ee1": "4.4",
+   "8c89c21a2e5b5800": "3.0",
+   "8f5ffdc1d73b5b20": "anterior-3.5",
+   "bc31c1598168f910": "4.8",
+   "c0f11d4cec3eb5b8": "4.5",
+   "db4ed0332b233701": "4.8",
+   "de7cbfcf414ae059": "anterior-3.0",
+   "f55a864d8d473607": "anterior-3.0"
   },
   "AGENTS.md": {
-   "2b728a009c77a407": "3.0",
    "130bd39d003ac0db": "3.1",
-   "d53f8c73eb1d4bf0": "3.4",
-   "6c558189c1acd355": "4.1",
-   "b508df390f5b9859": "4.2",
-   "d14f42184890533a": "4.3",
-   "99c9c8a351548bb1": "4.4",
-   "3b75efaa04d556d5": "4.5",
-   "56a07bbf79e76281": "anterior-3.0",
-   "a2472a4de5c2c1fd": "anterior-3.0",
+   "16f85e9e2a3eee73": "anterior-4.5",
    "22902c95f73a6baf": "anterior-4.1",
-   "e1de1ad21ed4f5d9": "anterior-4.3",
+   "2b728a009c77a407": "3.0",
    "3a6554d4c0bf2e9c": "anterior-4.3",
-   "c6306480a5adf33e": "anterior-4.3",
-   "b25c1008862d978b": "anterior-4.3",
+   "3b75efaa04d556d5": "4.5",
+   "4241fd89efaee5be": "4.8",
+   "56a07bbf79e76281": "anterior-3.0",
+   "6c558189c1acd355": "4.1",
    "7ab5d71f0d0bbb52": "anterior-4.4",
-   "ea5a25380f7e2c6b": "anterior-4.4",
-   "16f85e9e2a3eee73": "anterior-4.5"
+   "99c9c8a351548bb1": "4.4",
+   "a2472a4de5c2c1fd": "anterior-3.0",
+   "b25c1008862d978b": "anterior-4.3",
+   "b508df390f5b9859": "4.2",
+   "c6306480a5adf33e": "anterior-4.3",
+   "d14f42184890533a": "4.3",
+   "d53f8c73eb1d4bf0": "3.4",
+   "e1de1ad21ed4f5d9": "anterior-4.3",
+   "ea5a25380f7e2c6b": "anterior-4.4"
   },
   "CLAUDE.md": {
-   "336cc4fbf19beaad": "3.0",
    "14230e4bca5ae346": "anterior-3.0",
-   "75e994de5ef27a2e": "anterior-3.0",
+   "336cc4fbf19beaad": "3.0",
    "38a053057bf589fa": "anterior-3.0",
-   "677bb73afe5fdf86": "anterior-3.0"
+   "677bb73afe5fdf86": "anterior-3.0",
+   "75e994de5ef27a2e": "anterior-3.0"
   },
   "COMECE-AQUI.md": {
    "52de4690e48cf260": "anterior-3.0"
   },
   "_contexto/agora.md": {
-   "5b8c6bcdd21e9e6c": "3.0",
    "102fa52a93c984c3": "3.1",
-   "87defc84423f6df1": "4.3",
-   "45d5072ac01c9688": "4.4"
+   "45d5072ac01c9688": "4.4",
+   "5b8c6bcdd21e9e6c": "3.0",
+   "87defc84423f6df1": "4.3"
   },
   "_contexto/arquivo/README.md": {
    "f393cdbf7847488a": "3.1"
@@ -1569,42 +1585,42 @@
    "deedee56bb708156": "3.1"
   },
   "_contexto/estrategia.md": {
-   "c55f4fc16750f499": "3.0",
    "0c653e3971d038c3": "3.1",
-   "7ec9f1dfcea61184": "4.4"
+   "7ec9f1dfcea61184": "4.4",
+   "c55f4fc16750f499": "3.0"
   },
   "_contexto/ferramentas.md": {
    "8a7285b89d92ee5b": "3.0",
    "bc39b9f47ae68fe9": "4.4"
   },
   "_contexto/infra.md": {
-   "5d0130320548dfac": "4.3",
-   "13bac21d88dcb207": "4.4"
+   "13bac21d88dcb207": "4.4",
+   "5d0130320548dfac": "4.3"
   },
   "_contexto/licoes.md": {
-   "ffd0c94cf2f16051": "3.0",
    "831e3432ac813ebd": "3.1",
-   "fecc9793944f0f78": "anterior-3.0"
+   "fecc9793944f0f78": "anterior-3.0",
+   "ffd0c94cf2f16051": "3.0"
   },
   "_contexto/pessoas/.gitkeep": {
    "e3b0c44298fc1c14": "4.4"
   },
   "_contexto/preferencias.md": {
+   "665eaf310c33081e": "3.3",
    "8d6dc4dd6e75d1b3": "3.0",
    "a3513336d9995f5e": "3.1",
-   "665eaf310c33081e": "3.3",
-   "fafdaa7abf465893": "4.4",
-   "c07a15822c5d13fd": "anterior-3.0"
+   "c07a15822c5d13fd": "anterior-3.0",
+   "fafdaa7abf465893": "4.4"
   },
   "_memoria/arquivo/.gitkeep": {
    "e3b0c44298fc1c14": "4.3"
   },
   "_memoria/decisoes.md": {
-   "8f5d971022e846d3": "4.3",
-   "f18b13804bc830d7": "4.4",
-   "c87e8dcbfd6d44bf": "anterior-4.3",
+   "2630518edba9cb4e": "anterior-4.3",
    "5ea11533996324c4": "anterior-4.3",
-   "2630518edba9cb4e": "anterior-4.3"
+   "8f5d971022e846d3": "4.3",
+   "c87e8dcbfd6d44bf": "anterior-4.3",
+   "f18b13804bc830d7": "4.4"
   },
   "_memoria/diario/.gitkeep": {
    "e3b0c44298fc1c14": "4.3"
@@ -1613,12 +1629,12 @@
    "e3b0c44298fc1c14": "4.3"
   },
   "dados/README.md": {
-   "51612c99379a8912": "3.0",
-   "095a7baa9f635aa1": "4.6"
+   "095a7baa9f635aa1": "4.6",
+   "51612c99379a8912": "3.0"
   },
   "marca/design-guide.md": {
-   "e83b1f226cf0fa54": "3.0",
-   "a631ffd3876ece59": "3.9"
+   "a631ffd3876ece59": "3.9",
+   "e83b1f226cf0fa54": "3.0"
   },
   "marca/tom-de-voz.md": {
    "ef89e8caac335d51": "4.4"

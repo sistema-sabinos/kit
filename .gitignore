@@ -37,4 +37,7 @@ node_modules/
 .claude/settings.local.json
 # ponte pro Codex, criada em tempo de uso, nunca versionada
 .agents/
+# chave de skill de fora, em qualquer profundidade (o * so segura a da raiz)
+.secrets/
+secrets/
 # pastas de projeto criadas pelo setup entram aqui, uma linha cada (o /setup adiciona)

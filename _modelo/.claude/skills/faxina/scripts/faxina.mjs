@@ -357,6 +357,9 @@ const BLOQUEIO_DE_PROPOSITO = [
   /(^|\/)\.DS_Store$/, /(^|\/)Thumbs\.db$/, /(^|\/)desktop\.ini$/, /(^|\/)\~\$[^/]*$/,
   // copia de seguranca do atualizador e recado de envio parado: valem so neste computador
   /^\.sabinos\//, /^_memoria\/recados\/[^/]*-auto-sync-parado\.md$/,
+  /^_memoria\/recados\/[^/]*-auto-sync-segurou\.md$/,
+  // pasta de chave (.secrets/ de skill de terceiro e secrets/): fora do backup de proposito, em qualquer profundidade
+  /(^|\/)\.?secrets\//,
 ]
 
 export function foraDoBackup(raiz) {

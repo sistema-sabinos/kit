@@ -404,6 +404,57 @@ test('gate passa quando os .gitignore ja tem a linha .agents/', () => {
   rmSync(dir, { recursive: true, force: true })
 })
 
+test('gate 3 exige .secrets/ e secrets/ no .gitignore do _modelo', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/.gitignore'), '.env\n.agents/\n')
+    const sem = rodarGates(dir).falhas.filter(f => f.gate === 3 && f.arquivo === '_modelo/.gitignore')
+    assert.ok(sem.some(f => /\.secrets\//.test(f.detalhe)), '_modelo/.gitignore sem .secrets/ falha')
+    writeFileSync(join(dir, '_modelo/.gitignore'), '.env\r\n.agents/\r\n.secrets/\r\n')
+    const soPonto = rodarGates(dir).falhas.filter(f => f.gate === 3 && f.arquivo === '_modelo/.gitignore')
+    assert.deepEqual(soPonto.map(f => f.detalhe), ['.gitignore precisa da linha secrets/'],
+      'so com .secrets/ o gate 3 cobra a secrets/ sem ponto')
+    writeFileSync(join(dir, '_modelo/.gitignore'), '.env\r\n.agents/\r\n.secrets/\r\nsecrets/\r\n')
+    const com = rodarGates(dir).falhas.filter(f => f.gate === 3 && f.arquivo === '_modelo/.gitignore')
+    assert.deepEqual(com, [], 'com .secrets/ e secrets/ (CRLF) o gate 3 fica quieto no _modelo/.gitignore')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('entrada pasta-secrets-protegida procura chave versionada em qualquer profundidade', () => {
+  const txt = readFileSync(fileURLToPath(new URL('./mudancas.md', import.meta.url)), 'utf8')
+  const ini = txt.indexOf('## pasta-secrets-protegida')
+  assert.ok(ini >= 0, 'canario: a entrada existe')
+  const resto = txt.slice(ini + 3)
+  const fim = resto.indexOf('\n## ')
+  const entrada = fim < 0 ? resto : resto.slice(0, fim)
+  const aplicar = entrada.split(/\r?\n/).find(l => l.startsWith('**Como aplicar:**')) || ''
+  const testar = entrada.split(/\r?\n/).find(l => l.startsWith('**Como testar:**')) || ''
+  assert.ok(aplicar && testar, 'canario: a entrada tem Como aplicar e Como testar')
+  for (const l of [aplicar, testar]) {
+    assert.match(l, /git ls-files -ci --exclude-standard/)
+    assert.doesNotMatch(l, /git ls-files \.secrets secrets/)
+  }
+})
+
+test('gate 3 exige .secrets/ e secrets/ no .gitignore da pasta-mae', () => {
+  const dir = kitFalso()
+  try {
+    writeFileSync(join(dir, '.gitignore'), '*\r\n!*.json\r\n.agents/\r\n')
+    const sem = rodarGates(dir).falhas.filter(f => f.gate === 3 && f.arquivo === '.gitignore')
+    assert.ok(sem.length > 0, 'canario: o gate 3 achou falha na pasta-mae')
+    assert.deepEqual(sem.map(f => f.detalhe).sort(),
+      ['.gitignore precisa da linha .secrets/', '.gitignore precisa da linha secrets/'])
+    writeFileSync(join(dir, '.gitignore'), GITIGNORE_MAE)
+    const com = rodarGates(dir).falhas.filter(f => f.gate === 3 && f.arquivo === '.gitignore')
+    assert.deepEqual(com, [], 'o .gitignore real da pasta-mae passa no gate 3')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test('gate 6 isenta a skill otimizar-pc (declaradamente so Windows), mas continua acusando fora dela', () => {
   const dir = kitFalso()
   mkdirSync(join(dir, '_modelo/.claude/skills/otimizar-pc'), { recursive: true })
@@ -608,11 +659,26 @@ test('gate 9 aceita settings com ask do .env e deny de secrets', () => {
   try {
     mkdirSync(join(dir, '.claude'), { recursive: true })
     writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify({
-      permissions: { ask: ['Read(./.env)', 'Read(./.env.*)'], deny: ['Read(./secrets/**)'] },
+      permissions: { ask: ['Read(./.env)', 'Read(./.env.*)'], deny: ['Read(./secrets/**)', 'Read(./.secrets/**)'] },
     }))
     const { falhas } = rodarGates(dir)
     const daPastaMae = falhas.filter(f => f.gate === 9 && f.arquivo === '.claude/settings.json')
     assert.strictEqual(daPastaMae.length, 0, 'com ask e deny corretos, o gate 9 fica quieto')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('gate 9 acusa settings sem o deny de .secrets', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '.claude'), { recursive: true })
+    writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify({
+      permissions: { ask: ['Read(./.env)', 'Read(./.env.*)'], deny: ['Read(./secrets/**)'] },
+    }))
+    const doNove = rodarGates(dir).falhas.filter(f => f.gate === 9 && f.arquivo === '.claude/settings.json')
+    assert.ok(doNove.length > 0, 'canario: o gate 9 acusou alguma coisa')
+    assert.deepEqual(doNove.map(f => f.detalhe), ['permissions.deny sem a regra Read(./.secrets/**)'])
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
@@ -625,7 +691,7 @@ test('gate 9 acusa quando as regras do .env estao no lugar errado (deny em vez d
     // erro mais provavel de quem mexer nisso depois: deixar o .env dentro de deny,
     // que e exatamente o bug que esta rodada corrigiu (deny bloqueia a escrita da chave)
     writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify({
-      permissions: { deny: ['Read(./.env)', 'Read(./.env.*)', 'Read(./secrets/**)'] },
+      permissions: { deny: ['Read(./.env)', 'Read(./.env.*)', 'Read(./secrets/**)', 'Read(./.secrets/**)'] },
     }))
     const { falhas } = rodarGates(dir)
     const doNove = falhas.filter(f => f.gate === 9 && f.arquivo === '.claude/settings.json')
@@ -702,7 +768,7 @@ test('gate 9 cobra o hook que barra comando perigoso no _modelo', () => {
   try {
     mkdirSync(join(dir, '_modelo/.claude'), { recursive: true })
     writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify({
-      permissions: { ask: ['Read(./.env)', 'Read(./.env.*)'], deny: ['Read(./secrets/**)'] },
+      permissions: { ask: ['Read(./.env)', 'Read(./.env.*)'], deny: ['Read(./secrets/**)', 'Read(./.secrets/**)'] },
     }))
     const { falhas } = rodarGates(dir)
     assert.ok(falhas.some(f => f.gate === 9 && /barrar-perigoso/.test(f.detalhe)),
@@ -718,7 +784,7 @@ test('gate 9 acusa matcher que voltou a ser so Bash (perde a trava do PowerShell
     mkdirSync(join(dir, '_modelo/.claude/hooks'), { recursive: true })
     writeFileSync(join(dir, '_modelo/.claude/hooks/barrar-perigoso.mjs'), 'export function ehPerigoso() { return null }\n')
     writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify({
-      permissions: { ask: ['Read(./.env)', 'Read(./.env.*)'], deny: ['Read(./secrets/**)'] },
+      permissions: { ask: ['Read(./.env)', 'Read(./.env.*)'], deny: ['Read(./secrets/**)', 'Read(./.secrets/**)'] },
       hooks: { PreToolUse: [{ matcher: 'Bash', hooks: [{ type: 'command', command: 'node barrar-perigoso.mjs' }] }] },
     }))
     const { falhas } = rodarGates(dir)
@@ -735,7 +801,7 @@ test('gate 9 aceita o _modelo completo, com ask, deny e hook', () => {
     mkdirSync(join(dir, '_modelo/.claude/hooks'), { recursive: true })
     writeFileSync(join(dir, '_modelo/.claude/hooks/barrar-perigoso.mjs'), 'export function ehPerigoso() { return null }\n')
     writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify({
-      permissions: { ask: ['Read(./.env)', 'Read(./.env.*)'], deny: ['Read(./secrets/**)'] },
+      permissions: { ask: ['Read(./.env)', 'Read(./.env.*)'], deny: ['Read(./secrets/**)', 'Read(./.secrets/**)'] },
       hooks: { PreToolUse: [{ matcher: 'Bash|PowerShell', hooks: [{ type: 'command', command: 'node barrar-perigoso.mjs' }] }] },
     }))
     const { falhas } = rodarGates(dir)
@@ -901,10 +967,10 @@ test('o .gitignore do _modelo libera o que o aluno produz e bloqueia o de propos
       'marca/FOTO.JPG', 'marca/anim.gif', 'docs/contrato.pdf', 'docs/proposta.docx', '.env.example',
       '_memoria/recados/.gitkeep', '.claude/skills/x/scripts/a.mjs', '.claude/settings.json', 'bem-vindo.html',
       '.claude/skills/configurar-video/referencias/teste-voz.wav',
-      '.claude/skills/video-produto/scripts/fontes/Montserrat-Bold.ttf']
+      '.claude/skills/video-produto/scripts/fontes/Montserrat-Bold.ttf', 'x.json']
     const fica = ['.env', '.env.local', '.origem', '.backup-falhou', '.claude/settings.local.json', 'video.mp4',
       'audio.wav', 'arte.psd', 'pacote.zip', 'node_modules/x/a.js', 'dados/chrome-perfil/Default/Preferences.json',
-      'dist/a.js', '.agents/skills/x.md', 'robos/vigia.log']
+      'dist/a.js', '.agents/skills/x.md', 'robos/vigia.log', '.secrets/x.json', 'secrets/x.json']
     assert.deepEqual(foraDoBackup(dir, [...entra, ...fica]), [...fica].sort())
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
@@ -935,8 +1001,10 @@ test('o .gitignore da pasta-mae libera o kit e deixa fora segredo, midia, projet
       assert.ok(entra.includes(r), `canario: ${r} esta na lista`)
     const fica = ['.env', '.env.local', 'video.mp4', 'SabinOS-Sistema-4.4.zip', 'node_modules/x.js', '.backup-falhou',
       '.claude/settings.local.json', '.agents/skills/x.md', 'meu-projeto/_contexto/empresa.md', 'meu-projeto/AGENTS.md',
-      '_kit-anterior-4.3/x.md', '_kit-anterior-4.3/_modelo/AGENTS.md', 'docs/aula.mp4']
-    const fora = foraDoBackup(dir, ['.gitignore', ...entra, ...fica])
+      '_kit-anterior-4.3/x.md', '_kit-anterior-4.3/_modelo/AGENTS.md', 'docs/aula.mp4', '.origem',
+      '.claude/skills/x/.secrets/k.json', '.claude/skills/x/secrets/k.json']
+    // canario: o .json da skill fora de pasta de chave continua no backup
+    const fora = foraDoBackup(dir, ['.gitignore', ...entra, '.claude/skills/x/config.json', ...fica])
     assert.ok(fora !== null, 'git rodou')
     assert.deepEqual(fora, [...fica].sort())
   } finally { rmSync(dir, { recursive: true, force: true }) }
@@ -954,6 +1022,57 @@ test('gate 11 acusa arquivo do kit fora do _modelo que o .gitignore da pasta-mae
     assert.ok(g11.length > 0, 'canario: o gate rodou e achou alguma coisa')
     assert.deepEqual(g11.map(f => f.arquivo), ['docs/aula.mp4'])
   } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 11 sem git vem em naoRodou (uma entrada), nunca ok com aviso', () => {
+  const dir = kitFalso()
+  const path = process.env.PATH
+  try {
+    mkdirSync(join(dir, '_modelo'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/.gitignore'), GITIGNORE_MODELO)
+    writeFileSync(join(dir, '.gitignore'), GITIGNORE_MAE)
+    // canario: com o PATH normal o git roda e o 11 fica fora do naoRodou
+    assert.ok(!rodarGates(dir, { proibidos: [] }).naoRodou.some(n => n.gate === 11), 'canario: git achado')
+    process.env.PATH = ''
+    const { naoRodou, avisos } = rodarGates(dir, { proibidos: [] })
+    assert.ok(naoRodou.length > 0, 'canario: naoRodou nao veio vazio')
+    const g11 = naoRodou.filter(n => n.gate === 11)
+    assert.equal(g11.length, 1)
+    assert.match(g11[0].motivo, /git nao encontrado/)
+    assert.ok(!g11[0].parcial)
+    assert.deepEqual(avisos.filter(a => /Gate 11/.test(a)), [])
+  } finally {
+    process.env.PATH = path
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+// .gitignore da pasta-mae de antes da 4.4 (aberto), colado da v4.3
+const GITIGNORE_MAE_43 = ['.env', '.env.*', '.backup-falhou', 'node_modules/', '.DS_Store',
+  '# ponte pro Codex, criada em tempo de uso, nunca versionada', '.agents/',
+  '# pastas de projeto criadas pelo setup entram aqui, uma linha cada (o /setup adiciona)', ''].join('\n')
+
+function gate11GitignoreMae(conteudo) {
+  const dir = kitFalso()
+  try {
+    writeFileSync(join(dir, '.gitignore'), conteudo)
+    return rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 11 && f.arquivo === '.gitignore')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+}
+
+test('gate 11 acusa o .gitignore antigo (aberto) da pasta-mae', () => {
+  const g11 = gate11GitignoreMae(GITIGNORE_MAE_43)
+  assert.ok(g11.length > 0, 'canario: a lista de falhas nao veio vazia')
+  assert.match(g11[0].detalhe, /Arquivos misturados da pasta-m/)
+})
+
+test('gate 11 aceita o .gitignore fechado real da pasta-mae (CRLF, comentario no topo)', () => {
+  assert.ok(GITIGNORE_MAE.startsWith('#'), 'canario: o arquivo real comeca com comentario')
+  assert.deepEqual(gate11GitignoreMae(GITIGNORE_MAE), [])
+})
+
+test('gate 11 acusa o .gitignore antigo da pasta-mae tambem em CRLF', () => {
+  assert.ok(gate11GitignoreMae(GITIGNORE_MAE_43.replace(/\n/g, '\r\n')).length > 0)
 })
 
 // Gate 13: gavetas da memoria do Mapa do _modelo/AGENTS.md
@@ -1028,6 +1147,23 @@ test('gate 12 acusa travessao em md, mjs e html do kit, e so neles', () => {
     assert.ok(g12.length > 0, 'canario: o gate rodou e achou alguma coisa')
     assert.deepEqual(g12.map(f => `${f.arquivo} ${f.detalhe.split(':')[0]}`).sort(),
       ['_modelo/AGENTS.md linha 4', '_modelo/templates/a.mjs linha 2', '_modelo/templates/b.html linha 1'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// a faixa se monta por codigo pelo mesmo motivo: literal aqui faria o proprio teste reprovar
+test('gate 12 acusa a faixa de acento literal em mjs e js, e so neles', () => {
+  const dir = kitFalso()
+  const faixa = '[' + String.fromCharCode(0x300) + '-' + String.fromCharCode(0x36f) + ']'
+  try {
+    mkdirSync(join(dir, '_modelo/templates'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/templates/a.mjs'), `// ok\nconst x = s => s.replace(/${faixa}/g, '')\n`)
+    writeFileSync(join(dir, '_modelo/templates/b.js'), `const y = /${faixa}/g\n`)
+    writeFileSync(join(dir, '_modelo/templates/c.md'), `faixa citada em texto: ${faixa}\n`)
+    writeFileSync(join(dir, '_modelo/templates/limpo.mjs'), "const z = s => s.replace(/[a-z]/g, '')\n")
+    const g12 = rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 12)
+    assert.ok(g12.length > 0, 'canario: o gate rodou e achou alguma coisa')
+    assert.deepEqual(g12.map(f => `${f.arquivo} ${f.detalhe.split(':')[0]}`).sort(),
+      ['_modelo/templates/a.mjs linha 2', '_modelo/templates/b.js linha 1'])
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 

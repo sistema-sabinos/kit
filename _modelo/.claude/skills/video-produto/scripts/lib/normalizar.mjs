@@ -1,7 +1,7 @@
 // Junta item + descrição + perguntas + opiniões num objeto só, com as dúvidas
 // já agrupadas por repetição. É a matéria-prima do roteiro.
 
-const semAcento = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+const semAcento = (s) => String(s ?? '').normalize('NFD').replace(/\p{M}/gu, '');
 
 function chaveDaPergunta(texto) {
   return semAcento(texto).toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();

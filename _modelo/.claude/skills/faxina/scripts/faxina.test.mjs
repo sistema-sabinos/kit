@@ -325,6 +325,22 @@ test('foraDoBackup: copia do atualizador em .sabinos/ e recado de envio parado f
   })
 })
 
+test('foraDoBackup: .secrets/ e secrets/ em qualquer profundidade e recado de envio segurado ficam fora de proposito', () => {
+  comProjeto({
+    '.gitignore': '*\n!*/\n!*.md\n!.gitignore\n.secrets/\nsecrets/\n_memoria/recados/*-auto-sync-segurou.md\n', 'a.md': 'x', 'video.mp4': 'x',
+    '.secrets/chave.json': 'x', '_memoria/recados/2026-10-06-notebook-auto-sync-segurou.md': 'x',
+    'integracao/.secrets/k.json': 'x', 'secrets/x.json': 'x',
+  }, raiz => {
+    execFileSync('git', ['init', '-q', raiz])
+    const bruto = execFileSync('git', ['-C', raiz, 'status', '--ignored=matching', '--porcelain=v1'], { encoding: 'utf8' })
+    assert.ok(bruto.includes('.secrets/') && bruto.includes('auto-sync-segurou'), 'canario: o git ignora os dois')
+    assert.ok(bruto.includes('integracao/.secrets/') && bruto.includes('!! secrets/'), 'canario: o git ignora as pastas de chave')
+    const r = foraDoBackup(raiz)
+    assert.deepEqual(r.arquivos, ['video.mp4'])
+    assert.deepEqual(r.pastas, [])
+  })
+})
+
 test('orfaos: robos/ e bem-vindo.html sao sempre conhecidos', () => {
   comProjeto({ 'AGENTS.md': 'nada citado', 'robos/execucoes.jsonl': 'x', 'bem-vindo.html': 'x', 'solto.txt': 'x' }, raiz => {
     assert.deepEqual(orfaos(raiz), ['solto.txt'])

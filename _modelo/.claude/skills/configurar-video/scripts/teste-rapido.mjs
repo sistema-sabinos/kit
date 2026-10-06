@@ -19,7 +19,7 @@ export const PALAVRAS = ['teste', 'sistema', 'video', 'ouvindo', 'certo']
 const MINIMO_PALAVRAS = 3
 const TOLERANCIA_SEG = 0.5
 
-const normalizar = (t) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '')
+const normalizar = (t) => t.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^a-z0-9]/g, '')
 
 export function conferirResultado({ palavras, duracaoSeg, esperadaSeg }) {
   const ditas = new Set(palavras.map((p) => normalizar(p.text)))

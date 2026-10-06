@@ -79,7 +79,7 @@ Um hook que não roda (Node não instalado, script apagado) vira erro não bloqu
 
 - A pasta `.claude/hooks/` existe e o `barrar-perigoso.mjs` está dentro dela?
 - O `settings.json` tem o bloco `hooks.PreToolUse` apontando pra `barrar-perigoso.mjs`, com o `matcher` cobrindo **as duas** ferramentas (`"Bash|PowerShell"` ou `"Bash, PowerShell"`, nunca só `"Bash"` sozinho, senão a trava do PowerShell morre em silêncio e ninguém percebe)?
-- O `settings.json` tem as regras de permissão do `.env` (`ask` pra `Read(./.env)` e `Read(./.env.*)`, `deny` pra `Read(./secrets/**)`)?
+- O `settings.json` tem as regras de permissão do `.env` (`ask` pra `Read(./.env)` e `Read(./.env.*)`, `deny` pra `Read(./secrets/**)` e `Read(./.secrets/**)`)?
 - A trava responde de verdade: rodar `node -e "process.stdout.write(JSON.stringify({tool_input:{command:'rm -r'+'f /'}}))" | node .claude/hooks/barrar-perigoso.mjs` (o `node -e` monta o JSON sem depender de aspas do terminal do usuário, Windows ou Mac; a receita perigosa vai partida em duas pontas, `'rm -r'+'f /'`, pra esse comando de teste não carregar o próprio texto que a trava barra e acabar bloqueado por ela mesma antes de rodar) e conferir que o comando sai com código de erro e imprime o motivo do bloqueio. Só essa prova que a trava está viva; as outras três só provam que o arquivo existe.
 - **Vermelho:** pasta ou script faltando, hook não referenciado no `settings.json`, matcher cobrindo só uma ferramenta, regra de permissão do `.env` ausente, ou a trava não bloqueou o comando de teste. Conserto: copiar `.claude/hooks/barrar-perigoso.mjs` de `../_modelo/` (sem o `.test.mjs`, que é só de desenvolvimento) e reaplicar o bloco `PreToolUse` (matcher `"Bash|PowerShell"`) e as regras do `.env` no `settings.json`.
 

@@ -301,7 +301,7 @@ export function roteiroParaMarkdown(roteiro, { mlb = '' } = {}) {
 const soPalavras = (s) => String(s ?? '')
   .toLowerCase()
   .normalize('NFD')
-  .replace(/[̀-ͯ]/g, '')
+  .replace(/\p{M}/gu, '')
   .replace(/[^a-z0-9 ]/g, ' ')
   .split(/\s+/)
   .filter(Boolean)

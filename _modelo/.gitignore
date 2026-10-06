@@ -53,6 +53,8 @@
 # chaves e segredos: NUNCA sobem pro GitHub
 .env*
 !.env.example
+.secrets/
+secrets/
 # nome desta maquina e aviso do auto-sync: valem so neste computador
 .origem
 .backup-falhou
