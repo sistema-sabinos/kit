@@ -42,7 +42,9 @@
       ".claude/skills/publicar-social/",
       ".claude/skills/auditar-instagram/",
       ".claude/skills/gerenciar-youtube/"
-    ] }
+    ] },
+    "loja": { "depende": ["nucleo"], "caminhos": [".claude/skills/atendimento/", ".claude/skills/caixa/", ".claude/skills/cobrar/"] },
+    "mei": { "depende": ["nucleo", "loja"], "caminhos": [".claude/skills/mei/"] }
   },
   "mistos": ["AGENTS.md", "CLAUDE.md", ".gitignore", ".claude/settings.json"],
   "ignorar": { "pastas": ["templates/"], "arquivos": ["README.md"], "finais": [".test.mjs"] }

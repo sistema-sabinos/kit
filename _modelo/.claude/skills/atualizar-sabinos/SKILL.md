@@ -74,6 +74,10 @@ pelo `node`. Nunca usar outro endereço.
    `--componentes nome1,nome2`. Esse `--componentes` vai em toda rodada nova do
    `plano` daqui pra frente (inclusive se precisar refazer o plano), senão a
    escolha se perde. "Entra junto por dependência": avisar em uma linha.
+   O `mei` só se oferece a quem é MEI: ler a linha **Registro:** do
+   `_contexto/empresa.md` e, sem ela, fazer antes a pergunta do CNPJ do bloco "Loja"
+   do `setup` da pasta-mãe e gravar a linha com a resposta. Vale também quando entra
+   o `loja`, porque o `/caixa` usa essa linha.
 4. Cada "você mexeu": mostrar em prosa o que a versão da pessoa tem de diferente e
    o que a nova traz. Perguntar por arquivo: "fica a sua" ou "pega a nova".
 5. Cada "saiu do SabinOS": perguntar pelo nome. Só sai com sim nominal.
@@ -105,7 +109,7 @@ registrar.
 4. Fechar: "Pronto, projeto na versão <v>. Se algo ficou estranho, é só pedir
    'desfaz a atualização' que eu volto tudo como estava. Esse processo fechou,
    abre uma conversa nova." O download fica na pasta temporária do computador
-   (uns 300 KB) e pode ser apagado à mão quando quiser.
+   (uns 2 MB) e pode ser apagado à mão quando quiser.
 
 ## Desfazer
 

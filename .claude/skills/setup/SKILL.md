@@ -496,6 +496,56 @@ a `decupar-referencia` e a `pauta` usam as duas. Depois:
 Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o pacote de
 mídia social existe e pode ser instalado depois pelo `/mapear`.
 
+### Loja (depois da mídia social)
+
+Quando a pergunta 4, 6, 11, 14 ou 17 do questionário cita venda direta ao cliente: WhatsApp, encomenda, Pix, sinal,
+cardápio, loja física, delivery ou "vendo pelo Instagram". Perguntar na conversa, no
+formato de 4 partes:
+
+> "Vi que você vende direto pro cliente. Tenho um pacote de loja: responde o WhatsApp
+> com o preço e o prazo da sua tabela (eu rascunho, você manda), anota pedido e sinal,
+> mostra quem está devendo e rascunha a cobrança no seu tom. É grátis pra usar. Quer
+> que eu instale?
+>
+> Pergunto porque ele mexe no seu dinheiro do dia a dia, então só entra se fizer sentido.
+>
+> Tipo: 'quero', 'quero, mas me explica o caixa', ou 'agora não'."
+
+Resposta positiva: copiar pro projeto as três pastas inteiras de
+`_modelo/.claude/skills/` (`atendimento`, `caixa`, `cobrar`). Nunca copiar arquivo
+terminado em `.test.mjs`. O pacote vai inteiro ou não vai: o atendimento e o
+cobrar usam os scripts do caixa. Quem só quer uma parte recebe as três e começa
+pela que quer; as outras ficam quietas até serem chamadas. Depois, uma pergunta só, no formato de 4 partes:
+
+> "Seu negócio tem CNPJ hoje? Pergunto porque, se você é MEI, eu cuido também do DAS
+> de todo mês, da declaração anual e do teto de faturamento.
+>
+> Tipo: 'sou MEI', 'ainda não tenho CNPJ', 'tenho empresa com contador' ou 'não sei'."
+
+- **MEI:** copiar também a pasta `mei` e anotar `**Registro:** MEI` no
+  `_contexto/empresa.md` (data de abertura e tipo, a `/mei` pergunta na primeira vez).
+- **Ainda não tem CNPJ:** anotar `**Registro:** sem CNPJ, vende como pessoa física`.
+  A `mei` fica de fora; o `/caixa` avisa uma vez quando o Pix na conta pessoal passa do
+  ponto em que o banco pode cobrar tarifa, e oferece a `mei` só se a pessoa quiser
+  formalizar.
+- **Empresa com contador:** anotar `**Registro:** <o tipo que ela disser>, com contador`.
+  A `mei` fica de fora: as regras são outras e quem cuida é o contador.
+- **Não sei:** explicar em uma frase que dá pra ver no cartão do CNPJ, no site da
+  Receita, e anotar no `tarefas.md` "descobrir se o negócio é MEI e rodar `/mapear` pra
+  instalar a `/mei` se for".
+
+E em seguida:
+
+- Na seção "Estrutura de pastas" do `AGENTS.md` do projeto, uma linha:
+
+    - pacote de loja: `dados/catalogo.csv` (tabela de preços e prazos) e `dados/caixa/` (pedidos e pagamentos), criados na primeira vez pelo `/atendimento` e pelo `/caixa`
+
+- Em `_contexto/ferramentas.md`: `| pacote de loja | instalado | <AAAA-MM-DD> | a tabela de preços nasce no primeiro /atendimento |`
+- Em `tarefas.md`: "rodar `/atendimento` com uma foto do cardápio ou da tabela de preços pra montar o catálogo".
+
+Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o pacote de
+loja existe e pode ser instalado depois pelo `/mapear`.
+
 ### Nome da pasta
 
 Kebab case do nome do negócio ou projeto, **sem acento nem caractere especial**

@@ -25,7 +25,7 @@ conversa; mesma resposta.
 Procure o ícone do Claude na lateral do VS Code e clique. Na conversa,
 escreva `primeiro projeto` e aperte Enter. Ele lê suas respostas, faz as
 perguntas que faltarem e monta o seu sistema: pasta do projeto, memória,
-comandos sob medida pro seu negócio. Se você vende em marketplace, ele oferece também o pacote que cuida dos seus anúncios, e os de vídeo e de redes sociais.
+comandos sob medida pro seu negócio. Se você vende em marketplace, ele oferece também o pacote que cuida dos seus anúncios, e os de vídeo e de redes sociais. Se vende direto pro cliente, pelo WhatsApp ou por encomenda, oferece o pacote de loja (atendimento, caixa, cobrança e, pra quem é MEI, o calendário do MEI).
 
 ## 4. Trabalhe na pasta do projeto
 

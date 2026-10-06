@@ -334,3 +334,11 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o `AGENTS.md` do projeto não tem o texto `pessoas/`.
 **Como aplicar:** no `AGENTS.md` do projeto, acrescentar a linha do Mapa que começa com "contato que volta" logo depois da linha do `infra.md`, e a linha da Tabela de destinos que começa com "contato que aparece pela segunda vez" logo depois da de hospedagem, as duas copiadas do `_modelo/AGENTS.md` do kit. Criar a pasta `_contexto/pessoas/` com um `.gitkeep` dentro, como no `_modelo/` do kit. No `estrategia.md` e no `infra.md`, acrescentar as seções que faltam, copiadas do `_modelo/_contexto/` do kit, sem mexer no que a pessoa já escreveu.
 **Como testar:** o `AGENTS.md` do projeto cita `pessoas/` no Mapa e na Tabela; o `estrategia.md` tem "Contexto com prazo".
+
+## triagem-vira-atendimento
+
+**O que é:** a triagem de WhatsApp que o `/mapear` promovia de um template virou o `/atendimento`, do pacote de loja, que só responde preço e prazo pela tabela `dados/catalogo.csv` e confere o rascunho por script antes de mostrar.
+**Por quê:** na triagem antiga a tabela de preços era opcional, então o preço podia sair de cabeça; o template saiu da biblioteca pra não ficarem duas rotas pro mesmo trabalho.
+**Te afeta se:** o projeto tem a pasta `.claude/skills/triagem-atendimento/` e ainda não tem a `.claude/skills/atendimento/`.
+**Como aplicar:** oferecer o componente `loja` (que o atualizador já lista entre os que o projeto não tem) dizendo que ele substitui a triagem. Com o sim, instalar o componente, levar pro `/atendimento` o que a pessoa adaptou na triagem dela (tom, regra de política, respostas prontas), e só então mover a pasta `.claude/skills/triagem-atendimento/` pra `_contexto/arquivo/triagem-atendimento/`. O `dados/respostas-padrao.md` fica onde está, o `/atendimento` usa o mesmo arquivo. Sem o sim, nada muda.
+**Como testar:** existe `.claude/skills/atendimento/SKILL.md` e não existe `.claude/skills/triagem-atendimento/`.

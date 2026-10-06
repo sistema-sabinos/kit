@@ -8,8 +8,8 @@
 
 | id | fato | fonte | conferido_em |
 |---|---|---|---|
-| mei-teto | Teto do MEI: R$ 81 mil por ano, o que dá uma média de R$ 6.750 por mês; até R$ 97.200 o desenquadramento vale no ano seguinte, acima disso é retroativo ao início do ano | https://www.gov.br/empresas-e-negocios/pt-br/empreendedor/perguntas-frequentes/quero-crescer-nao-sou-mais-mei-e-agora/o-que-ocorre-com-a | 2026-09-29 |
-| mei-das | DAS do MEI de comércio: R$ 82,05 por mês, vence dia 20 | https://www8.receita.fazenda.gov.br/simplesnacional/noticias/NoticiaCompleta.aspx?id=c3b2044c-ff97-432a-b33c-ecf2a3df6dc3 | 2026-09-29 |
+| mei-teto | Teto do MEI: R$ 81 mil por ano, o que dá uma média de R$ 6.750 por mês; até R$ 97.200 o desenquadramento vale no ano seguinte, acima disso é retroativo ao início do ano | https://www.gov.br/memp/pt-br/teto-do-mei | 2026-10-06 |
+| mei-das | DAS do MEI de comércio: R$ 82,05 por mês, vence dia 20 | https://www8.receita.fazenda.gov.br/simplesnacional/noticias/NoticiaCompleta.aspx?id=c3b2044c-ff97-432a-b33c-ecf2a3df6dc3 | 2026-10-06 |
 | mei-abrir | Abrir o MEI é grátis e só pelo gov.br (conta prata ou ouro); site que cobra pela abertura é golpe | https://www.gov.br/empresas-e-negocios/pt-br/empreendedor/contas-com-nivel-prata-ou-ouro | 2026-09-29 |
 | mei-ocupacao | Na abertura se escolhe a ocupação (1 principal e até 15 secundárias), pelo produto que vai vender; não existe ocupação "venda pela internet"; intermediação não é permitida ao MEI | https://www.gov.br/empresas-e-negocios/pt-br/empreendedor/quero-ser-mei/quais-as-ocupacoes-que-podem-ser-mei | 2026-09-29 |
 | ie-comercio | Quem vende mercadoria precisa de inscrição estadual (tem ICMS) | https://sebrae.com.br/empreendedores/conteudos/gerenciar/mei-precisa-de-inscricao-estadual-saiba-quando-e-como-fazer | 2026-09-29 |

@@ -74,7 +74,7 @@ Pra cada um, responder sempre as mesmas 4 coisas: **o que te deixa fazer**, **é
 - **O que te deixa fazer:** na versão completa (API oficial), eu leio as mensagens recebidas, classifico por urgência, rascunho respostas e mando com sua aprovação.
 - **Grátis ou pago:** o modelo oficial cobra **por mensagem de template** enviada (marketing custa mais, utilidade custa centavos; resposta a cliente que te chamou primeiro é grátis dentro da janela de 24h, com cota mensal gratuita). E quase sempre tem a mensalidade de um provedor intermediário (BSP), que no Brasil vai de uns R$ 100 a mais de R$ 500 por mês.
 - **Precisa de quê:** conta Meta Business verificada, um número dedicado e um provedor. É a maior fricção desta lista, leva dias, não minutos.
-- **Hoje ou depois:** **depois, e sem frustração.** Enquanto a API não sai, existe o caminho manual que já funciona hoje: você cola aqui os prints ou o texto das conversas, e eu classifico, priorizo e rascunho as respostas no seu tom (skill de triagem de atendimento, ativável pelo `/mapear`). Resolve 80% da dor sem custo nenhum.
+- **Hoje ou depois:** **depois, e sem frustração.** Enquanto a API não sai, existe o caminho manual que já funciona hoje: você cola aqui os prints ou o texto das conversas, e eu classifico, priorizo e rascunho as respostas no seu tom, com preço e prazo tirados da sua tabela (o `/atendimento`, do pacote de loja, que o `/mapear` instala). Resolve 80% da dor sem custo nenhum.
 
 ### 7. Hermes Agent (pra quando você quiser que o sistema trabalhe sozinho)
 

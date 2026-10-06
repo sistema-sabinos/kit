@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 4.5 (2026-10-06)
+Versão 4.6 (2026-10-06)
 
 Um sistema de trabalho com IA pro seu negócio, rodando dentro do VS Code com o Claude Code.
 
@@ -55,6 +55,8 @@ A marca tem duas metades em `marca/`: o visual e a voz com que o sistema escreve
 Quem vende em marketplace ganha, se quiser, o pacote `/mercado-livre`: do "posso vender esse produto?" ao anúncio publicado e à conta auditada, sem custo (as partes pagas são opcionais e sempre avisadas antes de rodar: gerar imagem por IA e a leitura das fotos dos concorrentes na `/engenharia-reversa`). O `/setup` oferece quando suas respostas falam em marketplace.
 
 Junto com ele vêm mais dois pacotes opcionais. O de vídeo faz o vídeo do produto sem você filmar (`/video-produto`, a partir das dúvidas dos compradores nos concorrentes; rode antes a `/espionar-concorrente`) e edita o vídeo que você gravou (`/editar-video`). A instalação, pela `/configurar-video`, pede uns 4 GB livres na hora e uns 3 GB depois (música e efeito sonoro você baixa grátis, o kit mostra onde); gerar vídeo por IA é pago, com o valor mostrado antes, e o teto padrão de gasto é US$ 4 por rodada. O de redes sociais (`/midia-social`) faz a pauta da semana, agenda no Instagram, TikTok e YouTube pelo Buffer e mede o resultado, grátis (análise pelo Gemini opcional).
+
+Quem vende direto pro cliente (encomenda, WhatsApp, Instagram, Pix) ganha, se quiser, o pacote de loja: `/atendimento` responde as mensagens com o preço e o prazo da sua tabela, conferidos antes de chegar em você (o Claude rascunha, você manda); `/caixa` anota pedido e sinal, mostra quem está devendo e fecha o mês; `/cobrar` rascunha a cobrança no seu tom. Pra quem é MEI, o `/mei` avisa do DAS de todo dia 20, da declaração anual até 31 de maio e do faturamento perto do teto, com os valores conferidos em fonte oficial. Tudo grátis. O `/setup` oferece quando suas respostas falam em venda direta, e pergunta se o negócio tem CNPJ antes de instalar o `/mei`.
 
 O kit também funciona com o Codex (CLI da OpenAI, login pela sua conta ChatGPT), e a estrutura de skills que ele monta segue o padrão aberto que outros agentes leem, como o Hermes Agent. O guia avançado em `docs/roadmap-avancado.md` explica as rotas.
 

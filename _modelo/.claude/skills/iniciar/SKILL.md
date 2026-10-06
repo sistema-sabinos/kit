@@ -27,6 +27,7 @@ description: >
 9. Diário de hoje escrito por outro computador: em `_memoria/diario/`, todo arquivo de hoje cuja origem não é a deste computador (o `AAAA-MM-DD.md` é do `dono`; o `AAAA-MM-DD-<nome>.md`, do computador `<nome>`; a deste computador está no `.origem`, e sem ele é `dono`). Cada um vira uma frase no resumo, no campo "Hoje em outro computador"
 10. "Onde paramos" velho: se o último commit que mexeu no `_contexto/agora.md` (`git log -1 --format=%cs -- _contexto/agora.md`; sem git, a data do arquivo) tem mais de 7 dias, o campo "Onde paramos" ganha no fim "(anotado em <data>, pode estar velho)"
 11. Projeto com mais de 30 dias e nenhuma menção a `/faxina` no diário dos últimos 30 dias: uma linha no fim do resumo, "faz um mês sem faxina; quer rodar a `/faxina`? ela só mostra, e mexe com o seu sim"
+12. Com a pasta `.claude/skills/caixa/`, rodar `node .claude/skills/caixa/scripts/caixa.mjs alertas`; com a `.claude/skills/mei/` e o `dados/mei.json`, também `node .claude/skills/mei/scripts/mei.mjs alertas`. Saída vazia: nada. Com saída, cada linha vira uma frase no campo "Dinheiro"
 
 ## Se está configurado
 
@@ -44,6 +45,7 @@ quais já foram tratados e apagar só esses]
 **Negócio:** [nome e o que faz, em uma linha]
 **Foco agora:** [prioridade principal do estrategia.md]
 **Trilha:** [só aparece se `_contexto/trilha.md` existir e `etapa_atual` for menor que 10: "etapa N de 10, <nome da etapa>", e o que espera o contador se houver]
+**Dinheiro:** [só aparece com saída do passo 12: quem está devendo há mais de 7 dias, DAS ou declaração do MEI chegando, teto do MEI acima de 70%. Depois do resumo, oferecer o `/cobrar` ou o `/mei`]
 **Hoje em outro computador:** [só aparece com diário de hoje de outra origem: uma frase por computador]
 **Onde paramos:** [do agora.md, a última coisa em andamento; omitir se vazio]
 **Pendências:** [do agora.md, até 2 itens mais relevantes; omitir se não houver]
