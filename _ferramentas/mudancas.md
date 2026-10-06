@@ -19,7 +19,8 @@
    Depois de cada grupo de 3, rodar de novo o "Te afeta se" das que sobraram:
    uma entrada pode passar a valer depois que outra foi aplicada (a
    `regra-trava` depende da `trava-no-settings`).
-4. Mostrar as que sobraram na ordem deste arquivo, **no máximo 3 por vez**, cada
+4. Mostrar as que sobraram com as que protegem primeiro (backup, chave, trava de
+   comando, memória que se perde) e o resto na ordem deste arquivo, **no máximo 3 por vez**, cada
    uma em uma frase de gente. Esperar a pessoa dizer quais entram.
 5. Pra cada uma aceita: mostrar o antes e o depois do trecho, aplicar com o sim,
    rodar o "Como testar" e registrar:
@@ -261,3 +262,43 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto não tem `.claude/skills/faxina/`, `.claude/skills/compartilhar/` ou `.claude/skills/segunda-opiniao/`.
 **Como aplicar:** as três chegam pelo motor do `/atualizar-sabinos` junto do núcleo, sem pergunta nova; esta entrada só confere que as três pastas existem e apresenta os três comandos à pessoa, uma frase cada. A `/faxina` só rende depois que o projeto tem `_memoria/` (entrada `memoria-registro`).
 **Como testar:** `/faxina` no projeto mostra um relatório curto (projeto em dia rende duas linhas); `/segunda-opiniao` antes de qualquer pedido de ok mostra a linha "Segunda opinião: ...".
+
+## auto-sync-segura
+
+**O que é:** antes de mandar pro GitHub, o backup automático segura o arquivo que tem cara de chave (sk-, token do GitHub, chave da AWS, chave privada) ou passa de 50 MB, manda o resto e deixa um recado dizendo o que ficou e como resolver. Sem internet ele espera um dia antes de avisar, e login recusado ganha aviso próprio.
+**Por quê:** chave colada num texto ia pro GitHub segundos depois, e um arquivo grande no histórico travava todo envio seguinte pra sempre.
+**Te afeta se:** `git check-ignore -q _memoria/recados/x-auto-sync-segurou.md` falha no projeto.
+**Como aplicar:** o `.claude/hooks/auto-sync.mjs` novo chega pelo atualizador junto do núcleo. No `.gitignore` do projeto, acrescentar a linha `_memoria/recados/*-auto-sync-segurou.md` logo abaixo da `_memoria/recados/*-auto-sync-parado.md` (sem ela, no fim da lista de bloqueio): o recado fala de arquivo deste computador e não viaja.
+**Como testar:** `git check-ignore _memoria/recados/x-auto-sync-segurou.md` imprime o caminho.
+
+## voz-da-marca
+
+**O que é:** a marca passa a ter duas metades: o visual (`marca/design-guide.md`) e a voz (`marca/tom-de-voz.md`), que é como o sistema escreve no lugar da pessoa pro cliente dela. O jeito de falar com a pessoa no chat continua no `preferencias.md`, e os dois deixam de se misturar.
+**Por quê:** o tom do chat (simples, "como pra uma criança") vazava pra anúncio, post e proposta, e nenhum texto que sai pro cliente era relido contra a marca antes de entregar.
+**Te afeta se:** o projeto não tem `marca/tom-de-voz.md`.
+**Como aplicar:** copiar o `marca/tom-de-voz.md` do `_modelo/` do kit e fazer à pessoa as três perguntas da "Voz da marca" do `/setup` (Passo 2) numa mensagem só; sem resposta, o arquivo fica com os campos em branco. No `AGENTS.md` do projeto, achando cada trecho pelo texto: a linha "a marca" do Mapa fica igual à do `_modelo/AGENTS.md` do kit (o visual, a voz em `marca/tom-de-voz.md`, e a regra da pasta de projeto com `marca/` própria); no Mapa, trocar `jeito de trabalhar e de escrever` por `jeito de trabalhar e de falar com a pessoa`; na Tabela de destinos, trocar `visual → a marca` por `visual ou jeito de falar com o cliente → a marca` e `correção de jeito →` por `correção de jeito no chat →`; em "Criação de skills", logo depois da frase que manda calibrar com o `empresa.md` e o `preferencias.md`, acrescentar `, e com a voz da marca se a skill escreve pro cliente`; nos Gatilhos, trocar `tarefa visual, também a marca` por `tarefa visual ou texto pro cliente, também a marca` e acrescentar, antes do gatilho da pasta de projeto, `- vai entregar texto que sai pro cliente (anúncio, post, email, proposta) → reler contra a voz da marca antes`; e o texto da regra **Tom e escrita** passa a ser o da regra de mesmo título do `_modelo/AGENTS.md` do kit. Mostrar o antes e o depois.
+**Como testar:** `marca/tom-de-voz.md` existe e o `AGENTS.md` do projeto cita `tom-de-voz.md` e "reler contra a voz da marca".
+
+## ferramentas-sete-assuntos
+
+**O que é:** o `ferramentas.md` passa a ter uma linha pra cada um dos sete assuntos de todo negócio (mensagem com cliente, tarefa e prazo, email, agenda, dinheiro entrando e saindo, ficha do cliente, reunião), com `não ligada` ou `só você` quando o sistema ainda não alcança.
+**Por quê:** o arquivo só listava o que já estava ligado, então o sistema não sabia o que existia e faltava ligar, e o "antes de dizer não consigo, ler o `ferramentas.md`" não achava nada.
+**Te afeta se:** o `_contexto/ferramentas.md` do projeto não tem o título `## Os sete assuntos de todo negócio`.
+**Como aplicar:** copiar do `_modelo/_contexto/ferramentas.md` do kit o texto de abertura (as duas definições de Status e Observação) e a seção dos sete assuntos, mantendo todas as linhas que a tabela do projeto já tem. Perguntar à pessoa, numa mensagem só, o que ela usa hoje pra cada assunto que ainda não tem linha ("pode responder 'nada', é resposta") e acrescentar uma linha pra cada um: `só você` pro que ela usa e o sistema não alcança, `não ligada` pro que não tem. Nada se liga aqui.
+**Como testar:** o `ferramentas.md` tem o título dos sete assuntos e a tabela tem linha pra cada um deles, sem perder nenhuma linha antiga.
+
+## memoria-regras-finas
+
+**O que é:** regras curtas que seguram a memória: data sempre absoluta, pendência que só sai com motivo, o que entra e o que não entra nas decisões, erro dito em linguagem de gente, e o contrato completo do que um robô pode escrever sozinho.
+**Por quê:** "semana passada" perde o sentido em uma semana, pendência que some calada vira esquecimento, decisão misturada com tarefa feita esconde o porquê, e robô rodando de madrugada não pode mexer em trabalho de ninguém nem criar memória que ninguém viu.
+**Te afeta se:** o `AGENTS.md` do projeto não tem o texto `data sempre absoluta` (sem diferenciar maiúscula).
+**Como aplicar:** no `AGENTS.md` do projeto, achando cada trecho pelo texto: no parágrafo de abertura da Tabela de destinos, acrescentar no fim as duas frases do `_modelo/AGENTS.md` do kit que começam com "Data sempre absoluta" e "Pasta que falta"; nos Gatilhos, acrescentar o gatilho que começa com "deu erro" antes do de encerramento; em Rotinas, trocar as frases sobre mudança em `_contexto/` e sobre recado tratado pelas do `_modelo/AGENTS.md` do kit (arquivo de trabalho que a rotina não criou vira recado, entregável novo ela cria e avisa, sessão sem gente na frente nunca grava sozinha em `_contexto/`, decisões ou memória do assistente, recado tratado apaga ou vai pro diário). No `_memoria/decisoes.md`, acrescentar ao cabeçalho a linha que começa com "O que entra", do `_modelo/_memoria/decisoes.md` do kit. No `_contexto/agora.md`, se a seção "Pendências" ainda tem o texto de exemplo entre colchetes, trocar pelo do kit; se já tem pendência de verdade, não mexer. Mostrar o antes e o depois.
+**Como testar:** o `AGENTS.md` do projeto tem "Data sempre absoluta", "deu erro" e "nunca grava sozinha"; o cabeçalho do `decisoes.md` tem "O que entra".
+
+## contatos-e-prazo
+
+**O que é:** fornecedor, parceiro e outro contato que volta ganham ficha própria em `_contexto/pessoas/`, o `estrategia.md` ganha a seção "Contexto com prazo" (o que pesa por um tempo e depois some) e o `infra.md` ganha email da empresa, loja e "quem acessa como".
+**Por quê:** contato que aparece toda semana no diário e não tem ficha faz a pessoa repetir quem ele é; campanha ou regra temporária misturada com a prioridade de fundo nunca sai; e email e loja não tinham lugar.
+**Te afeta se:** o `AGENTS.md` do projeto não tem o texto `pessoas/`.
+**Como aplicar:** no `AGENTS.md` do projeto, acrescentar a linha do Mapa que começa com "contato que volta" logo depois da linha do `infra.md`, e a linha da Tabela de destinos que começa com "contato que aparece pela segunda vez" logo depois da de hospedagem, as duas copiadas do `_modelo/AGENTS.md` do kit. Criar a pasta `_contexto/pessoas/` com um `.gitkeep` dentro, como no `_modelo/` do kit. No `estrategia.md` e no `infra.md`, acrescentar as seções que faltam, copiadas do `_modelo/_contexto/` do kit, sem mexer no que a pessoa já escreveu.
+**Como testar:** o `AGENTS.md` do projeto cita `pessoas/` no Mapa e na Tabela; o `estrategia.md` tem "Contexto com prazo".

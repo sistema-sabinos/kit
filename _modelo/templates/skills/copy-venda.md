@@ -14,8 +14,9 @@ description: >
 ## Dependências
 
 - `_contexto/empresa.md`: o que vende, pra quem, diferencial, restrições do ramo
-- `_contexto/preferencias.md`: tom e o que evitar (vale pro texto entregue, não só pro chat)
-- `marca/design-guide.md`: só se o texto for pra peça visual
+- a voz da marca (Mapa do `AGENTS.md`): o tom do texto entregue
+- `_contexto/preferencias.md`: o que evitar (as proibições de escrita valem pro texto entregue também, não só pro chat)
+- o guia visual da marca (linha "a marca" do Mapa no `AGENTS.md`; pasta de projeto com `marca/` própria usa a dela): só se o texto for pra peça visual
 - Concorrentes ou referências anotadas no `empresa.md`, se houver
 - `marca/voz-do-cliente.md`: frases reais do cliente já registradas; pode não existir ainda na primeira vez (a própria skill cria)
 
@@ -110,7 +111,7 @@ Tamanho segue o canal: anúncio de marketplace tem limite de título e precisa d
 ## Entregar
 
 - Duas versões por pedido (uma mais direta, uma mais quente), pro usuário escolher ou misturar. Não mais que duas: opção demais paralisa.
-- Texto limpo, pronto pra colar. Sem travessão, sem "não é X, é Y", sem "mergulhe", sem adjetivo empilhado, sem emoji a menos que o `preferencias.md` libere.
+- Texto limpo, pronto pra colar. Sem travessão, sem "não é X, é Y", sem "mergulhe", sem adjetivo empilhado, sem emoji a menos que a voz da marca libere.
 - Ao lado do texto, em duas linhas: o que cada versão aposta e onde ajustar se não performar.
 - Salvar em `conteudo/copy/<canal>-<assunto>-<AAAA-MM-DD>.md` se o usuário quiser guardar (criar a pasta com `README.md` de uma linha na primeira vez).
 
@@ -142,4 +143,4 @@ Quando o pedido for "como respondo quem diz que está caro / que vai pensar / qu
 - Nunca prometer resultado que o negócio não garante; ramo regulado tem lista do proibido lida antes de escrever
 - Prova só se for verdadeira e o usuário confirmar; nunca inventar número ou depoimento
 - Publicar em rede social, marketplace ou anúncio é gate humano: esta skill escreve, o usuário aprova e publica (ou aciona a skill de publicação com aprovação explícita)
-- Copy que o usuário corrigiu duas vezes na mesma direção vira linha em `_contexto/preferencias.md` (pedir antes de salvar)
+- Copy que o usuário corrigiu duas vezes na mesma direção vira linha na voz da marca, ou no `_contexto/preferencias.md` se for proibição de escrita (pedir antes de salvar)

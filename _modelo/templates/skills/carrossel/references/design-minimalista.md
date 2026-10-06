@@ -99,7 +99,7 @@ Recursos visuais pra compensar:
 - Cor em slides escuros: branco
 
 ### Logo no slide final
-Se o design guide (`marca/design-guide.md`) tiver logo definido na seção **Logo**:
+Se o guia visual da marca (linha "a marca" do Mapa no `AGENTS.md`; pasta de projeto com `marca/` própria usa a dela) tiver logo definido na seção **Logo**:
 - Incluir no slide final (CTA)
 - Largura: 120-200px
 - Usar versão correta pra fundo claro ou escuro

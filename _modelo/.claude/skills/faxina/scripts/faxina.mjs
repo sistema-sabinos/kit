@@ -371,6 +371,103 @@ export function memoriaDoAgente(raiz, home = homedir()) {
   return arquivos.length ? { pasta: dMem, arquivos } : null
 }
 
+// ---------- o diario rende? frescor, ferramenta sem registro ----------
+// O diario rende: nos ultimos 30 dias, 10 entradas ou mais e mais de 10 entradas por mudanca
+// destilada (commit em _contexto/*.md, _memoria/decisoes.md ou andamento.md) viram aviso de /atualizar.
+const RENDE_JANELA = 30
+const RENDE_MIN_ENTRADAS = 10
+const RENDE_ENTRADAS_POR_MUDANCA = 10
+// Frescor: regra ou contexto sem commit ha mais de 60 dias enquanto o diario teve entrada nos ultimos 14.
+const FRESCOR_PARADO = 60
+const FRESCOR_DIARIO_VIVO = 14
+const FRESCOR_ARQUIVOS = ['AGENTS.md', '_contexto/empresa.md', '_contexto/estrategia.md', '_contexto/preferencias.md']
+const RE_LINHA_DIARIO = /^\s*-\s+\d{1,2}:\d{2},/
+
+const git = (raiz, args) => execFileSync('git', ['-C', raiz, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+
+// so conta o git que e do proprio projeto, nunca o de uma pasta mae
+function gitDaRaiz(raiz) {
+  try {
+    const canon = p => realpathSync.native(p).split(sep).join('/').toLowerCase()
+    return canon(git(raiz, ['rev-parse', '--show-toplevel']).trim()) === canon(raiz)
+  } catch { return false }
+}
+
+// data de cada entrada do diario (linha "- HH:MM, ..."), pela data do nome do arquivo
+function entradasDoDiario(raiz) {
+  const d = join(raiz, '_memoria', 'diario')
+  if (!existsSync(d)) return []
+  const datas = []
+  for (const f of readdirSync(d)) {
+    const m = RE_DATA.exec(f)
+    if (!m || !f.endsWith('.md')) continue
+    try { for (const l of readFileSync(join(d, f), 'utf8').split(/\r?\n/)) if (RE_LINHA_DIARIO.test(l)) datas.push(m[0]) } catch {}
+  }
+  return datas
+}
+
+const naJanela = (data, hoje, dias) => { const n = diasEntre(data, hoje); return n >= 0 && n <= dias }
+
+export function diarioRende(raiz, hoje) {
+  if (!gitDaRaiz(raiz)) return { semGit: true }
+  // repositorio sem nenhum commit: o log falharia calado e toda entrada pareceria sem destilado
+  try { git(raiz, ['rev-parse', '--verify', '-q', 'HEAD']) } catch { return { semGit: true } }
+  const entradas = entradasDoDiario(raiz).filter(d => naJanela(d, hoje, RENDE_JANELA)).length
+  let log = ''
+  try { log = git(raiz, ['log', '--format=%cd', '--date=short', '--', ':(glob)_contexto/*.md', '_memoria/decisoes.md', ':(glob)**/andamento.md']) } catch {}
+  const mudancas = log.split(/\r?\n/).filter(d => RE_DATA.test(d) && naJanela(d, hoje, RENDE_JANELA)).length
+  return { semGit: false, entradas, mudancas, alerta: entradas >= RENDE_MIN_ENTRADAS && entradas > RENDE_ENTRADAS_POR_MUDANCA * mudancas }
+}
+
+export function frescor(raiz, hoje) {
+  if (!gitDaRaiz(raiz)) return { semGit: true, parados: [] }
+  const parados = []
+  if (entradasDoDiario(raiz).some(d => naJanela(d, hoje, FRESCOR_DIARIO_VIVO))) for (const arq of FRESCOR_ARQUIVOS) {
+    if (!existsSync(join(raiz, arq))) continue
+    let ultimo = ''
+    try { ultimo = git(raiz, ['log', '-1', '--format=%cd', '--date=short', '--', arq]).trim() } catch {}
+    if (RE_DATA.test(ultimo) && diasEntre(ultimo, hoje) > FRESCOR_PARADO) parados.push({ arquivo: arq, dias: diasEntre(ultimo, hoje) })
+  }
+  return { semGit: false, parados }
+}
+
+// servidor do .mcp.json e variavel do .env que o ferramentas.md nao cita. Do .env sai so o NOME:
+// o valor nunca entra no relatorio.
+export function ferramentasSemRegistro(raiz) {
+  let texto
+  try { texto = readFileSync(join(raiz, '_contexto', 'ferramentas.md'), 'utf8').toLowerCase() } catch { return { mcp: [], env: [] } }
+  const tem = n => texto.includes(n.toLowerCase())
+  let mcp = []
+  try { mcp = Object.keys(JSON.parse(readFileSync(join(raiz, '.mcp.json'), 'utf8').replace(/^﻿/, '')).mcpServers || {}) } catch {}
+  let env = []
+  try { env = nomesDoEnv(readFileSync(join(raiz, '.env'), 'utf8')) } catch {}
+  // prefixo vale como palavra inteira e com 3 letras ou mais: "ig" casaria com "liga"
+  const temPrefixo = n => {
+    const p = n.split('_')[0].toLowerCase()
+    return p.length >= 3 && new RegExp('(^|[^a-z0-9])' + p + '([^a-z0-9]|$)').test(texto)
+  }
+  return {
+    mcp: [...new Set(mcp)].filter(n => !tem(n)).sort(),
+    env: [...new Set(env)].filter(n => !tem(n) && !temPrefixo(n)).sort(),
+  }
+}
+
+// Nome de variavel em MAIUSCULA no comeco da linha. Valor entre aspas que continua nas linhas
+// seguintes (chave privada PEM) e pulado ate fechar: a ultima linha dele termina em "=" e
+// viraria "nome", com pedaco da chave dentro.
+export function nomesDoEnv(txt) {
+  const nomes = []
+  let aberta = ''
+  for (const l of txt.split(/\r?\n/)) {
+    if (aberta) { if (l.includes(aberta)) aberta = ''; continue }
+    const m = /^\s*(?:export\s+)?([A-Z_][A-Z0-9_]*)\s*=\s*(["']?)(.*)$/.exec(l)
+    if (!m) continue
+    nomes.push(m[1])
+    if (m[2] && !m[3].includes(m[2])) aberta = m[2]
+  }
+  return nomes
+}
+
 export function relatorio(raiz, hoje = dataLocal(), home) {
   const dDiario = join(raiz, '_memoria', 'diario')
   const ultimos = existsSync(dDiario) ? readdirSync(dDiario).filter(f => RE_DATA.test(f)).sort().slice(-3).map(f => `_memoria/diario/${f}`) : []
@@ -383,6 +480,9 @@ export function relatorio(raiz, hoje = dataLocal(), home) {
     automacoes: automacoes(raiz, hoje),
     backup: foraDoBackup(raiz),
     memoriaDoAgente: memoriaDoAgente(raiz, home),
+    diarioRende: diarioRende(raiz, hoje),
+    frescor: frescor(raiz, hoje),
+    ferramentasSemRegistro: ferramentasSemRegistro(raiz),
     ilegiveis,
     ultimosDiarios: ultimos,
   }

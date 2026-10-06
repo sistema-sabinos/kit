@@ -30,10 +30,13 @@
   li { margin: 4px 0; }
   .proximo { border: 2px solid var(--destaque); }
   footer { margin-top: 40px; font-size: 14px; opacity: .7; }
+  .logo { max-height: 56px; max-width: 200px; margin: 0 0 24px; display: block; }
+  .casa { font-family: ui-monospace, Consolas, Menlo, monospace; font-size: 14px; white-space: pre-wrap; margin: 8px 0 0; }
 </style>
 </head>
 <body>
 <main>
+  {{LOGO}}
   <h1><span>{{PESSOA}}</span>, seu sistema está pronto.</h1>
   <p class="sub">Isto é o que o sistema do {{NEGOCIO}} já sabe de você.</p>
 
@@ -48,6 +51,17 @@
   <section class="card">
     <h2>Como você quer que eu trabalhe</h2>
     <p>{{FATO_JEITO}}</p>
+  </section>
+  <section class="card">
+    <h2>A casa</h2>
+    <p>Tudo que o sistema sabe mora em pastas comuns, que você pode abrir e ler:</p>
+    <p class="casa">_contexto/   o que é o negócio: quem você é, o foco, o jeito, as ferramentas
+_memoria/    o que aconteceu: o diário de cada dia, as decisões com o porquê, os recados
+marca/       o visual e a voz com o seu cliente</p>
+  </section>
+  <section class="card">
+    <h2>O ritmo</h2>
+    <p>O <b>/iniciar</b> lê tudo e diz onde você parou. O <b>/atualizar</b> guarda o que a conversa decidiu. O backup manda sozinho pro GitHub ao fim de cada resposta.</p>
   </section>
   <section class="card">
     <h2>Comandos prontos</h2>

@@ -1,5 +1,5 @@
 /*
- * baixar-video.mjs — baixa o vídeo de uma URL pra um arquivo local.
+ * baixar-video.mjs: baixa o vídeo de uma URL pra um arquivo local.
  *
  * Usado pelo ver-video.mjs quando a URL NÃO é do YouTube (o Gemini só aceita link
  * direto de YouTube; qualquer outra URL ele busca e recebe HTML, dando

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * ver-video.mjs — motor da skill /assistir-video
+ * ver-video.mjs: motor da skill /assistir-video
  *
  * Manda o Gemini ASSISTIR um vídeo, processando ÁUDIO E IMAGEM (~1fps). Diferente
  * de uma transcrição, ele enxerga o que aparece na TELA (painéis, sites, prints,

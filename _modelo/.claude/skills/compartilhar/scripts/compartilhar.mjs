@@ -72,7 +72,15 @@ export function conferir(pasta) {
   const andar = dir => {
     for (const nome of readdirSync(dir)) {
       const p = join(dir, nome)
-      if (statSync(p).isDirectory()) { if (nome !== '.git' && nome !== 'node_modules' && nome !== '.claude') andar(p); continue }
+      if (statSync(p).isDirectory()) {
+        if (nome === '.git' || nome === 'node_modules') continue
+        // de .claude/ so as skills, que viajam com a pasta e podem citar caminho do
+        // projeto-pai; a syncar e a copia do kit que a propria /compartilhar traz
+        if (nome === '.claude') { if (existsSync(join(p, 'skills'))) andar(join(p, 'skills')); continue }
+        if (nome === 'syncar' && dir.endsWith(join('.claude', 'skills'))) continue
+        andar(p)
+        continue
+      }
       if (!nome.endsWith('.md')) continue
       readFileSync(p, 'utf8').split(/\r?\n/).forEach((l, i) => {
         // ../ sai da pasta; E:/ ou E:\ e /Users/, /home/, /c/Users/ sao caminho absoluto desta maquina

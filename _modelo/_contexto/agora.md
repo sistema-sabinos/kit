@@ -12,7 +12,7 @@
 
 ## Pendências
 
-[o que está em aberto esperando você ou terceiros]
+[o que está em aberto esperando você ou terceiros, uma por linha, com data. Sai daqui com motivo (feito, virou projeto, mandaram soltar), nunca em silêncio]
 
 ## Quente agora
 

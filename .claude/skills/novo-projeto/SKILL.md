@@ -88,7 +88,16 @@ partes:
 
 **Rota leve (pasta dentro de um projeto).** Fazer só duas perguntas: o nome e
 o que é (vira a pasta e a primeira linha do contexto) e o que vai ser produzido
-aí dentro com prazo ou meta, se houver. Depois:
+aí dentro com prazo ou meta, se houver. Junto da segunda, perguntar se esse
+cliente ou projeto tem visual ou jeito de falar próprios, diferentes da marca do
+projeto-pai.
+
+Antes de criar, conferir se vale uma pasta: vai juntar mais de um arquivo? vai
+durar mais que uma semana? tem combinado, prazo ou contato próprio que precisa
+ser lembrado? Menos de dois sim: dizer "isso cabe num arquivo, não precisa de
+pasta", propor um arquivo só no lugar que a estrutura do projeto-pai já tem
+(`projetos/<nome>.md`, por exemplo) e parar aqui com o sim da pessoa. Dois ou
+mais: seguir.
 
 1. Sugerir o lugar dentro do projeto-pai, seguindo a estrutura que ele já tem
    (`clientes/<nome>/` numa agência, `projetos/<nome>/` num negócio próprio,
@@ -102,7 +111,8 @@ aí dentro com prazo ou meta, se houver. Depois:
    endereço de casa) e senha ficam de fora.
    Passar o lugar e os quatro arquivos do item 2 pela `/segunda-opiniao` (a
    skill desta pasta-mãe) e só então pedir a confirmação.
-2. Criar a pasta com quatro arquivos, e só eles (subpasta nasce quando a
+2. Criar a pasta com quatro arquivos, e só eles (mais a `marca/` quando ela tem
+   identidade própria; outra subpasta nasce quando a
    pessoa pedir):
    - `CLAUDE.md`, com a linha `@AGENTS.md`.
    - `AGENTS.md` curto (menos de 30 linhas): o que é e o tipo (cliente,
@@ -114,8 +124,12 @@ aí dentro com prazo ou meta, se houver. Depois:
      projeto-pai e que decisão sobre esta pasta vai pras decisões do projeto
      com a marca de projeto que a Tabela de destinos do projeto-pai manda e o
      nome da pasta; uma seção "Regras desta pasta", lista
-     vazia que cresce com o uso; e a regra "sessão que mexeu aqui atualiza o
-     `andamento.md` antes de fechar".
+     vazia que cresce com o uso; a regra "sessão que mexeu aqui atualiza o
+     `andamento.md` antes de fechar"; e a linha "skill só desta pasta mora em
+     `.claude/skills/` daqui e aparece em 'Habilidades desta pasta' (seção que
+     nasce com a primeira); com a sessão aberta no projeto-pai, ler o
+     `SKILL.md` dela quando o pedido é desta pasta". A pasta `.claude/skills/`
+     não se cria vazia.
    - `contexto.md`: o que é e o que precisa ser entregue; prazo, orçamento,
      ferramenta e regra ou órgão próprio, se houver; contato, se for cliente;
      e uma seção "Material de origem", onde transcrição, PDF ou e-mail do
@@ -123,6 +137,10 @@ aí dentro com prazo ou meta, se houver. Depois:
    - `andamento.md`: "Onde está (AAAA-MM-DD)", com "pasta criada" e o
      primeiro passo que a pessoa citou; "Pendências", em checklist (as
      entregas, se for cliente); e "Feito", vazio.
+   - Só se a pessoa disse que tem visual ou jeito de falar próprios:
+     `marca/design-guide.md` e `marca/tom-de-voz.md` a partir dos do
+     `_modelo/`, preenchidos com o que ela disse (a metade que ela não citou
+     fica de fora: vale a do projeto-pai). Sem marca própria, nada de `marca/`.
 3. Registrar a pasta na "Estrutura de pastas" do `AGENTS.md` do projeto-pai,
    uma linha, e, se for cliente, oferecer uma linha em `_contexto/empresa.md`
    do projeto-pai.
@@ -395,12 +413,15 @@ perguntar outro nome antes de seguir.
   linha nova, juntarem as duas versões sozinhos quando dois computadores escrevem
   ao mesmo tempo, em vez de travar o backup.
 - `_contexto/` inteira (`empresa.md`, `preferencias.md`, `estrategia.md`,
-  `agora.md`, `licoes.md`, `ferramentas.md`, `automacoes.md`, `infra.md` e a
-  pasta `arquivo/`), preenchidos
+  `agora.md`, `licoes.md`, `ferramentas.md`, `automacoes.md`, `infra.md` e as
+  pastas `arquivo/` e `pessoas/`), preenchidos
   com o que já se sabe da pessoa pelas leituras do Passo 0 (nome, tom,
   ferramentas que já valem pra ela em qualquer projeto) mais o que é
   específico deste projeto novo (respostas do Passo 1), nunca deixando o
-  aviso `NOT CONFIGURED` no projeto final.
+  aviso `NOT CONFIGURED` no projeto final. No `ferramentas.md`, uma linha pra
+  cada um dos sete assuntos, como o `/setup` faz (Passo 5): o que já vale pra
+  pessoa em qualquer projeto vem do `ferramentas.md` do projeto irmão; o que
+  for só deste projeto, perguntar numa mensagem.
 - `marca/design-guide.md`: perguntar rapidamente se este projeto muda algo do
   visual já usado nos outros projetos da pessoa. Identidade própria, preencher
   com ela. Mesma identidade dos outros, copiar o `design-guide.md` já
@@ -409,6 +430,10 @@ perguntar outro nome antes de seguir.
   ela ainda não tiver visual definido em lugar nenhum, avisando que dá pra
   preencher depois com o `/atualizar`, dentro da pasta do projeto (nomear o
   comando; sem isso a frase vira lacuna e sai um chute).
+- `marca/tom-de-voz.md`: na mesma pergunta do visual, perguntar se este projeto
+  fala com o cliente de outro jeito (outro público, outro tratamento). Mesma voz,
+  copiar o `tom-de-voz.md` preenchido do projeto irmão; voz própria, as três
+  perguntas da "Voz da marca" do `/setup` (Passo 2), aqui em uma mensagem.
 - `dados/README.md` (e a pasta `dados/` que ele documenta).
 - `_memoria/` inteira, como está no molde: `diario/`, `recados/` e
   `arquivo/` com o `.gitkeep` e o `decisoes.md` só com o cabeçalho. Nunca o

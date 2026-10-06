@@ -1,5 +1,5 @@
 {
- "versao": "4.3",
+ "versao": "4.4",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -27,7 +27,8 @@
   ".claude/agents/ml-copywriter.md": {
    "2c048d53ee9ad906": "3.6",
    "3cafe53b3db2e792": "anterior-3.6",
-   "09f87517a4ae4100": "anterior-3.6"
+   "09f87517a4ae4100": "anterior-3.6",
+   "e4606b9929b99b01": "4.4"
   },
   ".claude/agents/ml-designer.md": {
    "6e8aeac398026c73": "3.6",
@@ -57,8 +58,9 @@
    "67eff73d42085e8f": "anterior-3.6"
   },
   ".claude/hooks/auto-sync.mjs": {
-   "dd71c594aab6fed3": "4.3",
-   "366ebb77ab7292bf": "4.3"
+   "dd71c594aab6fed3": "4.4",
+   "366ebb77ab7292bf": "4.4",
+   "9c6f23a6ca72e04e": "4.4"
   },
   ".claude/hooks/barrar-perigoso.mjs": {
    "b9a2703d4bb40fdc": "3.4",
@@ -75,13 +77,13 @@
    "41d9cd645c4ce95f": "anterior-3.0",
    "b5ad0fe052a59403": "anterior-3.4",
    "d2abfb67c3a33556": "anterior-3.4",
-   "82960e08b81e28d2": "4.3"
+   "82960e08b81e28d2": "4.4"
   },
   ".claude/skills/agendar/SKILL.md": {
    "f36add9b42324990": "3.7",
    "5c2b406782b75d73": "anterior-3.7",
    "2cb43f7e65a01a9e": "anterior-3.7",
-   "aadd8d45a14f5b4b": "4.3"
+   "aadd8d45a14f5b4b": "4.4"
   },
   ".claude/skills/agendar/scripts/agendador.mjs": {
    "a48bb50be24605fa": "3.7",
@@ -93,7 +95,7 @@
   },
   ".claude/skills/agendar/scripts/avisar.mjs": {
    "4499fac96a3135ef": "3.7",
-   "920fc394f8f96463": "4.3"
+   "920fc394f8f96463": "4.4"
   },
   ".claude/skills/agendar/scripts/lib/boot-guard.mjs": {
    "299f9655d154e046": "3.7"
@@ -161,7 +163,8 @@
   },
   ".claude/skills/assistir-video/baixar-video.mjs": {
    "fe02e3001c46a952": "3.0",
-   "93d5f87ec7995e1c": "4.2"
+   "93d5f87ec7995e1c": "4.2",
+   "8b3d049d06db0f19": "4.4"
   },
   ".claude/skills/assistir-video/custo.mjs": {
    "d93b5119aa6e5622": "4.1"
@@ -169,13 +172,15 @@
   ".claude/skills/assistir-video/ver-video.mjs": {
    "13507add02843971": "3.0",
    "051353134e5b8e3c": "4.1",
-   "e3bef37187fcaf2f": "anterior-3.0"
+   "e3bef37187fcaf2f": "anterior-3.0",
+   "af0b72edfe666262": "4.4"
   },
   ".claude/skills/atualizar-sabinos/SKILL.md": {
    "925ddd431692f47b": "3.5",
    "633a1e98070a1a6a": "anterior-3.5",
-   "1766e31e3190aaff": "4.3",
-   "6adc00353b88ae00": "4.3"
+   "1766e31e3190aaff": "4.4",
+   "6adc00353b88ae00": "4.4",
+   "6b7eb2e2adf9e3a8": "4.4"
   },
   ".claude/skills/atualizar/SKILL.md": {
    "6e59beac2d32c3fa": "3.0",
@@ -183,11 +188,14 @@
    "847b1c82510b9fb7": "4.1",
    "03694d94ed398d4b": "anterior-3.0",
    "2bdcd778ff9a2a6a": "anterior-3.0",
-   "4528ce98f080867d": "4.3",
-   "e01941735e19daf8": "4.3",
-   "7e82d529aef5254d": "4.3",
-   "81ad7a7e94d4d26e": "4.3",
-   "d8f453458b0c9477": "4.3"
+   "4528ce98f080867d": "4.4",
+   "e01941735e19daf8": "4.4",
+   "7e82d529aef5254d": "4.4",
+   "81ad7a7e94d4d26e": "4.4",
+   "d8f453458b0c9477": "4.4",
+   "86f229e656258c90": "4.4",
+   "ec11856c8715039a": "4.4",
+   "fa331dafde951e1c": "4.4"
   },
   ".claude/skills/auditar-conta/SKILL.md": {
    "d80727c54f1b0026": "3.6",
@@ -229,7 +237,8 @@
   },
   ".claude/skills/bastao/SKILL.md": {
    "e3cdf27c533918aa": "3.0",
-   "abb90aea898ce0ad": "4.1"
+   "abb90aea898ce0ad": "4.1",
+   "a79d594c61376eea": "4.4"
   },
   ".claude/skills/cadastrar-bling/SKILL.md": {
    "716c4332751ba383": "3.6",
@@ -269,8 +278,9 @@
    "1ad4b7bf727ecad0": "anterior-3.4",
    "e3b9acc8664f6320": "anterior-3.7",
    "688b533e3d3481bd": "anterior-3.7",
-   "bb0630a2a770e236": "4.3",
-   "ea7cb1f99b0863e4": "4.3"
+   "bb0630a2a770e236": "4.4",
+   "ea7cb1f99b0863e4": "4.4",
+   "6ba12868ca4c4869": "4.4"
   },
   ".claude/skills/comecar-a-vender/SKILL.md": {
    "851b4a1d8a039a29": "3.8",
@@ -301,18 +311,21 @@
    "45b3454154506af9": "3.8"
   },
   ".claude/skills/compartilhar/SKILL.md": {
-   "79da263ebdbc8789": "4.3",
-   "6f31562549b4be0f": "4.3",
-   "0f6c34a5067f63f6": "4.3",
-   "aab0de264ef9832f": "4.3",
-   "9e0b2909b9036646": "4.3"
+   "79da263ebdbc8789": "4.4",
+   "6f31562549b4be0f": "4.4",
+   "0f6c34a5067f63f6": "4.4",
+   "aab0de264ef9832f": "4.4",
+   "9e0b2909b9036646": "4.4",
+   "37b95bc89f243468": "4.4",
+   "fb82a7610bcbf39c": "4.4"
   },
   ".claude/skills/compartilhar/scripts/compartilhar.mjs": {
-   "d2552786b0e21378": "4.3",
-   "d801c3503802f7c4": "4.3",
-   "7f60b1b99aa57164": "4.3",
-   "31edb2701c995ee8": "4.3",
-   "9cd25318ee15b1e0": "4.3"
+   "d2552786b0e21378": "4.4",
+   "d801c3503802f7c4": "4.4",
+   "7f60b1b99aa57164": "4.4",
+   "31edb2701c995ee8": "4.4",
+   "9cd25318ee15b1e0": "4.4",
+   "477d8982fe70edeb": "4.4"
   },
   ".claude/skills/conectar/SKILL.md": {
    "00ce3a2576a89169": "3.0",
@@ -321,7 +334,8 @@
    "565a327091a62a23": "3.7",
    "8ff86dfa3dff582f": "4.1",
    "06ac729775e074be": "anterior-3.6",
-   "cd9b1de6a860745d": "anterior-4.1"
+   "cd9b1de6a860745d": "anterior-4.1",
+   "afc4edbb1dad5917": "4.4"
   },
   ".claude/skills/configurar-video/SKILL.md": {
    "65b9510e6d597851": "4.1",
@@ -683,23 +697,25 @@
    "07a36da8d565fa10": "anterior-4.1"
   },
   ".claude/skills/faxina/SKILL.md": {
-   "519445c2314b6833": "4.3",
-   "20f72cca57f7a2cf": "4.3",
-   "a79278f238a0d29e": "4.3",
-   "50c496df3bce1b2d": "4.3",
-   "d407e86cab10c6cd": "4.3",
-   "5d2d757a790d36d4": "4.3"
+   "519445c2314b6833": "4.4",
+   "20f72cca57f7a2cf": "4.4",
+   "a79278f238a0d29e": "4.4",
+   "50c496df3bce1b2d": "4.4",
+   "d407e86cab10c6cd": "4.4",
+   "5d2d757a790d36d4": "4.4",
+   "69daa56b5fc0eac6": "4.4"
   },
   ".claude/skills/faxina/scripts/faxina.mjs": {
-   "bb8cfee3e3c12df9": "4.3",
-   "ff724cdf05da2ebb": "4.3",
-   "2baa31b048b98bb9": "4.3",
-   "55d2a7afcbe6be05": "4.3",
-   "d15c6aa078703e80": "4.3",
-   "de06cdb2d2bcc008": "4.3",
-   "104fa4e008649e85": "4.3",
-   "b2057eae076b3334": "4.3",
-   "9abf4aa31716801c": "4.3"
+   "bb8cfee3e3c12df9": "4.4",
+   "ff724cdf05da2ebb": "4.4",
+   "2baa31b048b98bb9": "4.4",
+   "55d2a7afcbe6be05": "4.4",
+   "d15c6aa078703e80": "4.4",
+   "de06cdb2d2bcc008": "4.4",
+   "104fa4e008649e85": "4.4",
+   "b2057eae076b3334": "4.4",
+   "9abf4aa31716801c": "4.4",
+   "be0ce4c57e03d423": "4.4"
   },
   ".claude/skills/find-skills/SKILL.md": {
    "5924ba36058bcb50": "3.0",
@@ -712,10 +728,12 @@
    "4d9613bd46433985": "4.1",
    "0ede41dc238bba7a": "4.2",
    "79b208a3578ac0d1": "anterior-4.1",
-   "774bba6bf16360f2": "anterior-4.1"
+   "774bba6bf16360f2": "anterior-4.1",
+   "b7e3f15d3eb8422c": "4.4"
   },
   ".claude/skills/gerar-imagens/referencias/estilos.md": {
-   "422779be6e0606ef": "4.1"
+   "422779be6e0606ef": "4.1",
+   "d4c226d5d5ef5534": "4.4"
   },
   ".claude/skills/gerar-imagens/scripts/compor-cena.mjs": {
    "fca5299a9e124e21": "4.1",
@@ -771,8 +789,10 @@
    "a4cd35c64db21898": "anterior-3.0",
    "6bef6171079f5ca8": "anterior-3.7",
    "86354aabf68b5cd5": "anterior-3.8",
-   "7d536d2d06fb730f": "4.3",
-   "e5d4f045eef169c3": "4.3"
+   "7d536d2d06fb730f": "4.4",
+   "e5d4f045eef169c3": "4.4",
+   "f3014dab4a373500": "4.4",
+   "277acdba56845c48": "4.4"
   },
   ".claude/skills/mapear/SKILL.md": {
    "1d0419caf131bf61": "3.0",
@@ -788,7 +808,9 @@
    "3562251338e486db": "anterior-3.6",
    "f276430b523cbce5": "anterior-4.1",
    "ac9ad1eb1c247134": "anterior-4.1",
-   "3943a5e1d6463145": "anterior-4.1"
+   "3943a5e1d6463145": "anterior-4.1",
+   "195d9042cd960fe6": "4.4",
+   "2862961c24f75234": "4.4"
   },
   ".claude/skills/mercado-ads/SKILL.md": {
    "8e1ec4283727ac91": "3.6",
@@ -832,7 +854,8 @@
    "1330610a1516b64b": "anterior-4.1",
    "82a7e03582dbdb6c": "anterior-4.1",
    "af80b6ad8878513a": "anterior-4.1",
-   "00ea6fb563289474": "anterior-4.1"
+   "00ea6fb563289474": "anterior-4.1",
+   "7f8cd34d9d1e9f1a": "4.4"
   },
   ".claude/skills/mercado-livre/package.json": {
    "e5484cc3ba438b4d": "3.6"
@@ -1019,7 +1042,8 @@
    "973d7f14c36845da": "anterior-3.6",
    "b249d9c45b1d3985": "anterior-3.6",
    "cb489ab1ce18aad6": "anterior-3.6",
-   "eef8e6b6842d0656": "anterior-3.6"
+   "eef8e6b6842d0656": "anterior-3.6",
+   "68e2644cc6437ac6": "4.4"
   },
   ".claude/skills/montar-anuncio/referencias/modelo-descricao.md": {
    "3e1555962cc0deb8": "3.6",
@@ -1225,9 +1249,9 @@
    "88ad7cc6ee8040d8": "anterior-4.1"
   },
   ".claude/skills/segunda-opiniao/SKILL.md": {
-   "d8df5b3a197749d6": "4.3",
-   "144de5c122ab5e8a": "4.3",
-   "d1f038b977bc6ec8": "4.3"
+   "d8df5b3a197749d6": "4.4",
+   "144de5c122ab5e8a": "4.4",
+   "d1f038b977bc6ec8": "4.4"
   },
   ".claude/skills/setup/SKILL.md": {
    "2b4b146ff8277214": "anterior-3.0"
@@ -1236,10 +1260,12 @@
    "b4f4899d262b2d67": "3.0",
    "17900feef39d7058": "4.1",
    "1542dc3d412b7095": "anterior-3.0",
-   "22f1995cd7d253a4": "4.3",
-   "66b7a79ad2babf6a": "4.3",
-   "9071ff69bcaed336": "4.3",
-   "a7455357749c4ec4": "4.3"
+   "22f1995cd7d253a4": "4.4",
+   "66b7a79ad2babf6a": "4.4",
+   "9071ff69bcaed336": "4.4",
+   "a7455357749c4ec4": "4.4",
+   "1b1d2a7362b798fb": "4.4",
+   "6061d6e44c7c0ffb": "4.4"
   },
   ".claude/skills/trafego/SKILL.md": {
    "e3e5e1033b5c6365": "3.3",
@@ -1402,7 +1428,7 @@
    "60aa56aee384b50a": "anterior-4.1"
   },
   ".gitattributes": {
-   "4d04b7e92d8b3ef8": "4.3"
+   "4d04b7e92d8b3ef8": "4.4"
   },
   ".gitignore": {
    "8c89c21a2e5b5800": "3.0",
@@ -1411,9 +1437,10 @@
    "f55a864d8d473607": "anterior-3.0",
    "de7cbfcf414ae059": "anterior-3.0",
    "8f5ffdc1d73b5b20": "anterior-3.5",
-   "3fa975c61d0a27fc": "4.3",
-   "253bb87f8b12c05a": "4.3",
-   "20e2aaf84973b129": "4.3"
+   "3fa975c61d0a27fc": "4.4",
+   "253bb87f8b12c05a": "4.4",
+   "20e2aaf84973b129": "4.4",
+   "846f2e87fe1a0ee1": "4.4"
   },
   "AGENTS.md": {
    "2b728a009c77a407": "3.0",
@@ -1424,11 +1451,14 @@
    "56a07bbf79e76281": "anterior-3.0",
    "a2472a4de5c2c1fd": "anterior-3.0",
    "22902c95f73a6baf": "anterior-4.1",
-   "e1de1ad21ed4f5d9": "4.3",
-   "3a6554d4c0bf2e9c": "4.3",
-   "c6306480a5adf33e": "4.3",
-   "b25c1008862d978b": "4.3",
-   "d14f42184890533a": "4.3"
+   "e1de1ad21ed4f5d9": "4.4",
+   "3a6554d4c0bf2e9c": "4.4",
+   "c6306480a5adf33e": "4.4",
+   "b25c1008862d978b": "4.4",
+   "d14f42184890533a": "4.4",
+   "7ab5d71f0d0bbb52": "4.4",
+   "ea5a25380f7e2c6b": "4.4",
+   "99c9c8a351548bb1": "4.4"
   },
   "CLAUDE.md": {
    "336cc4fbf19beaad": "3.0",
@@ -1443,13 +1473,14 @@
   "_contexto/agora.md": {
    "5b8c6bcdd21e9e6c": "3.0",
    "102fa52a93c984c3": "3.1",
-   "87defc84423f6df1": "4.3"
+   "87defc84423f6df1": "4.4",
+   "45d5072ac01c9688": "4.4"
   },
   "_contexto/arquivo/README.md": {
    "f393cdbf7847488a": "3.1"
   },
   "_contexto/automacoes.md": {
-   "ef2f8d713fe10871": "4.3"
+   "ef2f8d713fe10871": "4.4"
   },
   "_contexto/empresa.md": {
    "a2ab81acb5cfa8ec": "3.0",
@@ -1457,39 +1488,47 @@
   },
   "_contexto/estrategia.md": {
    "c55f4fc16750f499": "3.0",
-   "0c653e3971d038c3": "3.1"
+   "0c653e3971d038c3": "3.1",
+   "7ec9f1dfcea61184": "4.4"
   },
   "_contexto/ferramentas.md": {
-   "8a7285b89d92ee5b": "3.0"
+   "8a7285b89d92ee5b": "3.0",
+   "bc39b9f47ae68fe9": "4.4"
   },
   "_contexto/infra.md": {
-   "5d0130320548dfac": "4.3"
+   "5d0130320548dfac": "4.4",
+   "13bac21d88dcb207": "4.4"
   },
   "_contexto/licoes.md": {
    "ffd0c94cf2f16051": "3.0",
    "831e3432ac813ebd": "3.1",
    "fecc9793944f0f78": "anterior-3.0"
   },
+  "_contexto/pessoas/.gitkeep": {
+   "e3b0c44298fc1c14": "4.4"
+  },
   "_contexto/preferencias.md": {
    "8d6dc4dd6e75d1b3": "3.0",
    "a3513336d9995f5e": "3.1",
    "665eaf310c33081e": "3.3",
-   "c07a15822c5d13fd": "anterior-3.0"
+   "c07a15822c5d13fd": "anterior-3.0",
+   "fafdaa7abf465893": "4.4"
   },
   "_memoria/arquivo/.gitkeep": {
-   "e3b0c44298fc1c14": "4.3"
+   "e3b0c44298fc1c14": "4.4"
   },
   "_memoria/decisoes.md": {
-   "c87e8dcbfd6d44bf": "4.3",
-   "5ea11533996324c4": "4.3",
-   "2630518edba9cb4e": "4.3",
-   "8f5d971022e846d3": "4.3"
+   "c87e8dcbfd6d44bf": "4.4",
+   "5ea11533996324c4": "4.4",
+   "2630518edba9cb4e": "4.4",
+   "8f5d971022e846d3": "4.4",
+   "f18b13804bc830d7": "4.4"
   },
   "_memoria/diario/.gitkeep": {
-   "e3b0c44298fc1c14": "4.3"
+   "e3b0c44298fc1c14": "4.4"
   },
   "_memoria/recados/.gitkeep": {
-   "e3b0c44298fc1c14": "4.3"
+   "e3b0c44298fc1c14": "4.4"
   },
   "dados/README.md": {
    "51612c99379a8912": "3.0"
@@ -1497,6 +1536,9 @@
   "marca/design-guide.md": {
    "e83b1f226cf0fa54": "3.0",
    "a631ffd3876ece59": "4.1"
+  },
+  "marca/tom-de-voz.md": {
+   "ef89e8caac335d51": "4.4"
   }
  }
 }

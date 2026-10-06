@@ -72,7 +72,7 @@ async function main() {
   console.log(`Conta: ${accounts[0].username || accountId} (${opts.platform})`);
 
   if (opts.dryRun) {
-    console.log(`\nDRY RUN — nao vai publicar`);
+    console.log(`\nDRY RUN: nao vai publicar`);
     console.log(`Plataforma: ${opts.platform}`);
     console.log(`Imagens: ${opts.images.join(", ")}`);
     console.log(`Legenda: ${opts.caption.slice(0, 100)}...`);

@@ -22,6 +22,8 @@ Duas funções em uma: fechar a sessão (passar o que aconteceu nesta conversa p
 
 ## Passo 2: Ler os arquivos de contexto
 
+Esta skill roda em todo fim de sessão: ler sempre o `AGENTS.md`, o `agora.md` e o diário de hoje, e dos outros só os que esta sessão vai tocar (o destino sai da Tabela, no Passo 3). Auditoria da memória inteira é da `/faxina`. A lista:
+
 1. `AGENTS.md` (conteúdo real do projeto; `CLAUDE.md` é só o ponteiro `@AGENTS.md`), estrutura de pastas, regras
 2. `_contexto/empresa.md`, negócio, ferramentas, equipe
 3. `_contexto/estrategia.md`, prioridade e fase
@@ -30,7 +32,7 @@ Duas funções em uma: fechar a sessão (passar o que aconteceu nesta conversa p
 6. `_contexto/ferramentas.md`, o que está conectado
 7. `_contexto/automacoes.md` e `_contexto/infra.md`
 8. `_memoria/decisoes.md` (as últimas 20 linhas) e o diário de hoje
-9. `marca/design-guide.md`, visual
+9. A marca (Mapa do `AGENTS.md`): o visual e a voz com o cliente
 
 ## Passo 3: Passar a sessão pela tabela de destinos
 
@@ -39,7 +41,8 @@ A fonte aqui é **esta conversa**. Listar o que aconteceu e dar a cada item um d
 - **Decisão:** linha nova no `_memoria/decisoes.md`, no formato do cabeçalho dele, com o motivo que apareceu na conversa. Muda uma decisão anterior: linha nova com `substitui: <data da velha> "<começo da velha>"`; a velha fica onde está.
 - **Diário:** o que foi feito e ainda não tem linha no diário de hoje entra agora, uma linha por tarefa fechada.
 - **`_contexto/`:** fato do negócio, rumo, jeito, ferramenta, automação e hospedagem vão pro arquivo que a tabela manda.
-- **`agora.md`:** "Onde paramos" é a última coisa em andamento (substitui a anterior); "Pendências" ganha o que abriu e perde o que fechou; "Quente agora" se ajusta. Higiene: pendência fechada e prazo vencido saem.
+- **`agora.md`:** "Onde paramos" é a última coisa em andamento (substitui a anterior); "Pendências" ganha o que abriu e perde o que fechou; "Quente agora" se ajusta. Higiene: pendência fechada e prazo vencido saem, cada uma com o motivo dito à pessoa e anotado no diário (feito, virou projeto, mandaram soltar), nunca em silêncio; data relativa que sobrou ("sexta", "semana que vem") vira AAAA-MM-DD.
+- **Contato:** fornecedor, parceiro ou outra pessoa que não é cliente nem equipe, citado nesta sessão e já presente num diário anterior (buscar o nome em `_memoria/diario/`): propor a ficha `_contexto/pessoas/<nome>.md` (nome em minúscula, sem acento, com hífen), com quem é, como fala com ele e o que já se combinou, cada linha com data.
 - **Trivial:** não salva. **Não coube:** perguntar, nunca inventar gaveta.
 
 Projeto de antes da 4.3 com a seção "Decisões recentes" no `agora.md`: cada linha dela vai pro `decisoes.md` com a data que tinha (origem `dono`, motivo "não registrado") e a seção sai do `agora.md`.
@@ -74,7 +77,7 @@ Mostrar o antes e o depois e só gravar com aprovação. Todos verdes, não dize
 
 ## Passo 4: Diagnóstico
 
-Comparar e apresentar:
+Comparar o que foi lido no Passo 2 com o estado real e apresentar:
 
 ```
 ## Diagnóstico de contexto
@@ -84,10 +87,9 @@ Comparar e apresentar:
 
 ### Desatualizado
 - **[arquivo]:** [o que está errado e o que deveria ser]
-
-### Não configurado
-- [arquivos ainda com template padrão]
 ```
+
+Arquivo ainda com o modelo em branco, entre os lidos, entra em "Desatualizado". A varredura de todos é da `/faxina`.
 
 Se tudo em dia: "Tudo atualizado. Os arquivos refletem o estado real."
 

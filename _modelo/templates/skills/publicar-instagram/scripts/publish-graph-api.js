@@ -104,7 +104,7 @@ async function main() {
   await pollStatus(carouselId);
 
   if (opts.dryRun) {
-    console.log(`\nDRY RUN — carrossel montado mas nao publicado`);
+    console.log(`\nDRY RUN: carrossel montado mas nao publicado`);
     console.log(`Carousel ID: ${carouselId}`);
     return;
   }

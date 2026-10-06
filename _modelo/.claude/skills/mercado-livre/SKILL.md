@@ -76,7 +76,7 @@ Pular o que `empresa.md` já responde.
    reputação muda o desconto de frete, e loja oficial muda como você briga em
    catálogo. Exemplos: "verde, sem loja oficial, sem Full" / "conta nova".
 7. **Qual guia de marca manda nas fotos?** Por que pergunto: o agente `ml-designer` lê esse
-   arquivo antes de qualquer imagem. Padrão: `marca/design-guide.md`.
+   arquivo antes de qualquer imagem. Padrão: o guia visual da marca (linha "a marca" do Mapa no `AGENTS.md`).
 8. **Você vende pelo dropshipping (o fornecedor despacha em seu nome) ou com
    estoque seu? E em que estado é o seu CNPJ?** Por que pergunto: no drop a
    auditoria confere o fornecedor (mesmo estado, prazo de despacho), e a foto e

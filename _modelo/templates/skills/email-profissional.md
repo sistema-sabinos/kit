@@ -12,7 +12,7 @@ description: >
 ## Dependências
 
 - **Contexto do negócio:** `_contexto/empresa.md`
-- **Tom de voz:** `_contexto/preferencias.md`
+- **Tom de voz:** a voz da marca (Mapa do `AGENTS.md`), com as proibições de escrita do `_contexto/preferencias.md`
 
 ---
 
@@ -63,7 +63,7 @@ Deixar o usuário escolher.
 
 ## Regras
 
-- Tom segue `_contexto/preferencias.md`
+- Tom segue a voz da marca, com as proibições de escrita do `_contexto/preferencias.md`
 - Nunca usar linguagem corporativa genérica sem necessidade
 - Assunto do email deve ser específico e descritivo, não vago ("Seguimento", "Proposta")
 - Se for um email de cobrança, ser direto mas sem agressividade

@@ -31,6 +31,9 @@ pergunta antes.
 4. Publicada **mais antiga** que a do projeto: avisar ("o projeto está na X e a
    publicada é a Y, mais antiga") e perguntar se é isso mesmo antes de seguir.
 5. Sem internet ou erro: explicar em português o que aconteceu e parar.
+6. Tem versão nova: antes de qualquer coisa, deixar a escolha com a pessoa ("se o
+   sistema está te atendendo, pode ficar como está; atualizar traz melhorias e
+   você escolhe uma por uma"), e seguir só com o sim.
 
 ## Passo 2, baixar pra uma pasta temporária
 

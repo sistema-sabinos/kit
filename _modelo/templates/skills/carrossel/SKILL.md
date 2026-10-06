@@ -17,7 +17,7 @@ Antes de criar qualquer carrossel, checar 5 coisas. Se tudo estiver OK, pular di
 
 ### 1. Design guide
 
-Ler `marca/design-guide.md`. Se os campos estiverem vazios (template padrão):
+Ler o guia visual da marca (linha "a marca" do Mapa no `AGENTS.md`; pasta de projeto com `marca/` própria usa a dela). Se os campos estiverem vazios (template padrão):
 
 > "Pra criar o carrossel com a tua cara, preciso de algumas coisas. Me conta:
 > 1. Qual a cor principal da tua marca? (hex tipo #FF5C35, ou descreve: "azul escuro", "laranja quente")
@@ -25,7 +25,7 @@ Ler `marca/design-guide.md`. Se os campos estiverem vazios (template padrão):
 > 3. Estilo geral: clean/minimalista, bold/impactante, editorial/elegante, ou outro?
 > 4. Tem logo? Se sim, joga o arquivo na pasta `marca/` e me diz o nome"
 
-Com as respostas, preencher `marca/design-guide.md`. A partir da cor principal, gerar variações claras e escuras pra usar nos slides (uma versão mais clara pro destaque sutil, uma mais escura pra fundos). Escolher um fundo escuro e um fundo claro que combinem com o tom da cor (cores quentes pedem fundos mais aconchegantes, cores frias pedem fundos mais neutros).
+Com as respostas, preencher o guia visual da marca. A partir da cor principal, gerar variações claras e escuras pra usar nos slides (uma versão mais clara pro destaque sutil, uma mais escura pra fundos). Escolher um fundo escuro e um fundo claro que combinem com o tom da cor (cores quentes pedem fundos mais aconchegantes, cores frias pedem fundos mais neutros).
 
 Se o usuário disser "não sei" ou "escolhe pra mim": usar padrão limpo (fundo escuro #0D0D0D, destaque amarelo #FFD600, Bricolage Grotesque + Instrument Serif).
 
@@ -52,7 +52,7 @@ Se escolher **tweet**, perguntar também:
 > 3. Uma foto de perfil (joga na pasta `marca/foto-perfil.jpg`). Se não tiver agora, uso as iniciais do teu nome
 > 4. Quer o badge azul de verificado ao lado do nome? (sim/não)"
 
-Salvar essas informações na seção `## Perfil do autor` em `marca/design-guide.md` pra não perguntar de novo:
+Salvar essas informações na seção `## Perfil do autor` do guia visual da marca pra não perguntar de novo:
 ```markdown
 ## Perfil do autor
 - **Nome:** [nome]
@@ -69,7 +69,7 @@ O usuário pode trocar depois a qualquer momento: "muda o estilo do carrossel pr
 
 ### 3. Tom de voz
 
-Ler `_contexto/preferencias.md`. Se estiver vazio:
+Ler a voz da marca (Mapa do `AGENTS.md`) e as proibições de escrita do `_contexto/preferencias.md`. Se a voz da marca estiver vazia:
 
 > "Como tu prefere que eu escreva os textos dos slides?
 > - Informal e direto (papo de colega)?
@@ -77,7 +77,7 @@ Ler `_contexto/preferencias.md`. Se estiver vazio:
 > - Técnico e denso?
 > E tem algo que te incomoda em texto de IA? (ex: travessões, emojis, frases curtas demais)"
 
-Salvar em `_contexto/preferencias.md`.
+Salvar na voz da marca. O que incomoda em texto de IA vai pras proibições de escrita do `_contexto/preferencias.md`.
 
 ### 4. Contexto do negócio
 
@@ -111,10 +111,10 @@ Avisar o usuário que tá instalando (demora uns 30s na primeira vez).
 
 ## Dependências
 
-- **Identidade visual:** `marca/design-guide.md` (preenchido no setup ou antes)
+- **Identidade visual:** o guia visual da marca (preenchido no setup ou antes)
 - **Regras de design:** `references/design-carrossel.md` (dentro desta skill)
 - **Contexto:** `_contexto/empresa.md`
-- **Tom de voz:** `_contexto/preferencias.md`
+- **Tom de voz:** a voz da marca, com as proibições de escrita do `_contexto/preferencias.md`
 - **Playwright CLI:** `npx playwright screenshot`
 
 ## Input
@@ -152,7 +152,7 @@ ia: nao
 
 ### Fase 1, Texto
 
-1. Ler `_contexto/preferencias.md` pra calibrar tom
+1. Ler a voz da marca e as proibições de escrita do `_contexto/preferencias.md` pra calibrar tom
 2. Ler `_contexto/empresa.md` pra entender contexto e público
 3. Se o input for um link, buscar o conteúdo com os fallbacks corretos:
    - **Links normais (artigos, blogs, docs):** tentar WebFetch direto. Se falhar ou retornar pouco conteúdo, usar Jina Reader: prefixar a URL com `https://r.jina.ai/` (ex: `https://r.jina.ai/https://exemplo.com/artigo`)
@@ -176,7 +176,7 @@ ia: nao
 
    Se o usuário fornecer imagens, criar a pasta `producao/<slug>/imagens/` e confirmar que as imagens estão lá antes de seguir.
 
-6. **Planejar a espinha dorsal do carrossel e mostrar pro usuário.** Montar e apresentar:
+7. **Planejar a espinha dorsal do carrossel e mostrar pro usuário.** Montar e apresentar:
 
    > **Espinha dorsal do carrossel:**
    >
@@ -203,7 +203,7 @@ ia: nao
 
    Cada opção de capa deve ter título (max 8 palavras) + subtítulo próprio. Nunca o mesmo subtítulo pra todas. Precisa criar tensão ou curiosidade. Nunca descritivo ("5 dicas de X"), sempre com ângulo ("por que X não funciona como tu pensa").
 
-7. **Escrever os slides com base na espinha dorsal e capa aprovadas.** Seguir o arco narrativo:
+8. **Escrever os slides com base na espinha dorsal e capa aprovadas.** Seguir o arco narrativo:
 
    **Slide 1 (Capa):** usar a capa escolhida no checkpoint 1.
 
@@ -243,15 +243,15 @@ ia: nao
 - Sem travessões, a menos que o preferencias.md diga o contrário
 - Se soar como template, redação de vestibular ou post genérico de Instagram: reescrever do zero
 
-8. Gerar legenda Instagram:
+9. Gerar legenda Instagram:
    - Gancho nos primeiros 125 caracteres (é o que aparece antes do "...mais")
    - 2-3 parágrafos curtos de desenvolvimento
    - CTA no final
    - 5-10 hashtags relevantes
 
-9. Mostrar o texto completo de todos os slides + legenda no chat (não só salvar no arquivo)
+10. Mostrar o texto completo de todos os slides + legenda no chat (não só salvar no arquivo)
 
-10. Salvar o texto dos slides em `producao/<slug>/roteiro.md` (numa pasta que veio da `/pauta`, atualizar a coluna "Texto (literal)" da tabela `## Carrossel`). A legenda vai no `post.md`: copiar o molde (seção "Onde o post mora") pra `producao/<slug>/post.md`, trocar o título, pôr a legenda inteira (gancho, desenvolvimento, CTA e hashtags) no lugar do texto entre `<` e `>` da seção `## Legenda`, e apagar as seções `## YouTube titulo` e `## YouTube descricao`, que carrossel não usa (o YouTube só recebe vídeo). A linha `ia:` fica `ia: sim` se algum slide usar imagem gerada por IA, senão `ia: nao`. Nenhuma linha com texto entre `<` e `>` pode sobrar: o agendador recusa o post enquanto houver.
+11. Salvar o texto dos slides em `producao/<slug>/roteiro.md` (numa pasta que veio da `/pauta`, atualizar a coluna "Texto (literal)" da tabela `## Carrossel`). A legenda vai no `post.md`: copiar o molde (seção "Onde o post mora") pra `producao/<slug>/post.md`, trocar o título, pôr a legenda inteira (gancho, desenvolvimento, CTA e hashtags) no lugar do texto entre `<` e `>` da seção `## Legenda`, e apagar as seções `## YouTube titulo` e `## YouTube descricao`, que carrossel não usa (o YouTube só recebe vídeo). A linha `ia:` fica `ia: sim` se algum slide usar imagem gerada por IA, senão `ia: nao`. Nenhuma linha com texto entre `<` e `>` pode sobrar: o agendador recusa o post enquanto houver.
 
 **CHECKPOINT 2:** Mostrar o texto completo + legenda. Esperar o usuário aprovar ou pedir ajustes antes de seguir pra Fase 2. Se pedir pra mudar um slide, ajustar só aquele.
 
@@ -259,7 +259,7 @@ ia: nao
 
 ### Fase 2, Visual (HTMLs + PNGs)
 
-1. Ler `marca/design-guide.md` pra identidade visual (cores, fontes, logo)
+1. Ler o guia visual da marca pra identidade visual (cores, fontes, logo)
 2. Ler `references/design-carrossel.md` pra regras de design (layouts, ritmo, imagens, elementos fixos)
 3. Criar HTMLs seguindo as regras do arquivo de design
 4. Salvar HTMLs em `producao/<slug>/html/`

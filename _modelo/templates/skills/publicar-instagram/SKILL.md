@@ -60,11 +60,11 @@ Se escolheu Post for Me:
    ```
    Se retornar conta conectada, tá pronto. Se não, guiar o usuário pra conectar a conta no dashboard.
 
-4. **Instalar o script de publicação:**
-   Copiar `scripts/publish-postforme.js` (que vem com esta skill) pra pasta `scripts/` do projeto do usuário.
+4. **Conferir o script de publicação:**
+   O `scripts/publish-postforme.js` vem dentro desta skill e roda de lá (`.claude/skills/publicar-instagram/scripts/publish-postforme.js` depois de promovida). Não copiar pra fora: assim a skill viaja inteira quando a pasta for compartilhada.
 
 5. Confirmar:
-   > "Pronto! Script de publicação instalado. Tua conta tá conectada. Pra publicar, é só chamar /publicar com as imagens."
+   > "Pronto! Script de publicação no lugar. Tua conta tá conectada. Pra publicar, é só chamar /publicar com as imagens."
 
 ---
 
@@ -111,8 +111,8 @@ Se escolheu Graph API:
    IMGBB_API_KEY=key_aqui
    ```
 
-6. **Instalar o script:**
-   Copiar `scripts/publish-graph-api.js` (que vem com esta skill) pra pasta `scripts/` do projeto do usuário.
+6. **Conferir o script:**
+   O `scripts/publish-graph-api.js` vem dentro desta skill e roda de lá (`.claude/skills/publicar-instagram/scripts/publish-graph-api.js` depois de promovida). Não copiar pra fora.
 
 7. **Avisar sobre renovação:**
    > "Importante: teu token do Instagram expira em 60 dias. Quando parar de funcionar, roda /publicar de novo que eu te guio pra renovar."
@@ -151,16 +151,18 @@ Antes de qualquer publicação, mostrar preview:
 
 ### 4. Dry-run (recomendado na primeira vez)
 
+Os comandos rodam da raiz do projeto (onde está o `.env`), chamando o script dentro da skill.
+
 ```bash
 # Post for Me
-node --env-file=.env scripts/publish-postforme.js \
+node --env-file=.env .claude/skills/publicar-instagram/scripts/publish-postforme.js \
   --platform "instagram" \
   --images "slide-01.png,slide-02.png,..." \
   --caption "legenda" \
   --dry-run
 
 # Graph API
-node --env-file=.env scripts/publish-graph-api.js \
+node --env-file=.env .claude/skills/publicar-instagram/scripts/publish-graph-api.js \
   --images "slide-01.png,slide-02.png,..." \
   --caption "legenda" \
   --dry-run
@@ -173,20 +175,20 @@ Mostrar resultado do dry-run. Se OK, perguntar:
 
 ```bash
 # Post for Me, Instagram
-node --env-file=.env scripts/publish-postforme.js \
+node --env-file=.env .claude/skills/publicar-instagram/scripts/publish-postforme.js \
   --platform "instagram" \
   --images "slide-01.png,slide-02.png,..." \
   --caption "legenda"
 
 # Post for Me, TikTok (SEMPRE como draft pro usuario escolher musica no app)
-node --env-file=.env scripts/publish-postforme.js \
+node --env-file=.env .claude/skills/publicar-instagram/scripts/publish-postforme.js \
   --platform "tiktok" \
   --images "slide-01.png,slide-02.png,..." \
   --caption "legenda tiktok" \
   --draft
 
 # Graph API, Instagram
-node --env-file=.env scripts/publish-graph-api.js \
+node --env-file=.env .claude/skills/publicar-instagram/scripts/publish-graph-api.js \
   --images "slide-01.png,slide-02.png,..." \
   --caption "legenda"
 ```

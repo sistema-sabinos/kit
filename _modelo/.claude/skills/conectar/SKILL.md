@@ -28,7 +28,7 @@ Não perguntar "qual ferramenta quer ligar" (a pessoa não sabe os nomes). Pergu
 >
 > Tipo: 'quero que você olhe meus emails e me diga o que importa', ou 'quero ajuda pra responder os clientes', ou 'quero que você acompanhe meus anúncios'."
 
-Cruzar a resposta com as ferramentas citadas no `_contexto/empresa.md` e propor a sequência. Na dúvida, seguir a ordem abaixo, que vai da conexão sem atrito pra com atrito.
+Cruzar a resposta com as ferramentas citadas no `_contexto/empresa.md` e com as linhas `não ligada` do `_contexto/ferramentas.md` (o mapa do que falta) e propor a sequência. Na dúvida, seguir a ordem abaixo, que vai da conexão sem atrito pra com atrito.
 
 ## Os conectores, na ordem
 
@@ -147,7 +147,7 @@ Filtrar as recomendações pela resposta.
 ## Ao concluir cada conexão
 
 1. Testar na hora com um caso real (abrir um site, ler um email, assistir um vídeo curto)
-2. Registrar em `_contexto/ferramentas.md`: linha `| <ferramenta> | ligado | <AAAA-MM-DD> | <observação> |`
+2. Registrar em `_contexto/ferramentas.md`: linha `| <ferramenta> | ligado | <AAAA-MM-DD> | <pra quê; como o sistema alcança: MCP, API com o nome da variável, programa> |`. Se o assunto já tem linha `não ligada` ou `só você` (ela começa com o nome do assunto, "Agenda: ..."), atualizar essa linha, mantendo o assunto na frente, em vez de criar outra
 3. Se ficou pra depois: registrar como `| <ferramenta> | pendente | | <o que falta> |` e anotar em `tarefas.md`
 
 ## Regras

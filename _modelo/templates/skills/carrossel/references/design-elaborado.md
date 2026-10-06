@@ -137,7 +137,7 @@ O design brilha sozinho sem foto:
 
 ## Logo no slide final
 
-Se `marca/design-guide.md` tiver logo, incluir no CTA: 120-200px.
+Se o guia visual da marca (linha "a marca" do Mapa no `AGENTS.md`; pasta de projeto com `marca/` própria usa a dela) tiver logo, incluir no CTA: 120-200px.
 
 ---
 

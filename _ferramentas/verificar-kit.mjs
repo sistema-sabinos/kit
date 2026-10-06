@@ -68,7 +68,7 @@ const OBRIGATORIOS = [
   '_modelo/_contexto/empresa.md', '_modelo/_contexto/preferencias.md',
   '_modelo/_contexto/estrategia.md', '_modelo/_contexto/agora.md',
   '_modelo/_contexto/licoes.md', '_modelo/_contexto/ferramentas.md',
-  '_modelo/marca/design-guide.md', '_modelo/dados/README.md',
+  '_modelo/marca/design-guide.md', '_modelo/marca/tom-de-voz.md', '_modelo/dados/README.md',
   '_modelo/templates/bem-vindo.template.html',
   '_modelo/.claude/skills/iniciar/SKILL.md', '_modelo/.claude/skills/conectar/SKILL.md',
   '_modelo/.claude/skills/mapear/SKILL.md', '_modelo/.claude/skills/atualizar/SKILL.md',
@@ -169,7 +169,7 @@ function matcherCobreBashEPowerShell(matcher) {
   return partes.includes('Bash') && partes.includes('PowerShell')
 }
 
-// Gate 11: quais destes arquivos o .gitignore do _modelo deixa fora do backup do aluno.
+// Gate 11: quais destes arquivos o .gitignore do _modelo (ou da pasta-mae) deixa fora do backup do aluno.
 // Pergunta ao proprio git (check-ignore), que e quem decide no auto-sync, numa copia
 // temporaria: so a estrutura de pastas com arquivos vazios, mais o conteudo real de cada
 // .gitignore. Devolve os caminhos ignorados em ordem, ou null quando o git nao roda.
@@ -527,8 +527,84 @@ export function rodarGates(dirKit, opcoes = {}) {
     if (fora === null) avisos.push('Gate 11: git nao encontrado; a conferencia do backup do aluno nao rodou')
     else for (const r of fora) falhas.push({ gate: 11, arquivo: `_modelo/${r}`, detalhe: 'fora do backup do aluno: liberar o tipo ou o caminho no _modelo/.gitignore' })
   }
+  // O .gitignore da pasta-mae tambem e fechado por padrao: arquivo do kit fora do _modelo/
+  // que ele deixa fora some do repositorio da pasta-mae do aluno, calado.
+  if (set.has('.gitignore')) {
+    const fora = foraDoBackup(dirKit, arquivos.filter(r => !r.startsWith('_modelo/')))
+    if (fora === null) avisos.push('Gate 11: git nao encontrado; a conferencia do .gitignore da pasta-mae nao rodou')
+    else for (const r of fora) falhas.push({ gate: 11, arquivo: r, detalhe: 'fora do repositorio da pasta-mae: liberar o tipo ou o caminho no .gitignore da pasta-mae' })
+  }
+
+  // Gate 12: travessao (U+2014 e U+2013) em qualquer texto do kit. O bem-vindo e os guias
+  // ja tinham teste proprio; o resto do kit passou calado com ele dentro ate a 4.3.
+  for (const rel of arquivos) {
+    if (!ehTexto(rel) && !rel.endsWith('.html')) continue
+    readFileSync(join(dirKit, rel), 'utf8').split('\n').forEach((l, i) => {
+      if (/[\u2013\u2014]/.test(l)) falhas.push({ gate: 12, arquivo: rel, detalhe: `linha ${i + 1}: travessao (U+2014 ou U+2013)` })
+    })
+  }
+
+  // Gate 13: gavetas da memoria. Todo caminho de memoria que o Mapa do _modelo/AGENTS.md
+  // promete tem que existir no _modelo e ter quem escreva ou leia (Tabela de destinos ou Gatilhos)
+  if (set.has('_modelo/AGENTS.md')) {
+    for (const { caminho, detalhe } of gavetasSoltas(readFileSync(join(dirKit, '_modelo/AGENTS.md'), 'utf8'), set))
+      falhas.push({ gate: 13, arquivo: '_modelo/AGENTS.md', detalhe: `${caminho}: ${detalhe}` })
+  }
 
   return { falhas, avisos, total: arquivos.length }
+}
+
+// Gate 13. Gaveta que a Tabela de destinos e os Gatilhos chamam pelo apelido do Mapa, e nao
+// pelo nome: o Mapa manda skill e regra dizer "o diario" e "a marca", e o caminho sair dele.
+// A memoria fria (as duas pastas arquivo/) e lida pelo Recall e escrita pela /faxina, que
+// a secao Rotinas descreve: por isso as duas secoes tambem contam como quem usa.
+const APELIDOS_GAVETA = { 'diario': 'o diário', 'design-guide.md': 'a marca', 'tom-de-voz.md': 'a marca', 'arquivo': 'memória fria' }
+const RAIZES_GAVETA = ['_contexto/', '_memoria/', 'marca/']
+
+function secaoMd(txt, titulo) {
+  const linhas = txt.split(/\r?\n/)
+  const ini = linhas.findIndex(l => l.trim() === `## ${titulo}`)
+  if (ini === -1) return ''
+  const fim = linhas.findIndex((l, i) => i > ini && l.startsWith('## '))
+  return linhas.slice(ini + 1, fim === -1 ? undefined : fim).join('\n')
+}
+
+// Devolve [{caminho, detalhe}] de cada gaveta do Mapa que falta no _modelo ou que ninguem usa.
+// setKit: caminhos do kit relativos a raiz (pasta conta como existente se tem arquivo dentro,
+// porque pasta vazia nao vai no zip nem no git). Caminho com coringa (AAAA, <, *) vira a pasta
+// antes do primeiro pedaco com coringa: _memoria/diario/AAAA-MM-DD.md confere _memoria/diario/.
+// A raiz sozinha (`marca/` citada no texto) e mencao da pasta, nao gaveta.
+export function gavetasSoltas(agentsMd, setKit) {
+  const mapa = secaoMd(agentsMd, 'Mapa')
+  const quemUsa = ['Tabela de destinos', 'Gatilhos', 'Recall', 'Rotinas'].map(t => secaoMd(agentsMd, t)).join('\n')
+  const arquivos = [...setKit]
+  const vistos = new Set()
+  const achados = []
+  // titulo renomeado deixaria a secao vazia e o gate verde sem ter conferido nada
+  for (const t of ['Mapa', 'Tabela de destinos']) {
+    if (!secaoMd(agentsMd, t).trim()) achados.push({ caminho: 'AGENTS.md', detalhe: `secao "## ${t}" nao encontrada ou vazia: o Gate 13 nao conseguiu conferir as gavetas` })
+  }
+  for (const linha of mapa.split('\n')) {
+    if (!linha.trimStart().startsWith('- ')) continue
+    for (const m of linha.matchAll(/`([^`]+)`/g)) {
+      let caminho = m[1].trim()
+      if (!RAIZES_GAVETA.some(r => caminho.startsWith(r))) continue
+      const partes = caminho.split('/')
+      const iCoringa = partes.findIndex(p => /AAAA|<|\*/.test(p))
+      if (iCoringa !== -1) caminho = partes.slice(0, iCoringa).join('/') + '/'
+      if (RAIZES_GAVETA.includes(caminho) || vistos.has(caminho)) continue
+      vistos.add(caminho)
+      const ehPasta = caminho.endsWith('/')
+      const noModelo = `_modelo/${caminho}`
+      const existe = ehPasta ? arquivos.some(r => r.startsWith(noModelo)) : setKit.has(noModelo)
+      if (!existe) achados.push({ caminho, detalhe: `gaveta do Mapa que nao existe no _modelo${ehPasta ? ' (pasta sem arquivo dentro; pasta vazia leva .gitkeep)' : ''}` })
+      const nomeGaveta = caminho.split('/').filter(Boolean).pop()
+      const citado = quemUsa.includes(ehPasta ? `${nomeGaveta}/` : nomeGaveta) ||
+        (APELIDOS_GAVETA[nomeGaveta] && quemUsa.includes(APELIDOS_GAVETA[nomeGaveta]))
+      if (!citado) achados.push({ caminho, detalhe: 'gaveta sem quem escreve nem le: o nome nao aparece na Tabela de destinos, nos Gatilhos, no Recall nem em Rotinas' })
+    }
+  }
+  return achados
 }
 
 const NOMES = {
@@ -536,7 +612,7 @@ const NOMES = {
   3: 'Manifesto de arquivos', 4: 'Links internos', 5: 'Hook de auto-sync',
   6: 'Portabilidade Windows/Mac', 7: 'Empacotamento do zip',
   8: 'Regua do /trafego', 9: 'Travas de seguranca', 10: 'Atualizador',
-  11: 'Backup do aluno (.gitignore)',
+  11: 'Backup do aluno (.gitignore)', 12: 'Travessao', 13: 'Gavetas da memoria',
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -544,7 +620,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const { falhas, avisos, total } = rodarGates(dir)
   console.log(`Kit: ${dir} (${total} arquivos)\n`)
   for (const a of avisos) console.log(`aviso: ${a}\n`)
-  for (const g of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) {
+  for (const g of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]) {
     const desse = falhas.filter(f => f.gate === g)
     console.log(`${desse.length ? 'FALHOU' : 'ok    '}  Gate ${g}: ${NOMES[g]}${desse.length ? ` (${desse.length})` : ''}`)
     for (const f of desse.slice(0, 15)) console.log(`        ${f.arquivo}: ${f.detalhe}`)

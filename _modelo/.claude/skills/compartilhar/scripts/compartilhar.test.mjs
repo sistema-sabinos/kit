@@ -260,9 +260,13 @@ test('extrairDecisoes mantém ordem do arquivo e deixa a sem etiqueta de fora', 
   })
 })
 
-test('conferir nao relata caminho em .claude/skills', () => {
-  comProjeto({ 'acme/.claude/skills/x/SKILL.md': 'Ver em ../../../y.md\n', 'acme/AGENTS.md': 'tudo bem\n' }, raiz => {
-    const r = conferir(join(raiz, 'acme'))
-    assert.deepEqual(r, [])
+test('conferir relata skill da pasta que cita o projeto-pai, mas nao a syncar que o kit traz', () => {
+  comProjeto({
+    'acme/.claude/skills/x/SKILL.md': 'Ver em ../../../y.md\n',
+    'acme/.claude/skills/syncar/SKILL.md': 'copiar o ../_modelo/.gitignore\n',
+    'acme/.claude/settings.local.json': '{}\n',
+    'acme/AGENTS.md': 'tudo bem\n',
+  }, raiz => {
+    assert.deepEqual(conferir(join(raiz, 'acme')), [{ arquivo: '.claude/skills/x/SKILL.md', linha: 1 }])
   })
 })

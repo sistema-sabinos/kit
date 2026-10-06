@@ -37,11 +37,11 @@ Explicar em uma frase antes de começar:
      cli.github.com pra quem não tem Homebrew) e rodar `gh auth login`, escolhendo
      GitHub.com, HTTPS e login pelo navegador. Sem esse passo o push pede senha,
      recusa a senha certa e a pessoa acha que errou a conta.
-7. `git add -A`, primeiro commit, `git branch -M main` (o Git de algumas máquinas nasce com o branch `master`, e aí o push pra `main` falha com "src refspec main does not match any"), `git push -u origin main`
+7. `git add -A` (com a conferência do passo 1 de "Vezes seguintes"), primeiro commit, `git branch -M main` (o Git de algumas máquinas nasce com o branch `master`, e aí o push pra `main` falha com "src refspec main does not match any"), `git push -u origin main`
 
 ## Vezes seguintes
 
-1. `git add -A`
+1. `git add -A`, e conferir o que vai subir (`git diff --cached --name-only`) antes do commit: arquivo com cara de chave (`sk-`, `ghp_`, `github_pat_`, `AKIA`, `BEGIN ... PRIVATE KEY`) ou acima de 50 MB sai com `git reset -q -- <arquivo>`, e a pessoa ouve o porquê em uma frase. Nunca sobe
 2. Commit com mensagem curta descrevendo o que mudou de verdade (não "updates")
 3. `git push`
 4. Confirmar: "Salvo. [resumo de uma linha do que subiu]"
@@ -59,4 +59,5 @@ no começo das sessões seguintes.
 
 - **Nunca** commitar `.env` nem arquivo com chave ou senha. Se aparecer chave em arquivo rastreado, avisar e ajudar a mover pro `.env` antes de commitar
 - Repositório sempre privado por padrão
+- Nunca `git reset --hard`, `git checkout -- .` nem `git clean`: apagam o trabalho que ainda não subiu
 - Se o auto-sync (hook) estiver ligado, o /syncar manual serve pra commit com mensagem descritiva; não duplicar avisos sobre salvar

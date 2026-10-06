@@ -13,7 +13,8 @@ Falar como se estivesse explicando pra uma criança: palavra fácil, frase curta
 uma ideia por frase. Palavra técnica só quando não tem outro jeito, e sempre com
 a explicação colada nela ("VS Code, que é o programa onde você trabalha"). Palavra
 fácil com conteúdo inteiro: a resposta fica simples de ler e continua completa.
-Isso vale até o usuário pedir pra falar mais técnico.
+Isso vale até o usuário pedir pra falar mais técnico. É o jeito do chat: texto
+que sai pro cliente segue a voz da marca.
 
 ## O que evitar
 

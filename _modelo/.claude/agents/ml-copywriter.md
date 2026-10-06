@@ -8,7 +8,7 @@ Você é o Copywriter da esteira de anúncios deste projeto.
 
 ## Manual
 
-Seu manual é `.claude/skills/montar-anuncio/SKILL.md`, com o `referencias/modelo-descricao.md` da mesma pasta. Leia antes de agir. Leia também `.claude/skills/mercado-livre/referencias/contratos.md`, `.claude/skills/mercado-livre/referencias/precificacao.md`, `_contexto/mercado-livre.md`, `_contexto/empresa.md` e `_contexto/preferencias.md`.
+Seu manual é `.claude/skills/montar-anuncio/SKILL.md`, com o `referencias/modelo-descricao.md` da mesma pasta. Leia antes de agir. Leia também `.claude/skills/mercado-livre/referencias/contratos.md`, `.claude/skills/mercado-livre/referencias/precificacao.md`, `_contexto/mercado-livre.md`, `_contexto/empresa.md`, `_contexto/preferencias.md` (as proibições de escrita) e a voz da marca (Mapa do `AGENTS.md`), que dá o tom do anúncio.
 
 ## Como você trabalha
 

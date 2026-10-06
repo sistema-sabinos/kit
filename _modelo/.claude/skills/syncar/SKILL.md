@@ -35,13 +35,13 @@ Explicar em uma frase antes de começar:
      cli.github.com pra quem não tem Homebrew) e rodar `gh auth login`, escolhendo
      GitHub.com, HTTPS e login pelo navegador. Sem esse passo o push pede senha,
      recusa a senha certa e a pessoa acha que errou a conta.
-7. `git add -A`, primeiro commit, `git branch -M main` (o Git de algumas máquinas nasce com o branch `master`, e aí o push pra `main` falha com "src refspec main does not match any"), `git push -u origin main`
+7. `git add -A` (com a conferência do passo 1 de "Vezes seguintes"), primeiro commit, `git branch -M main` (o Git de algumas máquinas nasce com o branch `master`, e aí o push pra `main` falha com "src refspec main does not match any"), `git push -u origin main`
 
 ## Vezes seguintes
 
-1. `git add -A`
+1. `git add -A`, e conferir o que vai subir (`git diff --cached --name-only`) antes do commit: arquivo listado num recado `_memoria/recados/*-auto-sync-segurou.md`, com cara de chave (`sk-`, `ghp_`, `github_pat_`, `AKIA`, `BEGIN ... PRIVATE KEY`) ou acima de 50 MB sai com `git reset -q -- <arquivo>`, e a pessoa ouve o porquê em uma frase. Nunca sobe: é a mesma trava do backup automático, e o `/syncar` não passa por cima dela
 2. Commit com mensagem curta descrevendo o que mudou de verdade (não "updates"), com a origem na frente: `<origem>: <o que mudou>`. A origem é a palavra do arquivo `.origem` da raiz; sem o arquivo, `dono`.
-3. `git push`. Recusado porque o outro computador mandou antes: `git pull --rebase` e `git push` de novo. Conflito no pull: seguir "O envio automático parou", abaixo.
+3. `git push`. Recusado porque o outro computador mandou antes: `git pull --rebase` e `git push` de novo, e dizer em uma linha o que veio de lá ("trouxe 2 arquivos mudados no outro computador: agora.md e diário de hoje", pela lista `git diff --name-only ORIG_HEAD HEAD`). Conflito no pull: seguir "O envio automático parou", abaixo.
 4. Confirmar: "Salvo. [resumo de uma linha do que subiu]"
 
 Conferir que o push **realmente** subiu (`git status` sem "ahead of origin"), nunca
@@ -57,9 +57,18 @@ no começo das sessões seguintes.
 
 Quando existe `.backup-falhou` na raiz, ou um recado `_memoria/recados/*-auto-sync-parado.md`, ou a pessoa diz que o backup parou.
 
-1. Ler o `.backup-falhou` e o recado, se existir, e dizer em uma frase o que houve, sem jargão. Só quando existe o recado `*-auto-sync-parado.md` dizer: "o outro computador (ou o seu sócio) mudou os mesmos arquivos que você, e eu nunca junto duas versões sem você olhar. Nada se perdeu." Sem o recado, ler a causa no `.backup-falhou` e dizer em uma frase simples (senha, internet, repositório, identidade do Git).
+1. Ler o `.backup-falhou` e o recado, se existir, e dizer em uma frase o que houve, sem jargão. Só quando existe o recado `*-auto-sync-parado.md` dizer: "o outro computador (ou o seu sócio) mudou os mesmos arquivos que você, e eu nunca junto duas versões sem você olhar. Nada se perdeu." Sem o recado, ler a causa no `.backup-falhou` e dizer em uma frase simples, pela tabela:
+
+   | o git diz | pra pessoa |
+   |---|---|
+   | `Authentication failed`, `could not read Username` | "o GitHub não reconheceu este computador; vamos refazer o login" |
+   | `Could not resolve host`, `Failed to connect` | "sem internet agora; o trabalho está salvo aqui e sobe quando a conexão voltar" |
+   | `Repository not found` | "o GitHub não achou o cofre: foi apagado, renomeado, ou este login não tem acesso a ele" |
+   | `Please tell me who you are` | "falta o seu nome e email no Git deste computador" |
+   | `rejected`, `fetch first` | "o outro computador mandou antes; vou trazer e juntar" |
+   | `exceeds`, `larger than 100` | "tem um arquivo grande demais pro GitHub; ele precisa sair da pasta" |
 2. Motivo sem conflito (senha, internet, repositório apagado ou renomeado, ou `user.name` e `user.email` do Git vazios, comum num segundo computador recém-clonado, onde o commit do hook falha): resolver pelo passo 2 (identidade) ou pelo passo 6 (autenticação) da "Primeira vez" e testar com `git push`. Rebase pela metade (o `.backup-falhou` diz isso): não rodar `git pull --rebase` de novo (com rebase em andamento ele falha), começar pela lista de conflitos do passo 3 (`git diff --name-only --diff-filter=U`) e seguir até o 6, ou desfazer com `git rebase --abort`, que volta tudo como estava.
-3. No rebase os lados do git vêm invertidos: o bloco de cima dos marcadores (HEAD) é o que veio do GitHub, ou seja o de lá, e o de baixo é o commit daqui; confirmar pelo `git log` (as mensagens `auto-sync <origem>`) antes de mostrar as duas versões pra pessoa. Conflito sem rebase em andamento: antes, commitar o que estiver pendente (`git add -A` e commit `<origem>: <o que mudou>`), porque o pull recusa pasta com mudança solta, e depois `git pull --rebase`. Rebase já em andamento (o caminho do passo 2): nada de commitar nem de puxar, começar direto pela lista. Pra cada arquivo da lista `git diff --name-only --diff-filter=U`, mostrar em linguagem simples o que cada lado escreveu (o daqui e o de lá), sem os marcadores do git na frente da pessoa, e perguntar: fica o daqui, fica o de lá, ou junta os dois. Em diário, decisões e anotações o normal é juntar, porque os dois lados só acrescentaram: fica tudo, em ordem de data. Nunca escolher sozinho e nunca apagar o lado de ninguém.
+3. No rebase os lados do git vêm invertidos: o bloco de cima dos marcadores (HEAD) é o que veio do GitHub, ou seja o de lá, e o de baixo é o commit daqui; confirmar pelo `git log` (as mensagens `auto-sync <origem>`) antes de mostrar as duas versões pra pessoa. Conflito sem rebase em andamento: antes, commitar o que estiver pendente (`git add -A` com a conferência do passo 1 de "Vezes seguintes", e commit `<origem>: <o que mudou>`), porque o pull recusa pasta com mudança solta, e depois `git pull --rebase`. Arquivo segurado continua solto e o pull recusaria por causa dele: resolver o segurado com a pessoa primeiro (chave pro `.env`, arquivo grande pra fora da pasta), como o recado `*-auto-sync-segurou.md` explica. Rebase já em andamento (o caminho do passo 2): nada de commitar nem de puxar, começar direto pela lista. Pra cada arquivo da lista `git diff --name-only --diff-filter=U`, mostrar em linguagem simples o que cada lado escreveu (o daqui e o de lá), sem os marcadores do git na frente da pessoa, e perguntar: fica o daqui, fica o de lá, ou junta os dois. Em diário, decisões e anotações o normal é juntar, porque os dois lados só acrescentaram: fica tudo, em ordem de data. Arquivo de contexto (`_contexto/`, `andamento.md`, `contexto.md`) é diferente, porque os dois lados reescrevem: antes de juntar, copiar o arquivo como está pra `<arquivo>.antes-de-juntar` (o `.gitignore` deixa a cópia fora do backup), juntar com cada seção aparecendo uma vez só, e apagar a cópia quando a pessoa confirmar que ficou certo. Nunca escolher sozinho e nunca apagar o lado de ninguém.
 4. Gravar o arquivo resolvido, `git add <arquivo>` e `git -c core.editor=true rebase --continue` (sem abrir editor). Repetir até acabar.
 5. `git push` e conferir `git status` sem "ahead of origin".
 6. Apagar o recado e o `.backup-falhou`. Os dois ficam só neste computador, fora do backup (o `.gitignore` barra), então apagar não gera commit. Se o `git status` ainda mostrar o recado apagado (`.gitignore` antigo, que deixava ele subir), commit `<origem>: envio automático retomado` e `git push`.
@@ -81,4 +90,6 @@ Dentro do projeto, no primeiro `/syncar` daquele computador: sem `.origem` na ra
 - **Nunca** commitar `.env` nem arquivo com chave ou senha. Se aparecer chave em arquivo rastreado, avisar e ajudar a mover pro `.env` antes de commitar
 - Repositório sempre privado por padrão
 - Nunca forçar o envio (`--force`) nem apagar o lado de lá pra o envio passar: a trava barra, e esse atalho é o que perde o trabalho do sócio
+- Nunca `git reset --hard`, `git checkout -- .` nem `git clean`: apagam o trabalho que ainda não subiu. Pra voltar atrás no meio de uma junção, só `git rebase --abort`
+- O repositório se cria no github.com junto com a pessoa (passo 5 da "Primeira vez"), nunca por comando: ela precisa saber onde o cofre dela está e que ele é privado
 - Se o auto-sync (hook) estiver ligado, o /syncar manual serve pra commit com mensagem descritiva; não duplicar avisos sobre salvar

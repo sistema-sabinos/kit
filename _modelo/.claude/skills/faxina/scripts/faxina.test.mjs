@@ -5,7 +5,7 @@ import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { lerDecisoes, planoArquivo, aplicarArquivo, varrerSegredos, cpfValido, orfaos, automacoes, foraDoBackup, memoriaDoAgente, diasEntre, relatorio } from './faxina.mjs'
+import { lerDecisoes, planoArquivo, aplicarArquivo, varrerSegredos, cpfValido, orfaos, automacoes, foraDoBackup, memoriaDoAgente, diasEntre, relatorio, diarioRende, frescor, ferramentasSemRegistro } from './faxina.mjs'
 
 const SCRIPT = fileURLToPath(new URL('./faxina.mjs', import.meta.url))
 const HOJE = '2026-10-05'
@@ -415,5 +415,116 @@ test('CLI: --hoje invalido (nao /\\d{4}-\\d{2}-\\d{2}/) sai com codigo 2 e erro 
       e => e.status === 2, '--hoje 2026-10-5 sai com codigo 2')
     assert.throws(() => execFileSync('node', [SCRIPT, '--hoje', 'invalido'], { cwd: raiz, stdio: 'pipe', encoding: 'utf8' }),
       e => e.status === 2, '--hoje invalido sai com codigo 2')
+  })
+})
+
+// repositorio de teste: commit com data marcada, sem conversao de final de linha
+function iniciarGit(raiz) {
+  execFileSync('git', ['init', '-q', raiz])
+  for (const [k, v] of [['core.autocrlf', 'false'], ['user.email', 'teste@exemplo.com'], ['user.name', 'teste'], ['commit.gpgsign', 'false']]) execFileSync('git', ['-C', raiz, 'config', k, v])
+}
+function commitar(raiz, arquivos, data) {
+  for (const [rel, txt] of Object.entries(arquivos)) {
+    mkdirSync(join(raiz, rel, '..'), { recursive: true })
+    writeFileSync(join(raiz, rel), txt)
+    execFileSync('git', ['-C', raiz, 'add', '--', rel])
+  }
+  const quando = `${data}T12:00:00`
+  execFileSync('git', ['-C', raiz, 'commit', '-q', '-m', 'x'], { env: { ...process.env, GIT_AUTHOR_DATE: quando, GIT_COMMITTER_DATE: quando } })
+}
+const entradas = (n, quem = 'dono') => Array.from({ length: n }, (_, i) => `- 09:${String(i).padStart(2, '0')}, fez a tarefa ${i} (${quem})`).join('\n') + '\n'
+
+test('diarioRende: diario cheio e nada destilado vira alerta; com mudanca destilada, nao', () => {
+  comProjeto({}, raiz => {
+    iniciarGit(raiz)
+    commitar(raiz, {
+      '_memoria/diario/2026-10-01.md': '# 2026-10-01\n\n' + entradas(12),
+      '_memoria/diario/2026-08-01.md': entradas(30),   // fora dos 30 dias
+    }, '2026-10-01')
+    commitar(raiz, { '_memoria/decisoes.md': '## 2026-07-01, velha\n' }, '2026-07-01')   // mudanca fora da janela
+    const r = diarioRende(raiz, HOJE)
+    assert.ok(r.entradas > 0, 'canario: contou entrada')
+    assert.deepEqual(r, { semGit: false, entradas: 12, mudancas: 0, alerta: true })
+    commitar(raiz, { '_contexto/empresa.md': 'x', 'clientes/acme/andamento.md': 'x' }, '2026-10-02')
+    assert.deepEqual(diarioRende(raiz, HOJE), { semGit: false, entradas: 12, mudancas: 1, alerta: true }, 'um commit com dois arquivos e uma mudanca')
+    commitar(raiz, { '_memoria/decisoes.md': '## 2026-10-03, nova\n' }, '2026-10-03')
+    assert.deepEqual(diarioRende(raiz, HOJE), { semGit: false, entradas: 12, mudancas: 2, alerta: false })
+  })
+  comProjeto({ '_memoria/diario/2026-10-01.md': entradas(9) }, raiz => {
+    iniciarGit(raiz)
+    commitar(raiz, { 'a.md': 'x' }, '2026-10-01')
+    assert.equal(diarioRende(raiz, HOJE).alerta, false, 'abaixo de 10 entradas nao avisa')
+  })
+  comProjeto({ '_memoria/diario/2026-10-01.md': entradas(20) }, raiz => {
+    assert.deepEqual(diarioRende(raiz, HOJE), { semGit: true }, 'sem git pula')
+  })
+})
+
+test('frescor: regra parada ha mais de 60 dias com diario vivo; diario parado nao avisa', () => {
+  comProjeto({}, raiz => {
+    iniciarGit(raiz)
+    commitar(raiz, { 'AGENTS.md': 'regras', '_contexto/estrategia.md': 'x' }, '2026-07-01')
+    commitar(raiz, { '_contexto/estrategia.md': 'y', '_contexto/empresa.md': 'x', '_memoria/diario/2026-09-01.md': entradas(1) }, '2026-09-20')
+    const parado = frescor(raiz, HOJE)
+    assert.deepEqual(parado, { semGit: false, parados: [] }, 'diario sem entrada nos ultimos 14 dias: nada')
+    commitar(raiz, { '_memoria/diario/2026-10-01.md': entradas(1) }, '2026-10-01')
+    const r = frescor(raiz, HOJE)
+    assert.ok(r.parados.length > 0, 'canario: achou parado')
+    assert.deepEqual(r.parados, [{ arquivo: 'AGENTS.md', dias: diasEntre('2026-07-01', HOJE) }])
+    assert.ok(r.parados[0].dias > 60)
+  })
+  comProjeto({ 'AGENTS.md': 'x', '_memoria/diario/2026-10-01.md': entradas(1) }, raiz => {
+    assert.deepEqual(frescor(raiz, HOJE), { semGit: true, parados: [] }, 'sem git pula')
+  })
+})
+
+test('ferramentasSemRegistro: servidor e variavel que o ferramentas.md nao cita, sem valor', () => {
+  const valor = 'Zx9' + 'Qw8Er7Ty6Ui5'
+  const base = {
+    '.mcp.json': JSON.stringify({ mcpServers: { playwright: {}, 'Mercado-Livre': {}, notion: {} } }),
+    '.env': `META_TOKEN=${valor}\r\nOPENAI_API_KEY=${valor}\r\nBLING_CLIENT_ID=1\r\n# COMENTARIO=1\r\nexport GEMINI_API_KEY=${valor}\r\n_ESCONDIDA=1\r\n`,
+  }
+  comProjeto({ ...base, '_contexto/ferramentas.md': '| Playwright | ligado |\n| mercado-livre | ligado |\n| Meta Ads | ligado |\n| bling_client_id |\n' }, raiz => {
+    const r = ferramentasSemRegistro(raiz)
+    assert.ok(r.mcp.length > 0 && r.env.length > 0, 'canario: achou alguma coisa')
+    assert.deepEqual(r, { mcp: ['notion'], env: ['GEMINI_API_KEY', 'OPENAI_API_KEY', '_ESCONDIDA'] })
+    assert.ok(!JSON.stringify(r).includes(valor), 'valor do .env nunca sai')
+  })
+  comProjeto({ ...base, '_contexto/ferramentas.md': 'notion, openai, gemini e _escondida tambem' }, raiz => {
+    assert.deepEqual(ferramentasSemRegistro(raiz).mcp, ['Mercado-Livre', 'playwright'])
+    assert.deepEqual(ferramentasSemRegistro(raiz).env, ['BLING_CLIENT_ID', 'META_TOKEN'])
+  })
+  comProjeto(base, raiz => {
+    assert.deepEqual(ferramentasSemRegistro(raiz), { mcp: [], env: [] }, 'sem ferramentas.md pula calado')
+  })
+})
+
+test('ferramentasSemRegistro: chave PEM de varias linhas nunca vira nome, e prefixo curto nao casa dentro de palavra', () => {
+  // a ultima linha de base64 termina em "=" como uma atribuicao; so maiuscula e digito, pra
+  // passar no filtro de nome e o que segura ser o pulo do valor entre aspas
+  const pedaco = 'KQ9XVBN3SLWPZ8QMR2TYHUE4JF0AGDD5CE7OHIT1VXKWNA'
+  const env = ['GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE ' + 'KEY-----', 'MIIEvQIBADANBgkqhkiG9w0BAQEFAASC', pedaco + '=', '-----END PRIVATE ' + 'KEY-----"', 'IG_ACCESS_TOKEN=x', 'ML_CLIENT_ID=1'].join('\n')
+  comProjeto({ '.env': env, '_contexto/ferramentas.md': 'O /conectar liga e configura. Pagina em html. google ok.' }, raiz => {
+    const r = ferramentasSemRegistro(raiz)
+    assert.ok(r.env.length > 0, 'canario: achou alguma coisa')
+    assert.ok(!JSON.stringify(r).includes(pedaco), 'pedaco da chave nunca sai')
+    assert.deepEqual(r.env, ['IG_ACCESS_TOKEN', 'ML_CLIENT_ID'], '"liga" nao esconde IG_, "html" nao esconde ML_, e "google" cobre GOOGLE_')
+  })
+})
+
+test('diarioRende: repositorio sem nenhum commit nao vira alerta', () => {
+  const linhas = Array.from({ length: 12 }, (_, i) => `- 0${i % 10}:00, coisa ${i}`).join('\n')
+  comProjeto({ '_memoria/diario/2026-10-04.md': `# 2026-10-04\n${linhas}\n` }, raiz => {
+    execFileSync('git', ['init', '-q', raiz])
+    assert.deepEqual(diarioRende(raiz, HOJE), { semGit: true })
+  })
+})
+
+test('relatorio traz as tres checagens novas', () => {
+  comProjeto({ '_contexto/ferramentas.md': 'nada', '.mcp.json': '{"mcpServers":{"notion":{}}}' }, raiz => {
+    const r = relatorio(raiz, HOJE, raiz)
+    assert.deepEqual(r.diarioRende, { semGit: true })
+    assert.deepEqual(r.frescor, { semGit: true, parados: [] })
+    assert.deepEqual(r.ferramentasSemRegistro, { mcp: ['notion'], env: [] })
   })
 })

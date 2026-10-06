@@ -59,6 +59,23 @@ Sai um JSON. Ele só lê; não mexe em nada. O que cada parte quer dizer:
   com a contagem; no relatório, citar a pasta, nunca os arquivos um por um.
 - `memoriaDoAgente`: arquivos que o Claude Code guardou na memória dele sobre
   este projeto (só existe no Claude Code; no Codex fica vazio).
+- `diarioRende`: o diário anda virando memória de verdade? Conta as entradas do
+  diário dos últimos 30 dias e quantas vezes, no mesmo período, o backup guardou
+  mudança no `_contexto/`, nas decisões ou num `andamento.md`. Com `alerta`
+  (10 entradas ou mais e mais de 10 entradas pra cada mudança), dizer em "Só
+  avisando": "o diário anda cheio e quase nada vira contexto ou decisão; vale um
+  /atualizar". `semGit`: sem backup ligado não dá pra contar; dizer isso numa
+  linha.
+- `frescor.parados`: regra ou contexto (`AGENTS.md`, `empresa.md`,
+  `estrategia.md`, `preferencias.md`) que ninguém mexe há mais de 60 dias,
+  enquanto o diário teve entrada nas últimas duas semanas. Frase: "o
+  `estrategia.md` está parado há N dias enquanto o trabalho segue; confere se
+  ainda vale". Sem backup ligado (`semGit`), pula.
+- `ferramentasSemRegistro`: ferramenta ligada que o `_contexto/ferramentas.md`
+  não cita. `mcp` são as conexões do `.mcp.json`; `env` são os nomes das chaves
+  do `.env` (só o nome; o valor nunca aparece no relatório). Propor uma linha no
+  `ferramentas.md` pra cada uma, dizendo o que ela faz. Sem `ferramentas.md`,
+  vem vazio.
 - `ultimosDiarios`: os três arquivos mais recentes do diário, pra conferir o
   "onde paramos".
 - `ilegiveis`: arquivo que não deu pra ler (aberto em outro programa, por exemplo). Ficou fora da varredura de segredo: dizer qual é e pedir pra fechar o programa e rodar de novo.

@@ -91,7 +91,7 @@ atualiza pelo motor, que já sabe o que é do kit e o que é da pessoa.
 
 ## Passo 5, registrar e encerrar
 
-1. Cada projeto tocado já ganhou a linha no `_contexto/agora.md` pelo Passo 6 da `/atualizar-sabinos`.
+1. Cada projeto tocado já ganhou a linha no diário de hoje (`_memoria/diario/`) pelo Passo 6 da `/atualizar-sabinos`.
 2. Apagar a pasta temporária da extração.
 3. Fechar com a economia de conversa: "Kit atualizado. As pastas `_kit-anterior-*` guardam a versão de antes; pode apagar quando tiver certeza de que está tudo bem. Esse processo fechou, abre uma conversa nova."
 

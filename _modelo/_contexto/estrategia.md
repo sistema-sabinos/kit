@@ -17,3 +17,7 @@
 ## O que pode esperar
 
 [o que foi decidido deixar pra depois, pra ninguém reabrir sem querer]
+
+## Contexto com prazo
+
+[o que pesa por um tempo e depois some: campanha de data, mudança de regra de plataforma, temporada. Cada linha com a data em que deixa de valer]

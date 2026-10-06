@@ -57,6 +57,7 @@
 .origem
 .backup-falhou
 _memoria/recados/*-auto-sync-parado.md
+_memoria/recados/*-auto-sync-segurou.md
 .claude/settings.local.json
 # lixo de execucao e de instalacao
 node_modules/

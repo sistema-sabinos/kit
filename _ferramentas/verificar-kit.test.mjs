@@ -1,8 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert'
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, dirname, resolve } from 'node:path'
+import { join, dirname, resolve, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { rodarGates, carregarProibidos, foraDoBackup } from './verificar-kit.mjs'
 import { hashArquivo } from './atualizar-projeto.mjs'
@@ -854,6 +854,128 @@ test('o .gitignore do _modelo libera o que o aluno produz e bloqueia o de propos
       'audio.wav', 'arte.psd', 'pacote.zip', 'node_modules/x/a.js', 'dados/chrome-perfil/Default/Preferences.json',
       'dist/a.js', '.agents/skills/x.md', 'robos/vigia.log']
     assert.deepEqual(foraDoBackup(dir, [...entra, ...fica]), [...fica].sort())
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// .gitignore da pasta-mae: fechado por padrao como o do _modelo. Entra todo arquivo do kit
+// fora do _modelo/ (lista real, lida do disco); projeto do aluno e _kit-anterior-* ficam fora.
+const RAIZ_KIT = fileURLToPath(new URL('..', import.meta.url))
+const GITIGNORE_MAE = readFileSync(join(RAIZ_KIT, '.gitignore'), 'utf8')
+
+function arquivosDoKitForaDoModelo(dir, base = dir, acc = []) {
+  for (const nome of readdirSync(dir)) {
+    if (nome === '.git' || nome === 'node_modules') continue
+    if (dir === base && (nome === '_modelo' || /^_kit-anterior-/.test(nome) || existsSync(join(dir, nome, '_contexto')))) continue
+    const caminho = join(dir, nome)
+    if (statSync(caminho).isDirectory()) arquivosDoKitForaDoModelo(caminho, base, acc)
+    else acc.push(relative(base, caminho).split(sep).join('/'))
+  }
+  return acc
+}
+
+test('o .gitignore da pasta-mae libera o kit e deixa fora segredo, midia, projeto e backup do kit', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'gi-mae-'))
+  try {
+    writeFileSync(join(dir, '.gitignore'), GITIGNORE_MAE)
+    const entra = arquivosDoKitForaDoModelo(RAIZ_KIT).filter(r => r !== '.gitignore')
+    assert.ok(entra.length > 20, 'canario: a lista real do kit veio cheia')
+    for (const r of ['VERSAO', 'RESPONDA-AQUI.txt', '.claude/skills/.gitkeep', '_ferramentas/componentes.json', 'docs/roadmap-avancado.md'])
+      assert.ok(entra.includes(r), `canario: ${r} esta na lista`)
+    const fica = ['.env', '.env.local', 'video.mp4', 'SabinOS-Sistema-4.4.zip', 'node_modules/x.js', '.backup-falhou',
+      '.claude/settings.local.json', '.agents/skills/x.md', 'meu-projeto/_contexto/empresa.md', 'meu-projeto/AGENTS.md',
+      '_kit-anterior-4.3/x.md', '_kit-anterior-4.3/_modelo/AGENTS.md', 'docs/aula.mp4']
+    const fora = foraDoBackup(dir, ['.gitignore', ...entra, ...fica])
+    assert.ok(fora !== null, 'git rodou')
+    assert.deepEqual(fora, [...fica].sort())
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 11 acusa arquivo do kit fora do _modelo que o .gitignore da pasta-mae deixa fora', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, 'docs'), { recursive: true })
+    writeFileSync(join(dir, '.gitignore'), GITIGNORE_MAE)
+    writeFileSync(join(dir, 'docs/aula.mp4'), '')
+    writeFileSync(join(dir, 'docs/guia.md'), '# guia\n')
+    writeFileSync(join(dir, 'VERSAO'), '4.4\n')
+    const g11 = rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 11)
+    assert.ok(g11.length > 0, 'canario: o gate rodou e achou alguma coisa')
+    assert.deepEqual(g11.map(f => f.arquivo), ['docs/aula.mp4'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// Gate 13: gavetas da memoria do Mapa do _modelo/AGENTS.md
+const AGENTS_GAVETAS = [
+  '# Sistema', '', '## Mapa', '',
+  '- negocio: `_contexto/empresa.md`',
+  '- contato: `_contexto/pessoas/`, um por nome',
+  '- o que foi feito em cada dia (o diário): `_memoria/diario/AAAA-MM-DD.md`',
+  '- decisao: `_memoria/decisoes.md`',
+  '- a marca: `marca/tom-de-voz.md`; projeto com `marca/` propria usa a dela',
+  '- material: `dados/`', '',
+  '## Tabela de destinos', '',
+  '- fato → `empresa.md`', '- contato → `pessoas/<nome>.md`', '- feito hoje → o diário',
+  '- decisao → `decisoes.md`', '- jeito de falar → a marca', '',
+  '## Gatilhos', '', '- comeco → ler `empresa.md`', '',
+].join('\r\n')
+
+function kitComGavetas() {
+  const dir = kitFalso()
+  for (const p of ['_contexto/pessoas', '_memoria/diario', 'marca']) mkdirSync(join(dir, '_modelo', p), { recursive: true })
+  writeFileSync(join(dir, '_modelo/AGENTS.md'), AGENTS_GAVETAS)
+  for (const f of ['_contexto/empresa.md', '_contexto/pessoas/.gitkeep', '_memoria/diario/.gitkeep', '_memoria/decisoes.md', 'marca/tom-de-voz.md'])
+    writeFileSync(join(dir, '_modelo', f), '')
+  return dir
+}
+const gate13 = dir => rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 13).map(f => f.detalhe)
+
+test('gate 13 passa em kit com toda gaveta do Mapa existindo e com destino', () => {
+  const dir = kitComGavetas()
+  try { assert.deepEqual(gate13(dir), []) } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 13 acusa gaveta do Mapa que falta no _modelo (arquivo e pasta vazia)', () => {
+  const dir = kitComGavetas()
+  try {
+    rmSync(join(dir, '_modelo/_memoria/decisoes.md'))
+    rmSync(join(dir, '_modelo/_memoria/diario/.gitkeep'))
+    const g13 = gate13(dir)
+    assert.ok(g13.length > 0, 'canario: o gate rodou e achou alguma coisa')
+    assert.deepEqual(g13.map(d => d.split(':')[0]).sort(), ['_memoria/decisoes.md', '_memoria/diario/'])
+    assert.ok(g13.every(d => /nao existe no _modelo/.test(d)))
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 13 acusa gaveta que a Tabela de destinos e os Gatilhos nao citam', () => {
+  const dir = kitComGavetas()
+  try {
+    writeFileSync(join(dir, '_modelo/AGENTS.md'), AGENTS_GAVETAS.replace('- decisao → `decisoes.md`\r\n', ''))
+    assert.deepEqual(gate13(dir), ['_memoria/decisoes.md: gaveta sem quem escreve nem le: o nome nao aparece na Tabela de destinos, nos Gatilhos, no Recall nem em Rotinas'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 13 reprova quando o titulo do Mapa muda, em vez de passar sem conferir', () => {
+  const dir = kitComGavetas()
+  try {
+    writeFileSync(join(dir, '_modelo/AGENTS.md'), AGENTS_GAVETAS.replace('## Mapa', '## Mapa do sistema'))
+    assert.deepEqual(gate13(dir).map(d => d.split(':')[0]), ['AGENTS.md'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// o travessao se monta por codigo: literal aqui faria o proprio teste reprovar no Gate 12
+test('gate 12 acusa travessao em md, mjs e html do kit, e so neles', () => {
+  const dir = kitFalso()
+  const D = String.fromCharCode(0x2014), N = String.fromCharCode(0x2013)
+  try {
+    mkdirSync(join(dir, '_modelo/templates'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/AGENTS.md'), `# A\n\nlinha limpa\numa ${D} outra\n`)
+    writeFileSync(join(dir, '_modelo/templates/a.mjs'), `// ok\n// x ${N} y\n`)
+    writeFileSync(join(dir, '_modelo/templates/b.html'), `<p>a ${D} b</p>\n`)
+    writeFileSync(join(dir, '_modelo/templates/limpo.md'), 'nada aqui - hifen comum\n')
+    const g12 = rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 12)
+    assert.ok(g12.length > 0, 'canario: o gate rodou e achou alguma coisa')
+    assert.deepEqual(g12.map(f => `${f.arquivo} ${f.detalhe.split(':')[0]}`).sort(),
+      ['_modelo/AGENTS.md linha 4', '_modelo/templates/a.mjs linha 2', '_modelo/templates/b.html linha 1'])
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 

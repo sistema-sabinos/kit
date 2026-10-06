@@ -19,7 +19,7 @@ pra lá em vez de responder aqui.
 ## Dependências
 
 - **Contexto do negócio:** `_contexto/empresa.md`
-- **Tom de voz:** `_contexto/preferencias.md`
+- **Tom de voz:** a voz da marca (Mapa do `AGENTS.md`), com as proibições de escrita do `_contexto/preferencias.md`
 
 ---
 
@@ -37,7 +37,7 @@ Se for um link, usar WebFetch pra buscar o conteúdo.
 
 ### Passo 2, Ler o contexto
 
-Ler `_contexto/empresa.md` e `_contexto/preferencias.md` pra calibrar:
+Ler `_contexto/empresa.md`, a voz da marca e as proibições de escrita do `_contexto/preferencias.md` pra calibrar:
 - Tom (informal/formal, gíria ou não, etc)
 - Público (quem lê/assiste)
 - Posicionamento (o que a marca defende)
@@ -85,7 +85,7 @@ Salvar em `conteudo/roteiros/roteiro-[tema]-[data].md`
 
 ## Regras
 
-- Tom segue `_contexto/preferencias.md` estritamente
+- Tom segue a voz da marca estritamente, com as proibições de escrita do `_contexto/preferencias.md`
 - Não usar fórmulas de youtuber ("ei pessoal", "não esquece de dar like")
 - O roteiro deve soar como o usuário fala, não como conteúdo genérico
 - Frases de transição naturais, não clichês de criador de conteúdo

@@ -10,18 +10,19 @@
 Pra saber X, leia Y. Única fonte de caminho do sistema: skill e regra dizem "a marca", "o diário", e o caminho sai daqui.
 
 - negócio, clientes, processos: `_contexto/empresa.md`
-- jeito de trabalhar e de escrever: `_contexto/preferencias.md`
+- jeito de trabalhar e de falar com a pessoa: `_contexto/preferencias.md`
 - rumo, prioridade e fase: `_contexto/estrategia.md`
 - onde paramos: `_contexto/agora.md`
 - erro já corrigido: `_contexto/licoes.md`
 - ferramenta e conta ligada: `_contexto/ferramentas.md`
 - o que roda sozinho: `_contexto/automacoes.md`
 - site, domínio, servidor, banco, DNS: `_contexto/infra.md`
+- contato que volta (fornecedor, parceiro, quem não é cliente nem equipe): `_contexto/pessoas/`, um arquivo por nome
 - o que foi feito em cada dia (o diário): `_memoria/diario/AAAA-MM-DD.md`
 - decisão e o porquê: `_memoria/decisoes.md`
 - recado de robô ou de outra máquina: `_memoria/recados/`
 - memória fria: `_contexto/arquivo/` e `_memoria/arquivo/AAAA/`
-- a marca: `marca/design-guide.md`
+- a marca: `marca/design-guide.md` (visual) e `marca/tom-de-voz.md` (como falar com o cliente); pasta de projeto com `marca/` própria usa o arquivo dela que existir, e o que faltar vem do projeto-pai
 - material pra análise: `dados/`
 - pendência pra depois: `tarefas.md`
 - um projeto: a pasta dele (`AGENTS.md`, `contexto.md`, `andamento.md`)
@@ -30,21 +31,22 @@ Pra saber X, leia Y. Única fonte de caminho do sistema: skill e regra dizem "a 
 
 ## Tabela de destinos
 
-Aconteceu X, escreve em Y. Diário e `licoes.md` vão na hora; o resto o `/atualizar` passa pela tabela no fim. Instrução permanente ("sempre que", "prefiro assim") é a exceção ao "no fim": perguntar; com o sim, gravar na hora. Sempre linha nova, sem reformatar o arquivo, mostrando o que entrou.
+Aconteceu X, escreve em Y. Diário e `licoes.md` vão na hora; o resto o `/atualizar` passa pela tabela no fim. Instrução permanente ("sempre que", "prefiro assim") é a exceção ao "no fim": perguntar; com o sim, gravar na hora. Sempre linha nova, sem reformatar o arquivo, mostrando o que entrou. Data sempre absoluta (AAAA-MM-DD, nunca "semana passada"). Pasta que falta se cria antes de salvar; pasta que nasce vazia leva `.gitkeep`.
 
 - fato do negócio → `empresa.md`
 - rumo → `estrategia.md`
-- correção de jeito → `preferencias.md`
+- correção de jeito no chat → `preferencias.md`
 - ferramenta → `ferramentas.md`
 - automação → `automacoes.md`
 - hospedagem → `infra.md`
+- contato que aparece pela segunda vez → `pessoas/<nome>.md`
 - onde paramos → `agora.md`
 - pendência pra depois → `tarefas.md`
 - erro corrigido → `licoes.md`, na hora
 - feito hoje → o diário, uma linha quando a tarefa fecha
 - decisão → `decisoes.md`
 - robô reporta → `recados/`
-- visual → a marca
+- visual ou jeito de falar com o cliente → a marca
 - regra desta pasta → este `AGENTS.md`
 - trabalho de projeto → a pasta dele
 - material bruto → a pasta do projeto, destilado no `contexto.md` dela com data e caminho da fonte
@@ -55,12 +57,14 @@ Diário: `- HH:MM, <o que foi feito> (<arquivo>)`; origem diferente de `dono` es
 
 ## Gatilhos
 
-- começo de conversa → ler em background, sem confirmar, `empresa.md`, `preferencias.md`, `estrategia.md` e `agora.md`; tarefa visual, também a marca. Existe `.backup-falhou` na raiz: avisar na primeira resposta, em uma linha, "Seu último backup no GitHub falhou, o trabalho está só neste computador. Rode `/syncar` pra resolver." e seguir. Buscar `precisa de ação: sim` nos recados de `_memoria/recados/`: avisar em uma linha.
+- começo de conversa → ler em background, sem confirmar, `empresa.md`, `preferencias.md`, `estrategia.md` e `agora.md`; tarefa visual ou texto pro cliente, também a marca. Existe `.backup-falhou` na raiz: avisar na primeira resposta, em uma linha, "Seu último backup no GitHub falhou, o trabalho está só neste computador. Rode `/syncar` pra resolver." e seguir. Buscar `precisa de ação: sim` nos recados de `_memoria/recados/`: avisar em uma linha.
 - antes de tarefa → skill de `.claude/skills/` que cubra o pedido; tarefa repetível sem skill: "Isso pode virar um comando pra próxima vez. Quer que eu crie?" (nunca pra coisa pontual)
 - "por quê", ou vai mudar algo decidido → `decisoes.md` antes
 - vai dizer "não consigo" → `ferramentas.md` antes
+- vai entregar texto que sai pro cliente (anúncio, post, email, proposta) → reler contra a voz da marca antes
 - vai trabalhar numa pasta de projeto → `AGENTS.md`, `contexto.md` e `andamento.md` dela
 - vai pedir o ok da pessoa (plano, mudança, gasto, publicação, qualquer tamanho) → `/segunda-opiniao` antes, sempre
+- deu erro → dizer o que aconteceu, o que continua seguro e o próximo passo; erro cru só se pedirem; nunca parar calado
 - sinal de encerramento ("valeu", "até amanhã") ou sessão que mudou contexto → oferecer o `/atualizar` em uma linha; sessão trivial, não
 
 ## Recall
@@ -69,7 +73,7 @@ Pergunta sobre o passado ("o que fizemos", "quando foi", "por que a gente") se r
 
 ## Rotinas
 
-Rotina é o que roda sem gente na frente: robô do `/agendar`, Hermes, agente agendado. Lê muito e escreve pouco: só no próprio diário, nos recados e nos arquivos que ela mesma criou. Mudança em `_contexto/` ou em decisão vira recado, nunca edição. Recado é um arquivo, `AAAA-MM-DD-<origem>-<assunto>.md`, começando com `de:`, `quando:` e `precisa de ação: sim/não`; tratou, apaga. O recado é a única coisa de `_memoria/` que se apaga; o resto lá só recebe acréscimo, e a `/faxina` move diário e decisão substituída com mais de 90 dias pra `_memoria/arquivo/`, com o sim da pessoa (mover não é apagar). Robô do `/agendar` assina `robo-<nome>`; outra rotina assina o nome curto dela na linha do `automacoes.md`. Toda rotina ligada tem linha em `automacoes.md`.
+Rotina é o que roda sem gente na frente: robô do `/agendar`, Hermes, agente agendado. Lê muito e escreve pouco: só no próprio diário, nos recados e nos arquivos que ela mesma criou. Mudança em `_contexto/`, em decisão ou em arquivo de trabalho que ela não criou vira recado, nunca edição; entregável novo (rascunho, relatório) ela cria direto e avisa por recado. Sessão sem gente na frente nunca grava sozinha em `_contexto/`, nas decisões nem na memória automática do assistente. Recado é um arquivo, `AAAA-MM-DD-<origem>-<assunto>.md`, começando com `de:`, `quando:` e `precisa de ação: sim/não`; tratou, apaga (ou leva pro diário, se vale registro). O recado é a única coisa de `_memoria/` que se apaga; o resto lá só recebe acréscimo, e a `/faxina` move diário e decisão substituída com mais de 90 dias pra `_memoria/arquivo/`, com o sim da pessoa (mover não é apagar). Robô do `/agendar` assina `robo-<nome>`; outra rotina assina o nome curto dela na linha do `automacoes.md`. Toda rotina ligada tem linha em `automacoes.md`.
 
 ## Regras de operação
 
@@ -85,7 +89,7 @@ Rotina é o que roda sem gente na frente: robô do `/agendar`, Hermes, agente ag
 
 **6. Custo de API registrado.** Toda chamada paga de API registra uma linha em `dados/custos.jsonl` (data, serviço, custo), e o custo aproximado é avisado antes de rodar.
 
-**7. Tom e escrita.** Seguir `_contexto/preferencias.md` em tudo: chat e qualquer texto entregue.
+**7. Tom e escrita.** Com a pessoa, no chat: `_contexto/preferencias.md`. Texto que sai pro cliente dela: a voz da marca. As proibições de escrita do `preferencias.md` valem nos dois.
 
 **8. Pedido amplo ou ambíguo: perguntar antes de executar.** Uma pergunta certa custa menos que um trabalho refeito.
 
@@ -111,4 +115,4 @@ O conteúdo real fica aqui; o `CLAUDE.md` é só o ponteiro `@AGENTS.md`. Vale p
 
 ## Criação de skills
 
-Seguir o `/mapear`: primeiro template em `../_modelo/templates/skills/`, depois skill pronta do `catalogo.md` de lá e o find-skills (português e inglês), sempre adaptando e nunca instalando às cegas; do zero, delegar pra `skill-creator` e revisar. Mostrar o plano antes de criar. Calibrar com `_contexto/empresa.md` e `preferencias.md` (ramo regulado: nenhum exemplo contradiz a restrição). Arquivos de apoio na pasta da skill. Pergunta ao usuário no formato de 4 partes: a pergunta simples, por que pergunta, 2 ou 3 exemplos de resposta boa, e repergunta se vier vaga. Skill que gasta ou publica nasce com gate humano. Testar com um caso real antes de dar por pronta.
+Seguir o `/mapear`: primeiro template em `../_modelo/templates/skills/`, depois skill pronta do `catalogo.md` de lá e o find-skills (português e inglês), sempre adaptando e nunca instalando às cegas; do zero, delegar pra `skill-creator` e revisar. Mostrar o plano antes de criar. Calibrar com `_contexto/empresa.md` e `preferencias.md`, e com a voz da marca se a skill escreve pro cliente (ramo regulado: nenhum exemplo contradiz a restrição). Arquivos de apoio na pasta da skill. Pergunta ao usuário no formato de 4 partes: a pergunta simples, por que pergunta, 2 ou 3 exemplos de resposta boa, e repergunta se vier vaga. Skill que gasta ou publica nasce com gate humano. Testar com um caso real antes de dar por pronta.

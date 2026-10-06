@@ -1,7 +1,8 @@
 # Estilos de partida
 
 > Três estilos pra começar. A pessoa escolhe um por categoria na seção
-> "Estilo por categoria" do `marca/design-guide.md`, e pode trocar tudo.
+> "Estilo por categoria" do guia visual da marca (linha "a marca" do Mapa no
+> `AGENTS.md`; pasta de projeto com `marca/` própria usa a dela), e pode trocar tudo.
 > As cores exatas vêm do guia de marca; aqui fica o jeito de cada estilo.
 > Letras: as do sistema (`system-ui, sans-serif`), que abrem em qualquer computador.
 

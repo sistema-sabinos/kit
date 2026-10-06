@@ -13,7 +13,7 @@ description: >
 ## Dependências
 
 - `_contexto/empresa.md`, o que a empresa vende, políticas, prazos
-- `_contexto/preferencias.md`, tom das respostas
+- a voz da marca (Mapa do `AGENTS.md`), tom das respostas, com as proibições de escrita do `_contexto/preferencias.md`
 - Se existir um catálogo de produtos e preços em `dados/`, ler antes de responder qualquer pergunta de preço
 
 ## Como as mensagens chegam
@@ -33,7 +33,7 @@ Separar cada mensagem em uma de quatro caixas:
 
 ### Passo 2, Rascunhar
 
-Pra caixas 1 e 2, escrever a resposta pronta de cada uma, no tom do `preferencias.md`, usando os dados reais (preço do catálogo, prazo da política). **Se faltar um dado, perguntar ao usuário em vez de inventar.** Nunca prometer prazo, desconto ou condição que não está documentada.
+Pra caixas 1 e 2, escrever a resposta pronta de cada uma, na voz da marca (com as proibições do `preferencias.md`), usando os dados reais (preço do catálogo, prazo da política). **Se faltar um dado, perguntar ao usuário em vez de inventar.** Nunca prometer prazo, desconto ou condição que não está documentada.
 
 Pra caixa 3, resumir o caso em uma linha e dizer por que precisa dele: "Cliente pede desconto de 20% em pedido grande, sua política não cobre isso, quanto você topa?"
 

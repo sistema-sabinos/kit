@@ -120,7 +120,7 @@ não sabe se foi ouvido, e passa o resto do onboarding na dúvida.
 
 ## Passo 2, perguntas que só funcionam em conversa
 
-Quatro interações que não têm como vir prontas de um arquivo, sempre em chat,
+Seis interações que não têm como vir prontas de um arquivo, sempre em chat,
 independente da rota escolhida no Passo 0:
 
 ### Tom (reação ao padrão, não pergunta aberta)
@@ -169,6 +169,39 @@ Oferecer as 4 rotas em conversa:
 Em todos os casos, perguntar pelo logo (PNG ou SVG), com variação para fundo claro
 e escuro se existir.
 
+### Voz da marca (como escrevo no seu lugar, pro seu cliente)
+
+Logo depois do visual, no formato de 4 partes:
+
+> "E quando eu escrever no seu lugar, pro seu cliente (post, anúncio, resposta de
+> WhatsApp): trato por tu ou por você? É informal ou mais sério? Tem palavra ou
+> promessa que você nunca usaria?
+>
+> Pergunto porque o jeito que eu falo com você aqui é um, e o jeito que a sua marca
+> fala com o cliente pode ser outro. Misturar os dois faz o cliente estranhar.
+>
+> Tipo: 'você, informal, sem gíria e sem emoji', 'tu, bem descontraído, nunca
+> prometer resultado', ou cola um texto seu que ficou bom (email, post, proposta):
+> exemplo real vale mais que descrição."
+
+Resposta vaga ("normal"): reperguntar com um dos exemplos. Guardar pro
+`marca/tom-de-voz.md` do Passo 5. Sem resposta, o arquivo nasce com os campos em
+branco, e até lá o texto pro cliente sai neutro e profissional, com as proibições
+de escrita (nunca no tom simples do chat).
+
+### Onde as suas coisas moram (uma mensagem, opcional)
+
+> "Onde ficam as suas coisas na internet: site, domínio, email da empresa, loja?
+> Só o nome do serviço, senha nunca.
+>
+> Pergunto pra, quando algo der problema no site ou no email, eu saber onde
+> procurar sem te perguntar de novo.
+>
+> Tipo: 'site na Hostinger, email no Gmail normal', 'loja na Nuvemshop', ou 'não
+> tenho site'."
+
+Vira o `_contexto/infra.md` do Passo 5. "Não tenho" é resposta: a seção diz "não tem".
+
 ### Importação de ChatGPT/Gemini (atalho, uma linha)
 
 > "Última coisa: se você já usa ChatGPT ou Gemini com frequência, tenho um atalho
@@ -188,6 +221,15 @@ FERRAMENTAS / IDENTIDADE VISUAL / TOM DE VOZ / O QUE EVITAR / OUTROS DETALHES
 Com a resposta colada, extrair o que complementa as respostas já colhidas, mostrar
 o resumo do que muda e confirmar antes de usar. Se a pessoa não usar outro
 assistente, seguir direto sem essa etapa.
+
+Quem já usa o Claude Code ou o Codex neste computador tem memória pronta aqui
+mesmo: existe conteúdo próprio em `~/.claude/CLAUDE.md` (fora dos marcadores do
+SabinOS), arquivos em `~/.claude/projects/*/memory/` ou um `~/.codex/AGENTS.md`.
+Nesse caso, na mesma mensagem do atalho: "Vi que você já usa o Claude Code (ou o
+Codex) aqui. Posso ler o que ele já guardou de você pra não te perguntar de novo?"
+Com o sim, ler só esses arquivos, mostrar em até 6 linhas o que serve pro negócio
+e confirmar antes de usar; o resto (outros projetos, assunto pessoal) fica de fora.
+Sem o sim, nada se lê.
 
 ## Passo 3, identidade global
 
@@ -482,10 +524,18 @@ Windows no git, e o backup passa a ver o mesmo arquivo como dois.
   ao mesmo tempo, em vez de travar o backup.
 - `_contexto/` inteira (os 8 arquivos: `empresa.md`, `preferencias.md`,
   `estrategia.md`, `agora.md`, `licoes.md`, `ferramentas.md`, `automacoes.md`,
-  `infra.md`), preenchidos com as respostas colhidas (os dois últimos nascem quase
-  vazios quando a pessoa não citou rotina nem hospedagem), nunca deixando o aviso `NOT CONFIGURED` no projeto final.
+  `infra.md`, mais as pastas `arquivo/` e `pessoas/` com o `.gitkeep`), preenchidos com as respostas colhidas (o `automacoes.md` nasce quase
+  vazio quando a pessoa não citou rotina; o `infra.md` sai do "Onde as suas coisas
+  moram" do Passo 2), nunca deixando o aviso `NOT CONFIGURED` no projeto final.
+  No `ferramentas.md`, uma linha pra cada um dos sete assuntos do arquivo, tirada
+  das respostas 14 e 15, com o assunto na frente na coluna Ferramenta ("Agenda:
+  Google Agenda", "Reunião: nada"): o que ela usa e o sistema ainda não alcança
+  fica `só você`; o que ela não tem fica `não ligada`, com o que o `/conectar`
+  liga pra isso na Observação. Nada se liga aqui: é só o mapa.
 - `marca/design-guide.md`, preenchido com o que veio do Passo 2 (identidade
   visual), ou mantido neutro se a pessoa não tinha nada ainda.
+- `marca/tom-de-voz.md`, preenchido com a voz da marca do Passo 2 (o exemplo real
+  colado entra inteiro na seção dele), ou com os campos em branco.
 - `dados/README.md` (e a pasta `dados/` que ele documenta).
 - `_memoria/` inteira (diário, decisões, recados e arquivo, com os `.gitkeep`): é o
   registro do que aconteceu e por quê, e nasce vazia.
@@ -661,6 +711,8 @@ seus posts da semana, agendados e medidos".
      `#2F5D50`, `#1F2328`, `#FFFFFF`, fonte `Inter` nas duas);
    - `{{LINK_FONTES}}` pela linha `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=<Fonte>:wght@400;700&display=swap">`
      quando a fonte existe no Google Fonts (uma por fonte), ou por nada;
+   - `{{LOGO}}` por `<img class="logo" src="marca/<arquivo do logo>" alt="">` quando a
+     pessoa mandou o logo no Passo 2 (o arquivo vai pra `marca/` do projeto), ou por nada;
    - `{{FATO_QUEM}}`, `{{FATO_FOCO}}` e `{{FATO_JEITO}}` pelos três fatos do teste
      de aceite, já confirmados;
    - `{{COMANDOS}}` por um `<li>` por comando da lista final do Passo 6, na mesma
@@ -671,7 +723,8 @@ seus posts da semana, agendados e medidos".
    nenhum travessão (os caracteres U+2014 e U+2013; resposta colada do
    questionário é por onde ele costuma entrar). Abrir no navegador (Windows:
    `start bem-vindo.html`; Mac: `open bem-vindo.html`) e dizer em uma linha que é
-   o retrato do que o sistema sabe hoje e que muda junto com os arquivos.
+   o retrato do que o sistema sabe hoje, tirado agora: a página não se atualiza
+   sozinha quando os arquivos mudam.
 6. Mensagem final, ensinando clique a clique, cobrindo Windows e Mac, como abrir a
    pasta nova no VS Code (menu Arquivo, opção Abrir Pasta, ou arrastar a pasta pro
    ícone do VS Code). Antes de fechar, dizer que a estrutura de hoje é o começo, com

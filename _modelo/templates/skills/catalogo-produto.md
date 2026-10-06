@@ -12,7 +12,7 @@ description: >
 ## Dependências
 
 - `_contexto/empresa.md`, o que a empresa vende e pra quem
-- `marca/design-guide.md`, cores e estilo, se a saída for visual
+- o guia visual da marca (linha "a marca" do Mapa no `AGENTS.md`; pasta de projeto com `marca/` própria usa a dela), cores e estilo, se a saída for visual
 - A lista crua: planilha ou arquivo em `dados/`, texto colado, ou foto de tabela
 
 ## Workflow

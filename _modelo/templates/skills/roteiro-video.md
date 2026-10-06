@@ -17,8 +17,8 @@ vídeo pra gravar.
 ## Dependências
 
 - `_contexto/empresa.md`, negócio e público
-- `_contexto/preferencias.md`, tom
-- `marca/design-guide.md`, se houver padrão visual pros vídeos
+- a voz da marca (Mapa do `AGENTS.md`), tom, com as proibições de escrita do `_contexto/preferencias.md`
+- o guia visual da marca (linha "a marca" do Mapa no `AGENTS.md`; pasta de projeto com `marca/` própria usa a dela), se houver padrão visual pros vídeos
 
 ## Workflow
 

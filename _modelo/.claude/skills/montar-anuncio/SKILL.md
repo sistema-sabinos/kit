@@ -32,7 +32,8 @@ que cada foto mostra. Não cria imagem: quem faz é o `ml-designer`, pela
 - `referencias/modelo-descricao.md`: os 10 blocos da descrição
 - `.claude/skills/mercado-livre/referencias/precificacao.md`, `regras-ml.md`
   e `contratos.md`
-- `_contexto/empresa.md` e `_contexto/preferencias.md`: o tom
+- `_contexto/empresa.md` e a voz da marca (Mapa do `AGENTS.md`): o tom, com
+  as proibições de escrita do `_contexto/preferencias.md`
 
 Caminhos que começam em `referencias/` e `scripts/` são relativos à pasta desta
 skill; `_contexto/`, `dados/`, `fornecedores/` e `anuncios/` são da raiz do
@@ -181,6 +182,6 @@ lê o valor na janela e anota com a data.
 - Nunca inventar especificação: o que não está no catálogo nem no briefing
   fica `[PREENCHER]` e vira pendência.
 - Um anúncio por produto. Segundo posicionamento é produto ou kit novo.
-- Tom de `_contexto/preferencias.md`; sem travessão; sem cara de IA.
+- Tom da voz da marca, com as proibições do `_contexto/preferencias.md`; sem travessão; sem cara de IA.
 - Sem contato externo na descrição, nem do fabricante.
 - Preço do Mercado Livre é provisório até o simulador falar.

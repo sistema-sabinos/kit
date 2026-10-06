@@ -26,7 +26,8 @@ autoral e dá ao dono o botão de derrubar o seu anúncio.
 
 1. Ler `dados/pipeline/<slug>/copy.json` (o `mapa_fotos`), o guia de marca
    (`guia_de_marca` em `_contexto/mercado-livre.md`, padrão
-   `marca/design-guide.md`, seção "Estilo por categoria") e
+   o guia visual da marca, linha "a marca" do Mapa no `AGENTS.md`; pasta de
+   projeto com `marca/` própria usa a dela; seção "Estilo por categoria") e
    `referencias/estilos.md` desta skill. Guia sem a seção "Estilo por
    categoria": usar o estilo Limpo.
 2. Listar `anuncios/<slug>/fotos-cruas/`. Vazia: parar e explicar como

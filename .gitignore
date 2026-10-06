@@ -1,8 +1,40 @@
+# Fechado por padrao, como o _modelo/.gitignore: aqui tudo comeca FORA e so entra a pasta
+# do kit e o tipo liberado abaixo. Pasta que nao esta na lista (o projeto do aluno, que tem
+# repositorio proprio, e o backup _kit-anterior-* do /atualizar-kit) fica fora inteira.
+*
+
+# pastas do kit; o _modelo/ entra inteiro porque o _modelo/.gitignore governa la dentro
+!/.claude/
+!/.claude/**/
+!/_ferramentas/
+!/_ferramentas/**/
+!/docs/
+!/docs/**/
+!/_modelo/
+!/_modelo/**
+
+# texto e estrutura
+!*.md
+!*.html
+!*.txt
+!*.pdf
+# configuracao e script
+!*.json
+!*.mjs
+# arquivo sem extensao do kit
+!/VERSAO
+# estrutura do git
+!.gitkeep
+!.gitignore
+!.gitattributes
+
+# Bloqueio de proposito, por cima de tudo que foi liberado
 .env
 .env.*
 .backup-falhou
 node_modules/
 .DS_Store
+.claude/settings.local.json
 # ponte pro Codex, criada em tempo de uso, nunca versionada
 .agents/
 # pastas de projeto criadas pelo setup entram aqui, uma linha cada (o /setup adiciona)

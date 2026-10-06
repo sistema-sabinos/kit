@@ -2,7 +2,7 @@
 name: proposta-comercial
 description: >
   Gera uma proposta comercial profissional em HTML a partir de um briefing em texto livre.
-  Aplica a identidade visual da marca do usuário (cores, fontes do design-guide.md).
+  Aplica a identidade visual da marca do usuário (cores e fontes do guia visual da marca).
   Use quando o usuário mencionar "proposta", "proposta comercial", "orçamento",
   "apresentação de projeto" ou pedir um documento de venda para um cliente.
 ---
@@ -11,9 +11,9 @@ description: >
 
 ## Dependências
 
-- **Identidade visual:** `marca/design-guide.md`
+- **Identidade visual:** o guia visual da marca (linha "a marca" do Mapa no `AGENTS.md`; pasta de projeto com `marca/` própria usa a dela)
 - **Contexto do negócio:** `_contexto/empresa.md`
-- **Tom de voz:** `_contexto/preferencias.md`
+- **Tom de voz:** a voz da marca (Mapa do `AGENTS.md`), com as proibições de escrita do `_contexto/preferencias.md`
 
 ---
 
@@ -33,9 +33,9 @@ Se o usuário já forneceu as informações de forma livre, extrai o que der e p
 
 ### Passo 2, Ler os arquivos de contexto
 
-- Ler `marca/design-guide.md` pra aplicar cores e fontes
+- Ler o guia visual da marca pra aplicar cores e fontes
 - Ler `_contexto/empresa.md` pra dados do prestador (nome, serviços, contato)
-- Ler `_contexto/preferencias.md` pra tom da proposta
+- Ler a voz da marca pra tom da proposta, com as proibições de escrita do `_contexto/preferencias.md`
 
 ### Passo 3, Gerar o HTML
 
@@ -54,7 +54,7 @@ Criar um arquivo HTML completo com as seguintes seções:
 10. Sobre a empresa, 3-4 linhas sobre quem entrega
 
 **Estilo visual:**
-- Aplicar cores e fontes do `marca/design-guide.md`
+- Aplicar cores e fontes do guia visual da marca
 - Se design guide estiver vazio, usar: fundo branco, texto escuro, acento em azul escuro (#1E3A5F), tipografia limpa
 - Layout de uma coluna, responsivo, leve
 - Seções com espaçamento generoso
@@ -70,7 +70,7 @@ Perguntar: "Quer que eu publique essa proposta com um link compartilhável? É s
 
 ## Regras
 
-- Tom da proposta segue `_contexto/preferencias.md`
+- Tom da proposta segue a voz da marca, com as proibições de escrita do `_contexto/preferencias.md`
 - Nunca inventar valor, prazo ou escopo, se não foi fornecido, deixar placeholder claro pra preencher
 - A proposta deve soar como veio de uma pessoa, não de um template corporativo
 - Sem jargão desnecessário ("soluções inovadoras", "entregamos valor", etc)

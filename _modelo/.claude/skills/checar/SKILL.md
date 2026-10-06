@@ -49,8 +49,9 @@ Rodar os comandos de leitura e classificar cada item em verde, amarelo ou vermel
 
 ### 5. Ponte do Codex
 
-- `.agents/skills` existe? É link/junction (no Windows, `node -e "console.log(require('fs').lstatSync('.agents/skills').isSymbolicLink()?'link':'copia')"`, que funciona no Git Bash e no PowerShell; no Mac/Linux, `ls -la .agents` mostra `->`) ou pasta comum (cópia)?
+- `.agents/skills` existe? É link/junction, link quebrado ou pasta comum (cópia)? Um comando só responde nos dois sistemas (Git Bash, PowerShell, Terminal do Mac): `node -e "const fs=require('fs');const l=fs.lstatSync('.agents/skills').isSymbolicLink();let ok=true;try{fs.readdirSync('.agents/skills')}catch{ok=false};console.log(l?(ok?'link':'link quebrado'):'copia')"`. Link quebrado é o que sobra quando a pasta do projeto muda de lugar ou de nome: o link continua lá, apontando pro caminho velho, e o Codex não acha nenhuma skill, calado.
 - Se for cópia: o conteúdo bate com `.claude/skills` (mesma lista de pastas)?
+- **Vermelho:** link quebrado. Conserto: tirar só o link, que não apaga nada dele (`node -e "require('fs').rmSync('.agents/skills')"`), e criar a ponte de novo (comando no `docs/roadmap-avancado.md` da pasta-mãe, seção Rota Codex).
 - **Amarelo:** ponte ausente (só importa pra quem usa Codex) ou cópia desatualizada. Conserto: criar a ponte (comando no `docs/roadmap-avancado.md` da pasta-mãe, seção Rota Codex) ou copiar `.claude/skills` por cima de `.agents/skills`.
 
 ### 6. Ferramentas

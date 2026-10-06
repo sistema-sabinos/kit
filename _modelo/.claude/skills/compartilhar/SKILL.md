@@ -67,8 +67,9 @@ Montar a lista do que vai entrar, passar pela `/segunda-opiniao` e mostrar pra
 pessoa. Com o sim:
 
 1. **Marca.** Se a pasta não tem `marca/` própria, criar `marca/design-guide.md`
-   com o resumo da marca do projeto que esta pasta usa (cores, fontes, tom com
-   esse cliente) e copiar o logo pra dentro. Resumo do que serve aqui, nunca a
+   com o resumo da marca do projeto que esta pasta usa (cores, fontes) e
+   `marca/tom-de-voz.md` com o resumo da voz (tratamento, como soa, o que nunca),
+   e copiar o logo pra dentro. Resumo do que serve aqui, nunca a
    marca inteira.
    Se a marca do projeto ainda é o molde em branco, pular e dizer pra pessoa
    que a pasta vai sem marca.
@@ -94,7 +95,9 @@ pessoa. Com o sim:
    são decisões sem etiqueta que trocam uma da pasta: mostrar cada uma e
    perguntar se vai junto. Se `copiadas` der 0 e as decisões citam a pasta,
    desconfiar da etiqueta e conferir antes de seguir.
-4. **Comandos.** Skill que mora em `<pasta>/.claude/skills/` já vai junto. Se a
+4. **Comandos.** Skill que mora em `<pasta>/.claude/skills/` já vai junto; caminho
+   do projeto-pai dentro dela, a conferência do fim aponta e ele se troca pelo que
+   existe na pasta. Se a
    pasta depende de skill do projeto, perguntar: copiar pra dentro, ou tirar a
    dependência. Prometer comando que não vai existir do outro lado é pior que não
    ter. Quem vai trabalhar junto leva também a `syncar` (copiar

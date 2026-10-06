@@ -87,7 +87,7 @@ Só criar depois do "bora".
 Escrever direto a partir do que foi escolhido no Passo 3, garantindo:
 
 1. Frontmatter `name` e `description` (a description diz QUANDO usar, com as frases que o usuário falaria)
-2. Leitura do contexto certo no início (`_contexto/preferencias.md`; `marca/design-guide.md` se for visual; `empresa.md` se depender de produto, política ou prazo)
+2. Leitura do contexto certo no início (`_contexto/preferencias.md` pro tom do chat; a voz da marca se escreve texto pro cliente; o guia visual da marca se for visual, com o caminho tirado da linha "a marca" do Mapa no `AGENTS.md`; `empresa.md` se depender de produto, política ou prazo)
 3. Passo a passo que reflete o que o usuário descreveu, não o fluxo genérico do template
 4. Onde salvar, se gera arquivo
 5. Toda pergunta dentro da skill segue o formato de 4 partes
@@ -102,10 +102,10 @@ Quando não há template nem skill externa, não escrever na mão: montar um bri
 - **Entregável**: formato e pasta de destino, se houver
 - **Ferramentas** que se aplicam, do catálogo
 - **Contexto do negócio** que importa: tom, restrições de ramo regulado (pergunta 7 do questionário), produtos
-- **Identidade visual**: `marca/design-guide.md`, se o output for visual
-- **Onde salvar**: `.claude/skills/<nome>/SKILL.md`
+- **Identidade visual**: o guia visual da marca (caminho pelo Mapa do `AGENTS.md`), se o output for visual
+- **Onde salvar**: `.claude/skills/<nome>/SKILL.md`. Skill que só serve a uma pasta de projeto (um cliente, uma campanha) vai pra `<pasta>/.claude/skills/<nome>/SKILL.md`, e o `AGENTS.md` da pasta ganha a linha dela na seção "Habilidades desta pasta" (que nasce com a primeira): assim ela viaja junto quando o `/compartilhar` leva a pasta
 
-Quando a skill-creator devolver, **revisar antes de mostrar**: frontmatter claro? tom bate com `preferencias.md`? lê os arquivos certos no início? os gatilhos usam o vocabulário do usuário? exemplo dentro da skill contradiz alguma restrição do ramo? Ajustar o que precisar. Se a skill-creator não estiver disponível, escrever seguindo a seção "Criação de skills" do `AGENTS.md`.
+Quando a skill-creator devolver, **revisar antes de mostrar**: frontmatter claro? tom do chat bate com `preferencias.md` e texto pro cliente com a voz da marca? lê os arquivos certos no início? os gatilhos usam o vocabulário do usuário? exemplo dentro da skill contradiz alguma restrição do ramo? Ajustar o que precisar. Se a skill-creator não estiver disponível, escrever seguindo a seção "Criação de skills" do `AGENTS.md`.
 
 ### Estrutura final (vale pros dois caminhos)
 

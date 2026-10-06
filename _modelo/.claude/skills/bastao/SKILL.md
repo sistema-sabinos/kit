@@ -26,13 +26,13 @@ Sempre em `<raiz do workspace>/.claude/bastao.md` (criar a pasta se faltar). Um 
 
 Preencher TODAS as seções, nesta ordem. Seção sem conteúdo recebe "nada", nunca some.
 
-1. **Objetivo geral** — o que é "pronto" pro projeto inteiro, em 1-3 frases.
-2. **Ponto exato de parada** — última coisa concluída + a próxima ação imediata, concreta (arquivo, comando, teste).
-3. **Feito / Em andamento / Bloqueado** — estado honesto: teste falhando é falhando, bloqueio é bloqueio. Referenciar arquivo, commit e PR pelo caminho; nunca colar o conteúdo deles.
-4. **Decisões tomadas só no chat** — tudo que foi decidido na conversa e não está escrito em arquivo nenhum (escolhas aprovadas, preferências ditas, caminhos descartados e por quê). É a seção mais importante: o que não entrar aqui morre junto com o chat.
-5. **Lições e armadilhas da sessão** — erro já cometido e corrigido aqui, pro chat novo não repetir.
-6. **Próximos passos em ordem** — numerados; o 1º repete o "Ponto exato de parada".
-7. **Arquivos e referências** — caminhos e URLs relevantes.
+1. **Objetivo geral**: o que é "pronto" pro projeto inteiro, em 1-3 frases.
+2. **Ponto exato de parada**: última coisa concluída + a próxima ação imediata, concreta (arquivo, comando, teste).
+3. **Feito / Em andamento / Bloqueado**: estado honesto: teste falhando é falhando, bloqueio é bloqueio. Referenciar arquivo, commit e PR pelo caminho; nunca colar o conteúdo deles.
+4. **Decisões tomadas só no chat**: tudo que foi decidido na conversa e não está escrito em arquivo nenhum (escolhas aprovadas, preferências ditas, caminhos descartados e por quê). É a seção mais importante: o que não entrar aqui morre junto com o chat.
+5. **Lições e armadilhas da sessão**: erro já cometido e corrigido aqui, pro chat novo não repetir.
+6. **Próximos passos em ordem**: numerados; o 1º repete o "Ponto exato de parada".
+7. **Arquivos e referências**: caminhos e URLs relevantes.
 
 Regras: nunca gravar segredo (chave, token, senha) no arquivo; citar que ele existe e onde mora (ex.: `.env`), não o valor. Datas sempre absolutas (AAAA-MM-DD), nunca "hoje" ou "ontem".
 
