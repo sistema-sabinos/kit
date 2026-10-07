@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 4.9 (2026-10-06)
+Versão 5.0 (2026-10-07)
 
 Um sistema de trabalho com IA pro seu negócio, rodando dentro do VS Code com o Claude Code.
 
@@ -24,14 +24,14 @@ A ideia é simples: em vez de conversar com uma IA que esquece tudo a cada conve
 
 Quando sair versão nova, `/atualizar-kit` aqui na pasta-mãe traz as melhorias sem mexer nos seus projetos, e dentro de cada projeto `/atualizar-sabinos` puxa a versão nova direto do GitHub.
 
-## O fluxo em 4 passos
+## O fluxo em 3 passos
 
-Todo o passo a passo de leigo está no [COMECE-AQUI.md](COMECE-AQUI.md): responder o questionário, abrir a pasta no VS Code, chamar o Claude e dizer "primeiro projeto", e depois trabalhar dentro da pasta do projeto que ele cria pra você.
+Todo o passo a passo de leigo está no [COMECE-AQUI.md](COMECE-AQUI.md): abrir a pasta no VS Code, dizer oi ao Claude e responder as perguntas no chat, e depois trabalhar dentro da pasta do projeto que ele cria pra você.
 
 ## O que vem dentro
 
-- `COMECE-AQUI.md`, os 4 passos de leigo pra começar
-- `RESPONDA-AQUI.txt`, o questionário que você preenche antes do primeiro projeto
+- `COMECE-AQUI.md`, os 3 passos de leigo pra começar
+- `RESPONDA-AQUI.txt`, as perguntas da entrevista, onde o Claude grava as suas respostas (dá pra preencher à mão, se preferir)
 - `AGENTS.md`, o cérebro desta sala de controle (como ela conduz o onboarding); `CLAUDE.md` é só o ponteiro pro Claude Code ler o mesmo arquivo
 - `_modelo/`, o molde completo de um projeto (skills, contexto, estrutura de pastas), de onde cada projeto novo nasce. Não é pasta de trabalho
 - `_ferramentas/`, o verificador do kit e uma biblioteca pronta contra automação que trava
@@ -40,7 +40,7 @@ Todo o passo a passo de leigo está no [COMECE-AQUI.md](COMECE-AQUI.md): respond
 
 **Comandos desta pasta-mãe** (digite `/` na conversa pra ver):
 
-- `/setup`, monta o seu primeiro projeto a partir das respostas do `RESPONDA-AQUI.txt`
+- `/setup`, monta o seu primeiro projeto pela entrevista no chat (começa sozinho na primeira mensagem)
 - `/novo-projeto`, cria uma pasta irmã nova pra outro negócio ou outra frente
 - `/find-skills`, descobre e adapta skills prontas pro seu ramo em vez de criar tudo do zero
 - `/syncar`, salva o estado da pasta-mãe no GitHub

@@ -78,7 +78,7 @@ Se a pessoa pedir detalhe, mostrar o diff daquele arquivo resumido em prosa (o q
 O `.gitignore` e o `.claude/settings.json` da pasta-mãe têm parte do kit e parte da pessoa. Cada um se mostra antes e depois, e só se grava com o sim.
 
 1. **`.gitignore`:** mostrar o atual e o da versão nova, lado a lado. Trocar pelo do kit, mantendo no fim as linhas que a pessoa acrescentou por conta própria (pastas de projeto, `_kit-anterior-*`). Depois rodar `git ls-files -ci --exclude-standard`, que lista o que já está no backup e agora ficaria de fora. Se aparecer `.env` ou arquivo de chave, avisar: tirar o arquivo do backup não apaga o histórico do GitHub, a chave vazou e precisa ser trocada no serviço (gerar uma nova, guardar no `.env`, apagar a velha), e ajudar a pessoa a fazer isso. Tirar do backup (`git rm --cached`, com `-r` pra pasta) só o que for segredo ou arquivo pesado, nunca a lista inteira.
-2. **`.claude/settings.json`:** juntar ao atual o que falta das listas `permissions.ask` e `permissions.deny` e dos hooks do kit, sem tirar nada que a pessoa já tinha.
+2. **`.claude/settings.json`:** juntar ao atual o que falta das listas `permissions.ask` e `permissions.deny` e dos hooks do kit, sem tirar nada que a pessoa já tinha. Hook do kit que mudou de texto troca o antigo em vez de somar: o `Stop` do backup se reconhece pelo `auto-sync:` dentro do comando.
 
 ## Passo 4, levar pros projetos (opcional, um projeto de cada vez)
 

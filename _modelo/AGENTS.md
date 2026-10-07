@@ -61,8 +61,8 @@ Diário: `- HH:MM, <o que foi feito> (<arquivo>)`; origem diferente de `dono` es
 - começo de conversa → ler em background, sem confirmar, `empresa.md`, `preferencias.md`, `estrategia.md` e `agora.md`; tarefa visual ou texto pro cliente, também a marca. Existe `.backup-falhou` na raiz: avisar na primeira resposta, em uma linha, "Seu último backup no GitHub falhou, o trabalho está só neste computador. Rode `/syncar` pra resolver." e seguir. Buscar `precisa de ação: sim` nos recados de `_memoria/recados/`: avisar em uma linha. Sem `.origem` na raiz e com a linha "Equipe e máquinas" no `_contexto/ferramentas.md`: perguntar na primeira resposta qual nome da linha é este computador e gravar o `.origem` (regra do `/syncar`, seção "Outro computador") antes de escrever no diário.
 - antes de tarefa → skill de `.claude/skills/` que cubra o pedido; tarefa repetível sem skill: "Isso pode virar um comando pra próxima vez. Quer que eu crie?" (nunca pra coisa pontual)
 - "por quê", ou vai mudar algo decidido → `decisoes.md` antes
-- vai dizer "não consigo" → `ferramentas.md` antes
-- vai entregar texto que sai pro cliente (anúncio, post, email, proposta) → reler contra a voz da marca antes
+- "dá pra", "a IA consegue X?" ou vai dizer "não consigo" → `ferramentas.md` e as skills de `.claude/skills/` antes; responder sim, em parte ou não, o que falta ligar e se custa, e fechar com a dica de "Pedido vago"
+- vai entregar texto que sai pro cliente (anúncio, post, email, proposta) → reler contra a voz da marca antes e fechar com o que supus e o que conferir antes de usar, em até 2 linhas
 - vai trabalhar numa pasta de projeto → `AGENTS.md`, `contexto.md` e `andamento.md` dela
 - vai pedir o ok de algo que gasta, publica, envia pra fora, apaga ou muda estrutura, ou a pessoa pediu revisão ("revisa", "se autoverifica") → `/segunda-opiniao` antes; o resto segue sem revisão
 - deu erro → dizer o que aconteceu, o que continua seguro e o próximo passo; erro cru só se pedirem; nunca parar calado
@@ -92,7 +92,7 @@ Rotina é o que roda sem gente na frente: robô do `/agendar`, Hermes, agente ag
 
 **7. Tom e escrita.** Com a pessoa, no chat: `_contexto/preferencias.md`. Texto que sai pro cliente dela: a voz da marca. As proibições de escrita do `preferencias.md` valem nos dois.
 
-**8. Pedido amplo ou ambíguo: perguntar antes de executar.** Uma pergunta certa custa menos que um trabalho refeito.
+**8. Pedido vago: completar, confirmar, perguntar por último.** Completar com o `_contexto/` e confirmar em uma linha ("entendi que é X, sigo?") e parar ali: o trabalho começa depois do sim. Perguntar só o que o contexto não responde e muda o trabalho (o quê, pra quê, como fica pronto): até 3 perguntas, com opções (botão quando houver; sem botão, numeradas 1, 2, 3). Pedido claro executa direto. "Só faz": parar de perguntar até o fim da sessão. Sem gente na frente (rotina, subagente): nunca perguntar, seguir pela suposição mais segura e declará-la (no recado ou na resposta). Duas correções sem acertar: resumir o pedido certo num bloco e sugerir colar numa conversa nova. Entrega de pedido vago fecha com "da próxima vez, pode pedir assim: <pedido completo>", menos com `Dicas de pedido: desligadas` no `preferencias.md`; "para com as dicas" grava essa linha no fim da seção Formato de lá na hora, "volta com as dicas" a tira.
 
 **9. Nunca chumbar nome de modelo de IA em código.** Modelo some sem aviso e derruba a automação: descobrir o disponível na API do provedor e escolher na hora.
 

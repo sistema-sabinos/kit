@@ -13,9 +13,11 @@ pro usuário: pasta-mãe é a recepção, pasta do projeto é a sua sala.
 Antes de qualquer coisa, listar as pastas desta raiz. Projeto é pasta com
 `_contexto/` dentro; as que começam com `_` ou `.` e a `docs/` nunca são projeto.
 
-- Nenhum projeto: "Primeiro projeto? Vou ler o RESPONDA-AQUI.txt e montar tudo
-  pra você. (Se você já usa o SabinOS e quer outro projeto, me diga adicionar
-  projeto.)" Com o sim, seguir a skill `setup`.
+- Nenhum projeto: seguir a skill `setup` já nesta resposta, seja qual for a
+  primeira mensagem (até "oi"), salvo pedido de outra linha desta lista. Com
+  resposta no `RESPONDA-AQUI.txt`, é retomada do `setup`. Com ele em branco e a
+  identidade global do SabinOS (bloco sabinos) já na mesa, perguntar antes, com
+  botão, se é um projeto novo (`novo-projeto`) ou recomeçar.
 - Já tem projeto: "Adicionar projeto novo? (Se quiser refazer ou ajustar um que
   já existe, me diga qual.)" Adicionar é a skill `novo-projeto`.
 - Versão nova do kit, zip novo ou atualizar pelo GitHub: skill `atualizar-kit`.
@@ -47,9 +49,10 @@ As skills são o roteiro: nunca improvisar o fluxo.
 
 ## Estrutura e outros agentes
 
-`RESPONDA-AQUI.txt` (questionário), `_modelo/` (molde, nunca lugar de trabalhar),
-`_ferramentas/` (verificador do kit e biblioteca antitrava), `docs/` (guias) e uma
-pasta por projeto. O conteúdo real mora neste `AGENTS.md`; o `CLAUDE.md` é só o
+`RESPONDA-AQUI.txt` (registro da entrevista do `setup`, e rota pra quem prefere
+escrever), `_modelo/` (molde, nunca lugar de trabalhar), `_ferramentas/`
+(verificador do kit e biblioteca antitrava), `docs/` (guias) e uma pasta por
+projeto. O conteúdo real mora neste `AGENTS.md`; o `CLAUDE.md` é só o
 ponteiro `@AGENTS.md`. Funciona também no Codex, sem o backup automático (lá é
 `/syncar` no fim da sessão); a ponte `.agents/skills` e a rota do Hermes Agent
 estão no `docs/roadmap-avancado.md`.

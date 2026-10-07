@@ -32,8 +32,7 @@ Toda pergunta feita ao usuário sai em 4 partes:
    acompanhamento** antes de seguir. Nunca aceitar resposta oca e passar
    direto pra próxima.
 
-Uma pergunta por mensagem, em conversa natural. Nunca listar várias de uma
-vez, nunca numeração formal na frente do usuário.
+**Pergunta com resposta de lista sai com botão.** Uma pergunta por vez. Quando a resposta cabe numa lista curta (sim ou não, 2 a 4 caminhos, várias marcadas), usar a ferramenta de pergunta com opções (AskUserQuestion): 1 pergunta por chamada, 2 a 4 opções, cabeçalho de até 12 letras, e o "Other" fica pra quem quer escrever. As opções saem da linha `Opções` da pergunta quando ela existe, senão dos exemplos da parte 3. O porquê (parte 2) vai numa linha antes. Opção clicada conta como resposta completa; a repergunta da parte 4 só vale quando o "Other" vier vago. Quando a pergunta pede um detalhe que a opção não traz (qual conselho ou qual dado sensível, quem faz o quê na equipe), uma pergunta aberta curta logo depois pega esse detalhe, gravado junto da opção. Sem botão (Codex, ou sessão sem a ferramenta), as mesmas opções saem numeradas em texto (1, 2, 3) e a pessoa responde com o número. Pergunta aberta continua aberta, com os exemplos em texto; se for opcional, fecha com "se quiser pular, diz pular".
 
 ## Passo 0, se situar
 

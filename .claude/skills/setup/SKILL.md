@@ -1,14 +1,15 @@
 ---
 name: setup
 description: >
-  Conduz o fluxo de primeiro projeto do SabinOS. Lê o RESPONDA-AQUI.txt (ou entrevista
-  na conversa quando ele está em branco), confirma o entendimento, resolve em chat o
+  Conduz o fluxo de primeiro projeto do SabinOS. Faz a entrevista no chat, uma pergunta
+  por vez, gravando cada resposta no RESPONDA-AQUI.txt (ou lê o que a pessoa escreveu
+  nele), confirma o entendimento, resolve em chat o
   que não dá pra responder num arquivo (tom, identidade visual, voz da marca),
   grava a identidade global do usuário em ~/.claude/CLAUDE.md,
   descobre skills prontas com a find-skills, e cria o projeto novo por cópia seletiva
   do _modelo/. Use quando o usuário chamar /setup, disser "primeiro projeto",
-  "configura o sistema", "vamos começar", ou quando esta pasta-mãe ainda não tiver
-  nenhuma pasta de projeto.
+  "configura o sistema", "vamos começar", ou na primeira mensagem nesta pasta-mãe sem
+  projeto, ou quando esta pasta-mãe ainda não tiver nenhuma pasta de projeto.
 ---
 
 # /setup, primeiro projeto
@@ -29,19 +30,74 @@ conversa sai em 4 partes**:
 4. Se a resposta vier vaga, curta ou "não sei", **uma repergunta de acompanhamento**
    antes de seguir. Nunca aceitar resposta oca e passar direto pra próxima.
 
-Uma pergunta por mensagem, em conversa natural. Nunca listar várias de uma vez,
-nunca numeração formal na frente do usuário.
+**Pergunta com resposta de lista sai com botão.** Uma pergunta por vez. Quando a resposta cabe numa lista curta (sim ou não, 2 a 4 caminhos, várias marcadas), usar a ferramenta de pergunta com opções (AskUserQuestion): 1 pergunta por chamada, 2 a 4 opções, cabeçalho de até 12 letras, e o "Other" fica pra quem quer escrever. As opções saem da linha `Opções` da pergunta quando ela existe, senão dos exemplos da parte 3. O porquê (parte 2) vai numa linha antes. Opção clicada conta como resposta completa; a repergunta da parte 4 só vale quando o "Other" vier vago. Quando a pergunta pede um detalhe que a opção não traz (qual conselho ou qual dado sensível, quem faz o quê na equipe), uma pergunta aberta curta logo depois pega esse detalhe, gravado junto da opção. Sem botão (Codex, ou sessão sem a ferramenta), as mesmas opções saem numeradas em texto (1, 2, 3) e a pessoa responde com o número. Pergunta aberta continua aberta, com os exemplos em texto; se for opcional, fecha com "se quiser pular, diz pular".
 
 As 17 perguntas do `RESPONDA-AQUI.txt` já trazem a pergunta, o porquê e os exemplos
 prontos, bloco a bloco. Na conversa, usar esse texto direto (partes 1 a 3), só
 adaptando pra tom de fala. A parte 4, a repergunta, é montada na hora, dirigida ao
 que a resposta deixou faltando.
 
-## Passo 0, ler o questionário
+## Passo 0, a entrevista
 
-Antes de tudo, rodar `node -v` em silêncio. Sem Node, o Passo 7 falha no fim,
-depois da entrevista inteira: avisar logo, em uma linha, que falta instalar o
-Node.js (passo 3 da seção "Como instalar" do `README.md`), e seguir só depois.
+### Conferir os programas (antes de qualquer pergunta)
+
+1. Antes da primeira pergunta, conferir em silêncio. No Windows, pela ferramenta PowerShell
+   (com conta claude.ai ela existe com ou sem Git); no Mac, pela Bash. O comando vai como está.
+
+   Windows (roda no PowerShell 5.1):
+
+   ```powershell
+   $s=$env:Path; $r=[Environment]::GetEnvironmentVariable('Path','Machine')+';'+[Environment]::GetEnvironmentVariable('Path','User'); function Tem($nome,$p){ $env:Path=$p; $c=Get-Command $nome -ErrorAction SilentlyContinue; if (-not $c) { return $false }; if ($nome -eq 'node') { return [int] (((& node -v) -replace 'v','').Split('.')[0]) -ge 20 }; return $true }; $falta=@(); $reiniciar=@(); foreach ($p in 'git','node') { if (-not (Tem $p $s)) { if (Tem $p $r) { $reiniciar+=$p } else { $falta+=$p } } }; $env:Path=$s; if ($falta -and -not (Get-Command winget -ErrorAction SilentlyContinue)) { $falta+='sem-winget' }; if ($falta) { 'FALTA ' + ($falta -join ' ') } elseif ($reiniciar) { 'REINICIAR ' + ($reiniciar -join ' ') } else { 'OK' }
+   ```
+
+   Sem a ferramenta PowerShell (o Git já está, então a Bash existe): `node -v` pela Bash;
+   versão 20 ou mais é `OK`, sem node ou menor é `FALTA node`, e a instalação vai por
+   `winget.exe` na Bash com as mesmas flags.
+
+   Mac (o Git só conta com as ferramentas da Apple no disco):
+
+   ```sh
+   f=""; d=$(xcode-select -p 2>/dev/null) && [ -x "$d/usr/bin/git" ] || f="$f git"; v=$(node -v 2>/dev/null | cut -c2- | cut -d. -f1); [ "${v:-0}" -ge 20 ] 2>/dev/null || f="$f node"; if [ -n "$f" ]; then echo "FALTA$f"; else echo OK; fi
+   ```
+
+2. O que fazer com a resposta:
+   - `OK`: seguir sem falar nada.
+   - `REINICIAR ...` (só Windows), texto exato:
+     > "Os programas já estão instalados, só falta o VS Code enxergar. Fecha todas as janelas
+     > do VS Code, abre de novo nesta pasta e me chama numa conversa nova. A gente continua
+     > daqui."
+   - `FALTA ...` com Git e Node, pedir o ok com este texto exato:
+     > "Antes de começar, faltam 2 programas que o sistema usa: o **Git**, que guarda o
+     > histórico e faz o backup do seu trabalho, e o **Node**, o motor que roda as
+     > ferramentas do SabinOS. Posso instalar? Leva uns minutos. Pode aparecer uma janela do
+     > Windows pedindo permissão. É só clicar em **Sim**."
+
+     Faltando um só, a frase cita só ele. Se o Claude for pedir licença pra rodar o comando,
+     junta: "Se eu pedir licença pra rodar o comando, clica em permitir também." No Mac, a
+     última frase vira o aviso da janela da Apple.
+3. Com o sim, no Windows, um comando por programa, pela PowerShell com `timeout` de 600000:
+
+   ```
+   winget install --id Git.Git -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity
+   winget install --id OpenJS.NodeJS.LTS -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity
+   ```
+
+   Quem decide se deu certo é a conferência rodada de novo; o código de saída do winget não
+   vale (sai diferente de 0 quando o programa já existia). O esperado é `REINICIAR`, com o
+   texto dele. Continuou `FALTA`: provavelmente a pessoa clicou em Não; oferecer de novo, ou
+   mandar pra seção 2 do Guia de Instalação. Com `sem-winget`: mandar pra seção 2, com
+   git-scm.com/downloads/win e nodejs.org, e pedir pra chamar de novo quando terminar.
+4. No Mac:
+   - Git: rodar `xcode-select --install` e dizer: "Abriu uma janela da Apple oferecendo
+     instalar as ferramentas de linha de comando. Clica em **Instalar** e depois em
+     **Concordo**. Leva uns minutos, me avisa quando terminar."
+   - Node: rodar
+     `curl -fsSLo "$HOME/Downloads/node.pkg" "https://nodejs.org/dist/latest-v24.x/$(curl -fsSL https://nodejs.org/dist/latest-v24.x/SHASUMS256.txt | grep -o 'node-v[0-9.]*[.]pkg')" && open "$HOME/Downloads/node.pkg"`
+     e dizer: "Abriu o instalador do Node. Vai clicando em **Continuar** e **Instalar**. Se
+     ele pedir a senha do Mac, é a mesma de ligar o computador."
+   - Depois, conferir de novo; continuou `FALTA`, pedir pra fechar e abrir o VS Code. Sem
+     brew, que pede senha no terminal.
+5. ffmpeg e Python ficam com a `/configurar-video`.
 
 Abrir `RESPONDA-AQUI.txt` e classificar cada uma das 17 perguntas em três estados:
 
@@ -51,52 +107,53 @@ Abrir `RESPONDA-AQUI.txt` e classificar cada uma das 17 perguntas em três estad
   sem profundidade pra virar memória útil.
 - **Em branco:** nada escrito embaixo de "Sua resposta:".
 
-Com a classificação em mãos, escolher a rota:
+Resposta gravada a partir de opção clicada conta como Respondida.
 
-- **10 ou mais respondidas:** seguir a **rota A (arquivo)**. Usar as respostas do
-  arquivo como base e ir direto pro Passo 1.
-- **Menos de 4 respondidas (quase tudo em branco):** oferecer as duas rotas sem
-  travar a conversa, com este texto exato:
+Com a classificação em mãos, seguir pelo ramo que cabe:
 
-  > "Vi que o RESPONDA-AQUI.txt ainda está em branco. Dois caminhos, você escolhe:
-  > preenche ele com calma no seu tempo e me chama quando salvar, ou eu te pergunto
-  > aqui na conversa e eu mesmo preencho o arquivo pra você. Qual prefere?"
+**Nenhuma respondida:** abrir com este texto exato:
 
-  Se a pessoa escolher preencher sozinha, encerrar a sessão e esperar ela chamar de
-  novo. Se escolher a conversa, oferecer o ritmo antes de começar, com este texto:
+> "Oi! Antes de trabalhar pra você, preciso te conhecer. Vou fazer umas perguntas aqui,
+> uma de cada vez, e quando der é só clicar numa opção. Vou guardando tudo no arquivo
+> RESPONDA-AQUI.txt: se a conversa cair, a gente continua de onde parou."
 
-  > "Dois ritmos: o completo, com 17 perguntas (uns 20 minutos só nelas, e a
-  > memória fica bem melhor), ou o rápido, com as 11 que eu não consigo trabalhar
-  > sem (uns 10 minutos; as outras 6 ficam anotadas pra você responder depois,
-  > quando quiser). Depois das perguntas ainda vêm umas confirmações rápidas e eu
-  > monto tudo: conte uns 40 minutos no completo e uns 25 no rápido. Qual prefere?"
+Em seguida, o botão de ritmo, cabeçalho `Ritmo`, com três opções:
 
-  Seguir então a **rota conversa**: fazer as perguntas na ordem dos blocos (A a F),
-  no formato de 4 partes. No ritmo completo, são as 17, pulando as marcadas como
-  (opcional) se a pessoa começar a cansar. No ritmo rápido, só as essenciais (1, 3,
-  4, 8, 9, 11, 12, 14, 15, 16 e 17); as seis restantes (2, 5, 6, 7, 10 e 13) entram
-  no `tarefas.md` do projeto (Passo 5) como "responder no RESPONDA-AQUI.txt quando
-  der", com a ressalva de que a 7 (ramo regulado) é perguntada em uma linha mesmo no
-  rápido, porque restrição de conselho ou órgão muda o que toda skill pode escrever.
-  Gravar cada resposta dentro do próprio `RESPONDA-AQUI.txt`, embaixo do "Sua
-  resposta:" correspondente, **na hora, antes da pergunta seguinte**: o arquivo vira
-  o registro, mesmo tendo sido preenchido em chat.
-- **Entre 4 e 9 respondidas (caso misto):** o arquivo está pela metade, então
-  também vale oferecer as duas rotas, com uma versão adaptada pro que já foi
-  preenchido:
+- **Completo, uns 40 min:** as 17 perguntas, uns 20 minutos só nelas, e a memória fica
+  bem melhor. Depois vêm umas confirmações rápidas e a montagem.
+- **Rápido, uns 25 min:** as 11 que não dá pra trabalhar sem, uns 10 minutos; as outras
+  6 ficam anotadas pra responder depois, quando quiser.
+- **Prefiro escrever no arquivo:** responder com calma no RESPONDA-AQUI.txt e chamar
+  depois.
 
-  > "Vi que você já respondeu parte do RESPONDA-AQUI.txt. Dois caminhos, você
-  > escolhe: termina de preencher o resto com calma no seu tempo e me chama quando
-  > salvar, ou eu te pergunto aqui na conversa só o que ainda ficou faltando. Qual
-  > prefere?"
+Com "Prefiro escrever no arquivo", responder: "Clica duas vezes no RESPONDA-AQUI.txt na
+lateral, responde embaixo de cada 'Sua resposta:', salva (Ctrl+S; no Mac, Cmd+S) e me manda
+qualquer mensagem aqui." E parar.
 
-  Se a pessoa escolher terminar sozinha, encerrar a sessão e esperar ela chamar de
-  novo. Se escolher a conversa, perguntar em chat só o que ficou vago ou em branco,
-  no formato de 4 partes, sem repetir o que já foi respondido bem. Toda resposta
-  colhida em chat é gravada no `RESPONDA-AQUI.txt` **na hora, antes da pergunta
-  seguinte**, embaixo do "Sua resposta:" dela. Nunca acumular pra gravar no fim: a
-  gravação imediata é o que faz a conversa sobreviver a uma queda no meio das 17
-  perguntas; sem ela, a pessoa perde tudo e recomeça do zero.
+Com o completo ou o rápido, fazer as perguntas na ordem dos blocos (A a F), uma por vez,
+no formato da regra acima. No completo, são as 17, pulando as marcadas como (opcional) se
+a pessoa começar a cansar. No rápido, só as essenciais; as seis restantes entram no
+`tarefas.md` do projeto (Passo 5) como "responder no RESPONDA-AQUI.txt quando der".
+
+**Alguma respondida:** (a conversa caiu no meio, ou a pessoa escreveu no arquivo) dizer
+"Já tenho X das 17 respostas guardadas, sigo de onde parou.", com o X contado no arquivo, e
+seguir sem o botão de ritmo. Perguntar primeiro as essenciais vagas ou em branco e a 7, na
+ordem dos blocos, sem repetir o que já foi respondido bem. Depois, se faltar alguma não
+essencial, botão com [Responder agora] [Deixar pra depois]; o "depois" vai pro `tarefas.md`
+do projeto (Passo 5) como "responder no RESPONDA-AQUI.txt quando der". Com 10 ou mais
+respondidas, sem essencial faltando e com a 7 respondida, seguir direto pro Passo 1.
+
+Nos dois ramos, gravar cada resposta dentro do próprio `RESPONDA-AQUI.txt`, embaixo do "Sua
+resposta:" dela, **na hora, antes da pergunta seguinte**. Resposta de botão se grava pelo
+texto da opção, com o que vier no "Other" junto. Nunca acumular pra gravar no fim: a
+gravação imediata é o que faz a conversa sobreviver a uma queda no meio das 17 perguntas, e
+é por ela que a conversa nova cai no ramo "Alguma respondida" e segue de onde parou; sem
+ela, a pessoa perde tudo e recomeça do zero.
+
+Essenciais: 1, 3, 4, 8, 9, 11, 12, 14, 15, 16 e 17. As outras seis (2, 5, 6, 7, 10 e 13)
+podem ficar pra depois, com a ressalva de que a 7 (ramo regulado) é perguntada em uma
+linha mesmo no rápido, porque restrição de conselho ou órgão muda o que toda skill pode
+escrever.
 
 ## Passo 1, confirmar o entendimento
 
@@ -121,7 +178,7 @@ não sabe se foi ouvido, e passa o resto do onboarding na dúvida.
 
 ## Passo 2, perguntas que só funcionam em conversa
 
-Cinco interações que não têm como vir prontas de um arquivo, sempre em chat,
+Seis interações que não têm como vir prontas de um arquivo, sempre em chat,
 independente da rota escolhida no Passo 0:
 
 ### Tom (reação ao padrão, não pergunta aberta)
@@ -206,6 +263,14 @@ de escrita (nunca no tom simples do chat).
 > tenho site'."
 
 Vira o `_contexto/infra.md` do Passo 5. "Não tenho" é resposta: a seção diz "não tem".
+
+### Exercício de 2 minutos
+
+> "Antes de eu montar tudo, um treino de 2 minutos. Me pede qualquer coisa do seu negócio do
+> jeito que vier na cabeça, sem caprichar. Tipo: 'faz um post', 'quanto cobro nisso?', 'me
+> ajuda com cliente chato'."
+
+Com botão, cabeçalho `Treino`: [Bora] [Pular]. Com o pedido em mãos, reescrever usando o que a entrevista contou: o que a pessoa quer, pra quê, e como sabe que ficou bom. Mostrar o antes e o depois em até 3 linhas e fechar com: "Pode pedir do seu jeito. Quando faltar algo, eu pergunto com opções, igual fiz agora. Se quiser render mais, a fórmula é dizer o que você quer, pra quê, e como sabe que ficou bom." Não executar o pedido (o projeto ainda não existe). Guardar o pedido bom como primeira linha do `tarefas.md` do projeto, no Passo 5.
 
 ## Passo 3, identidade global
 

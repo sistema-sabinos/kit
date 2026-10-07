@@ -52,13 +52,18 @@ quais já foram tratados e apagar só esses]
 **Lembretes:** [preferência importante de escrita, se houver]
 
 O que você quer fazer hoje?
+[2 ou 3 sugestões, ver "Sugestões do dia"]
 ```
 
-Até 8 linhas. Não reescrever o que está nos arquivos, só o essencial pra retomar.
+Até 8 linhas, fora as sugestões. Não reescrever o que está nos arquivos, só o essencial pra retomar.
+
+## Sugestões do dia
+
+Fecham a mensagem do resumo. As outras perguntas de depois do resumo (recados tratados, `/cobrar` ou `/mei`, nome deste computador) vão antes, em texto. As sugestões saem do "Onde paramos" e das Pendências do `agora.md` e do foco do `estrategia.md`: 2 ou 3, cada uma escrita como pedido completo, do jeito que a pessoa poderia ter pedido (o quê, de qual produto ou canal, como fica pronto). Com a ferramenta de pergunta com botão (`AskUserQuestion`), o "O que você quer fazer hoje?" vira a pergunta dela, com cabeçalho `Hoje`, e sai do bloco do resumo pra não aparecer duas vezes; cada sugestão vira uma opção com rótulo de até 5 palavras e o pedido completo na descrição, e o campo livre da ferramenta é o "ou escreve do seu jeito". Sem a ferramenta (no Codex, por exemplo), ou com 1 sugestão só, elas saem numeradas em texto (1, 2, 3) embaixo da pergunta, seguidas de "ou escreve do seu jeito", e a pessoa responde com o número. Com bastão salvo, a pergunta do passo 6 vem antes e as sugestões só aparecem se a pessoa não retomar. Sem nada no `agora.md` e no `estrategia.md`, fica só a pergunta.
 
 ## Se não está configurado
 
-> "Essa pasta ainda não é um projeto configurado. O lugar de começar é a pasta-mãe (um nível acima), dizendo `primeiro projeto` por lá, leva uns 10 minutos. Depois disso o /iniciar te mostra onde parou toda vez."
+> "Essa pasta ainda não é um projeto configurado. O lugar de começar é a pasta-mãe (um nível acima), dizendo `primeiro projeto` por lá, leva uns 25 a 40 minutos. Depois disso o /iniciar te mostra onde parou toda vez."
 
 ## Comportamento
 

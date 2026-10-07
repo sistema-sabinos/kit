@@ -374,3 +374,27 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto tem `.claude/skills/gerar-imagens/scripts/fontes/` e `git check-ignore .claude/skills/gerar-imagens/scripts/fontes/Manrope.ttf` imprime o caminho.
 **Como aplicar:** acrescentar a linha `!.claude/skills/gerar-imagens/scripts/fontes/*.ttf` logo abaixo da linha `!.claude/skills/video-produto/scripts/fontes/*.ttf` do `.gitignore` (sem ela, no fim das exceções do kit, antes do bloqueio de propósito).
 **Como testar:** `git check-ignore .claude/skills/gerar-imagens/scripts/fontes/Manrope.ttf` não imprime nada.
+
+## regra-pedido-vago
+
+**O que é:** a regra "Pedido amplo ou ambíguo" do `AGENTS.md` vira "Pedido vago: completar, confirmar, perguntar por último": o sistema completa o pedido com o que já sabe do seu negócio, confirma em uma linha, espera o seu sim pra começar e só pergunta o que falta, com opções de clicar. "Só faz" desliga as perguntas até o fim da conversa, e a entrega fecha com "da próxima vez, pode pedir assim", dica que você desliga dizendo "para com as dicas".
+**Por quê:** pergunta aberta ("qual produto, público, tom?") trava quem ainda não sabe como pedir, e a dúvida voltava pro suporte.
+**Te afeta se:** o `AGENTS.md` do projeto não tem `Pedido vago: completar, confirmar, perguntar por último`.
+**Como aplicar:** achar pelo título a regra `Pedido amplo ou ambíguo` (item 6 do "Como usar" deste arquivo) e trocar o parágrafo dela pelo parágrafo da regra "Pedido vago" do `_modelo/AGENTS.md` do kit, mantendo o número que ela tem no projeto e qualquer frase que a pessoa tenha acrescentado. Sem essa regra no projeto, a nova entra no fim das Regras de operação com o próximo número livre. Mostrar o antes e o depois.
+**Como testar:** o `AGENTS.md` do projeto contém `Pedido vago: completar, confirmar, perguntar por último` uma vez só e não contém `Pedido amplo ou ambíguo`.
+
+## gatilho-da-pra
+
+**O que é:** quando você pergunta "dá pra..." ou "a IA consegue...", o sistema olha antes o que já está ligado e as skills do projeto, responde sim, em parte ou não, diz o que falta ligar e se custa, e fecha mostrando como pedir.
+**Por quê:** a resposta vinha como "depende" ou como um "não tenho acesso" que não era verdade, e a pessoa desistia.
+**Te afeta se:** o `AGENTS.md` do projeto tem `Pedido vago:` e a seção Gatilhos não tem `a IA consegue`.
+**Como aplicar:** na seção Gatilhos, trocar a linha que começa com `- vai dizer "não consigo"` pela linha que começa com `- "dá pra"` do `_modelo/AGENTS.md` do kit; sem a linha velha, a nova entra logo depois da linha que começa com `- "por quê"`. Mostrar o antes e o depois.
+**Como testar:** a seção Gatilhos tem `a IA consegue` uma vez só e nenhuma linha dela começa com `- vai dizer "não consigo"`.
+
+## fecho-desconfianca
+
+**O que é:** texto que sai pro seu cliente (anúncio, post, email, proposta) passa a vir com até duas linhas no fim: o que o sistema supôs e o que você confere antes de usar.
+**Por quê:** entrega com cara de pronta faz a pessoa conferir menos, e o erro chega no cliente.
+**Te afeta se:** a seção Gatilhos do `AGENTS.md` do projeto tem a linha que começa com `- vai entregar texto que sai pro cliente` e ela não tem `o que conferir antes de usar`.
+**Como aplicar:** no fim dessa linha, logo depois de "reler contra a voz da marca antes", acrescentar " e fechar com o que supus e o que conferir antes de usar, em até 2 linhas". Mostrar o antes e o depois.
+**Como testar:** a linha de texto pro cliente contém `o que conferir antes de usar`.

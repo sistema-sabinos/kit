@@ -3,10 +3,12 @@ name: find-skills
 description: >
   Descobre skills prontas no ecossistema aberto (npx skills, skills.sh) que já
   resolvem parte de uma tarefa, em vez de criar tudo do zero. Use quando o
-  usuário perguntar "como eu faço X", "existe uma skill pra X", "dá pra fazer
-  X", quiser estender o que o sistema faz, ou quando outra skill do SabinOS
-  precisar descobrir skills prontas antes de criar uma nova (o `/setup` e o
-  `/novo-projeto` chamam esta aqui).
+  usuário disser "existe uma skill pra X", "tem algo pronto pra X", "instala uma
+  skill", quiser estender o sistema com skill de fora, ou quando outra skill do
+  SabinOS precisar descobrir skills prontas antes de criar uma nova (o `/setup`
+  e o `/novo-projeto` chamam esta aqui). Não use pra "dá pra", "a IA consegue"
+  ou "como eu faço X" no negócio da pessoa: isso se responde olhando antes o que
+  já está ligado e as skills já instaladas.
 ---
 
 # find-skills, descobrir skills prontas
@@ -19,10 +21,8 @@ melhores.
 
 ## Quando usar
 
-- O usuário pergunta "como eu faço X" e X pode ser uma tarefa comum que já
-  tem skill pronta
 - O usuário diz "existe uma skill pra X" ou "tem algo pronto pra X"
-- O usuário pergunta "dá pra fazer X" sobre uma capacidade especializada
+- O usuário pede pra instalar uma skill de fora
 - O usuário quer estender o que o sistema faz
 - Outra skill do SabinOS (`/setup`, `/novo-projeto`, `/mapear`) precisa
   descobrir skills prontas antes de criar uma do zero

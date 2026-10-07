@@ -1,5 +1,5 @@
 {
- "versao": "4.9",
+ "versao": "5.0",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -344,7 +344,7 @@
   ".claude/skills/comecar-a-vender/SKILL.md": {
    "08880383d2424db0": "anterior-3.8",
    "47a85174db8f911f": "anterior-3.8",
-   "4d6a28d7395c39f3": "4.9",
+   "4d6a28d7395c39f3": "anterior-4.9",
    "851b4a1d8a039a29": "3.8",
    "a5739cbc3d21ac6b": "anterior-3.8",
    "aa8bbf715a47f876": "3.11",
@@ -352,7 +352,7 @@
    "f065a0745513fcc6": "anterior-3.8"
   },
   ".claude/skills/comecar-a-vender/referencias/fatos.md": {
-   "0b25d4266c0d7868": "4.9",
+   "0b25d4266c0d7868": "anterior-4.9",
    "2a42a50ab61116c7": "4.9",
    "3684da02cb3db118": "4.6",
    "8fecbfb5ba1601e3": "anterior-3.8",
@@ -797,7 +797,8 @@
    "739d439c198aa6ae": "anterior-3.0",
    "97e6537b2ec76001": "3.1",
    "e51509163c3950cf": "anterior-3.0",
-   "f9a2ec0dd47c6cfb": "4.1"
+   "f9a2ec0dd47c6cfb": "4.1",
+   "fefe89a5cf1ee2a1": "5.0"
   },
   ".claude/skills/gerar-imagens/SKILL.md": {
    "0ede41dc238bba7a": "4.2",
@@ -818,8 +819,8 @@
   },
   ".claude/skills/gerar-imagens/scripts/estilo.mjs": {
    "545c1a47ee33d7cf": "4.9",
-   "7b7217ae54b6baf1": "4.9",
-   "dfe2000283454c86": "4.9"
+   "7b7217ae54b6baf1": "anterior-4.9",
+   "dfe2000283454c86": "anterior-4.9"
   },
   ".claude/skills/gerar-imagens/scripts/fontes/Fredoka.ttf": {
    "7ce88227e1bbf04e": "4.9"
@@ -853,10 +854,10 @@
    "f91c906293d64cd3": "4.9"
   },
   ".claude/skills/gerar-imagens/scripts/lib/fontes.mjs": {
-   "0d7a5375cc9c0a46": "4.9",
-   "1163f0e2cf297929": "4.9",
-   "3f24bb964dd05e65": "4.9",
-   "67d8e045c9c699d8": "4.9",
+   "0d7a5375cc9c0a46": "anterior-4.9",
+   "1163f0e2cf297929": "anterior-4.9",
+   "3f24bb964dd05e65": "anterior-4.9",
+   "67d8e045c9c699d8": "anterior-4.9",
    "9a304eba03d036e7": "4.9"
   },
   ".claude/skills/gerar-imagens/scripts/lib/render.mjs": {
@@ -898,6 +899,7 @@
    "58d747b708c19793": "4.1",
    "5963badd9af5e8a8": "3.8",
    "6bef6171079f5ca8": "anterior-3.7",
+   "7148d368531a1ce0": "5.0",
    "7d536d2d06fb730f": "anterior-4.3",
    "86354aabf68b5cd5": "anterior-3.8",
    "918b870ee31d6c18": "4.5",
@@ -915,7 +917,7 @@
    "1cf67d5152ddba0f": "3.6",
    "1d0419caf131bf61": "3.0",
    "2862961c24f75234": "4.4",
-   "2a274adf30c66ccb": "4.9",
+   "2a274adf30c66ccb": "anterior-4.9",
    "34945e77bbbee3f8": "4.1",
    "3562251338e486db": "anterior-3.6",
    "358cc7008a186c99": "anterior-3.0",
@@ -975,10 +977,10 @@
    "12528baa824325ba": "anterior-3.9",
    "1330610a1516b64b": "3.9",
    "246e4d8b0a7c0484": "4.1",
-   "2a433ba29c96fdd3": "4.9",
+   "2a433ba29c96fdd3": "anterior-4.9",
    "3d3284bc731bccdd": "3.7",
    "63401f20e683f3d1": "anterior-3.6",
-   "6dc320a626f9d035": "4.9",
+   "6dc320a626f9d035": "anterior-4.9",
    "723151824f9afd33": "anterior-3.7",
    "7f8cd34d9d1e9f1a": "4.4",
    "82a7e03582dbdb6c": "3.10",
@@ -987,7 +989,7 @@
    "a1e3d592072ff1f6": "anterior-3.6",
    "af80b6ad8878513a": "anterior-3.11",
    "b750cfe926cab866": "4.9",
-   "b839b72276bc21d1": "4.9",
+   "b839b72276bc21d1": "anterior-4.9",
    "d7ea2d6bdc66a22a": "3.8",
    "e3d24ddb4c89fea9": "3.6",
    "f340dafbfc94d36e": "anterior-3.6",
@@ -1002,12 +1004,12 @@
    "ff68050f034247f8": "anterior-3.6"
   },
   ".claude/skills/mercado-livre/referencias/configuracao-exemplo.md": {
-   "06273608767d987c": "4.9",
+   "06273608767d987c": "anterior-4.9",
    "601e155f7f98de49": "3.6",
    "6db7134ef57bb90b": "3.8",
    "91a55cfebae76c07": "anterior-3.6",
    "a419b7ed0776c366": "3.11",
-   "b16eb4fcdbd9cd5c": "4.9",
+   "b16eb4fcdbd9cd5c": "anterior-4.9",
    "cca6c16ecb102d8f": "4.1",
    "ce907b9ef5313c6a": "3.9",
    "f45d29891339558d": "4.9"
@@ -1603,8 +1605,10 @@
    "3a6554d4c0bf2e9c": "anterior-4.3",
    "3b75efaa04d556d5": "4.5",
    "4241fd89efaee5be": "4.8",
+   "473d3bfd48345f92": "5.0",
    "56a07bbf79e76281": "anterior-3.0",
    "6c558189c1acd355": "4.1",
+   "73d15982291ff407": "5.0",
    "7ab5d71f0d0bbb52": "anterior-4.4",
    "99c9c8a351548bb1": "4.4",
    "a2472a4de5c2c1fd": "anterior-3.0",

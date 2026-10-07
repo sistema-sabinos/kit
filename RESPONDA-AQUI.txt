@@ -1,12 +1,11 @@
 SABINOS, PERGUNTAS DO SEU NEGÓCIO
 ==================================================
-Responda embaixo de cada "Sua resposta", com calma e detalhe,
-como se estivesse explicando pra um sócio novo.
-Não precisa responder tudo: o que ficar em branco eu pergunto
-na conversa. As marcadas com (opcional) pode pular sem culpa.
-Quanto mais detalhe, melhor eu trabalho pra você.
-Quando terminar, salve o arquivo, abra o Claude nesta pasta
-e diga: primeiro projeto.
+As perguntas abaixo o Claude faz no chat, na primeira conversa nesta pasta,
+uma por vez, e grava cada resposta aqui. Se a conversa cair, ele continua
+de onde parou.
+Prefere escrever com calma? Responda embaixo de cada "Sua resposta", salve e
+mande qualquer mensagem pro Claude nesta pasta. As marcadas com (opcional)
+pode pular sem culpa.
 
 BLOCO A, QUEM É VOCÊ
 
@@ -31,6 +30,7 @@ Sua resposta:
 [3] Quanto você manja de tecnologia e de IA hoje: nunca usei, uso o básico, ou já me viro bem
 Por que pergunto: isso calibra a linguagem do sistema inteiro, do jeito que eu explico cada passo até o tanto de detalhe técnico que eu assumo que você já sabe.
 Exemplos: "Nunca usei nada disso, uso o computador só pra planilha e WhatsApp." / "Já uso ChatGPT no dia a dia, mas nunca instalei nada tipo VS Code."
+Opções (no chat viram botão): Nunca usei IA / Uso o básico / Já me viro bem
 
 Sua resposta:
 
@@ -58,6 +58,7 @@ Sua resposta:
 [6] Quais são seus canais: onde você vende e onde aparece hoje (Instagram, marketplace, loja física, indicação, site)
 Por que pergunto: cada canal tem regra e rotina diferente, isso decide que comandos e integrações valem a pena montar primeiro.
 Exemplos: "Vendo só por marketplace online, não tenho rede social ativa." / "Todo cliente vem por indicação e por Instagram, não tenho site."
+Opções (no chat viram botão): Marketplace (Mercado Livre, Shopee) / Instagram ou outra rede / WhatsApp, encomenda ou loja física / Indicação (pode marcar mais de uma)
 
 Sua resposta:
 
@@ -66,6 +67,7 @@ Sua resposta:
 [7] Seu ramo tem alguma regra, conselho ou órgão que limita o que você pode fazer ou dizer, tipo OAB, CFM, CRC, ANVISA ou CRECI? Você lida com dado sensível de cliente, como saúde, processo judicial ou situação financeira?
 Por que pergunto: negócio regulado tem linha que não pode cruzar em anúncio, texto ou promessa, e isso vira regra fixa que toda skill de conteúdo respeita.
 Exemplos: "Sou advogada, a OAB proíbe eu prometer resultado de processo ou fazer captação disfarçada de cliente." / "Sou contador, lido com dado financeiro sensível e o CRC tem regra sobre o que posso divulgar como serviço."
+Opções (no chat viram botão): Não tenho / Regra de conselho ou órgão / Dado sensível de cliente / As duas coisas
 
 Sua resposta:
 
@@ -84,6 +86,7 @@ Sua resposta:
 [9] Você atende cliente externo, usa o sistema só pro seu próprio negócio, ou as duas coisas
 Por que pergunto: isso muda o tipo de estrutura que eu monto, se é uma operação voltada pra atender terceiros ou só pra rodar o seu próprio negócio.
 Exemplos: "Só uso pra tocar minha própria loja, não tenho cliente de consultoria." / "Sou gestor de tráfego, cuido de campanha de vários clientes ao mesmo tempo."
+Opções (no chat viram botão): Só o meu negócio / Atendo clientes de fora / As duas coisas
 
 Sua resposta:
 
@@ -129,6 +132,7 @@ BLOCO E, DADOS, FERRAMENTAS E EQUIPE
 [14] Onde moram os seus dados hoje: planilha, sistema, caderno, cabeça, WhatsApp
 Por que pergunto: saber onde a informação vive hoje decide por onde o sistema vai buscar e organizar o que já existe.
 Exemplos: "Está tudo numa planilha de Excel bagunçada e nas conversas de WhatsApp com cliente." / "Uso um sistema de gestão pra quase tudo, só o financeiro que ainda fica numa planilha."
+Opções (no chat viram botão): Planilha / Sistema de gestão / Caderno ou cabeça / Conversas no celular (pode marcar mais de uma)
 
 Sua resposta:
 
@@ -145,6 +149,7 @@ Sua resposta:
 [16] Como é a sua equipe: quem faz o quê, ou se é só você tocando tudo sozinho
 Por que pergunto: define se o sistema serve só pra você ou também vira apoio pra quem trabalha com você.
 Exemplos: "Sou só eu, faço tudo sozinha, do atendimento ao financeiro." / "Somos em 3: eu cuido do comercial, tenho uma assistente financeira e um editor de vídeo freelancer."
+Opções (no chat viram botão): Só eu / Eu e mais 1 ou 2 / Equipe de 3 ou mais
 
 Sua resposta:
 
