@@ -84,7 +84,7 @@ Rotina é o que roda sem gente na frente: robô do `/agendar`, Hermes, agente ag
 
 **3. Loop de lições.** Erro corrigido, retrabalho ou regra que mudou numa tarefa vira uma linha datada em `_contexto/licoes.md`, na seção do assunto, na hora e sem pedir. Antes de repetir tarefa que já deu errado, ler a seção dela. Lição repetida vira regra dentro da skill: quem propõe é o `/atualizar`, ao fechar a sessão.
 
-**4. Gate humano.** Nada que gasta dinheiro, envia mensagem pra fora, publica conteúdo ou altera conta de terceiros executa sem aprovação explícita do usuário naquele momento. Preparar, mostrar e esperar o "pode ir".
+**4. Gate humano.** Nada que gasta dinheiro, envia mensagem pra fora, publica conteúdo ou altera conta de terceiros executa sem aprovação explícita do usuário naquele momento. Antes do "pode ir", mostrar em duas linhas o que vai acontecer e o risco (e como desfazer, só quando tem volta). Depois esperar o "pode ir".
 
 **5. Auto-sync.** O hook de `.claude/settings.json` salva sozinho (commit e push) ao fim de cada resposta, se o GitHub estiver configurado. Não oferecer `/syncar` nem tratar "salvar" como pendência; só rodar se o usuário pedir.
 

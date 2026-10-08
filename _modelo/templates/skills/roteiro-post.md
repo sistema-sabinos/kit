@@ -86,6 +86,7 @@ Salvar em `conteudo/roteiros/roteiro-[tema]-[data].md`
 ## Regras
 
 - Tom segue a voz da marca estritamente, com as proibições de escrita do `_contexto/preferencias.md`
+- Com a /humanizar no projeto, rodar o varredor dela no roteiro como aviso, sem reprovar
 - Não usar fórmulas de youtuber ("ei pessoal", "não esquece de dar like")
 - O roteiro deve soar como o usuário fala, não como conteúdo genérico
 - Frases de transição naturais, não clichês de criador de conteúdo

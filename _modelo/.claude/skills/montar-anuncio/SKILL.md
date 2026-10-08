@@ -182,6 +182,6 @@ lê o valor na janela e anota com a data.
 - Nunca inventar especificação: o que não está no catálogo nem no briefing
   fica `[PREENCHER]` e vira pendência.
 - Um anúncio por produto. Segundo posicionamento é produto ou kit novo.
-- Tom da voz da marca, com as proibições do `_contexto/preferencias.md`; sem travessão; sem cara de IA.
+- Tom da voz da marca, com as proibições do `_contexto/preferencias.md`; sem travessão; sem cara de IA. Com a /humanizar no projeto, rodar o varredor dela no título, na descrição e no FAQ, como aviso que não trava a etapa, e levar o que ele achar pro resumo final.
 - Sem contato externo na descrição, nem do fabricante.
 - Preço do Mercado Livre é provisório até o simulador falar.

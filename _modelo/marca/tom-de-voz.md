@@ -3,7 +3,8 @@
 > Como o sistema escreve no seu lugar pro seu cliente: anúncio, post, legenda, email,
 > proposta, resposta de atendimento. É diferente do `_contexto/preferencias.md`, que é
 > como o sistema fala com você aqui no chat. As proibições de escrita de lá (travessão,
-> "não é X, é Y", cara de IA) valem aqui também.
+> "não é X, é Y", cara de IA) valem aqui também, e a /humanizar confere (como aviso) o
+> texto que sai pro cliente.
 > Quem preenche: o `/setup`, e depois qualquer correção sua ("com cliente, nada de gíria").
 
 ## Tratamento

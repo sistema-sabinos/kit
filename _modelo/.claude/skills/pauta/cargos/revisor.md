@@ -33,6 +33,8 @@ Voce carimba o post ou devolve com o que falta. E o ultimo filtro antes da pesso
 ## Entrega `producao/<DIA>-<assunto>/revisao.md`
 Primeira linha `PASSA` ou `FALTA`. Se `FALTA`: lista numerada com o item, o bloco e a correcao
 sugerida em uma frase.
+Com a /humanizar no projeto, rodar o varredor dela no `roteiro.md` e no `post.md` e listar o que
+ele achar abaixo, cada um numa linha `Aviso:`. Aviso nunca vira `FALTA`.
 
 ## Nao pode
 - Reescrever o roteiro inteiro ou mudar o angulo escolhido.

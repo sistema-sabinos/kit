@@ -407,6 +407,31 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Como aplicar:** copiar a pasta `.claude/skills/ler-avaliacoes/` inteira, sem os arquivos terminados em `.test.mjs`.
 **Como testar:** colar umas 30 avaliações de um produto concorrente (com o link da página), rodar a `/ler-avaliacoes` e conferir que cada citação do relatório aparece igual no que foi colado.
 
+## skill-humanizar
+
+**O que é:** comando novo nas skills base, `/humanizar`: confere um texto e aponta o que soa robô, por categoria, ou arruma o texto quando você pede, com número, preço, prazo, medida e marca intocados e uma trava que reprova se algum deles sumiu ou apareceu.
+**Por quê:** anúncio, post e resposta de cliente com cara de IA perdem confiança, e o pedido "sem cara de IA" nunca dizia o que era isso; reescrever sem trava ainda arriscava trocar um preço ou inventar um prazo.
+**Te afeta se:** sempre; é skill base, entra em todo projeto.
+**Como aplicar:** copiar a pasta `.claude/skills/humanizar/` inteira, sem os arquivos terminados em `.test.mjs`.
+**Como testar:** `node .claude/skills/humanizar/scripts/varrer.mjs` num texto com "Espero ter ajudado!" aponta o fecho de robô.
+**Crédito:** ideias de conorbronsdon/avoid-ai-writing, epoko77-ai/im-not-ai, miqdadbadjuber/anti-slop, alirezarezvani/claude-skills, blader/humanizer, mackswendhell/humanizer-pt-br e fabricioctelles/skills; nenhum trecho copiado.
+
+## preferencias-sem-robo
+
+**O que é:** o `_contexto/preferencias.md` passa a proibir também o fecho de robô ("espero ter ajudado"), o gerundismo ("vou estar enviando") e número, depoimento, garantia ou prazo inventado, que vira [PREENCHER].
+**Por quê:** são as marcas de texto de IA que mais aparecem em mensagem de cliente e anúncio, e o número inventado é o pior defeito, porque parece verdade.
+**Te afeta se:** o `_contexto/preferencias.md` do projeto não tem `fecho de robô`.
+**Como aplicar:** na lista de proibições, no fim da linha que começa com `- Primeira pessoa robótica de IA`, acrescentar ` e fecho de robô ("espero ter ajudado", "qualquer dúvida estou à disposição")`; logo depois dela, acrescentar as linhas `- Gerundismo ("vou estar enviando"): dizer "envio"` e `- Número, depoimento, garantia ou prazo inventado sobre produto, cliente ou resultado: o que falta vira [PREENCHER]`. Sem a linha da primeira pessoa, as três entram no fim da lista. Mostrar o antes e o depois.
+**Como testar:** o `_contexto/preferencias.md` contém `fecho de robô`, `Gerundismo` e `[PREENCHER]`.
+
+## pode-ir-com-risco
+
+**O que é:** antes de pedir o "pode ir", o sistema mostra em duas linhas o que vai acontecer e o risco, e como desfazer quando tem volta.
+**Por quê:** o "pode ir" dado sem saber o risco vira carimbo; duas linhas bastam pra pessoa decidir de verdade.
+**Te afeta se:** o `AGENTS.md` do projeto tem a regra **Gate humano** e ela não tem `o risco`.
+**Como aplicar:** na regra **Gate humano**, trocar a frase `Preparar, mostrar e esperar o "pode ir".` por `Antes do "pode ir", mostrar em duas linhas o que vai acontecer e o risco (e como desfazer, só quando tem volta). Depois esperar o "pode ir".`; sem essa frase, acrescentar a nova no fim da regra. Mostrar o antes e o depois.
+**Como testar:** a regra **Gate humano** do `AGENTS.md` contém `o que vai acontecer e o risco`.
+
 ## pacote-criar-app
 
 **O que é:** pacote novo pra criar um app ou SaaS próprio, com dez comandos na ordem que se segue: `/app-estudar`, `/app-planejar`, `/app-visual`, `/app-construir`, `/app-servidor`, `/app-testar`, `/app-comparar`, `/app-marca`, `/app-lancar` e `/app-publicar` (a `/ler-avaliacoes`, base, entra entre o estudo e o plano).

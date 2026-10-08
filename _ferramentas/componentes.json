@@ -5,6 +5,7 @@
       ".claude/skills/mapear/", ".claude/skills/syncar/", ".claude/skills/atualizar-sabinos/",
       ".claude/skills/faxina/", ".claude/skills/compartilhar/", ".claude/skills/segunda-opiniao/",
       ".claude/skills/ler-avaliacoes/",
+      ".claude/skills/humanizar/",
       "_contexto/arquivo/README.md", "dados/README.md",
       ".claude/hooks/auto-sync.mjs"
     ] },

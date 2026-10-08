@@ -124,6 +124,11 @@ Vale pro fluxo completo (o modo rápido tem a conferência dele, ver mais abaixo
 - [ ] Objeções antecipadas: 3 a 5 em peça longa, só a principal em peça curta (anúncio, legenda, mensagem)
 - [ ] Uma ideia central só, e não três
 - [ ] Zero travessão e zero "não é X, é Y"
+- [ ] Nada que não veio do usuário ou da memória; o que faltou ficou `[PREENCHER]`
+- [ ] Número, preço, prazo, medida e marca iguais aos da fonte
+- [ ] Reescrita de texto que já existia: o que estava limpo ficou igual, em no máximo 2 passadas
+- [ ] Apontar cara de IA nunca virou licença pra reescrever o que o usuário não pediu
+- [ ] Com a /humanizar no projeto, o varredor dela rodou no texto como aviso: o que ele marcar se olha, sem reprovar
 - [ ] Ramo regulado: a lista do proibido foi relida antes de escrever
 
 ## Modo rápido: resposta a objeção

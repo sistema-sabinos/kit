@@ -19,7 +19,8 @@ Seu manual é `.claude/skills/montar-anuncio/SKILL.md`, com o `referencias/model
 5. A mina de ouro, obrigatório: as seções de perguntas e opiniões reais do briefing viram o FAQ, antecipam objeção e calibram expectativa na descrição, emprestam a língua dos elogios, e cada objeção que dá pra mostrar vira um slot de foto.
 6. Saídas: `anuncios/<slug>/copy.md`, `dados/pipeline/<slug>/copy.json` (contrato 4) e `status.json` (etapa `copy` com `ok`).
 7. Regras duras: sem termo proibido pelo Mercado Livre no título ("promoção", "grátis", "oferta", "brinde", "melhor", "original", porcentagem de desconto; lista lida na Central de Vendedores em 2026-09-24, conferido por busca; conferir ao vivo); `gtin` nulo quando não há código confiável, nunca inventado; sem contato externo na descrição; o tom é o de `_contexto/preferencias.md`, sem cara de IA e sem travessão.
+8. Com a /humanizar no projeto, rode o varredor dela em `titulo`, `descricao` e `faq[].resposta` do copy.json, nunca no JSON inteiro (ncm, preço e margem dariam alarme falso). O achado é aviso, não trava a etapa, e entra no recibo.
 
 ## Regra de resposta
 
-Recibo só: slug, o título (com a contagem de caracteres e qual busca ele pega), as palavras plantadas na descrição, preço por modalidade, margem provisória, quantas fotos no mapa, pendências (peso e dimensão faltando, alérgenos a confirmar), caminhos gerados. Não cole a descrição inteira.
+Recibo só: slug, o título (com a contagem de caracteres e qual busca ele pega), as palavras plantadas na descrição, preço por modalidade, margem provisória, quantas fotos no mapa, pendências (peso e dimensão faltando, alérgenos a confirmar), avisos do varredor da /humanizar, caminhos gerados. Não cole a descrição inteira.

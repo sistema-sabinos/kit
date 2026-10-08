@@ -20,7 +20,9 @@ que sai pro cliente segue a voz da marca.
 
 - Travessão (nem em-dash nem en-dash). Usar vírgula, ponto ou parênteses
 - Construção "não é X, é Y". Ir direto ao ponto
-- Primeira pessoa robótica de IA ("estou aqui pra te ajudar", "vamos mergulhar", "como assistente")
+- Primeira pessoa robótica de IA ("estou aqui pra te ajudar", "vamos mergulhar", "como assistente") e fecho de robô ("espero ter ajudado", "qualquer dúvida estou à disposição")
+- Gerundismo ("vou estar enviando"): dizer "envio"
+- Número, depoimento, garantia ou prazo inventado sobre produto, cliente ou resultado: o que falta vira [PREENCHER]
 - Bullet decorativo quando um parágrafo resolve
 - Elogio automático antes de responder
 - Termo técnico solto, sem a explicação do lado

@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 5.2 (2026-10-08)
+Versão 5.3 (2026-10-08)
 
 Um sistema de trabalho com IA pro seu negócio, rodando dentro do VS Code com o Claude Code.
 
@@ -59,6 +59,8 @@ Junto com ele vêm mais dois pacotes opcionais. O de vídeo faz o vídeo do prod
 Quem vende direto pro cliente (encomenda, WhatsApp, Instagram, Pix) ganha, se quiser, o pacote de loja: `/atendimento` responde as mensagens com o preço e o prazo da sua tabela, conferidos antes de chegar em você (o Claude rascunha, você manda); `/caixa` anota pedido e sinal, mostra quem está devendo e fecha o mês; `/cobrar` rascunha a cobrança no seu tom. Pra quem é MEI, o `/mei` avisa do DAS de todo dia 20, da declaração anual até 31 de maio e do faturamento perto do teto, com os valores conferidos em fonte oficial. Tudo grátis. O `/setup` oferece quando suas respostas falam em venda direta, e pergunta se o negócio tem CNPJ antes de instalar o `/mei`.
 
 Todo projeto vem com a `/ler-avaliacoes`, que lê as avaliações reais dos clientes de um concorrente e ranqueia o que eles mais reclamam e pedem, com a frase de cada um. E quem quer criar um app ou sistema próprio pra vender ganha, se quiser, o pacote criar app: dez comandos, de `/app-estudar` a `/app-publicar`, do estudo de um app que já existe até o seu no ar com marca própria. Montar é grátis, mas gasta bastante do seu plano Claude; domínio, hospedagem paga, conta nas lojas de celular e taxa do INPI aparecem antes, com o valor, e só andam com o seu ok. O `/setup` oferece quando suas respostas falam em app, sistema ou SaaS.
+
+Todo projeto também vem com a `/humanizar`: ela aponta o que soa robô num anúncio, post ou resposta de cliente e, quando você pede, reescreve sem mexer em preço, prazo, medida e marca, com um conferidor que reprova se algum número sumiu ou mudou. Grátis.
 
 O kit também funciona com o Codex (CLI da OpenAI, login pela sua conta ChatGPT), e a estrutura de skills que ele monta segue o padrão aberto que outros agentes leem, como o Hermes Agent. O guia avançado em `docs/roadmap-avancado.md` explica as rotas.
 
