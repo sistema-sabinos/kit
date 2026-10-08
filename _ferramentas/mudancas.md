@@ -447,3 +447,11 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto instalou o pacote criar app.
 **Como aplicar:** no `.gitignore` do projeto, logo depois da linha `build/`, acrescentar `.next/`, `.vercel/`, `.wrangler/`, `test-results/` e `playwright-report/`, uma por linha; e no bloco de exceções por caminho, `!app/codigo/**/*.ico`, `!app/codigo/**/*.woff2` e `!app/codigo/**/*.sql`. Mostrar o antes e o depois.
 **Como testar:** `git check-ignore -v app/codigo/.next/x` aponta a linha nova, e `git check-ignore app/codigo/src/app/favicon.ico` volta vazio.
+
+## gitignore-fontes-curso
+
+**O que é:** o backup do projeto passa a deixar de fora o material bruto dos cursos estudados pelo `/aprender-curso` (`inteligencia/cursos/<nome>/fontes/`: legenda, transcrição, texto do Gemini e o PDF da apostila). O resumo das aulas, o `mentor.md` e o `curso.md` continuam subindo.
+**Por quê:** o `/aprender-curso` agora lê apostila, ebook e livro em PDF. Material pago não pode ir pro GitHub, e PDF acima de 100 MB derruba o backup.
+**Te afeta se:** o projeto tem a pasta `.claude/skills/aprender-curso/`.
+**Como aplicar:** no `.gitignore` do projeto, no fim do bloco "Bloqueio de proposito", acrescentar as linhas `# material de curso (inclusive apostila paga e PDF grande) fica so neste computador;`, `# o resumo em aulas/ e o mentor.md sobem` e `**/inteligencia/cursos/*/fontes/`. Mostrar o antes e o depois. Depois rodar, na raiz do projeto (o padrão vale a partir da pasta atual), `git -C "$(git rev-parse --show-toplevel)" ls-files ":(glob)**/inteligencia/cursos/*/fontes/**"` (pega também curso em subpasta, como `clientes/<cliente>/`): se listar arquivo, dizer à pessoa que ele já está no GitHub e continua subindo até sair do índice, e só tirar com o sim dela (`git rm -r --cached` na pasta `fontes/` de cada curso, também da raiz, porque os caminhos que o `ls-files` listou partem dela, que apaga do backup daqui pra frente e mantém o arquivo no computador).
+**Como testar:** `git check-ignore -v inteligencia/cursos/x/fontes/apostila.pdf` aponta a linha nova, e `git check-ignore inteligencia/cursos/x/mentor.md` volta vazio.

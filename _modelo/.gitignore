@@ -86,3 +86,6 @@ playwright-report/
 .agents/
 # perfil do Chrome dedicado do pacote Mercado Livre: guarda o login da conta
 dados/chrome-perfil/
+# material de curso (inclusive apostila paga e PDF grande) fica so neste computador;
+# o resumo em aulas/ e o mentor.md sobem
+**/inteligencia/cursos/*/fontes/

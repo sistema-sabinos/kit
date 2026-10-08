@@ -1,5 +1,5 @@
 {
- "versao": "5.4",
+ "versao": "5.5",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -234,9 +234,9 @@
   },
   ".claude/skills/app-planejar/referencias/fatos.md": {
    "10bf4b7090f26c18": "5.1",
-   "23d39577b4182580": "5.4",
+   "23d39577b4182580": "anterior-5.4",
    "3cdadc95d35b5922": "5.4",
-   "420f89354262d536": "5.4"
+   "420f89354262d536": "anterior-5.4"
   },
   ".claude/skills/app-publicar/SKILL.md": {
    "90710f7f9c9eb465": "5.1"
@@ -246,13 +246,13 @@
   },
   ".claude/skills/app-servidor/SKILL.md": {
    "3133db230bc45260": "5.1",
-   "432c4b8fa0a3e6c0": "5.4",
+   "432c4b8fa0a3e6c0": "anterior-5.4",
    "5cbd9b182eee9659": "5.4",
-   "88832749dc42d61c": "5.4",
-   "d2e371fe68f6e467": "5.4"
+   "88832749dc42d61c": "anterior-5.4",
+   "d2e371fe68f6e467": "anterior-5.4"
   },
   ".claude/skills/app-testar/SKILL.md": {
-   "0b84a8a9f9397781": "5.4",
+   "0b84a8a9f9397781": "anterior-5.4",
    "43474b4b81627d6d": "5.1",
    "8e20e6134dec8517": "5.4"
   },
@@ -261,15 +261,15 @@
    "95a13e3463616ffa": "5.1"
   },
   ".claude/skills/app-testar/isolamento.spec.ts": {
-   "2f293a48d3b5febd": "5.4",
+   "2f293a48d3b5febd": "anterior-5.4",
    "382d2f8a79d45c27": "5.4",
-   "6435cacf43a8fdc8": "5.4",
-   "863e8d74255a4cf7": "5.4"
+   "6435cacf43a8fdc8": "anterior-5.4",
+   "863e8d74255a4cf7": "anterior-5.4"
   },
   ".claude/skills/app-testar/larguras.spec.ts": {
-   "860cdbc1158d8e9a": "5.4",
+   "860cdbc1158d8e9a": "anterior-5.4",
    "d65308455a97060a": "5.4",
-   "e57a6c792d629719": "5.4"
+   "e57a6c792d629719": "anterior-5.4"
   },
   ".claude/skills/app-testar/plano-teste.md": {
    "b3bd506e60c27981": "5.1"
@@ -289,14 +289,35 @@
    "5cf256e3bfe722ae": "5.1"
   },
   ".claude/skills/aprender-curso/SKILL.md": {
+   "4090923d056c8d33": "5.5",
+   "4af78733fb10454b": "5.5",
+   "a1eae2489d4d088a": "5.5",
+   "a5e573e52013fe61": "5.5",
+   "cbc315174b1f8491": "5.5",
    "e1cbe1503267dc8c": "4.1",
+   "f931e62e07f07ef9": "5.5",
    "fa52ae82b3a8813a": "anterior-4.1"
+  },
+  ".claude/skills/aprender-curso/scripts/conferir-citacoes.mjs": {
+   "616745c618284b53": "5.5"
+  },
+  ".claude/skills/aprender-curso/scripts/ler-pdf.mjs": {
+   "28023ec9b92f7ada": "5.5",
+   "34b6cf60aeacec81": "5.5"
   },
   ".claude/skills/aprender-curso/scripts/lib/aulas.mjs": {
    "ad8f4783a344c3f8": "4.1"
   },
+  ".claude/skills/aprender-curso/scripts/lib/citacoes.mjs": {
+   "e60dbb84917cee72": "5.5"
+  },
   ".claude/skills/aprender-curso/scripts/lib/legenda.mjs": {
    "9a2e9f239ade359b": "4.1"
+  },
+  ".claude/skills/aprender-curso/scripts/lib/paginas.mjs": {
+   "08e39759398c7a79": "5.5",
+   "094a1a96a25306ab": "5.5",
+   "de73fb50a440112c": "5.5"
   },
   ".claude/skills/aprender-curso/scripts/limpar-legenda.mjs": {
    "63c27f56833e83ff": "4.1"
@@ -1885,6 +1906,7 @@
    "c0f11d4cec3eb5b8": "4.5",
    "db4ed0332b233701": "4.8",
    "de7cbfcf414ae059": "anterior-3.0",
+   "f2ba1dc9e702151c": "5.5",
    "f49597db35c37e39": "5.1",
    "f55a864d8d473607": "anterior-3.0"
   },
