@@ -7,8 +7,8 @@ description: >
   skill", quiser estender o sistema com skill de fora, ou quando outra skill do
   SabinOS precisar descobrir skills prontas antes de criar uma nova (o `/setup`
   e o `/novo-projeto` chamam esta aqui). Não use pra "dá pra", "a IA consegue"
-  ou "como eu faço X" no negócio da pessoa: isso se responde olhando antes o que
-  já está ligado e as skills já instaladas.
+  ou "como eu faço X" no negócio da pessoa: isso é da `/pedir`, que olha antes o
+  que já está ligado e as skills já instaladas.
 ---
 
 # find-skills, descobrir skills prontas

@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 5.5 (2026-10-08)
+Versão 5.6 (2026-10-08)
 
 Um sistema de trabalho com IA pro seu negócio, rodando dentro do VS Code com o Claude Code.
 
@@ -61,6 +61,8 @@ Quem vende direto pro cliente (encomenda, WhatsApp, Instagram, Pix) ganha, se qu
 Todo projeto vem com a `/ler-avaliacoes`, que lê as avaliações reais dos clientes de um concorrente e ranqueia o que eles mais reclamam e pedem, com a frase de cada um. E quem quer criar um app ou sistema próprio pra vender ganha, se quiser, o pacote criar app: dez comandos, de `/app-estudar` a `/app-publicar`, do estudo de um app que já existe até o seu no ar com marca própria. Montar é grátis, mas gasta bastante do seu plano Claude; domínio, hospedagem paga, conta nas lojas de celular e taxa do INPI aparecem antes, com o valor, e só andam com o seu ok. O `/setup` oferece quando suas respostas falam em app, sistema ou SaaS.
 
 Todo projeto também vem com a `/humanizar`: ela aponta o que soa robô num anúncio, post ou resposta de cliente e, quando você pede, reescreve sem mexer em preço, prazo, medida e marca, com um conferidor que reprova se algum número sumiu ou mudou. Grátis.
+
+E com a `/pedir`, a porta de entrada de quem ainda não sabe pedir: pergunte "dá pra...?" ou "a IA consegue...?" e ela responde o que dá, o que falta ligar e se custa; escreva o pedido do seu jeito e ela devolve o pedido completo, com o antes e o depois. Grátis.
 
 O kit também funciona com o Codex (CLI da OpenAI, login pela sua conta ChatGPT), e a estrutura de skills que ele monta segue o padrão aberto que outros agentes leem, como o Hermes Agent. O guia avançado em `docs/roadmap-avancado.md` explica as rotas.
 

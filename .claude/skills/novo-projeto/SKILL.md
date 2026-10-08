@@ -553,7 +553,7 @@ perguntar outro nome antes de seguir.
   instrução aponta pra uma skill que não existe na pasta), mais a `assistir-video`
   e a `transcribe`, que a `aprender-curso` usa pra estudar um curso em vídeo e
   virar mentor, e a `ler-avaliacoes`, que ranqueia o que os clientes do concorrente
-  reclamam, e a `humanizar`, que tira a cara de IA do texto sem mexer no que ele afirma. Das skills copiadas, nunca copiar arquivo terminado em `.test.mjs` (várias trazem testes que só servem no kit: `trafego`, `agendar`, `faxina`, `compartilhar` e outras; conferir no fim com uma busca por `.test.mjs` dentro do projeto, que tem que voltar vazia). Além dessas, copiar
+  reclamam, e a `humanizar`, que tira a cara de IA do texto sem mexer no que ele afirma, e a `pedir`, que responde o "dá pra?" e ajuda a pessoa a pedir. Das skills copiadas, nunca copiar arquivo terminado em `.test.mjs` (várias trazem testes que só servem no kit: `trafego`, `agendar`, `faxina`, `compartilhar` e outras; conferir no fim com uma busca por `.test.mjs` dentro do projeto, que tem que voltar vazia). Além dessas, copiar
   `otimizar-pc` só se o computador da pessoa for Windows (já sabido do
   Passo 0, ou perguntar se não ficou claro), e a pasta `trafego` inteira só se a
   pergunta de anúncio pago acima teve resposta positiva ou "pretendo".

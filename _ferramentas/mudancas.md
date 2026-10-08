@@ -455,3 +455,19 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto tem a pasta `.claude/skills/aprender-curso/`.
 **Como aplicar:** no `.gitignore` do projeto, no fim do bloco "Bloqueio de proposito", acrescentar as linhas `# material de curso (inclusive apostila paga e PDF grande) fica so neste computador;`, `# o resumo em aulas/ e o mentor.md sobem` e `**/inteligencia/cursos/*/fontes/`. Mostrar o antes e o depois. Depois rodar, na raiz do projeto (o padrão vale a partir da pasta atual), `git -C "$(git rev-parse --show-toplevel)" ls-files ":(glob)**/inteligencia/cursos/*/fontes/**"` (pega também curso em subpasta, como `clientes/<cliente>/`): se listar arquivo, dizer à pessoa que ele já está no GitHub e continua subindo até sair do índice, e só tirar com o sim dela (`git rm -r --cached` na pasta `fontes/` de cada curso, também da raiz, porque os caminhos que o `ls-files` listou partem dela, que apaga do backup daqui pra frente e mantém o arquivo no computador).
 **Como testar:** `git check-ignore -v inteligencia/cursos/x/fontes/apostila.pdf` aponta a linha nova, e `git check-ignore inteligencia/cursos/x/mentor.md` volta vazio.
+
+## skill-pedir
+
+**O que é:** comando novo nas skills base, `/pedir`: responde se a IA consegue fazer algo no seu negócio (dá, dá em parte ou não dá, o que falta ligar e se custa, com 2 ou 3 primeiros passos pra escolher) e transforma pedido vago em pedido completo, mostrando o antes e o depois e perguntando "faço agora?". Vem com um cardápio de 6 exemplos de pedido de quem vende em marketplace.
+**Por quê:** quem ainda não sabe pedir travava no "dá pra?" e no pedido pela metade, e a dúvida voltava pro suporte; vendo o pedido bem escrito toda vez, a pessoa aprende sem aula.
+**Te afeta se:** sempre; é skill base, entra em todo projeto.
+**Como aplicar:** copiar a pasta `.claude/skills/pedir/` inteira, sem os arquivos terminados em `.test.mjs`.
+**Como testar:** perguntar "a IA consegue ver minhas vendas?": a resposta diz dá, dá em parte ou não dá, oferece os primeiros passos com opção e fecha com "da próxima vez, pode pedir assim".
+
+## gatilho-pedir
+
+**O que é:** o "dá pra..." e o "a IA consegue..." passam a ser atendidos pela `/pedir`; num projeto sem ela, o sistema segue respondendo como antes.
+**Por quê:** a `/pedir` traz os primeiros passos com opção e o cardápio de exemplos, que a linha do `AGENTS.md` sozinha não dava.
+**Te afeta se:** a seção Gatilhos do `AGENTS.md` do projeto tem a linha com `a IA consegue` e ela não tem `` skill `/pedir`; sem ela no projeto ``.
+**Como aplicar:** nessa linha, trocar "→ `ferramentas.md` e as skills" por "→ skill `/pedir`; sem ela no projeto, `ferramentas.md` e as skills". Mostrar o antes e o depois.
+**Como testar:** a seção Gatilhos tem `a IA consegue` uma vez só e essa linha contém `` skill `/pedir`; sem ela no projeto ``.
