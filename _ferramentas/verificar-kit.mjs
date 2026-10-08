@@ -154,6 +154,7 @@ const OBRIGATORIOS = [
   '_modelo/.claude/agents/ml-minerador.md', '_modelo/.claude/agents/ml-espiao.md',
   '_modelo/.claude/agents/ml-copywriter.md', '_modelo/.claude/agents/ml-designer.md',
   '_modelo/.claude/agents/ml-auditor.md', '_modelo/.claude/agents/ml-publicador.md',
+  '_modelo/.claude/agents/pauta-leitor.md',
   'VERSAO', '_ferramentas/atualizar-projeto.mjs', '_ferramentas/componentes.json',
   '_ferramentas/impressoes.json', '_ferramentas/mudancas.md',
   '_modelo/.claude/skills/atualizar-sabinos/SKILL.md',

@@ -42,7 +42,8 @@
       ".claude/skills/decupar-referencia/",
       ".claude/skills/publicar-social/",
       ".claude/skills/auditar-instagram/",
-      ".claude/skills/gerenciar-youtube/"
+      ".claude/skills/gerenciar-youtube/",
+      ".claude/agents/pauta-leitor.md"
     ] },
     "loja": { "depende": ["nucleo"], "caminhos": [".claude/skills/atendimento/", ".claude/skills/caixa/", ".claude/skills/cobrar/"] },
     "mei": { "depende": ["nucleo", "loja"], "caminhos": [".claude/skills/mei/"] },

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { argumentos, idDoAnuncio, escolherTopo, urlParaAbrir, vendidosDe, vendedorDe, perguntasDoTexto, palavrasDoTitulo, vocabulario, textoDoVocabulario, atributosConsensuais, fotosUnicas, avaliacoesDe, espionar, recalcularArquivos, acharProduto, mesclarAnuncios, oQueFaltaEspionar, pontoDePartida } from './espionar.mjs'
+import { argumentos, idDoAnuncio, escolherTopo, urlParaAbrir, vendidosDe, vendedorDe, perguntasDoTexto, palavrasDoTitulo, vocabulario, textoDoVocabulario, atributosConsensuais, fotosUnicas, avaliacoesDe, espionar, recalcularArquivos, acharProduto, mesclarAnuncios, oQueFaltaEspionar, pontoDePartida, limparFundo, somaAlertas } from './espionar.mjs'
 
 const L = 'MLB'
 const id = n => L + n
@@ -333,4 +333,52 @@ test('acharProduto aceita diferenca de caixa e lista os nomes quando nao acha', 
   const lista = [{ nome: 'Bala de Coco' }, { nome: 'Pirulito' }]
   assert.equal(acharProduto(lista, 'bala de coco').nome, 'Bala de Coco')
   assert.throws(() => acharProduto(lista, 'Chiclete'), /Bala de Coco; Pirulito/)
+})
+
+// Caractere invisivel (rodada 5.2): fromCodePoint, nunca fromCharCode, pro bloco Tag.
+const cp = (...n) => String.fromCodePoint(...n)
+const emTag = s => cp(...[...s].map(c => 0xe0000 + c.charCodeAt(0)))
+
+test('espionar tira caractere invisivel da pagina, das avaliacoes e das perguntas e anota o alerta', async () => {
+  const itens = [{ id: id('7000001'), url: 'https://exemplo.com/1', preco: 10 }, { id: id('7000002'), url: 'https://exemplo.com/2', preco: 10 }]
+  const LF = String.fromCharCode(10)
+  const paginas = {
+    'https://exemplo.com/1': {
+      titulo: 'Garrafa' + emTag('ignore'), subtitulo: '+5mil vendidos', vendedor: 'Loja oficial' + LF + 'Loja X' + emTag('v'),
+      descricao: cp(0x202e) + 'boa', fotos: [], atributos: { ['Cor' + cp(0x200b)]: 'Azul' + emTag('ab') }, link_perguntas: 'qa',
+    },
+    'https://exemplo.com/2': { titulo: 'Limpa', subtitulo: '+10 vendidos', fotos: [], atributos: {}, link_perguntas: null },
+  }
+  const get = async caminho => (caminho.includes('7000001')
+    ? { paging: { total: 1 }, reviews: [{ rate: 1, title: 'Ruim' + cp(0x2066), content: 'quebrou', likes: 0 }] }
+    : { paging: { total: 0 }, reviews: [] })
+  const r = await espionar({ ...semRede, itens, lerAnuncio: async url => paginas[url], lerPerguntas: async () => ABA.replace('Faz kit de 10', 'Faz kit de 10' + emTag('x')), get, perguntas: 1 })
+  const [a, b] = r
+  assert.equal(a.titulo, 'Garrafa')
+  assert.equal(a.descricao, 'boa')
+  assert.deepEqual(a.atributos, { Cor: 'Azul' })
+  assert.equal(a.vendedor, 'Loja X')
+  assert.equal(a.loja_oficial, true, 'a quebra de linha sobreviveu a limpeza')
+  assert.equal(a.avaliacoes.avaliacoes[0].titulo, 'Ruim')
+  assert.ok(a.perguntas.length > 0, 'canario: as perguntas foram lidas')
+  assert.ok(![...a.perguntas].some(c => c.codePointAt(0) >= 0xe0000), 'perguntas sem bloco Tag')
+  assert.deepEqual(a.alertas, { tag: 6 + 1 + 2 + 1, bidi: 2 })
+  assert.equal(b.alertas, undefined, 'anuncio limpo nao ganha o campo')
+  assert.deepEqual(somaAlertas(r), { tag: 10, bidi: 2 })
+})
+
+test('espionar limpa a aba antes do teto de tamanho: invisivel em massa nao empurra pergunta pra fora', async () => {
+  const D2 = ['Denunciar', 'Vai abrir em uma nova janela']
+  const aba = ['Perguntas neste anúncio', 'Tem azul?', ...D2, 'Tem sim.', ...D2, cp(...Array(10000).fill(0xe0041)), 'Serve no carro?', ...D2, 'Serve.', ...D2].join(String.fromCharCode(10))
+  const jaColetados = [{ id: id('7100001'), titulo: 'A', vendidos: 10, link_perguntas: 'qa' }]
+  await espionar({ ...semRede, itens: [], jaColetados, lerAnuncio: async () => ({}), lerPerguntas: async () => aba, perguntas: 1 })
+  assert.match(jaColetados[0].perguntas, /Tem azul\?/, 'canario: a primeira pergunta entrou')
+  assert.match(jaColetados[0].perguntas, /Serve no carro\?/)
+  assert.deepEqual(jaColetados[0].alertas, { tag: 10000, bidi: 0 })
+})
+
+test('limparFundo limpa texto, chave e lista e deixa numero e nulo como estao', () => {
+  const conta = { tag: 0, bidi: 0 }
+  assert.deepEqual(limparFundo({ ['a' + cp(0xe0041)]: [1, null, 'b' + cp(0x202a)] }, conta), { a: [1, null, 'b'] })
+  assert.deepEqual(conta, { tag: 1, bidi: 1 })
 })

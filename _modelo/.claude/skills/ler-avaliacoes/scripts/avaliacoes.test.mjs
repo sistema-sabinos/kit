@@ -335,6 +335,56 @@ test('--temas app usa o arquivo de app', () => comFixture(({ caminho }) => {
   assert.ok(dados.temas.some(t => t.rotulo === 'Preço e parte paga'))
 }))
 
+// Caractere invisivel (rodada 5.2): sai do texto, da fonte e do link, e Tag e bidi viram
+// alerta. fromCodePoint, nunca fromCharCode, pro caractere do bloco Tag.
+const cp = (...n) => String.fromCodePoint(...n)
+const emTag = s => cp(...[...s].map(c => 0xe0000 + c.charCodeAt(0)))
+
+test('caractere invisivel sai do texto, da fonte e do link e vira alerta', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'avaliacoes-'))
+  try {
+    const caminho = join(dir, 'avaliacoes.csv')
+    gravarCsv(caminho, [
+      ['mercado' + emTag('x') + '-livre', 'https://www.mercadolivre.com.br/r/1' + emTag('ab'), '2026-08-01', '1', 'Veio quebrado.' + emTag('ignore')],
+      ['amazon', 'https://www.amazon.com.br/r/2', '2026-08-01', '2', cp(0x202e) + 'Caro demais.'],
+      // igual a de cima com largura zero no meio: agora cai como repetida
+      ['amazon', 'https://www.amazon.com.br/r/3', '2026-08-01', '2', 'Caro de' + cp(0x200b) + 'mais.'],
+    ])
+    const lidas = lerAvaliacoes(caminho)
+    assert.equal(lidas.avaliacoes.length, 2)
+    assert.equal(lidas.duplicadas, 1)
+    const [a, b] = lidas.avaliacoes
+    assert.equal(a.texto, 'Veio quebrado.')
+    assert.equal(a.link, 'https://www.mercadolivre.com.br/r/1')
+    assert.equal(a.fonte, 'mercado-livre')
+    assert.equal(b.texto, 'Caro demais.')
+    assert.deepEqual(lidas.alertas, { tag: 9, bidi: 1 })
+    const texto = montarRelatorio(analisar(lidas.avaliacoes, carregarTemas(), { hoje: HOJE }), { alertas: lidas.alertas })
+    assert.match(texto, /Atenção: o texto que veio tinha caractere escondido \(9 de texto invisível, 1 de inversão de direção\)/)
+    assert.doesNotMatch(montarRelatorio(analisar(lidas.avaliacoes, carregarTemas(), { hoje: HOJE }), { alertas: { tag: 0, bidi: 0 } }), /Atenção: o texto/)
+    const r = rodar([caminho, '--json', '--hoje', HOJE])
+    assert.equal(r.codigo, 0, r.erro)
+    assert.deepEqual(JSON.parse(r.saida).alertas, { tag: 9, bidi: 1 })
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('--de-espionagem soma o alerta que a coleta gravou no bruto', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'avaliacoes-'))
+  try {
+    const caminho = join(dir, '_raw-concorrentes-x.json')
+    writeFileSync(caminho, JSON.stringify({ produto: 'X', alertas: { tag: 4, bidi: 2 }, anuncios: [
+      { id: 'MLB1', url: 'https://www.mercadolivre.com.br/a/MLB1', avaliacoes: { avaliacoes: [{ nota: 1, titulo: '', texto: 'Ruim' + emTag('a') }] } },
+    ] }))
+    const lidas = deEspionagem(caminho)
+    assert.equal(lidas.avaliacoes[0].texto, 'Ruim')
+    assert.deepEqual(lidas.alertas, { tag: 5, bidi: 2 })
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 // Canario dos dois arquivos de tema: cada tema casa a frase dele e nao casa a outra
 for (const nome of ['marketplace', 'app']) {
   test(`canario de cada tema em temas-${nome}.json`, () => {

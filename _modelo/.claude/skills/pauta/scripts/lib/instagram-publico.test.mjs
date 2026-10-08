@@ -1,7 +1,24 @@
 // Testes da leitura publica do Instagram. Sem rede e sem Chrome.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { dataDoCodigo, numero, parseOg, seguidoresDoOg, proxy, mediana, gradeDosLinks, ranquear, ritmo, decodeEnt } from './instagram-publico.mjs'
+import { dataDoCodigo, numero, parseOg, seguidoresDoOg, proxy, mediana, gradeDosLinks, ranquear, ritmo, decodeEnt, alertaDosPosts } from './instagram-publico.mjs'
+
+// Caractere invisivel na legenda (rodada 5.2). fromCodePoint, nunca fromCharCode, pro bloco Tag.
+const cp = (...n) => String.fromCodePoint(...n)
+test('parseOg tira caractere escondido da legenda, inclusive vindo como entidade, e anota o alerta', () => {
+  const og = parseOg('10 likes, 2 comments - acme on October 3, 2026: &quot;Compre ja&#xE0041;&#xE0042;' + cp(0xe0043, 0x2067) + ' agora&quot;. ')
+  assert.equal(og.legenda, '"Compre ja agora"')
+  assert.deepEqual(og.alertas, { tag: 3, bidi: 1 })
+  assert.equal(og.curtidas, 10)
+  assert.equal('alertas' in parseOg('12K likes, 300 comments - acme on October 3, 2026: &quot;Oi&quot;. '), false)
+  assert.equal(decodeEnt('a&#x110000;b&#1114112;c'), 'abc', 'fora do Unicode vira vazio em vez de lancar')
+})
+
+test('alertaDosPosts soma os posts com alerta, ou null quando nenhum tinha', () => {
+  assert.equal(alertaDosPosts([{ legenda: 'a' }, {}]), null)
+  const linha = alertaDosPosts([{ alertas: { tag: 3, bidi: 1 } }, { legenda: 'x' }, { alertas: { tag: 2, bidi: 0 } }])
+  assert.match(linha, /^Atencao: 2 legenda\(s\) com caractere escondido \(5 de texto invisivel, 1 de inversao de direcao\)/)
+})
 
 test('dataDoCodigo decodifica o codigo do link em data, mais novo com codigo maior', () => {
   assert.ok(dataDoCodigo('B') instanceof Date)

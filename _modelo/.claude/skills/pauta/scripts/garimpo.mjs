@@ -11,7 +11,7 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../midia-social/scripts/lib/raiz.mjs'
 import { abrirPagina, ogDaPagina, opcoes, lista } from './lib/pagina.mjs'
-import { gradeDosLinks, seguidoresDoOg, parseOg, ranquear, mediana, proxy } from './lib/instagram-publico.mjs'
+import { gradeDosLinks, seguidoresDoOg, parseOg, ranquear, mediana, proxy, alertaDosPosts } from './lib/instagram-publico.mjs'
 
 const USO = 'uso: node .claude/skills/pauta/scripts/garimpo.mjs --sementes a,b | --perfis a,b [--dias 4] [--posts 9] [--teto 18] [--piso 300] [--tag x]'
 const RESERVADOS = new Set(['explore', 'reels', 'reel', 'accounts', 'directory', 'about', 'p', 'legal', 'privacy', 'terms', 'popular', 'developer', 'meta'])
@@ -71,8 +71,10 @@ async function main(argv) {
   mkdirSync(PASTA, { recursive: true })
   writeFileSync(join(PASTA, `aberto-${hoje}.json`), JSON.stringify({ gerado: new Date().toISOString(), dias, sementes, watchlist, perfis }, null, 2))
   const { lista: rank, abaixoDoPiso } = ranquear(perfis, { dias, piso })
+  const alerta = alertaDosPosts(perfis.flatMap(pf => pf.posts))
   writeFileSync(join(PASTA, `aberto-${hoje}.md`), [
     `# Garimpo aberto de ${hoje} (janela de ${dias} dias)`, '',
+    ...(alerta ? [alerta, ''] : []),
     `Fora da base de ideias. Lista ${sementes.length ? `descoberta pelas contas relacionadas de ${sementes.map(s => '@' + s).join(', ')}` : 'fixa'}.`,
     LEGENDA_DO_RANKING, `Piso de ${piso} curtidas. Perfis lidos: ${perfis.length}. Posts na janela: ${rank.length} (${abaixoDoPiso} abaixo do piso, fora da tabela).`, '',
     tabela(rank), '', '## Perfis e mediana',

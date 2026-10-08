@@ -373,7 +373,9 @@ Resposta positiva: copiar pro projeto as seis pastas inteiras de
 arquivo terminado em `.test.mjs` nem pasta `node_modules/`. O pacote vai
 inteiro ou não vai: as skills dividem a mesma biblioteca de scripts. Copiar
 também, se ainda não estiverem no projeto, a `assistir-video` e a `transcribe`:
-a `decupar-referencia` e a `pauta` usam as duas. Depois:
+a `decupar-referencia` e a `pauta` usam as duas. Copiar também o agente
+`_modelo/.claude/agents/pauta-leitor.md` pra `.claude/agents/` do projeto: a `pauta`
+despacha por ele quem lê legenda alheia, sem terminal nem internet. Depois:
 
 - Na seção "Estrutura de pastas" do `AGENTS.md` do projeto, uma linha:
 

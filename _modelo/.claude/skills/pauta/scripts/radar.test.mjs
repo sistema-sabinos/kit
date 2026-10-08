@@ -27,6 +27,25 @@ test('radar busca cada termo no Google Noticias, deixa so os ultimos 7 dias e ju
   assert.match(md, /Apertei 13/)
 })
 
+// Caractere invisivel (rodada 5.2). fromCodePoint, nunca fromCharCode, pro bloco Tag.
+const cp = (...n) => String.fromCodePoint(...n)
+test('radar tira caractere escondido da manchete e do X e avisa; entidade fora do Unicode nao derruba a fonte', async () => {
+  // &#917569; e o U+E0041 escrito como entidade; &#1114112; passa do U+10FFFF
+  const rss = '<rss><channel><item><title>Oferta&#917569;&#917570; boa' + cp(0x202e) + ' &#1114112;- Jornal Y</title><link>https://n/d</link><pubDate>Fri, 03 Oct 2026 10:00:00 GMT</pubDate></item></channel></rss>'
+  const t24 = '<a class=trend-link>Copa' + cp(0xe0041) + '</a>'
+  const conta = { tag: 0, bidi: 0 }
+  assert.deepEqual(lerRss(rss, conta).map(i => i.titulo), ['Oferta boa'])
+  assert.deepEqual(conta, { tag: 2, bidi: 1 })
+  const fetchFn = async url => ({ ok: true, text: async () => (String(url).includes('trends24') ? t24 : rss) })
+  const md = await radar({ fetchFn, agora: new Date('2026-10-04T12:00:00Z'), termos: ['x'] })
+  assert.match(md, /Oferta boa/)
+  assert.match(md, /- Copa$/m)
+  assert.doesNotMatch(md, /fora do ar/)
+  assert.match(md, /## Atencao: caractere escondido[\s\S]*3 de texto invisivel e 1 de inversao/)
+  const limpo = await radar({ fetchFn: async url => ({ ok: true, text: async () => (String(url).includes('trends24') ? T24 : RSS) }), agora: new Date('2026-10-04T12:00:00Z'), termos: ['x'] })
+  assert.doesNotMatch(limpo, /caractere escondido/)
+})
+
 test('radar com fonte fora do ar segue com as outras e avisa', async () => {
   const fetchFn = async url => String(url).includes('trends24') ? { ok: false, status: 503, text: async () => '' } : { ok: true, text: async () => RSS }
   const md = await radar({ fetchFn, agora: new Date('2026-10-04T12:00:00Z'), termos: ['x'] })

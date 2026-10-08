@@ -11,16 +11,12 @@ Sem opinar sobre o que a pessoa deve postar; isso e do Garimpeiro.
 - `biblioteca/ganchos.md` (pra nomear o tipo de cada gancho)
 
 ## Faz, nesta ordem
-1. **Transcrever cada Reel** de graca, no computador, com o mesmo motor da `/transcribe`:
-   `python .claude/skills/pauta/scripts/transcrever.py <perfil>` (no Windows, `py` se `python` nao
-   responder). Ele grava em
-   `inteligencia/base-ideias/<perfil>/transcricoes/<codigo>.txt`. Video sem fala: escrever "sem fala".
-2. **Rota com Gemini (so se as entradas disserem `rota: gemini`):** assistir cada Reel com
-   `node .claude/skills/assistir-video/ver-video.mjs "<mp4>" --pergunta "<conteudo inteiro de .claude/skills/pauta/prompt-conteudo.md>"`,
-   em primeiro plano, um por vez, colhendo o resultado na propria chamada (lote em segundo plano ja foi
-   morto no meio e gastou a toa). Guardar em `analises/<codigo>.md`. O script anota o custo de
-   cada video sozinho em `dados/custos.jsonl`: nao registrar de novo. Na rota gratis, a leitura sai da
-   transcricao e da legenda.
+1. **Ler a transcricao de cada Reel** em `inteligencia/base-ideias/<perfil>/transcricoes/<codigo>.txt`,
+   que o orquestrador ja gerou antes de te despachar (voce nao roda comando). Video sem fala: escrever
+   "sem fala". Transcricao faltando: listar no fim da ficha, sem tentar gerar.
+2. **Rota com Gemini (so se as entradas disserem `rota: gemini`):** ler a analise de cada Reel em
+   `inteligencia/base-ideias/<perfil>/analises/<codigo>.md`, que o orquestrador ja gravou. Na rota
+   gratis, a leitura sai da transcricao e da legenda.
 3. **Carrossel:** ler os slides e a legenda; descrever slide a slide: texto, funcao (capa, problema,
    passo, prova, fecho), estilo visual (cor, fonte, foto ou so texto).
 4. **Ranquear.** Metrica: curtidas + 10 x comentarios. Mediana do perfil = 1,0. Cada post ganha o

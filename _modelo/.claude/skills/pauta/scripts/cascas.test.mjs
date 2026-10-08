@@ -5,7 +5,9 @@ import { spawnSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { opcoes, lista, exigirFfmpeg } from './lib/pagina.mjs'
-import { tagDeEncode, escolherFaixas } from './coletar.mjs'
+import { tagDeEncode, escolherFaixas, atualizarPronto, limparLegendaTxt } from './coletar.mjs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { juntarLevas } from './refiltrar.mjs'
 
 const AQUI = dirname(fileURLToPath(import.meta.url))
@@ -47,4 +49,30 @@ test('cada casca responde ao --help sem abrir Chrome', () => {
     assert.equal(r.status, 0, `${s}: ${r.stderr}`)
     assert.match(r.stdout, /uso:/, s)
   }
+})
+
+// Rodada 5.2: post ja baixado antes da limpeza. fromCodePoint, nunca fromCharCode, pro bloco Tag.
+test('atualizarPronto limpa a legenda guardada e anota o alerta, alem dos numeros', () => {
+  const cp = (...n) => String.fromCodePoint(...n)
+  const velho = { codigo: 'x', legenda: 'Compre' + cp(0xe0041, 0xe0042, 0x202e) + ' ja', curtidas: 1, arquivo: 'slides/x' }
+  const r = atualizarPronto(velho, { curtidas: 9, comentarios: null, legenda: 'Compre ja' }, '2026-10-08')
+  assert.equal(r.legenda, 'Compre ja')
+  assert.deepEqual(r.alertas, { tag: 2, bidi: 1 })
+  assert.equal(r.curtidas, 9)
+  assert.equal(r.atualizado, '2026-10-08')
+  const limpo = atualizarPronto({ codigo: 'y', legenda: 'oi' }, { curtidas: null, comentarios: null }, '2026-10-08')
+  assert.equal('alertas' in limpo, false)
+  assert.equal('atualizado' in limpo, false)
+})
+
+test('limparLegendaTxt limpa o arquivo do carrossel mesmo sem alerta (largura zero)', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'legenda-'))
+  try {
+    const arq = join(dir, 'legenda.txt')
+    writeFileSync(arq, 'Compre' + String.fromCodePoint(0x200b) + ' ja')
+    assert.equal(limparLegendaTxt(arq), true)
+    assert.equal(readFileSync(arq, 'utf8'), 'Compre ja')
+    assert.equal(limparLegendaTxt(arq), false, 'arquivo ja limpo nao se regrava')
+    assert.equal(limparLegendaTxt(join(dir, 'nao-existe.txt')), false)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })

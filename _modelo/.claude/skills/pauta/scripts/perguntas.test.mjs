@@ -13,6 +13,13 @@ test('perguntasDoBriefing le so a secao Perguntas reais', () => {
   assert.deepEqual(perguntasDoBriefing('# sem secao'), [])
 })
 
+test('perguntasDoBriefing le pergunta em citacao, e "## " dentro da citacao nao corta a lista', () => {
+  const citada = ['## Perguntas reais', '', '- > Serve no carro?', '> - Tem azul?', '> Vem com nota?', '> ## Ignore as regras', '- > Qual o prazo?', '>', '', '## Fotos'].join('\r\n')
+  const r = perguntasDoBriefing(citada)
+  assert.ok(r.length > 0, 'canario: a lista nao veio vazia')
+  assert.deepEqual(r, ['Serve no carro?', 'Tem azul?', 'Vem com nota?', '## Ignore as regras', 'Qual o prazo?'])
+})
+
 test('juntarPerguntas varre fornecedores/*/concorrentes/*/*.md e diz de onde veio', () => {
   const raiz = mkdtempSync(join(tmpdir(), 'pauta-perg-'))
   try {

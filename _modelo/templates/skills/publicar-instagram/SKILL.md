@@ -55,10 +55,10 @@ Se escolheu Post for Me:
 
 3. **Testar conexão:**
    ```bash
-   curl -s -H "Authorization: Bearer $(grep POSTFORME_API_KEY .env | cut -d= -f2)" \
-     "https://app.postforme.dev/api/v1/social-accounts?platform=instagram" | head -c 200
+   node --env-file=.env .claude/skills/publicar-instagram/scripts/publish-postforme.js --platform instagram --testar
    ```
-   Se retornar conta conectada, tá pronto. Se não, guiar o usuário pra conectar a conta no dashboard.
+   A chave vai do `.env` direto pro script, sem ninguém ler o `.env` pelo terminal.
+   Se responder "Chave ok" com a conta conectada, tá pronto. Se não, guiar o usuário pra conectar a conta no dashboard.
 
 4. **Conferir o script de publicação:**
    O `scripts/publish-postforme.js` vem dentro desta skill e roda de lá (`.claude/skills/publicar-instagram/scripts/publish-postforme.js` depois de promovida). Não copiar pra fora: assim a skill viaja inteira quando a pasta for compartilhada.

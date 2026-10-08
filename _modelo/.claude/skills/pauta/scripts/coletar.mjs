@@ -8,7 +8,8 @@ import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { abrirPagina, opcoes, lista, exigirFfmpeg } from './lib/pagina.mjs'
-import { dataDoCodigo, parseOg } from './lib/instagram-publico.mjs'
+import { dataDoCodigo, parseOg, alertaDosPosts } from './lib/instagram-publico.mjs'
+import { limpar, suspeitos } from '../../ler-avaliacoes/scripts/lib/texto.mjs'
 import { PASTA } from './garimpo.mjs'
 
 const USO = 'uso: node .claude/skills/pauta/scripts/coletar.mjs --perfil <perfil> [--reels c1,c2] [--posts c3,c4]'
@@ -26,6 +27,31 @@ export function escolherFaixas(urls) {
   const videos = urls.filter(u => u !== audio)
   const melhor = ['1080p', '720p', '540p', '360p'].map(q => videos.find(u => tagDeEncode(u).includes(q))).find(Boolean) || videos[0]
   return { video: melhor || null, audio: audio || null }
+}
+
+// Post ja baixado numa coleta anterior: atualiza os numeros e limpa a legenda guardada, que
+// pode ser de antes da limpeza de caractere invisivel (achado do Codex: a retomada mantinha
+// a legenda antiga e perdia o alerta).
+export function atualizarPronto(r, meta, hoje) {
+  if (meta.curtidas != null) r.curtidas = meta.curtidas
+  if (meta.comentarios != null) r.comentarios = meta.comentarios
+  if (meta.curtidas != null || meta.comentarios != null) r.atualizado = hoje
+  const achou = suspeitos(r.legenda)
+  if (r.legenda != null) r.legenda = limpar(r.legenda)
+  const alertas = achou.tag || achou.bidi ? achou : meta.alertas
+  if (alertas) r.alertas = alertas
+  return r
+}
+
+// Carrossel guarda a legenda tambem no legenda.txt, que o analista le: limpa o arquivo sempre
+// que a limpeza muda algo, com ou sem alerta, porque largura zero sai calada (achado do Codex).
+export function limparLegendaTxt(caminho) {
+  if (!existsSync(caminho)) return false
+  const atual = readFileSync(caminho, 'utf8')
+  const limpo = limpar(atual)
+  if (limpo === atual) return false
+  writeFileSync(caminho, limpo)
+  return true
 }
 
 function garantirH264(arq) {
@@ -161,13 +187,12 @@ async function main(argv) {
       const og = ogs[it.url] || {}
       const meta = parseOg(og.desc)
       if (prontos[it.codigo]) {
-        const r = prontos[it.codigo]
-        if (meta.curtidas != null) r.curtidas = meta.curtidas
-        if (meta.comentarios != null) r.comentarios = meta.comentarios
-        if (meta.curtidas != null || meta.comentarios != null) r.atualizado = new Date().toLocaleDateString('sv-SE')
+        const r = atualizarPronto(prontos[it.codigo], meta, new Date().toLocaleDateString('sv-SE'))
+        limparLegendaTxt(join(raiz, r.arquivo, 'legenda.txt'))
         resultado.push(r); salvar(); log(`${it.codigo} ja baixado, numeros atualizados`); continue
       }
       const reg = { codigo: it.codigo, tipo: it.tipo, url: it.url, data: dataDoCodigo(it.codigo).toISOString(), curtidas: meta.curtidas, comentarios: meta.comentarios, legenda: meta.legenda, arquivo: null, erro: null }
+      if (meta.alertas) reg.alertas = meta.alertas
       if (!og.desc) reg.erro = og.login ? 'og vazio, a pagina pede login' : `og vazio (status ${og.status ?? og.erro})`
       resultado.push(reg); salvar()
       log(`${it.tipo} ${it.codigo}: ${reg.curtidas} curtidas, ${reg.comentarios} comentarios`)
@@ -198,7 +223,8 @@ async function main(argv) {
     }
   } finally { await fechar() }
   const ok = resultado.filter(r => r.arquivo).length
-  console.log(JSON.stringify({ perfil, total: resultado.length, ok, falhas: resultado.filter(r => !r.arquivo).map(r => `${r.codigo}: ${r.erro}`) }))
+  const alerta = alertaDosPosts(resultado)
+  console.log(JSON.stringify({ perfil, total: resultado.length, ok, falhas: resultado.filter(r => !r.arquivo).map(r => `${r.codigo}: ${r.erro}`), ...(alerta ? { alerta } : {}) }))
 }
 
 const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])

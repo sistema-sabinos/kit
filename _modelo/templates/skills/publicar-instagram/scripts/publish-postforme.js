@@ -4,7 +4,7 @@ const path = require("path");
 // --- Parse args ---
 function parseArgs() {
   const args = process.argv.slice(2);
-  const opts = { platform: "", images: [], caption: "", accountId: "", draft: false, dryRun: false };
+  const opts = { platform: "", images: [], caption: "", accountId: "", draft: false, dryRun: false, testar: false };
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--platform") opts.platform = args[++i];
     else if (args[i] === "--images") opts.images = args[++i].split(",").map(s => s.trim());
@@ -12,6 +12,7 @@ function parseArgs() {
     else if (args[i] === "--account-id") opts.accountId = args[++i];
     else if (args[i] === "--draft") opts.draft = true;
     else if (args[i] === "--dry-run") opts.dryRun = true;
+    else if (args[i] === "--testar") opts.testar = true;
   }
   return opts;
 }
@@ -63,6 +64,16 @@ async function main() {
   const opts = parseArgs();
   if (!API_KEY) { console.error("POSTFORME_API_KEY nao encontrada no .env"); process.exit(1); }
   if (!opts.platform) { console.error("--platform obrigatorio (instagram, tiktok, linkedin)"); process.exit(1); }
+
+  // --testar: so confere a chave e a conta conectada, sem subir nada. A chave chega pelo
+  // `node --env-file=.env`, sem ninguem ler o .env pelo terminal.
+  if (opts.testar) {
+    const contas = await listAccounts(opts.platform);
+    if (!contas.length) { console.error(`Chave ok, mas nenhuma conta ${opts.platform} conectada no Post for Me`); process.exit(1); }
+    console.log(`Chave ok: ${contas.length} conta(s) ${opts.platform} conectada(s): ${contas.map(a => a.username || a.id).join(", ")}`);
+    return;
+  }
+
   if (!opts.images.length && opts.platform !== "linkedin") { console.error("--images obrigatorio"); process.exit(1); }
 
   // Buscar conta

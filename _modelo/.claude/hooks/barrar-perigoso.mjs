@@ -11,6 +11,12 @@
 // programa, outro terminal). Quem quer garantia de verdade contra perda de arquivo usa
 // backup (o /syncar deste kit e um backup automatico no GitHub); esta trava e a segunda
 // linha de defesa, nao a primeira.
+// ONDE ELA PESA (doc conferida em 2026-10-08, code.claude.com/docs/en/permission-modes e
+// /permissions): no modo Manual o aluno ja e perguntado antes de todo comando; no modo
+// automatico, o padrao desde a v2.1.283, um classificador costuma barrar baixar-e-executar,
+// sem garantia; com as perguntas desligadas, so esta trava segura. O exit 2 daqui para o
+// comando antes das regras de permissao, em qualquer modo, e vale dentro de subagente.
+// A pasta-mae (SabinOS-Sistema/.claude/settings.json) nao liga esta trava; so o projeto.
 // Barra comando destrutivo antes de ele rodar, pelo hook PreToolUse do Claude Code.
 // Le o JSON do hook na entrada padrao, olha tool_input.command, e sai com codigo 2
 // pra bloquear, escrevendo o motivo no stderr (o assistente le esse texto e explica).
@@ -95,17 +101,27 @@ function classificarTrechosEntreAspas(comando) {
   const RE_ASPAS = /"([^"]*)"|'([^']*)'/g
   const suspeitos = []
   let limpo = ''
+  // rodada 5.2: "desaspado" e o comando com as aspas tiradas e o conteudo no lugar,
+  // menos o texto de quem so escreve texto (esse some inteiro). Serve so pras regras
+  // de baixar-e-executar do PowerShell: `powershell.exe "-e" <base64>` e
+  // `irm x "|" iex` rodam de verdade, mas o limpo perde a opcao e os suspeitos perdem
+  // o executavel, e nenhum dos dois pedacos casa sozinho (achado do Codex no plano).
+  let desaspado = ''
   let ultimoIndice = 0
   let m
   while ((m = RE_ASPAS.exec(comando))) {
     const antes = comando.slice(0, m.index)
     const conteudo = m[1] !== undefined ? m[1] : m[2]
     limpo += comando.slice(ultimoIndice, m.index)
+    desaspado += comando.slice(ultimoIndice, m.index)
     ultimoIndice = RE_ASPAS.lastIndex
-    if (conteudo && !ehEscritorDeTexto(antes)) suspeitos.push(conteudo)
+    const escritor = ehEscritorDeTexto(antes)
+    if (conteudo && !escritor) suspeitos.push(conteudo)
+    if (!escritor) desaspado += conteudo
   }
   limpo += comando.slice(ultimoIndice)
-  return { limpo, suspeitos }
+  desaspado += comando.slice(ultimoIndice)
+  return { limpo, suspeitos, desaspado }
 }
 
 // usado so pelo rmPerigoso (ver comentario dele) pra dividir a linha em comandos; a
@@ -164,6 +180,42 @@ function removeItemPipePerigoso(comando) {
     new RegExp(String.raw`\|\s*(?:%|foreach\b|ForEach-Object\b)[^\n]*\b${RE_ALIAS}\b`, 'i').test(comando)
 }
 
+// rodada 5.2: opcao -EncodedCommand do powershell.exe e do pwsh, que roda um comando
+// escrito em base64 (ninguem le o que vai rodar). A doc do pwsh 7 lista -e e -ec; a do
+// 5.1 so o nome inteiro, mas medido nas duas versoes (PS 5.1.26100 e pwsh 7.6.6) rodam
+// qualquer prefixo a partir de -e, com barra no lugar do hifen e ate com os tracos
+// U+2013 e U+2014 (por isso a classe p{Pd} com a flag u). -ex e -ep (ExecutionPolicy)
+// nao sao prefixo e passam. Le as opcoes so ate -c/-Command ou -f/-File, porque depois
+// deles o resto e do comando ou do script, nao do PowerShell.
+const RE_POWERSHELL = /\b(?:powershell|pwsh)(?:\.exe)?\b([^\n|;&]*)/gi
+const RE_OPCAO = /^[-/\p{Pd}]([a-z]+)(?::\S*)?$/iu
+function encodedPerigoso(comando) {
+  for (const m of comando.matchAll(RE_POWERSHELL)) {
+    for (const token of m[1].split(/\s+/)) {
+      const opcao = RE_OPCAO.exec(token)
+      if (!opcao) continue
+      const nome = opcao[1].toLowerCase()
+      if (nome === 'ec' || 'encodedcommand'.startsWith(nome)) return true
+      if ('command'.startsWith(nome) || 'file'.startsWith(nome)) break
+    }
+  }
+  return false
+}
+
+// rodada 5.2: baixar-e-executar do Windows. No PowerShell 5.1, curl e wget sao apelidos
+// do Invoke-WebRequest (doc da Microsoft, invoke-webrequest?view=powershell-5.1), entao
+// `curl x | iex` roda o que baixou; no 7 sobra so o iwr. Ficam de fora, sabidos:
+// `& ([scriptblock]::Create((irm x)))`, `irm x | powershell -` e comando montado em
+// variavel (limite 1 acima).
+const PERIGOS_POWERSHELL = [
+  // o iex pode estar em qualquer ponto depois do pipe: com o modulo na frente
+  // (Microsoft.PowerShell.Utility\Invoke-Expression), dentro de % { iex $_ } ou com &
+  // (achado do Codex no Bloco A); & sozinho e o operador de chamada, && encerra
+  { re: /\b(?:irm|iwr|curl|wget|Invoke-RestMethod|Invoke-WebRequest)\b[^\n;&]*\|(?:[^\n;&]|&(?!&))*\b(?:iex|Invoke-Expression)\b/i, motivo: 'roda um script baixado da internet sem ninguem ler' },
+  { re: /\b(?:iex|Invoke-Expression)\b[^\n|;&]*\b(?:DownloadString|DownloadData|irm|iwr|curl|wget|Invoke-RestMethod|Invoke-WebRequest)\b/i, motivo: 'roda um script baixado da internet sem ninguem ler' },
+  { teste: encodedPerigoso, motivo: 'roda um comando escondido em codigo que ninguem consegue ler' },
+]
+
 const PERIGOS = [
   { teste: rmPerigoso, motivo: 'apaga uma pasta inteira de uma vez' },
   // --force-with-lease e a variante segura (nao sobrescreve o que outra pessoa subiu);
@@ -187,9 +239,10 @@ const PERIGOS = [
   // (que so simula, nao apaga nada) acusaria por ter "d" na palavra "dry"
   { re: /\bgit\s+clean\b(?=[^\n]*\s-[fdxniqeX]*f[fdxniqeX]*\b)(?=[^\n]*\s-[fdxniqeX]*d[fdxniqeX]*\b)/, motivo: 'apaga arquivo e pasta fora do controle de versao, sem confirmacao' },
   // "sudo" no meio do pipe (curl ... | sudo bash) e o jeito mais comum de instalar
-  // script de terceiro com privilegio elevado, e tem que continuar batendo
-  { re: /\bcurl\b[^\n]*\|\s*(?:sudo\s+)?(?:ba)?sh\b/, motivo: 'roda um script baixado da internet sem ninguem ler' },
-  { re: /\bwget\b[^\n]*\|\s*(?:sudo\s+)?(?:ba)?sh\b/, motivo: 'roda um script baixado da internet sem ninguem ler' },
+  // script de terceiro com privilegio elevado, e tem que continuar batendo. Flag i desde
+  // a 5.2: `CURL x | SH` passava (o PowerShell nao liga pra maiuscula)
+  { re: /\bcurl\b[^\n]*\|\s*(?:sudo\s+)?(?:ba)?sh\b/i, motivo: 'roda um script baixado da internet sem ninguem ler' },
+  { re: /\bwget\b[^\n]*\|\s*(?:sudo\s+)?(?:ba)?sh\b/i, motivo: 'roda um script baixado da internet sem ninguem ler' },
   // modo de 4 digitos (0777 a 7777: setuid/setgid/sticky, sozinhos ou combinados, + 777)
   // e tao aberto quanto o 777 puro; o lookbehind evita casar o final de um numero maior
   { re: /\bchmod\s+(?:-[a-zA-Z]+\s+)*(?<!\d)[0-7]?777\b/, motivo: 'libera o arquivo pra qualquer um do computador' },
@@ -223,10 +276,11 @@ const PERIGOS = [
   // "format" sozinho e o comando de formatar disco; a negativa evita casar cmdlet tipo
   // Format-Table/Format-List, que so mostra dado na tela e nao apaga nada
   { re: /\bformat\b(?!-)(?=[^\n]*\b[a-zA-Z]:(?:\\|\/|\s|$))/i, motivo: 'apaga tudo do disco pra sempre' },
+  ...PERIGOS_POWERSHELL,
 ]
 
-function testarPadroes(comando) {
-  for (const p of PERIGOS) {
+function testarPadroes(comando, lista = PERIGOS) {
+  for (const p of lista) {
     const bateu = p.teste ? p.teste(comando) : p.re.test(comando)
     if (bateu) return p.motivo
   }
@@ -235,11 +289,17 @@ function testarPadroes(comando) {
 
 export function ehPerigoso(comando) {
   if (typeof comando !== 'string' || comando.length === 0) return null
-  const { limpo, suspeitos } = classificarTrechosEntreAspas(comando)
+  const { limpo, suspeitos, desaspado } = classificarTrechosEntreAspas(comando)
   // menor 1: a limpeza de aspas vale pra todos os padroes, nao so pro rm, senao
   // escrever licao sobre qualquer outro comando perigoso continua barrado
   // (ex.: `echo "nunca rode chmod 777" >> licoes.md`).
-  const motivo = testarPadroes(limpo)
+  // o PowerShell continua o comando na linha de baixo depois de "(" ou de crase no fim
+  // da linha, entao as regras dele leem o comando com as linhas juntadas
+  // (achado do Codex no Bloco A: `iex (` numa linha e `irm x)` na outra passava)
+  const emUmaLinha = desaspado.replace(/`?\r?\n\s*/g, ' ')
+  // e tambem linha a linha: juntar tudo deixava um `-Command` da primeira linha encerrar a
+  // leitura das opcoes e esconder o `powershell "-e"` da segunda (achado do Codex na final)
+  const motivo = testarPadroes(limpo) || testarPadroes(desaspado, PERIGOS_POWERSHELL) || testarPadroes(emUmaLinha, PERIGOS_POWERSHELL)
   if (motivo) return motivo
   // correcao 5: todo trecho entre aspas que NAO veio de um escritor de texto conhecido
   // e comando de verdade em potencial, e testa nele mesmo, recursivo (o texto extraido
