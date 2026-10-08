@@ -70,11 +70,17 @@ pra próxima pegar do ponto certo.
   qualquer arquivo do endereço dele e abrir o código da página dele pra adaptar.
 - **Texto próprio.** Todo rótulo, botão, aviso de tela vazia e e-mail se escreve de novo,
   na voz do projeto (`marca/tom-de-voz.md`, quando existe). Fazer o mesmo que o botão da
-  referência faz é a meta; a frase dele fica com ele.
+  referência faz é a meta; a frase dele fica com ele. Na forma: o botão diz a ação, verbo e
+  coisa ("Marcar horário"), e o mesmo nome segue até o fim do caminho; o erro conta o que
+  houve e como consertar, sem pedir desculpa; a tela vazia diz o próximo passo e traz o botão dele.
 - **Só token.** Componente usa o nome do papel (`texto`, `fundo`), sem cor solta nem
   medida solta. Faltou um valor: ele entra nos tokens da `/app-visual` e dali vai pra tela.
 - **Dado de mentira com cara de mentira.** Nome, telefone e e-mail inventados. Dado de
   cliente real fica fora do código e do backup.
+- **O mínimo primeiro.** Antes de escrever: isso precisa existir? O app já tem? O navegador
+  já faz sozinho (campo com `required`, `type=email`)? Só então pacote novo, pela regra de
+  licença logo abaixo. Defeito se conserta na causa, na função que todo mundo chama. E nunca se
+  economiza em validação no servidor, segurança, acessibilidade nem no teste da lógica quebrada.
 - **Pacote de código de outra pessoa** (as bibliotecas que o `npm`, o instalador de pacotes que vem com o Node, baixa) só com licença
   aberta, e o aviso de licença dele fica junto, que é a condição que essas licenças pedem.
 
@@ -131,7 +137,8 @@ Na ordem do `app/arquitetura.md`. Pra cada tela:
    caminhos (C01, C02...) ela passa.
 2. Olhar o print da referência que a `/app-estudar` guardou (`app/prints/T07.png`), só pra entender a ordem das
    coisas na tela e o que chama mais atenção. Cor, medida e texto saem do projeto.
-3. Montar com os componentes da `/app-visual` e o dado da camada de dados.
+3. Montar com os componentes da `/app-visual` e o dado da camada de dados. Antes da
+   primeira tela, ler `referencias/regras-interface.md`.
 4. **Todos os estados:** vazia, carregando (com o esboço cinza da tela, se a referência
    usa), cheia, com erro, sem permissão, com conteúdo comprido (um nome de 60 letras) e
    na largura de celular.
@@ -148,9 +155,12 @@ Tela que ficou pronta precisa passar em tudo isto:
 
 - [ ] todos os estados do mapa, mais vazia, carregando e com erro
 - [ ] funciona com 390 e com 1440 pixels de largura (celular e computador)
+- [ ] nenhum botão ou menu quebrando em duas linhas, nada rolando pro lado
 - [ ] dá pra fazer o caminho inteiro só com o teclado
 - [ ] nenhum erro no console
 - [ ] nenhum texto tirado da referência
+- [ ] nenhum número ou depoimento de vitrine sobre o negócio (clientes atendidos, nota,
+  99,9%); dado de mentira da tela pode
 - [ ] `app/funcoes.csv` atualizado
 - [ ] print salvo em `app/telas-minhas/`
 

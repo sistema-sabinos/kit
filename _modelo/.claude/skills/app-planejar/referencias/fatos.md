@@ -17,6 +17,7 @@
 | app-netlify-free | Netlify Free: 300 créditos por mês com teto; acabaram os créditos, todos os projetos ficam pausados até o mês seguinte | https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/credit-based-pricing-plans/ | 2026-10-07 |
 | app-render-free | Render Free: o site dorme depois de 15 minutos sem acesso, e a própria documentação pede pra não usar em produção | https://render.com/docs/free | 2026-10-07 |
 | app-supabase-free | Supabase Free (banco de dados e login): 500 MB de banco, 50 mil usuários ativos por mês, pausa depois de 1 semana sem uso e sem backup automático | https://supabase.com/pricing | 2026-10-07 |
+| app-supabase-chaves | Chaves do Supabase: a publicável (`sb_publishable_...`) pode ir pro código que roda no navegador; a secreta (`sb_secret_...`) fica só no servidor; o nome antigo da publicável é `anon` e o da secreta é `service_role` | https://supabase.com/docs/guides/api/api-keys | 2026-10-08 |
 | app-resend-free | Resend Free (e-mail automático do app): 3.000 e-mails por mês, no máximo 100 por dia | https://resend.com/pricing | 2026-10-07 |
 | app-expo-free | Expo EAS Free (montar o app de celular): 15 builds de Android e 15 de iPhone por mês | https://expo.dev/pricing | 2026-10-07 |
 | app-registro-br | Domínio .com.br no registro.br: R$ 40,00 por ano | https://registro.br/dominio/valores/ | 2026-10-07 |
@@ -54,6 +55,10 @@
 | app-wcag | Contraste de cor (WCAG 2.2): nível AA pede 4,5 pra 1 em texto comum e 3 pra 1 em texto grande e em botão ou campo; nível AAA pede 7 pra 1 | https://www.w3.org/TR/WCAG22/ | 2026-10-07 |
 | app-axe-core | Ferramenta de teste de acessibilidade @axe-core/playwright: versão 4.13.0, licença MPL-2.0 | https://registry.npmjs.org/@axe-core/playwright | 2026-10-07 |
 | app-google-oauth | Login com Google pedindo dado sensível: a verificação do Google leva de 3 a 5 dias úteis pela página de desenvolvedor e até 10 pela ajuda; planejar 10 dias úteis | https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification | 2026-10-07 |
+| app-supabase-sessoes | Supabase: trocar a senha encerra as sessões sozinho; o passe de acesso (access token) que o outro aparelho já recebeu continua valendo até vencer, em geral entre 5 minutos e 1 hora | https://supabase.com/docs/guides/auth/sessions e https://supabase.com/docs/guides/auth/signout | 2026-10-08 |
+| app-supabase-link-email | Supabase: link mandado por e-mail (troca de senha, confirmação, convite, troca de e-mail e link mágico) vence em 1 hora por padrão; o prazo se ajusta no painel em Authentication > Sign In / Providers > Auth Providers > Email > Email OTP expiration | https://supabase.com/docs/guides/auth/passwordless-login/auth-email-otp | 2026-10-08 |
+| app-supabase-vinculo | Supabase: login novo (como o Google) só se junta sozinho a uma conta com o mesmo e-mail já confirmado; ao juntar, identidade sem confirmar ligada à conta é removida | https://supabase.com/docs/guides/auth/auth-identity-linking | 2026-10-08 |
+| app-nextjs-server-action | Next.js 16.4: Server Action só aceita POST e compara o cabeçalho Origin com o Host, abortando o pedido se não batem; pra `route.ts` a documentação não descreve proteção pronta e manda auditar à parte | https://nextjs.org/docs/app/guides/data-security | 2026-10-08 |
 
 ## Fora da tabela (sem link único)
 

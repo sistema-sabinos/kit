@@ -1,5 +1,5 @@
 {
- "versao": "5.3",
+ "versao": "5.4",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -174,7 +174,11 @@
    "47ce9718d97e257d": "5.1"
   },
   ".claude/skills/app-construir/SKILL.md": {
-   "29afdf6c8a8ec8ba": "5.1"
+   "29afdf6c8a8ec8ba": "5.1",
+   "4f65eb859d58e670": "5.4"
+  },
+  ".claude/skills/app-construir/referencias/regras-interface.md": {
+   "c2d897c9c534266d": "5.4"
   },
   ".claude/skills/app-estudar/LICENSE-app.txt": {
    "8e858cf2bff50a7d": "5.1"
@@ -200,7 +204,8 @@
    "ee1d463cb80c0c1f": "5.2"
   },
   ".claude/skills/app-lancar/SKILL.md": {
-   "19c98c225a2b8ec5": "5.1"
+   "19c98c225a2b8ec5": "5.1",
+   "731af8ccfc79b9c8": "5.4"
   },
   ".claude/skills/app-lancar/ficha-exemplo.json": {
    "d9f89125da094cfc": "5.1"
@@ -212,6 +217,9 @@
   ".claude/skills/app-marca/SKILL.md": {
    "0b59cb21c6d50e24": "anterior-5.1",
    "1a81103f113cff77": "5.1"
+  },
+  ".claude/skills/app-marca/referencias/cara-de-ia.md": {
+   "4be8be0f82cc3f03": "5.4"
   },
   ".claude/skills/app-marca/scripts/varrer-marca.mjs": {
    "88965cd67c13ad73": "5.1",
@@ -225,7 +233,10 @@
    "d044810ea7629a7a": "5.1"
   },
   ".claude/skills/app-planejar/referencias/fatos.md": {
-   "10bf4b7090f26c18": "5.1"
+   "10bf4b7090f26c18": "5.1",
+   "23d39577b4182580": "5.4",
+   "3cdadc95d35b5922": "5.4",
+   "420f89354262d536": "5.4"
   },
   ".claude/skills/app-publicar/SKILL.md": {
    "90710f7f9c9eb465": "5.1"
@@ -234,14 +245,31 @@
    "78e18a90b032a121": "5.1"
   },
   ".claude/skills/app-servidor/SKILL.md": {
-   "3133db230bc45260": "5.1"
+   "3133db230bc45260": "5.1",
+   "432c4b8fa0a3e6c0": "5.4",
+   "5cbd9b182eee9659": "5.4",
+   "88832749dc42d61c": "5.4",
+   "d2e371fe68f6e467": "5.4"
   },
   ".claude/skills/app-testar/SKILL.md": {
-   "43474b4b81627d6d": "5.1"
+   "0b84a8a9f9397781": "5.4",
+   "43474b4b81627d6d": "5.1",
+   "8e20e6134dec8517": "5.4"
   },
   ".claude/skills/app-testar/e2e-exemplo.spec.ts": {
    "71870d953dc14c3c": "anterior-5.1",
    "95a13e3463616ffa": "5.1"
+  },
+  ".claude/skills/app-testar/isolamento.spec.ts": {
+   "2f293a48d3b5febd": "5.4",
+   "382d2f8a79d45c27": "5.4",
+   "6435cacf43a8fdc8": "5.4",
+   "863e8d74255a4cf7": "5.4"
+  },
+  ".claude/skills/app-testar/larguras.spec.ts": {
+   "860cdbc1158d8e9a": "5.4",
+   "d65308455a97060a": "5.4",
+   "e57a6c792d629719": "5.4"
   },
   ".claude/skills/app-testar/plano-teste.md": {
    "b3bd506e60c27981": "5.1"
@@ -299,7 +327,7 @@
   },
   ".claude/skills/atendimento/SKILL.md": {
    "094be7ce59ff4827": "anterior-4.6",
-   "715abe1585089044": "5.3",
+   "715abe1585089044": "anterior-5.3",
    "949b42022b91bde0": "5.3",
    "b9bfe428f58351cd": "4.6"
   },
@@ -1021,78 +1049,78 @@
   },
   ".claude/skills/humanizar/SKILL.md": {
    "a97965cfc800107b": "5.3",
-   "e7723846360c511f": "5.3"
+   "e7723846360c511f": "anterior-5.3"
   },
   ".claude/skills/humanizar/referencias/padroes.md": {
    "5527f99031d34fce": "5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/limpo-01.txt": {
-   "3563bf4aebacabb4": "5.3"
+   "3563bf4aebacabb4": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/limpo-02.txt": {
-   "8fa2412280d5ad09": "5.3"
+   "8fa2412280d5ad09": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/limpo-03.txt": {
-   "f27f2e9fa95f3ac1": "5.3"
+   "f27f2e9fa95f3ac1": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/limpo-04.txt": {
-   "53df7d442af18437": "5.3"
+   "53df7d442af18437": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/limpo-05.txt": {
-   "b73ff89e15a9e7bc": "5.3"
+   "b73ff89e15a9e7bc": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/limpo-06.txt": {
-   "c0eec0d74db138e4": "5.3"
+   "c0eec0d74db138e4": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/limpo-07.txt": {
-   "4319a6ea4f976db7": "5.3"
+   "4319a6ea4f976db7": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/limpo-08.txt": {
-   "ed6e5a70ca9bdb44": "5.3"
+   "ed6e5a70ca9bdb44": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/limpo-09.txt": {
-   "1cf2615b12a44e0f": "5.3"
+   "1cf2615b12a44e0f": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/limpo-10.txt": {
-   "aa20b58ee212a58d": "5.3"
+   "aa20b58ee212a58d": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/sujo-01.txt": {
-   "b4949c507670652f": "5.3"
+   "b4949c507670652f": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/sujo-02.txt": {
-   "819fc4e62968de76": "5.3"
+   "819fc4e62968de76": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/sujo-03.txt": {
-   "a43f3d1692a46743": "5.3"
+   "a43f3d1692a46743": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/sujo-04.txt": {
-   "f2ed90b18e676861": "5.3"
+   "f2ed90b18e676861": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/sujo-05.txt": {
-   "e2b18a8700e163bb": "5.3"
+   "e2b18a8700e163bb": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/sujo-06.txt": {
-   "33c6c3580d70b2bb": "5.3"
+   "33c6c3580d70b2bb": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/sujo-07.txt": {
-   "95b745b016154269": "5.3"
+   "95b745b016154269": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/sujo-08.txt": {
-   "3ac727c4a7dc9e7c": "5.3"
+   "3ac727c4a7dc9e7c": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/sujo-09.txt": {
-   "9b9446d5b604d0a6": "5.3"
+   "9b9446d5b604d0a6": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/fixture/sujo-10.txt": {
-   "0a9c6eaec96efc05": "5.3"
+   "0a9c6eaec96efc05": "anterior-5.3"
   },
   ".claude/skills/humanizar/scripts/varrer.mjs": {
-   "07e0612ff67d2ad8": "5.3",
-   "546f4d19cad81057": "5.3",
+   "07e0612ff67d2ad8": "anterior-5.3",
+   "546f4d19cad81057": "anterior-5.3",
    "5bcf4e2ddeb8225b": "5.3",
-   "7b57e2f2d7533f21": "5.3",
-   "bc642912b531d157": "5.3",
-   "d937df8b9a5552c1": "5.3"
+   "7b57e2f2d7533f21": "anterior-5.3",
+   "bc642912b531d157": "anterior-5.3",
+   "d937df8b9a5552c1": "anterior-5.3"
   },
   ".claude/skills/iniciar/SKILL.md": {
    "125b0d71fd20698f": "anterior-3.0",

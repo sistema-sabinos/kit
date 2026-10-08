@@ -44,6 +44,8 @@ palavras-chave.
   (Stripe ou Mercado Pago) o aluno escolheu.
 - `.claude/skills/app-planejar/referencias/fatos.md`: todo preço, taxa, limite e
   regra desta skill sai de lá, pelo id.
+- `.claude/skills/app-marca/referencias/cara-de-ia.md`: a lista de sinais de
+  página feita por IA, passada antes de mostrar a página de venda.
 - `.claude/skills/app-lancar/ficha-exemplo.json`: o modelo da ficha de loja.
 
 ## As regras
@@ -101,7 +103,9 @@ dele, montar a página no código do app (`app/codigo/`), na tela inicial.
 1. **Chamada principal** (o topo da página, a primeira coisa que a pessoa
    lê): o ângulo em uma frase, dizendo o que o app faz e pra quem. Uma linha
    embaixo e um botão só (o botão de ação, que leva a assinar ou testar).
-   Imagem: print real do app do aluno.
+   Título, frase e botão aparecem sem rolar, no celular e no computador.
+   Número nunca é o título sozinho. Imagem: print real do app do aluno, sem
+   celular nem janela de navegador desenhados em volta.
 2. **O problema**: os dois temas mais fortes da lista "odeiam" da
    `/ler-avaliacoes`, contados com palavras simples, sem citar quem avaliou.
 3. **Como funciona**: três passos, tirados do caminho principal do app.
@@ -137,6 +141,10 @@ node .claude/skills/app-visual/scripts/contraste.mjs app/visual/tokens.json
 
 Saiu 1: algum texto está difícil de ler no fundo dele. Ajustar a cor na
 `/app-visual` e rodar de novo.
+
+Com a página montada e aberta, no celular e no computador, passar pela lista
+de `.claude/skills/app-marca/referencias/cara-de-ia.md` e trocar o que
+aparecer. Só então mostrar a página montada ao aluno.
 
 ### 2. Preço
 

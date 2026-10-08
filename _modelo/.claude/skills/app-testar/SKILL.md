@@ -29,7 +29,8 @@ entra numa lista com gravidade e prova.
 - O app rodando no seu computador (o servidor local, que é o app ligado só na sua máquina,
   num endereço como `http://localhost:3000`), montado pela `/app-construir` e pela
   `/app-servidor`, com dados de mentira carregados pra as telas não nascerem vazias
-- Modelos desta pasta: `plano-teste.md`, `relatorio-defeito.md` e `e2e-exemplo.spec.ts`
+- Modelos desta pasta: `plano-teste.md`, `relatorio-defeito.md`, `e2e-exemplo.spec.ts`,
+  `larguras.spec.ts` e `isolamento.spec.ts`
 
 Grava `app/plano-teste.md`, `app/defeitos.md`, os prints em `app/defeitos/` e os testes
 automáticos em `app/codigo/e2e/`.
@@ -59,6 +60,13 @@ em `plano-teste.md`):
   que lê a tela em voz alta pra quem não enxerga) achando o nome de cada botão.
 - **Casos de erro:** senha errada; cartão recusado; sem permissão; ficha apagada.
 
+O caso "dado de outro cliente" já tem teste pronto em
+`.claude/skills/app-testar/isolamento.spec.ts`: o `cliente-a@exemplo.test` cria uma ficha e o
+`cliente-b@exemplo.test`, em outro navegador, não pode vê-la na lista nem abrindo o endereço
+dela direto. Os dois são os clientes de mentira do seed da `/app-servidor` (o arquivo que
+enche o banco de teste com dado inventado). O teste confere
+também que cada um vê a própria ficha, senão um app que esconde tudo de todo mundo passaria.
+
 Cartão de teste: no Stripe, o número que aprova e o que recusa estão no id
 `app-stripe-teste` de `.claude/skills/app-planejar/referencias/fatos.md`; no Mercado Pago,
 os cartões e o nome do titular que aprova ou recusa estão no id `app-mp-teste`. Antes de
@@ -75,6 +83,18 @@ Um arquivo de teste por caminho, rodando contra o servidor local com os dados de
 O teste acha cada botão pelo papel e pelo nome que a pessoa lê na tela
 (`getByRole('button', { name: 'Agendar' })`). Assim o teste sobrevive quando a cor ou o
 visual mudam na `/app-marca`. Modelo pronto em `e2e-exemplo.spec.ts`.
+
+Pra tela que estoura pro lado, o modelo `.claude/skills/app-testar/larguras.spec.ts` abre
+cada tela em 320, 390 e 1440 px de largura (celular pequeno, celular comum e computador) e
+reprova se a página rolar pro lado. Copiar pra `app/codigo/e2e/` e trocar a lista `ROTAS`
+pelas telas do `app/mapa.md`: cada uma com o endereço (`caminho`) e um texto que só chega
+junto com os dados (`pronto`), como o nome de um serviço cadastrado ou um horário livre.
+Nunca o título nem item de menu, que já aparecem antes dos dados e liberam a medida cedo. O
+teste espera esse texto antes de medir, porque tela que busca os dados depois de abrir
+começa vazia e só estoura quando eles chegam. O `isolamento.spec.ts` vai pra mesma pasta,
+com o login, os endereços e o aviso de ficha alheia adaptados. O aviso é o título da página
+que o app mostra quando alguém abre a ficha de outro (não encontrada, sem permissão ou a
+tela de login), sem palavra que também aparece em menu ou botão, como "entrar".
 
 O kit não vem com o Playwright dentro do projeto. Instalar baixa o pacote e um navegador
 inteiro, que é pesado, só dentro de `app/codigo/` (a pasta `node_modules/` que nasce ali

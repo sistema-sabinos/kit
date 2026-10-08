@@ -103,7 +103,7 @@ Login (ou autenticação) é o jeito de o app saber quem é quem.
 - Papéis (dono, administrador, membro) só se o estudo achou equipe na referência,
   com uma única função no código que responde "essa pessoa pode fazer isso com essa
   ficha?".
-- Excluir conta apaga de verdade. É o caminho simples pra quando o cliente pede pra
+- Excluir conta apaga de verdade, inclusive as cópias (seção 8). É o caminho simples pra quando o cliente pede pra
   apagar os dados dele, e a App Store exige isso de app com cadastro
   (`app-apple-regras`, regra 5.1.1(v)) se um dia o app for pro celular.
 
@@ -122,8 +122,12 @@ agendamentos, pedidos, pagamentos.
   pessoa precisa saber antes de seguir.
 - Regra de acesso em toda tabela: um cliente só enxerga as próprias fichas. No
   Supabase isso se chama regra por linha (RLS); em outro banco, a função de
-  permissão do passo 3 chamada em toda leitura e gravação. Testar com um segundo
-  usuário de mentira: logado como ele, as fichas do primeiro voltam vazias.
+  permissão do passo 3 chamada em toda leitura e gravação. Pra testar, o seed (o
+  arquivo que enche o banco de teste com dado inventado) cria dois clientes de
+  mentira fixos, `cliente-a@exemplo.test` e `cliente-b@exemplo.test`, os dois com a
+  senha `senha-de-teste`, cada um com uma ficha própria (a do B se chama `Ficha do
+  cliente B`, o nome que o molde da `/app-testar` procura). Logado como B, a ficha de A não aparece; logado como A, a dele
+  aparece. O teste automático da `/app-testar` entra com esses dois.
 - Dados de mentira realistas pra testar, com nome e telefone inventados.
 - Backup do banco: conferir se o plano escolhido faz cópia sozinho. O grátis do
   Supabase fica sem backup automático e pausa depois de um tempo sem uso
@@ -221,19 +225,52 @@ prazo em `app/servidor.md`. Cada integração é conta nova: passo 2.
 
 Lista de conferência, copiada em `app/servidor.md` e marcada item a item:
 
-- [ ] chave só no `.env.local`; o backup barra `.env`; nenhuma chave no código que
-      vai pro navegador
+- [ ] chave só no `.env.local`; o backup barra `.env`; no código que vai pro
+      navegador, só a chave publicável do Supabase, e a secreta fica só no servidor
+      (`app-supabase-chaves`, que traz também o nome antigo de cada uma); nenhuma
+      outra chave no código que vai pro navegador
 - [ ] todo dado que chega no servidor é conferido lá (tamanho, formato, campo
       obrigatório), com uma biblioteca de validação como o zod
-- [ ] permissão conferida em toda leitura e gravação, testada com o segundo usuário
+- [ ] permissão conferida em toda leitura e gravação, testada com os dois clientes
+      de mentira do passo 4
+- [ ] trocar a senha derruba as outras sessões (no Supabase isso já vem pronto); o
+      aparelho antigo sai quando o acesso dele vence, o passe de entrada que o
+      navegador recebe no login e que vale por pouco tempo (`app-supabase-sessoes`).
+      O link de troca de senha vence em 1 hora, o padrão do Supabase: conferir no
+      painel, no caminho que está em `app-supabase-link-email`
+- [ ] login com Google só se junta a uma conta de e-mail que já foi confirmada
+      (juntar é o Google e o e-mail virarem a mesma conta, com as mesmas fichas); no
+      Supabase já vem assim (`app-supabase-vinculo`), e nenhum código do app junta as
+      duas por conta própria
+- [ ] formulário que muda dado passa pela proteção pronta do Next.js: a Server
+      Action (a função do servidor que o formulário chama) confere sozinha de onde
+      veio o pedido (`app-nextjs-server-action`). Rota de API feita à mão (arquivo
+      `route.ts`) que muda dado e é chamada pelo navegador do cliente confere por
+      conta própria quem chama (login e permissão) e também de onde veio o pedido:
+      o cabeçalho Origin (o endereço do site que mandou o pedido) tem que ser igual
+      ao endereço do app. O webhook do pagamento (passo 5) fica fora desta regra,
+      porque quem chama é o servidor do provedor, sem login e sem esse Origin; ele
+      se confere pela assinatura do aviso, o item "webhook confere a assinatura"
+      desta lista
 - [ ] limite de tentativas (quantas vezes por minuto alguém pode tentar) no login,
       no cadastro e em tudo que manda e-mail ou SMS, pra robô não sair testando senha
       nem disparando mensagem
 - [ ] webhook confere a assinatura
 - [ ] envio de arquivo com limite de tamanho e de tipo, guardado num espaço separado
-      do app (o armazenamento cobra acima da cota grátis: preço conferido na página
-      oficial, com a data, e anotado na tabela de custo do `app/arquitetura.md`)
+      do app e privado (no Supabase, bucket privado: ninguém abre o arquivo só por
+      saber o endereço); arquivo do cliente abre só por link que vence (link
+      assinado, com prazo em segundos, criado pelo `createSignedUrl` no Supabase). O
+      armazenamento cobra acima da cota grátis: preço conferido na página oficial, com
+      a data, e anotado na tabela de custo do `app/arquitetura.md`
+- [ ] excluir conta apaga também as cópias: primeiro os arquivos do cliente no
+      armazenamento (sem isso o Supabase recusa a exclusão), depois a conta; as
+      tabelas ligadas ao usuário com apagamento em cascata (`on delete cascade`, a
+      regra que faz a ficha sumir junto com o dono); e o cadastro dele no serviço de
+      e-mail e no provedor de pagamento
 - [ ] nenhum dado de cliente em endereço de página nem em registro de erro
+- [ ] painel de análise de visita (a ferramenta que conta quem entrou e o que
+      clicou) sem dado de cliente: nome, e-mail e telefone ficam fora do endereço da
+      página e do evento mandado pra ele
 - [ ] `npm audit` rodado de dentro de `app/codigo/` (lista falha conhecida nas
       bibliotecas usadas) e o resultado anotado
 - [ ] política de privacidade escrita, na régua da LGPD abaixo
