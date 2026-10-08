@@ -1,0 +1,16 @@
+{
+  "evitar": ["Nome Do App Original", "Empresa Dele"],
+  "app_store": {
+    "nome": "Horário Certo: Agenda",
+    "subtitulo": "Mande o link, o cliente marca",
+    "texto_promocional": "Chegou o lembrete por WhatsApp, pra menos cliente esquecer. Grátis pra uma agenda.",
+    "descricao": "O Horário Certo transforma sua agenda num link de marcar horário.\n\nMande o link. O cliente vê só os horários livres, escolhe um, e ele cai na sua agenda na hora.\n\nO que vem junto:\n- Um link pra cada serviço (corte, escova, manicure)\n- Intervalo entre atendimentos, pra não emendar um no outro\n- Lembrete por WhatsApp e por e-mail\n- Sinal pago na hora de marcar\n\nGrátis pra uma agenda. O Pro custa R$ 29 por mês.",
+    "palavras_chave": "cabeleireiro,manicure,barbearia,lembrete,clientes,marcar,estetica,unhas",
+    "novidades": "Lembrete por WhatsApp. Ligue em Ajustes."
+  },
+  "google_play": {
+    "titulo": "Horário Certo: Agenda",
+    "descricao_curta": "Mande um link e o cliente marca num horário que você tem livre.",
+    "descricao_completa": "O Horário Certo transforma sua agenda num link de marcar horário.\n\nMande o link. O cliente vê só os horários livres, escolhe um, e ele cai na sua agenda na hora.\n\nGrátis pra uma agenda. O Pro custa R$ 29 por mês."
+  }
+}

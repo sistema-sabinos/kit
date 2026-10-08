@@ -1,5 +1,5 @@
 {
- "versao": "5.0",
+ "versao": "5.1",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -145,6 +145,110 @@
    "3e018ef77aca3df8": "3.7",
    "a374e9a55941b540": "anterior-3.6",
    "f74338832024c2cf": "3.6"
+  },
+  ".claude/skills/app-comparar/SKILL.md": {
+   "17f5921d6917e3ed": "5.1",
+   "b792719dbeb2cd18": "5.1"
+  },
+  ".claude/skills/app-comparar/scripts/comparar-telas.mjs": {
+   "3204751e1351ceb7": "5.1",
+   "90be9dc847d3ca16": "5.1",
+   "d12a38ed87b9108c": "5.1"
+  },
+  ".claude/skills/app-comparar/scripts/lib/png.mjs": {
+   "21c5e52b5d92a224": "5.1",
+   "28559975f86740b9": "5.1",
+   "829946fce4e36c9f": "5.1"
+  },
+  ".claude/skills/app-comparar/scripts/paridade.mjs": {
+   "330460511a5b1c91": "5.1",
+   "47ce9718d97e257d": "5.1"
+  },
+  ".claude/skills/app-construir/SKILL.md": {
+   "29afdf6c8a8ec8ba": "5.1"
+  },
+  ".claude/skills/app-estudar/LICENSE-app.txt": {
+   "8e858cf2bff50a7d": "5.1"
+  },
+  ".claude/skills/app-estudar/SKILL.md": {
+   "56462b01b5750512": "5.1"
+  },
+  ".claude/skills/app-estudar/funcoes.csv": {
+   "14f9a94c9dedf93e": "5.1"
+  },
+  ".claude/skills/app-estudar/mapa-modelo.md": {
+   "4065a7397a4d0848": "5.1"
+  },
+  ".claude/skills/app-estudar/scripts/lib/args.mjs": {
+   "84e9c91d135f2fe6": "5.1"
+  },
+  ".claude/skills/app-estudar/scripts/lib/csv.mjs": {
+   "4a9c6d541d69dbb6": "5.1"
+  },
+  ".claude/skills/app-estudar/scripts/lib/texto.mjs": {
+   "d62e71fab3235ebb": "5.1",
+   "e72476f398c3a7b3": "5.1"
+  },
+  ".claude/skills/app-lancar/SKILL.md": {
+   "19c98c225a2b8ec5": "5.1"
+  },
+  ".claude/skills/app-lancar/ficha-exemplo.json": {
+   "d9f89125da094cfc": "5.1"
+  },
+  ".claude/skills/app-lancar/scripts/ficha-loja.mjs": {
+   "11fbfbcef38b5a8c": "5.1",
+   "4ccad34aec68330f": "5.1"
+  },
+  ".claude/skills/app-marca/SKILL.md": {
+   "0b59cb21c6d50e24": "5.1",
+   "1a81103f113cff77": "5.1"
+  },
+  ".claude/skills/app-marca/scripts/varrer-marca.mjs": {
+   "88965cd67c13ad73": "5.1",
+   "9186388cfbeb13e0": "5.1",
+   "cecd5544660338d5": "5.1"
+  },
+  ".claude/skills/app-planejar/SKILL.md": {
+   "aa2e1c1b552d65da": "5.1"
+  },
+  ".claude/skills/app-planejar/arquitetura.md": {
+   "d044810ea7629a7a": "5.1"
+  },
+  ".claude/skills/app-planejar/referencias/fatos.md": {
+   "10bf4b7090f26c18": "5.1"
+  },
+  ".claude/skills/app-publicar/SKILL.md": {
+   "90710f7f9c9eb465": "5.1"
+  },
+  ".claude/skills/app-publicar/checagem.md": {
+   "78e18a90b032a121": "5.1"
+  },
+  ".claude/skills/app-servidor/SKILL.md": {
+   "3133db230bc45260": "5.1"
+  },
+  ".claude/skills/app-testar/SKILL.md": {
+   "43474b4b81627d6d": "5.1"
+  },
+  ".claude/skills/app-testar/e2e-exemplo.spec.ts": {
+   "71870d953dc14c3c": "5.1",
+   "95a13e3463616ffa": "5.1"
+  },
+  ".claude/skills/app-testar/plano-teste.md": {
+   "b3bd506e60c27981": "5.1"
+  },
+  ".claude/skills/app-testar/relatorio-defeito.md": {
+   "af87b1e6acf6a3b3": "5.1"
+  },
+  ".claude/skills/app-visual/SKILL.md": {
+   "9df283778d68d43f": "5.1",
+   "f334d9a31783c93b": "5.1"
+  },
+  ".claude/skills/app-visual/scripts/contraste.mjs": {
+   "498b6a245aee3c55": "5.1",
+   "e47180619ad23d0f": "5.1"
+  },
+  ".claude/skills/app-visual/tokens.json": {
+   "5cf256e3bfe722ae": "5.1"
   },
   ".claude/skills/aprender-curso/SKILL.md": {
    "e1cbe1503267dc8c": "4.1",
@@ -748,6 +852,8 @@
    "f482021e4aace71c": "4.1"
   },
   ".claude/skills/espionar-concorrente/SKILL.md": {
+   "2b4783b1fbf85faa": "5.1",
+   "45d0233966318c9e": "5.1",
    "cf85adfe6fcc1c68": "anterior-3.7",
    "d1370fb2113cc514": "3.6",
    "d29f06e9c6110898": "3.7"
@@ -762,6 +868,7 @@
    "c375b93cc3691952": "anterior-4.1",
    "cc5bd9ba0be2b15f": "anterior-3.6",
    "d926994dec5817be": "3.7",
+   "dd4f1b3ff10100d7": "5.1",
    "deb336201ed77f7a": "3.6",
    "e78746e54bdc6f85": "anterior-3.7"
   },
@@ -912,7 +1019,42 @@
    "f04d308f5895aa64": "4.8",
    "f3014dab4a373500": "anterior-4.4"
   },
+  ".claude/skills/ler-avaliacoes/LICENSE-app.txt": {
+   "8e858cf2bff50a7d": "5.1"
+  },
+  ".claude/skills/ler-avaliacoes/SKILL.md": {
+   "2589a432c31e8e03": "5.1",
+   "624eca7dde769b0d": "5.1",
+   "e51efd0c5bdbf625": "5.1"
+  },
+  ".claude/skills/ler-avaliacoes/referencias/fatos.md": {
+   "0a900eaecff3bb5b": "5.1",
+   "e0c74c51514bc81e": "5.1"
+  },
+  ".claude/skills/ler-avaliacoes/scripts/avaliacoes.mjs": {
+   "37a5ad7b373559c2": "5.1",
+   "a2d45d3752d3ff47": "5.1",
+   "d496fe63aad515f1": "5.1"
+  },
+  ".claude/skills/ler-avaliacoes/scripts/lib/args.mjs": {
+   "84e9c91d135f2fe6": "5.1"
+  },
+  ".claude/skills/ler-avaliacoes/scripts/lib/csv.mjs": {
+   "4a9c6d541d69dbb6": "5.1"
+  },
+  ".claude/skills/ler-avaliacoes/scripts/lib/texto.mjs": {
+   "d62e71fab3235ebb": "5.1",
+   "e72476f398c3a7b3": "5.1"
+  },
+  ".claude/skills/ler-avaliacoes/scripts/temas-app.json": {
+   "713d1bf295466102": "5.1",
+   "ae194db4ed82e540": "5.1"
+  },
+  ".claude/skills/ler-avaliacoes/scripts/temas-marketplace.json": {
+   "622a4f69f5200a0d": "5.1"
+  },
   ".claude/skills/mapear/SKILL.md": {
+   "130e79c182798363": "5.1",
    "195d9042cd960fe6": "anterior-4.4",
    "1cf67d5152ddba0f": "3.6",
    "1d0419caf131bf61": "3.0",
@@ -931,7 +1073,8 @@
    "bd28fbcbd7ce716c": "anterior-3.0",
    "dfe4ec8c7f33a7fd": "anterior-3.0",
    "eef1db36ea6393bc": "3.8",
-   "f276430b523cbce5": "3.9"
+   "f276430b523cbce5": "3.9",
+   "fa00e67021ce1ccd": "5.1"
   },
   ".claude/skills/mei/SKILL.md": {
    "3493a95761683f5f": "4.6",
@@ -1037,6 +1180,7 @@
   },
   ".claude/skills/mercado-livre/referencias/regras-ml.md": {
    "6453c8fff72f6b7c": "anterior-3.6",
+   "97dbdc0c494a30bc": "5.1",
    "9f48f73d1e952c22": "anterior-3.6",
    "ece7c01b318c4b8e": "3.6",
    "efaba0b5b5a949e1": "anterior-3.6"
@@ -1595,6 +1739,7 @@
    "c0f11d4cec3eb5b8": "4.5",
    "db4ed0332b233701": "4.8",
    "de7cbfcf414ae059": "anterior-3.0",
+   "f49597db35c37e39": "5.1",
    "f55a864d8d473607": "anterior-3.0"
   },
   "AGENTS.md": {
@@ -1605,7 +1750,7 @@
    "3a6554d4c0bf2e9c": "anterior-4.3",
    "3b75efaa04d556d5": "4.5",
    "4241fd89efaee5be": "4.8",
-   "473d3bfd48345f92": "5.0",
+   "473d3bfd48345f92": "anterior-5.0",
    "56a07bbf79e76281": "anterior-3.0",
    "6c558189c1acd355": "4.1",
    "73d15982291ff407": "5.0",

@@ -32,8 +32,10 @@
   criativo pesa pouco. O que mostra a disputa real é
   `GET /products/<id-do-catalogo>/items?limit=100`.
 - **Anúncio de terceiro não se lê por API** (`GET /items/<id>` de outro
-  vendedor devolve 403). O que funciona é `GET /reviews/item/<id>` (avaliações)
-  e a página aberta no Chrome dedicado.
+  vendedor devolve 403). O que funciona é a página aberta no Chrome dedicado.
+  `GET /reviews/item/<id>` (avaliações) só responde pra anúncio da própria conta:
+  medido em 2026-10-08, 403 em 5 anúncios de concorrente com token válido e 200 no
+  anúncio próprio.
 - **A paginação da busca só anda clicando em "Seguinte"** e conferindo que a
   URL mudou. Os links da barra vêm com `href` vazio, e montar a URL na mão volta
   pra página 1.

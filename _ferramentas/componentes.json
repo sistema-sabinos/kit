@@ -4,6 +4,7 @@
       ".claude/skills/iniciar/", ".claude/skills/atualizar/", ".claude/skills/conectar/",
       ".claude/skills/mapear/", ".claude/skills/syncar/", ".claude/skills/atualizar-sabinos/",
       ".claude/skills/faxina/", ".claude/skills/compartilhar/", ".claude/skills/segunda-opiniao/",
+      ".claude/skills/ler-avaliacoes/",
       "_contexto/arquivo/README.md", "dados/README.md",
       ".claude/hooks/auto-sync.mjs"
     ] },
@@ -44,7 +45,18 @@
       ".claude/skills/gerenciar-youtube/"
     ] },
     "loja": { "depende": ["nucleo"], "caminhos": [".claude/skills/atendimento/", ".claude/skills/caixa/", ".claude/skills/cobrar/"] },
-    "mei": { "depende": ["nucleo", "loja"], "caminhos": [".claude/skills/mei/"] }
+    "mei": { "depende": ["nucleo", "loja"], "caminhos": [".claude/skills/mei/"] },
+    "criar-app": { "depende": ["nucleo"], "caminhos": [".claude/skills/app-estudar/",
+      ".claude/skills/app-planejar/",
+      ".claude/skills/app-visual/",
+      ".claude/skills/app-construir/",
+      ".claude/skills/app-servidor/",
+      ".claude/skills/app-testar/",
+      ".claude/skills/app-comparar/",
+      ".claude/skills/app-marca/",
+      ".claude/skills/app-lancar/",
+      ".claude/skills/app-publicar/"
+    ] }
   },
   "mistos": ["AGENTS.md", "CLAUDE.md", ".gitignore", ".claude/settings.json"],
   "ignorar": { "pastas": ["templates/"], "arquivos": ["README.md"], "finais": [".test.mjs"] }

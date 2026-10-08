@@ -445,6 +445,41 @@ E em seguida:
 Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o pacote de
 loja existe e pode ser instalado depois pelo `/mapear`.
 
+### Criar app (depois da loja)
+
+Quando as respostas do Passo 1 ou o `empresa.md` lido no Passo 0 cita app, aplicativo,
+sistema, plataforma, SaaS, site com login ou "quero vender assinatura de um programa".
+Perguntar na conversa, no formato de 4 partes:
+
+> "Tenho também um pacote pra criar um app ou sistema seu, do estudo de um app que já
+> existe até o seu no ar com marca própria: planeja, monta, testa, faz a página de venda e
+> publica. Montar é grátis; o que custa (domínio, hospedagem paga, conta nas lojas de
+> celular, taxa do INPI) é sempre avisado antes, com o valor, e só anda com o seu ok.
+>
+> Pergunto porque ele é grande (dez comandos que trabalham juntos) e gasta bastante do seu
+> plano Claude enquanto o app é construído, então só entra se fizer sentido.
+>
+> Tipo: 'quero, tenho uma ideia de app', 'quero conhecer, mas sem pressa', ou 'agora não'."
+
+Resposta positiva: copiar pro projeto as dez pastas inteiras de `_modelo/.claude/skills/`
+(`app-estudar`, `app-planejar`, `app-visual`, `app-construir`, `app-servidor`,
+`app-testar`, `app-comparar`, `app-marca`, `app-lancar`, `app-publicar`). Nunca copiar
+arquivo terminado em `.test.mjs` nem pasta `node_modules/`. O pacote vai inteiro ou não
+vai: as skills dividem a biblioteca de scripts da `app-estudar` e a `app-publicar` chama os
+scripts de três outras. A `ler-avaliacoes`, que o pacote usa na etapa 2, já vem com as
+skills base. Depois:
+
+- Na seção "Estrutura de pastas" do `AGENTS.md` do projeto, uma linha:
+
+    - pacote criar app: `app/` (estudo, plano, avaliações, marca e ficha) e `app/codigo/` (o código do app, que vai pro backup junto), criados pela `/app-estudar` na primeira vez
+
+- Em `_contexto/ferramentas.md`: `| pacote criar app | instalado | <AAAA-MM-DD> | contas de hospedagem e pagamento se criam pela /app-servidor, uma por vez |`
+- Em `tarefas.md`: "rodar `/app-estudar` com o nome ou o link do app que serve de referência".
+- Se o `.gitignore` do projeto não tem a linha `.next/` (projeto que veio de versão antiga), aplicar a entrada `gitignore-criar-app` de `_ferramentas/mudancas.md`, mostrando o antes e o depois. Sem ela, a pasta de build do app sobe pro backup, e o ícone, a fonte e as mudanças de banco de `app/codigo/` ficam de fora.
+
+Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o pacote criar app
+existe e pode ser instalado depois pelo `/mapear`.
+
 ### Nome da pasta
 
 Kebab case do nome do projeto, **sem acento nem caractere especial** (ex:
@@ -515,7 +550,8 @@ perguntar outro nome antes de seguir.
   mandam rodar a `find-skills` lá dentro, então ela vai junto, senão a
   instrução aponta pra uma skill que não existe na pasta), mais a `assistir-video`
   e a `transcribe`, que a `aprender-curso` usa pra estudar um curso em vídeo e
-  virar mentor. Das skills copiadas, nunca copiar arquivo terminado em `.test.mjs` (várias trazem testes que só servem no kit: `trafego`, `agendar`, `faxina`, `compartilhar` e outras; conferir no fim com uma busca por `.test.mjs` dentro do projeto, que tem que voltar vazia). Além dessas, copiar
+  virar mentor, e a `ler-avaliacoes`, que ranqueia o que os clientes do concorrente
+  reclamam. Das skills copiadas, nunca copiar arquivo terminado em `.test.mjs` (várias trazem testes que só servem no kit: `trafego`, `agendar`, `faxina`, `compartilhar` e outras; conferir no fim com uma busca por `.test.mjs` dentro do projeto, que tem que voltar vazia). Além dessas, copiar
   `otimizar-pc` só se o computador da pessoa for Windows (já sabido do
   Passo 0, ou perguntar se não ficou claro), e a pasta `trafego` inteira só se a
   pergunta de anúncio pago acima teve resposta positiva ou "pretendo".
@@ -641,6 +677,8 @@ de marketplace, do produto novo ao anúncio publicado".
 O de vídeo e o de mídia social, quando entram, também: "/configurar-video, que
 prepara o vídeo (depois /video-produto e /editar-video)" e "/midia-social, os
 seus posts da semana, agendados e medidos".
+O pacote criar app, quando entra, também: "/app-estudar, o começo do seu app (ele diz
+qual é o próximo passo ao terminar cada etapa)".
 
 ### Registrar e encerrar
 

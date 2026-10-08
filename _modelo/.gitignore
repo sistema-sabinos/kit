@@ -49,6 +49,10 @@
 !.claude/skills/editar-video/motor/scripts/modelos/face_detection_yunet_2023mar.onnx
 !.claude/skills/video-produto/scripts/fontes/*.ttf
 !.claude/skills/gerar-imagens/scripts/fontes/*.ttf
+# pacote criar app: icone e fonte do proprio app (o Next.js cria o favicon.ico)
+!app/codigo/**/*.ico
+!app/codigo/**/*.woff2
+!app/codigo/**/*.sql
 
 # Bloqueio de proposito, por cima de tudo que foi liberado
 # chaves e segredos: NUNCA sobem pro GitHub
@@ -68,6 +72,12 @@ __pycache__/
 .venv/
 dist/
 build/
+# build e ligacao com a hospedagem do pacote criar app (o codigo em app/codigo/ sobe)
+.next/
+.vercel/
+.wrangler/
+test-results/
+playwright-report/
 # atualizador do kit: copia de seguranca e motor valem so neste computador; o recibo
 # (versao instalada) sobe, pra o outro computador saber de onde parte
 .sabinos/*

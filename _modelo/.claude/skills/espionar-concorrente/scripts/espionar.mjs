@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Coleta da /espionar-concorrente. Abre os anuncios do topo de um produto no Chrome dedicado
 // (anuncio de outro vendedor nao se le pela API, que devolve 403), junta as avaliacoes pela
-// API de reviews (gratis, vale pra qualquer vendedor) e as perguntas reais pela aba de perguntas
+// API de reviews (gratis; em 2026-10-08 so respondeu pra anuncio da propria conta, e de
+// concorrente deu 403 com token valido, que vira erro na linha) e as perguntas reais pela aba de perguntas
 // dos anuncios que mais vendem. Grava o bruto e recalcula vocabulario.txt e atributos.json da
 // categoria (contrato 0). O briefing em Markdown quem escreve e o agente, lendo o bruto.
 //

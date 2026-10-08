@@ -398,3 +398,27 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** a seção Gatilhos do `AGENTS.md` do projeto tem a linha que começa com `- vai entregar texto que sai pro cliente` e ela não tem `o que conferir antes de usar`.
 **Como aplicar:** no fim dessa linha, logo depois de "reler contra a voz da marca antes", acrescentar " e fechar com o que supus e o que conferir antes de usar, em até 2 linhas". Mostrar o antes e o depois.
 **Como testar:** a linha de texto pro cliente contém `o que conferir antes de usar`.
+
+## skill-ler-avaliacoes
+
+**O que é:** comando novo nas skills base, `/ler-avaliacoes`: lê as avaliações reais dos clientes de um concorrente (coladas à mão da página do Mercado Livre, Amazon, Shopee, Reclame Aqui ou loja de app, ou do bruto da espionagem quando ele traz avaliações) e ranqueia o que eles mais reclamam, o que pedem e o que ninguém resolve, com a frase literal e o link de cada um.
+**Por quê:** a reclamação do cliente do concorrente é o diferencial mais barato que existe, pra anúncio de marketplace e pra quem quer criar um app melhor que o que já existe.
+**Te afeta se:** sempre; é skill base, entra em todo projeto.
+**Como aplicar:** copiar a pasta `.claude/skills/ler-avaliacoes/` inteira, sem os arquivos terminados em `.test.mjs`.
+**Como testar:** colar umas 30 avaliações de um produto concorrente (com o link da página), rodar a `/ler-avaliacoes` e conferir que cada citação do relatório aparece igual no que foi colado.
+
+## pacote-criar-app
+
+**O que é:** pacote novo pra criar um app ou SaaS próprio, com dez comandos na ordem que se segue: `/app-estudar`, `/app-planejar`, `/app-visual`, `/app-construir`, `/app-servidor`, `/app-testar`, `/app-comparar`, `/app-marca`, `/app-lancar` e `/app-publicar` (a `/ler-avaliacoes`, base, entra entre o estudo e o plano).
+**Por quê:** quem um dia quiser construir um sistema ou app pra vender já encontra o caminho pronto, do estudo de um app de referência até o seu no ar com marca própria, com custo avisado antes e a lei brasileira (INPI, LGPD, CDC) no meio do caminho.
+**Te afeta se:** o projeto quer criar um app, sistema ou SaaS; pacote opcional, nada muda pra quem não instalar.
+**Como aplicar:** oferecer o pacote como no bloco "Criar app" do `/setup`; se a pessoa quiser, copiar as dez pastas, aplicar a entrada `gitignore-criar-app` e rodar `/app-estudar`.
+**Como testar:** `node .claude/skills/app-comparar/scripts/paridade.mjs .claude/skills/app-estudar/funcoes.csv` mostra o placar do modelo de funções sem erro.
+
+## gitignore-criar-app
+
+**O que é:** o backup do projeto passa a deixar de fora o lixo de build e de teste do app (`.next/`, `.vercel/`, `.wrangler/`, `test-results/`, `playwright-report/`) e a levar o ícone, a fonte e as mudanças de banco dele (`.ico`, `.woff2` e `.sql` dentro de `app/codigo/`).
+**Por quê:** o código do app mora em `app/codigo/`, dentro do projeto, pra ir pro backup junto; sem isso, a pasta de build subiria inteira, e o ícone e as mudanças de banco ficariam de fora sem aviso.
+**Te afeta se:** o projeto instalou o pacote criar app.
+**Como aplicar:** no `.gitignore` do projeto, logo depois da linha `build/`, acrescentar `.next/`, `.vercel/`, `.wrangler/`, `test-results/` e `playwright-report/`, uma por linha; e no bloco de exceções por caminho, `!app/codigo/**/*.ico`, `!app/codigo/**/*.woff2` e `!app/codigo/**/*.sql`. Mostrar o antes e o depois.
+**Como testar:** `git check-ignore -v app/codigo/.next/x` aponta a linha nova, e `git check-ignore app/codigo/src/app/favicon.ico` volta vazio.

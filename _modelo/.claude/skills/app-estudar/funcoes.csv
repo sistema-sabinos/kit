@@ -1,0 +1,17 @@
+funcao,area,prioridade,original,minha,notas
+Cadastro com e-mail ou conta Google,cadastro,obrigatoria,sim,nao,
+Ligar a agenda do celular pra ver horário ocupado,cadastro,obrigatoria,sim,nao,
+Definir os horários de atendimento da semana,horarios,obrigatoria,sim,nao,
+Criar um serviço (nome duração preço),servicos,obrigatoria,sim,nao,
+Página pública de agendamento com os horários livres,agendamento,obrigatoria,sim,nao,
+Cliente marca sem precisar criar conta,agendamento,obrigatoria,sim,nao,
+Confirmação para a cliente e para o salão,avisos,obrigatoria,sim,nao,
+Cliente remarca ou cancela por um link,agendamento,obrigatoria,sim,nao,
+Intervalo entre um atendimento e outro,horarios,importante,sim,nao,
+Perguntas extras no formulário de agendamento,agendamento,importante,sim,nao,
+Lembrete antes do horário,avisos,importante,sim,nao,
+Cobrar um sinal na hora de marcar,pagamento,importante,sim,nao,
+Agenda separada por profissional,equipe,desejavel,sim,nao,
+Botão de agendar dentro do site do salão,divulgacao,desejavel,sim,nao,
+Relatório de agendamentos do mês,relatorios,desejavel,parcial,nao,
+Loja de aplicativos de parceiros,integracoes,desejavel,sim,pular,a rede de parceiros é do app de referência e fica com ele

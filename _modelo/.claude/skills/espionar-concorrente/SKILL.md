@@ -15,7 +15,9 @@ description: >
 ## O que essa skill faz
 
 Abre, no Chrome dedicado, os anúncios que aparecem primeiro na busca de um
-produto e lê cada página. Junta as avaliações pela API do Mercado Livre e as
+produto e lê cada página. Tenta as avaliações pela API do Mercado Livre, que
+hoje só entrega as de anúncio da própria conta (medido em 2026-10-08: de
+concorrente ela recusa e o bruto fica com o erro anotado), e junta as
 perguntas reais dos anúncios que mais vendem. Com isso escreve o briefing que
 a `/decidir-anuncio` e a `/montar-anuncio` usam: que palavras os títulos
 repetem, que atributos todo mundo preenche, como são as fotos, o que o cliente
@@ -47,8 +49,9 @@ node .claude/skills/espionar-concorrente/scripts/espionar.mjs --fornecedor <f> -
 
 O script escolhe os anúncios orgânicos na ordem da busca (quem o Mercado Livre
 mostra sem ninguém pagar) e completa com patrocinado se faltar. De cada um lê
-título, preço, vendas, vendedor, fotos, ficha e descrição; pega até 100
-avaliações pela API; e, nos 3 que mais vendem, abre o link "Ver todas as
+título, preço, vendas, vendedor, fotos, ficha e descrição; tenta até 100
+avaliações pela API (de concorrente ela recusa desde a medição de 2026-10-08, e
+o erro fica anotado no bruto); e, nos 3 que mais vendem, abre o link "Ver todas as
 perguntas" da própria página (essa URL nunca se monta na mão). Grava
 `concorrentes/<categoria>/_raw-concorrentes-<produto>.json`, recalcula
 `vocabulario.txt` e `atributos.json` com todos os produtos já espionados na
@@ -115,6 +118,11 @@ Anúncios lidos, as 5 palavras mais fortes, mediana de fotos, vendedor
 dominante, campeões, e um insight se houver (preço real muito abaixo da
 mediana, catálogo tomado por revenda, objeção que ninguém responde).
 Caminho do briefing. Sem colar o bruto.
+
+Quando vieram avaliações, oferecer em seguida a `/ler-avaliacoes` com o bruto
+(`concorrentes/<categoria>/_raw-concorrentes-<produto>.json`): ela ranqueia o que os
+compradores dos concorrentes mais reclamam e pedem, com a frase literal de cada um, e
+isso vira diferencial de anúncio na `/decidir-anuncio` e na `/montar-anuncio`.
 
 ## Regras
 
