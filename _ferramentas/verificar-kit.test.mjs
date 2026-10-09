@@ -503,19 +503,23 @@ test('gate 6 isenta a skill otimizar-pc (declaradamente so Windows), mas continu
 
 // zip minimo em memoria: um local file header + um central directory header + EOCD,
 // com o separador de caminho escolhido pelo teste
-function zipFalso(nomeEntrada) {
-  const nome = Buffer.from(nomeEntrada, 'utf8')
-  const local = Buffer.concat([
+// (uma entrada por nome; aceita um nome so ou uma lista)
+function zipFalso(nomesEntrada) {
+  const nomes = [].concat(nomesEntrada).map(n => Buffer.from(n, 'utf8'))
+  const locais = nomes.map(nome => Buffer.concat([
     Buffer.from([0x50, 0x4b, 0x03, 0x04]), Buffer.alloc(22),
     Buffer.from([nome.length, 0, 0, 0]), nome,
-  ])
-  const central = Buffer.concat([
+  ]))
+  const centrais = nomes.map(nome => Buffer.concat([
     Buffer.from([0x50, 0x4b, 0x01, 0x02]), Buffer.alloc(24),
     Buffer.from([nome.length, 0]), Buffer.alloc(16), nome,
-  ])
+  ]))
   const eocd = Buffer.concat([Buffer.from([0x50, 0x4b, 0x05, 0x06]), Buffer.alloc(18)])
-  return Buffer.concat([local, central, eocd])
+  return Buffer.concat([...locais, ...centrais, eocd])
 }
+
+// formato desde a 5.8: o conteudo do kit direto na raiz do zip
+const NA_RAIZ = ['COMECE-AQUI.md', '.claude/', '.claude/skills/setup/SKILL.md', '_modelo/AGENTS.md', 'VERSAO']
 
 // BS e a barra invertida, montada por codigo de proposito: escrita literal no fonte,
 // ela some numa camada de escape e o zip "quebrado" do teste nasce intacto (ja aconteceu).
@@ -538,34 +542,56 @@ function comZips(arquivos, fn) {
 }
 
 test('gate 7 acusa zip com barra invertida no caminho (Compress-Archive)', () => {
-  comZips({ 'SabinOS-Sistema-3.0.zip': 'sabinos' + BS + 'COMECE-AQUI.md' }, (dir) => {
-    const { falhas } = rodarGates(dir)
-    assert.ok(falhas.some(f => f.gate === 7), 'zip com barra invertida tem que falhar o gate 7')
+  comZips({ 'SabinOS-Sistema.zip': ['COMECE-AQUI.md', '_modelo' + BS + 'AGENTS.md'] }, (dir) => {
+    const g7 = rodarGates(dir).falhas.filter(f => f.gate === 7)
+    assert.ok(g7.some(f => /no caminho/.test(f.detalhe)), 'zip com barra invertida tem que falhar o gate 7')
   })
 })
 
-test('gate 7 aceita zip com barra normal e nao roda sem zip', () => {
-  comZips({ 'SabinOS-Sistema-3.0.zip': 'SabinOS-Sistema/COMECE-AQUI.md' }, (dir) => {
-    const { falhas } = rodarGates(dir)
-    assert.ok(!falhas.some(f => f.gate === 7), 'zip com / passa o gate 7')
+test('gate 7 aceita o SabinOS-Sistema.zip com o kit na raiz e nao roda sem zip', () => {
+  comZips({ 'SabinOS-Sistema.zip': NA_RAIZ }, (dir) => {
+    const r = rodarGates(dir)
+    assert.ok(!r.falhas.some(f => f.gate === 7), 'zip no formato certo passa o gate 7: ' + JSON.stringify(r.falhas.filter(f => f.gate === 7)))
+    assert.ok(!r.naoRodou.some(n => n.gate === 7), 'com o zip ao lado o gate 7 roda')
   })
   const dir = kitFalso()
   try {
-    const { falhas } = rodarGates(dir)
+    const { falhas, naoRodou } = rodarGates(dir)
     assert.ok(!falhas.some(f => f.gate === 7), 'sem zip o gate 7 nao acusa nada')
+    assert.ok(naoRodou.some(n => n.gate === 7), 'sem zip o gate 7 diz que nao rodou')
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
-test('gate 7 confere o zip de MAIOR versao, nao o primeiro em ordem alfabetica', () => {
-  // o 3.1 esta bom e o 3.2 esta quebrado: conferir o 3.1 daria verde e distribuiria o quebrado
-  comZips({
-    'SabinOS-Sistema-3.1.zip': 'SabinOS-Sistema/COMECE-AQUI.md',
-    'SabinOS-Sistema-3.2.zip': 'sabinos' + BS + 'COMECE-AQUI.md',
-  }, (dir) => {
+test('gate 7 reprova pasta dupla: tudo dentro de uma pasta de topo (o zip ate a 5.7)', () => {
+  comZips({ 'SabinOS-Sistema.zip': NA_RAIZ.map(n => 'SabinOS-Sistema/' + n) }, (dir) => {
     const g7 = rodarGates(dir).falhas.filter(f => f.gate === 7)
-    assert.ok(g7.some(f => /no caminho/.test(f.detalhe)), 'tem que acusar a barra invertida do 3.2, o mais novo')
-    assert.ok(g7.every(f => f.arquivo === 'SabinOS-Sistema-3.2.zip'), 'as falhas tem que apontar o zip mais novo')
-    assert.ok(g7.some(f => /2 zips na pasta/.test(f.detalhe)), 'tem que avisar da sobra do zip antigo')
+    assert.ok(g7.some(f => /pasta dupla/.test(f.detalhe) && /SabinOS-Sistema[/]/.test(f.detalhe)), JSON.stringify(g7))
+  })
+  // a entrada da propria pasta de topo tambem conta como dentro dela
+  comZips({ 'SabinOS-Sistema.zip': ['kit/', ...NA_RAIZ.map(n => 'kit/' + n)] }, (dir) => {
+    assert.ok(rodarGates(dir).falhas.some(f => f.gate === 7 && /pasta dupla/.test(f.detalhe)))
+  })
+})
+
+test('gate 7 exige o COMECE-AQUI.md na raiz do zip', () => {
+  comZips({ 'SabinOS-Sistema.zip': NA_RAIZ.filter(n => n !== 'COMECE-AQUI.md').concat('_modelo/COMECE-AQUI.md') }, (dir) => {
+    const g7 = rodarGates(dir).falhas.filter(f => f.gate === 7)
+    assert.ok(g7.some(f => /sem COMECE-AQUI[.]md na raiz/.test(f.detalhe)), JSON.stringify(g7))
+  })
+})
+
+test('gate 7 acusa zip com versao no nome junto do novo, e sem o novo nao roda', () => {
+  // o antigo com o formato velho: conferir ele daria a falha errada; quem vale e o novo
+  comZips({ 'SabinOS-Sistema.zip': NA_RAIZ, 'SabinOS-Sistema-5.7.zip': 'SabinOS-Sistema/COMECE-AQUI.md' }, (dir) => {
+    const g7 = rodarGates(dir).falhas.filter(f => f.gate === 7)
+    assert.ok(g7.some(f => /zip antigo junto/.test(f.detalhe) && /SabinOS-Sistema-5[.]7[.]zip/.test(f.detalhe)), JSON.stringify(g7))
+    assert.ok(g7.every(f => f.arquivo === 'SabinOS-Sistema.zip'), 'as falhas apontam o zip novo')
+    assert.ok(!g7.some(f => /pasta dupla/.test(f.detalhe)), 'o antigo nao foi lido como o zip a distribuir')
+  })
+  comZips({ 'SabinOS-Sistema-5.7.zip': 'SabinOS-Sistema/COMECE-AQUI.md' }, (dir) => {
+    const r = rodarGates(dir)
+    assert.ok(!r.falhas.some(f => f.gate === 7))
+    assert.ok(r.naoRodou.some(n => n.gate === 7 && /formato antigo/.test(n.motivo)), JSON.stringify(r.naoRodou))
   })
 })
 

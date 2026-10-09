@@ -38,10 +38,14 @@ Oferecer os dois caminhos, nessa ordem:
    arquivo `VERSAO` desta pasta-mãe (não do `.sabinos/instalado.json`, que só existe
    em projeto), e depois o Passo 2. A versão nova é a pasta `kit-<versão>` extraída.
 2. **Zip que a pessoa já baixou:** perguntar onde está (formato de 4 partes) e
-   extrair numa pasta temporária fora da pasta-mãe:
+   extrair sempre numa pasta temporária nova e vazia, criada agora, fora da pasta-mãe:
    no Windows `"C:/Windows/System32/tar.exe" -xf "<zip>" -C "<temp>"`, no Mac `unzip -q "<zip>" -d "<temp>"`.
    No Windows vai o caminho completo porque, no terminal do Git, o `tar` comum é
-   outro programa e não abre zip. A versão nova é a pasta `SabinOS-Sistema/` extraída.
+   outro programa e não abre zip. Onde fica a versão nova depende do zip:
+   - o `VERSAO` está direto na pasta temporária (zip desde a 5.8, o `SabinOS-Sistema.zip`):
+     a versão nova é a própria pasta temporária;
+   - existe a pasta `SabinOS-Sistema/` extraída dentro dela (zip até a 5.7):
+     a versão nova é essa pasta `SabinOS-Sistema/`.
 
 Se a versão nova não tiver `_modelo/AGENTS.md` e `.claude/skills/setup/SKILL.md`, parar: não é um kit SabinOS.
 

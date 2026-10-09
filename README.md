@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 5.7 (2026-10-08)
+Versão 5.8 (2026-10-08)
 
 Um sistema de trabalho com IA pro seu negócio, rodando dentro do VS Code com o Claude Code.
 
@@ -18,7 +18,7 @@ A ideia é simples: em vez de conversar com uma IA que esquece tudo a cada conve
 
 **4. Assine o Claude** em [claude.com](https://claude.com/). Depois, no VS Code, abra a aba de extensões (ícone de blocos na lateral), busque "Claude Code", instale e faça login.
 
-**5. Descompacte este kit** dentro de `Documentos` (o zip já traz a pasta `SabinOS-Sistema`, não crie outra com esse nome). Não deixe em Downloads, nem dentro de uma pasta que já é repositório git. Abrindo a pasta, você tem que ver o `COMECE-AQUI.md` logo de cara; se aparecer só outra pasta `SabinOS-Sistema`, abra a de dentro.
+**5. Descompacte este kit** e deixe a pasta `SabinOS-Sistema` dentro de `Documentos`. No Windows, no Extrair Tudo, não mude o caminho que ele sugere (já termina em `SabinOS-Sistema`); mudando pra terminar só em `Documentos`, os arquivos caem soltos lá. No Mac, o duplo clique no `SabinOS-Sistema.zip` cria a pasta. Nos dois, arraste a pasta `SabinOS-Sistema` pra `Documentos`. Não deixe em Downloads, nem dentro de uma pasta que já é repositório git. Abrindo a pasta, o `COMECE-AQUI.md` aparece logo de cara.
 
 **6. Abra a pasta no VS Code** (`Arquivo > Abrir Pasta`) e siga o [COMECE-AQUI.md](COMECE-AQUI.md).
 

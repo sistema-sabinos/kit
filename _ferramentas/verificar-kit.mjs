@@ -408,24 +408,20 @@ export function rodarGates(dirKit, opcoes = {}) {
   // Gate 7: empacotamento do zip de distribuicao (so roda se o zip existir ao lado do kit).
   // A spec ZIP (APPNOTE 4.4.17.1) exige "/" como separador; Compress-Archive grava "\\" e o
   // descompactador do macOS vira 90 arquivos soltos sem pasta. Gerar sempre com tar.exe.
-  // o zip se chama SabinOS-Sistema-<versao>.zip (a versao vai no nome do zip, nunca no da pasta)
+  // Desde a 5.8 o zip se chama SabinOS-Sistema.zip, sem versao no nome, e leva o conteudo do
+  // kit direto na raiz: o Extrair Tudo do Windows e o Utilitario de Arquivo do Mac criam a
+  // pasta com o nome do zip, e o aluno abre e ja ve o COMECE-AQUI.md. Zip com tudo dentro de
+  // uma pasta de topo (o formato ate a 5.7) dava pasta dentro de pasta e reprova.
   const pastaPai = join(dirKit, '..')
-  // Com mais de um zip na pasta, conferir o primeiro em ordem alfabetica daria verde
-  // olhando o zip velho enquanto o novo (o que vai ser distribuido) passa batido.
-  // Entao: confere sempre o de maior versao, e acusa a sobra pra ela ser apagada.
-  const zips = existsSync(pastaPai)
-    ? readdirSync(pastaPai)
-        .filter(n => /^SabinOS-Sistema-\d+\.\d+\.zip$/i.test(n))
-        .sort((a, b) => {
-          const v = (n) => n.match(/(\d+)\.(\d+)/).slice(1, 3).map(Number)
-          const [aM, am] = v(a), [bM, bm] = v(b)
-          return bM - aM || bm - am
-        })
-    : []
-  const nomeZip = zips[0]
-  if (!nomeZip) naoRodou.push({ gate: 7, motivo: 'sem zip ao lado do kit (normal fora da hora de empacotar)' })
-  if (zips.length > 1)
-    falhas.push({ gate: 7, arquivo: nomeZip, detalhe: `${zips.length} zips na pasta (${zips.join(', ')}); conferindo so o mais novo. Apagar os antigos pra nao distribuir o errado` })
+  const naPasta = existsSync(pastaPai) ? readdirSync(pastaPai) : []
+  const nomeZip = naPasta.find(n => n.toLowerCase() === 'sabinos-sistema.zip')
+  // zip com versao no nome junto do novo e sobra de antes da 5.8: distribuir o errado e facil
+  const antigos = naPasta.filter(n => /^SabinOS-Sistema-\d+\.\d+\.zip$/i.test(n)).sort()
+  if (!nomeZip) naoRodou.push({ gate: 7, motivo: antigos.length
+    ? `sem SabinOS-Sistema.zip ao lado do kit, so no formato antigo (${antigos.join(', ')}); o preparar do release gera o novo`
+    : 'sem zip ao lado do kit (normal fora da hora de empacotar)' })
+  else if (antigos.length)
+    falhas.push({ gate: 7, arquivo: nomeZip, detalhe: `zip antigo junto (${antigos.join(', ')}); tirar da pasta pra nao distribuir o errado` })
   const zipDist = nomeZip ? join(pastaPai, nomeZip) : null
   if (zipDist && existsSync(zipDist)) {
     const buf = readFileSync(zipDist)
@@ -433,17 +429,24 @@ export function rodarGates(dirKit, opcoes = {}) {
     let i = buf.indexOf(ASSINATURA_CD)
     let entradas = 0
     let comBarra = 0
+    const nomes = []
     while (i !== -1) {
       const tamNome = buf.readUInt16LE(i + 28)
       const nome = buf.slice(i + 46, i + 46 + tamNome).toString('utf8')
       entradas++
+      nomes.push(nome)
       if (nome.includes('\\')) comBarra++
       i = buf.indexOf(ASSINATURA_CD, i + 46 + tamNome)
     }
+    const topo = new Set(nomes.map(n => n.split('/')[0]))
     if (entradas === 0)
       falhas.push({ gate: 7, arquivo: nomeZip, detalhe: 'zip sem central directory legivel' })
     else if (comBarra > 0)
       falhas.push({ gate: 7, arquivo: nomeZip, detalhe: `${comBarra} de ${entradas} entradas com "\\" no caminho (quebra a extracao no macOS; gerar com tar.exe, nunca Compress-Archive)` })
+    else if (topo.size === 1 && nomes.every(n => n.includes('/')))
+      falhas.push({ gate: 7, arquivo: nomeZip, detalhe: `pasta dupla: as ${entradas} entradas estao dentro de ${[...topo][0]}/; o conteudo do kit vai direto na raiz do zip` })
+    else if (!nomes.includes('COMECE-AQUI.md'))
+      falhas.push({ gate: 7, arquivo: nomeZip, detalhe: 'sem COMECE-AQUI.md na raiz do zip; quem extrai abre a pasta e nao acha por onde comecar' })
   }
 
   // Gate 9: travas de seguranca do settings.json.

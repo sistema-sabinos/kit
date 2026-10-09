@@ -1,5 +1,5 @@
 {
- "versao": "5.7",
+ "versao": "5.8",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -464,7 +464,7 @@
    "3ef51871150f421d": "anterior-3.7",
    "687ca83ce1b51841": "3.7",
    "716c4332751ba383": "3.6",
-   "8be333520a8f5d99": "5.7",
+   "8be333520a8f5d99": "anterior-5.7",
    "d4402882805dba6b": "3.11",
    "e151da239726cdc0": "anterior-3.6"
   },
@@ -487,10 +487,10 @@
    "80488f0adb6aeb18": "anterior-3.7",
    "86d8007f89991ed3": "anterior-3.6",
    "94d029075dce891e": "3.6",
-   "984b72947ed504fb": "5.7",
+   "984b72947ed504fb": "anterior-5.7",
    "a54dc34e5aa7dacb": "anterior-3.6",
    "d82a0f43327c7789": "anterior-3.7",
-   "f18e384185f678ce": "5.7"
+   "f18e384185f678ce": "anterior-5.7"
   },
   ".claude/skills/caixa/SKILL.md": {
    "1befda2a9048b5c4": "4.9",
@@ -506,7 +506,7 @@
    "78aabdc58188d216": "anterior-4.6",
    "8821de999d33bbdb": "4.6",
    "a6ba0e136cb40a4a": "5.7",
-   "d2f5429cef376400": "5.7"
+   "d2f5429cef376400": "anterior-5.7"
   },
   ".claude/skills/caixa/scripts/lib/csv.mjs": {
    "060846ddec1ce0f2": "4.6",
@@ -538,7 +538,7 @@
    "fbf53561cd5cc5f3": "5.7"
   },
   ".claude/skills/checar/SKILL.md": {
-   "04f6c050589c4f28": "5.7",
+   "04f6c050589c4f28": "anterior-5.7",
    "130e9648b75765a6": "4.8",
    "1ad4b7bf727ecad0": "anterior-3.4",
    "437ef0e3af1d1ac6": "3.7",
@@ -571,12 +571,12 @@
    "47a85174db8f911f": "anterior-3.8",
    "4d6a28d7395c39f3": "anterior-4.9",
    "851b4a1d8a039a29": "3.8",
-   "9e891bf7a12c8d07": "5.7",
+   "9e891bf7a12c8d07": "anterior-5.7",
    "a5739cbc3d21ac6b": "anterior-3.8",
    "aa8bbf715a47f876": "3.11",
    "df6af9da6c14ab3a": "4.9",
    "e73c126b41ef484c": "5.7",
-   "eea96cda45a7ca5d": "5.7",
+   "eea96cda45a7ca5d": "anterior-5.7",
    "f065a0745513fcc6": "anterior-3.8"
   },
   ".claude/skills/comecar-a-vender/referencias/fatos.md": {
@@ -634,7 +634,7 @@
    "afc4edbb1dad5917": "4.4",
    "cd9b1de6a860745d": "3.11",
    "cf6c2654215b51df": "3.6",
-   "edb935dd12dc6bba": "5.7",
+   "edb935dd12dc6bba": "anterior-5.7",
    "fa890774ab90ac09": "5.7"
   },
   ".claude/skills/configurar-video/SKILL.md": {
@@ -1002,8 +1002,8 @@
    "180849aeca7c65b9": "anterior-3.6",
    "41ad1aa730169c84": "anterior-5.2",
    "69004ec1c5eb2d73": "anterior-3.7",
-   "696925452d05899a": "5.7",
-   "87e1ce07f40d12a4": "5.7",
+   "696925452d05899a": "anterior-5.7",
+   "87e1ce07f40d12a4": "anterior-5.7",
    "9ae5a6be02812e52": "anterior-3.6",
    "ae734dffef0d8596": "4.1",
    "bdb9eb9312b8509c": "5.7",
@@ -1288,7 +1288,7 @@
   },
   ".claude/skills/mapear/SKILL.md": {
    "130e79c182798363": "5.1",
-   "17ce6c5443631525": "5.7",
+   "17ce6c5443631525": "anterior-5.7",
    "195d9042cd960fe6": "anterior-4.4",
    "1cf67d5152ddba0f": "3.6",
    "1d0419caf131bf61": "3.0",
@@ -1317,7 +1317,7 @@
    "56c33f95e3215ff0": "anterior-4.6",
    "5e8d43b2654d1a5f": "anterior-4.6",
    "dc443ad964ac7451": "4.9",
-   "ffbcdf20be690a37": "5.7"
+   "ffbcdf20be690a37": "anterior-5.7"
   },
   ".claude/skills/mei/referencias/fatos.md": {
    "46397e33455b3689": "4.6",
@@ -1410,7 +1410,7 @@
    "bd1c3d2d6c145030": "5.7",
    "cd7ec87a2948ec8c": "3.6",
    "d7eb464178c6f3d5": "3.11",
-   "da1a9d37118b94fc": "5.7",
+   "da1a9d37118b94fc": "anterior-5.7",
    "ef5326dd6e26cd91": "4.2",
    "fbd39de8bbe11e2b": "anterior-3.6"
   },
@@ -1440,7 +1440,7 @@
   },
   ".claude/skills/mercado-livre/scripts/carimbar-auditoria.mjs": {
    "14a0217ddd2294f5": "5.7",
-   "bcc3da2560b781f0": "5.7"
+   "bcc3da2560b781f0": "anterior-5.7"
   },
   ".claude/skills/mercado-livre/scripts/lib/bling-api.mjs": {
    "7653ca76a96e6be6": "3.6"
@@ -1475,7 +1475,7 @@
    "f6b2c926a45199c7": "3.6"
   },
   ".claude/skills/mercado-livre/scripts/lib/pipeline.mjs": {
-   "0f9dd79c2d91c968": "5.7",
+   "0f9dd79c2d91c968": "anterior-5.7",
    "794cf5e09fa3c70c": "3.6",
    "9ca1cf5aab3df8af": "5.7",
    "bd0003827577e2ca": "3.7"
@@ -1577,7 +1577,7 @@
    "980d14385643fb88": "4.1"
   },
   ".claude/skills/midia-social/scripts/slides.mjs": {
-   "419ccda3b633dc97": "5.7",
+   "419ccda3b633dc97": "anterior-5.7",
    "6e9e93c82212ba19": "5.7"
   },
   ".claude/skills/montar-anuncio/SKILL.md": {
@@ -1623,7 +1623,7 @@
   ".claude/skills/otimizar-pc/SKILL.md": {
    "0823092854c7e759": "3.0",
    "31846af0ae8c7a1a": "5.7",
-   "538532e7d0008dad": "5.7"
+   "538532e7d0008dad": "anterior-5.7"
   },
   ".claude/skills/otimizar-pc/scripts/_comum.ps1": {
    "20d84191f769beae": "3.0",
@@ -1641,7 +1641,7 @@
   },
   ".claude/skills/otimizar-pc/scripts/limpar.ps1": {
    "0399dbe6f79088f5": "5.7",
-   "68dc94069df63702": "5.7",
+   "68dc94069df63702": "anterior-5.7",
    "a9bcf1151b6b3d5f": "3.0"
   },
   ".claude/skills/otimizar-pc/scripts/quarentena-installer.ps1": {
@@ -1664,7 +1664,7 @@
    "ba74a63d74e46f63": "4.1"
   },
   ".claude/skills/pauta/cargos/garimpeiro.md": {
-   "156f7e6943bd7744": "5.7",
+   "156f7e6943bd7744": "anterior-5.7",
    "8a1c72970296dd62": "5.7",
    "d574a797f174a33c": "4.1"
   },
@@ -1672,17 +1672,17 @@
    "16e7f47ef0f11744": "4.1"
   },
   ".claude/skills/pauta/cargos/revisor.md": {
-   "2a26ad304c917b53": "5.7",
+   "2a26ad304c917b53": "anterior-5.7",
    "715d790ee2dd1e7b": "4.1",
    "9ca3c6488e2400b7": "5.7",
    "c637acff2a98a1f4": "5.3",
-   "f004f5e09caeb4e8": "5.7"
+   "f004f5e09caeb4e8": "anterior-5.7"
   },
   ".claude/skills/pauta/cargos/roteirista.md": {
-   "0ecabba6533669af": "5.7",
+   "0ecabba6533669af": "anterior-5.7",
    "1cb48e8b86812bc7": "5.7",
    "33b312059bf15eb1": "4.1",
-   "a67fc347f674fdda": "5.7"
+   "a67fc347f674fdda": "anterior-5.7"
   },
   ".claude/skills/pauta/melhorias.md": {
    "4c0691bf9d6d0129": "4.1"
