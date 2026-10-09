@@ -50,6 +50,31 @@ function Remover($caminho, $rotulo) {
     return $liberado
 }
 
+# Sobras de programa antigo e jogo: a tabela unica que o diagnostico mede e o limpar apaga.
+# Cada id e o que a pessoa escolhe item por item no bloco 3.
+$Global:Sobras = [ordered]@{
+    'eclipse'       = @{ Rotulo = 'Eclipse (.p2)';                   Caminhos = @((Join-Path $env:USERPROFILE '.p2')) }
+    'gradle'        = @{ Rotulo = 'Gradle';                          Caminhos = @((Join-Path $env:USERPROFILE '.gradle')) }
+    'maven'         = @{ Rotulo = 'Maven';                           Caminhos = @((Join-Path $env:USERPROFILE '.m2')) }
+    'android'       = @{ Rotulo = 'Android SDK (chave de teste e emuladores)'; Caminhos = @((Join-Path $env:USERPROFILE '.android')) }
+    'androidstudio' = @{ Rotulo = 'Android Studio 2021';             Caminhos = @((Join-Path $env:LOCALAPPDATA 'Google\AndroidStudio2021.1')) }
+    'fortnite'      = @{ Rotulo = 'Fortnite';                        Caminhos = @((Join-Path $env:LOCALAPPDATA 'FortniteGame')) }
+    'pubg'          = @{ Rotulo = 'PUBG';                            Caminhos = @((Join-Path $env:LOCALAPPDATA 'TslGame')) }
+    'battlenet'     = @{ Rotulo = 'Battle.net';                      Caminhos = @((Join-Path $env:LOCALAPPDATA 'Battle.net'), (Join-Path $env:APPDATA 'Battle.net'), (Join-Path $env:ProgramData 'Battle.net_components')) }
+    'psnow'         = @{ Rotulo = 'PlayStation Now';                 Caminhos = @((Join-Path $env:APPDATA 'playstation-now')) }
+    'tencent'       = @{ Rotulo = 'Tencent';                         Caminhos = @((Join-Path $env:APPDATA 'Tencent')) }
+    'mcafee'        = @{ Rotulo = 'McAfee (resto de desinstalacao)'; Caminhos = @((Join-Path $env:APPDATA 'McAfee')) }
+}
+
+# Imprime as sobras acima de 10 MB: tamanho, id e rotulo
+function MostrarSobras() {
+    foreach ($id in $Global:Sobras.Keys) {
+        $b = 0
+        foreach ($c in $Global:Sobras[$id].Caminhos) { $b += (Bytes $c) }
+        if ($b -gt 10MB) { Diga ('{0,9:N0} MB  {1}  {2}' -f ($b / 1MB), $id, $Global:Sobras[$id].Rotulo) }
+    }
+}
+
 # Top N subpastas por tamanho
 function TopPastas($base, $n) {
     if (-not (Test-Path -LiteralPath $base)) { return }

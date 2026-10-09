@@ -27,9 +27,10 @@ Rodar os comandos de leitura e classificar cada item em verde, amarelo ou vermel
 
 ### 2. Backup
 
-- `git rev-parse --git-dir` (é repositório?), `git remote get-url origin` (tem nuvem?), `git status --short` (tem coisa não salva?), `git log -1 --format=%cd` (último commit), `git status -sb` (está "ahead", ou seja, commit que não subiu?)
+- `git rev-parse --git-dir` (é repositório?), `git rev-parse --show-prefix` (vazio: esta pasta é o topo do próprio repositório; com texto, ela é pedaço de um repositório de fora), `git remote get-url origin` (tem nuvem?), `git status --short` (tem coisa não salva?), `git log -1 --format=%cd` (último commit), `git status -sb` (está "ahead", ou seja, commit que não subiu?)
 - Existe `.backup-falhou` na raiz?
 - `.claude/settings.json` tem o hook de auto-sync? (procurar `auto-sync.mjs` dentro do bloco `hooks.Stop`) E o arquivo `.claude/hooks/auto-sync.mjs` existe?
+- **Vermelho:** `--show-prefix` com texto: "esta pasta está dentro de outro repositório; o backup não roda aqui. Conserto: `/syncar`".
 - **Vermelho:** sem repositório ou sem remote (o trabalho existe só neste computador), ou `.backup-falhou` presente, ou commits "ahead" sem push. Conserto: `/syncar`.
 - **Amarelo:** hook ou script ausente enquanto a regra 5 do `AGENTS.md` diz que o hook salva sozinho. Conserto: copiar `.claude/hooks/auto-sync.mjs` de `../_modelo/` (sem o `.test.mjs`) e reaplicar o bloco `Stop` do `settings.json` do molde. Se a regra 5 diz que não existe backup automático (a pessoa recusou o auto-sync no `/setup`), é o combinado: verde, e o `/syncar` ao fim das sessões é o caminho.
 
@@ -45,6 +46,8 @@ Rodar os comandos de leitura e classificar cada item em verde, amarelo ou vermel
 - Listar `.claude/skills/*/SKILL.md`. Cada um tem frontmatter com `name` e `description`?
 - Existe algum `.md` solto direto em `.claude/skills/` (fora de pasta)? Esse não carrega.
 - O `AGENTS.md` cita alguma skill que não existe na pasta?
+- Skill pessoal com o mesmo nome: `node .claude/skills/checar/scripts/skills-repetidas.mjs` lista as pastas de `~/.claude/skills/` com o nome de uma skill deste projeto, ou `nenhuma`. A skill pessoal roda no lugar da do projeto.
+- **Amarelo:** nome repetido, "a sua versão pessoal de /<nome> roda no lugar da deste projeto". Conserto: renomear ou tirar a pasta de `~/.claude/skills/`.
 - **Vermelho:** skill sem frontmatter ou `.md` solto. Conserto: mover pra `.claude/skills/<nome>/SKILL.md` e completar o frontmatter. Depois recarregar a janela do VS Code (Ctrl+Shift+P no Windows, Cmd+Shift+P no Mac, "Reload Window").
 
 ### 5. Ponte do Codex
@@ -70,7 +73,7 @@ Rodar os comandos de leitura e classificar cada item em verde, amarelo ou vermel
 ### 8. Mesa (o que entra em toda conversa)
 
 - Rodar `node <pasta-mãe>/_ferramentas/medir-mesa.mjs .` (o script mora na `_ferramentas/` da pasta-mãe). Ele lista três camadas, com tokens estimados por arquivo e o total antes da primeira palavra do usuário: o `CLAUDE.md` global, a cadeia de `CLAUDE.md`/`AGENTS.md` desta pasta até a raiz, e os quatro arquivos do `_contexto/` que o `AGENTS.md` manda ler sempre (marcados `[contexto]`).
-- **Arquivo de regra** (`CLAUDE.md`, `AGENTS.md`), **vermelho** acima de 6.000 tokens, **amarelo** acima de 2.000. Conserto: manter só regra nele; história, lista de comandos e nota de ferramenta vão pro `_contexto/` (no global, pra `~/.claude/contexto/`) e entram só quando a tarefa pede. Regra 11 do `AGENTS.md`.
+- **Arquivo de regra** (`CLAUDE.md`, `AGENTS.md`), **vermelho** acima de 6.000 tokens, **amarelo** acima de 2.000. Conserto: manter só regra nele; história, lista de comandos e nota de ferramenta vão pro `_contexto/` (no global, pra `~/.claude/contexto/`) e entram só quando a tarefa pede. Regra 11 do `AGENTS.md`. No `AGENTS.md` do projeto, medir também o molde (`node <pasta-mãe>/_ferramentas/medir-mesa.mjs <pasta-mãe>/_modelo`) e propor corte só quando o projeto passar o molde em mais de 1.000 tokens, e só no que o projeto acrescentou. Regra que veio do kit não se corta: quem enxuga o molde é o kit, e a versão nova chega pelo `/atualizar-sabinos`. Dentro dessa margem, o amarelo diz "o tamanho vem do molde do kit, nada a cortar aqui".
 - **Arquivo do `_contexto/`**, limiar mais apertado porque os quatro carregam juntos: **vermelho** acima de 1.500 tokens, **amarelo** acima de 800. Conserto: `/atualizar`, que consolida e manda o que virou história pro `_contexto/arquivo/`. Memória que só cresce é o jeito mais silencioso de encarecer toda conversa.
 
 ### 9. Travas de segurança
@@ -80,8 +83,13 @@ Um hook que não roda (Node não instalado, script apagado) vira erro não bloqu
 - A pasta `.claude/hooks/` existe e o `barrar-perigoso.mjs` está dentro dela?
 - O `settings.json` tem o bloco `hooks.PreToolUse` apontando pra `barrar-perigoso.mjs`, com o `matcher` cobrindo **as duas** ferramentas (`"Bash|PowerShell"` ou `"Bash, PowerShell"`, nunca só `"Bash"` sozinho, senão a trava do PowerShell morre em silêncio e ninguém percebe)?
 - O `settings.json` tem as regras de permissão do `.env` (`ask` pra `Read(./.env)` e `Read(./.env.*)`, `deny` pra `Read(./secrets/**)` e `Read(./.secrets/**)`)?
-- A trava responde de verdade: rodar `node -e "process.stdout.write(JSON.stringify({tool_input:{command:'rm -r'+'f /'}}))" | node .claude/hooks/barrar-perigoso.mjs` (o `node -e` monta o JSON sem depender de aspas do terminal do usuário, Windows ou Mac; a receita perigosa vai partida em duas pontas, `'rm -r'+'f /'`, pra esse comando de teste não carregar o próprio texto que a trava barra e acabar bloqueado por ela mesma antes de rodar) e conferir que o comando sai com código de erro e imprime o motivo do bloqueio. Só essa prova que a trava está viva; as outras três só provam que o arquivo existe.
-- **Vermelho:** pasta ou script faltando, hook não referenciado no `settings.json`, matcher cobrindo só uma ferramenta, regra de permissão do `.env` ausente, ou a trava não bloqueou o comando de teste. Conserto: copiar `.claude/hooks/barrar-perigoso.mjs` de `../_modelo/` (sem o `.test.mjs`, que é só de desenvolvimento) e reaplicar o bloco `PreToolUse` (matcher `"Bash|PowerShell"`) e as regras do `.env` no `settings.json`.
+- A trava responde de verdade: rodar `node -e "process.stdout.write(JSON.stringify({tool_input:{command:'rm -r'+'f /'}}))" | node .claude/hooks/barrar-perigoso.mjs` (o `node -e` monta o JSON sem depender de aspas do terminal do usuário, Windows ou Mac; a receita perigosa vai partida em duas pontas, `'rm -r'+'f /'`, pra esse comando de teste não carregar o próprio texto que a trava barra e acabar bloqueado por ela mesma antes de rodar) e conferir que o comando sai com código de erro e imprime o motivo do bloqueio. Isso prova que o script barra; as outras três só provam que o arquivo existe.
+- A trava está ligada (ponta a ponta, o único teste que passa pelo `settings.json`):
+  1. Criar uma pasta de teste com nome novo: `node -e "const n='.trava-teste-sabinos-'+Date.now();require('fs').mkdirSync(n);console.log(n)"`. O comando falha se o nome já existe, então nada de verdade entra na prova; anotar o nome que ele imprimiu.
+  2. Tentar apagar essa pasta pela ferramenta, como um pedido comum: no Bash, `rm -rf <nome>`; no PowerShell, `Remove-Item -Recurse <nome>` (nunca `rm -rf` no PowerShell, que falha por parâmetro e parece trava).
+  3. Barrado com a mensagem "Pare aqui": a trava está ligada (testado agora), e esse "pare" é o esperado neste item e dispensa explicação. Apagou: VERMELHO, trava desligada. Falhou sem o "Pare aqui": amarelo, a prova não valeu; dizer o erro.
+  4. Tirar a pasta vazia: `node -e "require('fs').rmdirSync('<nome>')"`. É a exceção combinada à regra 12 do `AGENTS.md`, que manda parar quando a trava barra: vale só aqui, porque a pasta nasceu no passo 1 desta prova e o `rmdirSync` não apaga pasta com conteúdo. Em qualquer outro bloqueio, parar e explicar.
+- **Vermelho:** pasta ou script faltando, hook não referenciado no `settings.json`, matcher cobrindo só uma ferramenta, regra de permissão do `.env` ausente, ou a trava não bloqueou o comando de teste, ou a pasta de teste foi apagada (trava fora do `settings.json` ou desligada). Conserto: copiar `.claude/hooks/barrar-perigoso.mjs` de `../_modelo/` (sem o `.test.mjs`, que é só de desenvolvimento) e reaplicar o bloco `PreToolUse` (matcher `"Bash|PowerShell"`) e as regras do `.env` no `settings.json`.
 
 ### 10. Agendador
 
@@ -111,7 +119,7 @@ Comandos       verde    9 comandos carregando (testado agora)
 Ponte Codex    amarelo  não existe (só importa se você usar o Codex) (testado agora)
 Ferramentas    amarelo  Playwright e Gmail lidos agora (testado agora); Buffer só aparece no /mcp, não dá pra testar daqui, nada a consertar (só configurado)
 Padrão         verde    CLAUDE.md e AGENTS.md no formato certo (testado agora)
-Mesa           amarelo  AGENTS.md com 2.100 tokens e empresa.md com 950 (total 4.900 antes da sua primeira palavra) (testado agora, medir-mesa.mjs rodou). Conserto: só regra fica no AGENTS.md, e /atualizar consolida o _contexto/
+Mesa           amarelo  AGENTS.md com 3.100 tokens, 400 acima do molde do kit, e empresa.md com 950 (total 5.900 antes da sua primeira palavra) (testado agora, medir-mesa.mjs rodou). O tamanho do AGENTS.md vem do molde do kit, nada a cortar aqui; /atualizar consolida o _contexto/
 Travas         verde    barrar-perigoso responde ao comando de teste, .env em ask e secrets em deny (testado agora)
 Agendador      verde    nenhum robô atrasado (testado agora)
 

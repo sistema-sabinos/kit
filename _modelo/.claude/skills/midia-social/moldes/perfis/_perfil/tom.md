@@ -1,7 +1,7 @@
 # Tom do perfil
 
-> E o jeito de falar. A /pauta e o revisor dela leem este arquivo antes de escrever qualquer roteiro,
-> entao quanto mais concreto, mais o texto sai com a sua cara.
+> A voz da loja mora em `marca/tom-de-voz.md` (preenchida no /setup). Aqui vai so o que este perfil
+> fala diferente dela, por exemplo marca pessoal mais solta que a loja. Campo em branco segue a marca.
 
 ## Tratamento
 

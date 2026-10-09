@@ -88,8 +88,9 @@ pessoa ler.
   informativa, presente e moda pedem voz animada. A voz muda a duração da fala.
 - `foto`: caminho da imagem que vai pro Veo, a partir da pasta do projeto.
   Obrigatório quando a coleta veio de um concorrente (`--de-espionagem`): foto do
-  fornecedor ou do seu produto, sem logo e sem texto. Fora desse caso, sem
-  `foto` o script usa a primeira foto do anúncio.
+  fornecedor ou do seu produto, sem logo e sem texto. Sem `foto`, o script usa
+  a primeira foto do anúncio. A fase 2 usa sempre a `foto` do roteiro; `--foto`
+  só é aceito se for a mesma.
 - `vozUnica`: com `true`, a narração cobre o vídeo todo e a pessoa em cena fica
   de boca fechada (senão a boca dela fica fora de sincronia com a voz).
 - `musica.estilo`: `calma`, `animada`, `moderna` ou `elegante`. Cada um diz pra
@@ -143,12 +144,12 @@ tabela de preços, e é o preço dessa linha que você passa. A cotação do dó
 fica: em 2026-10-04, 4 blocos custavam cerca de US$ 1,70 e 7 blocos cerca de
 US$ 2,95, somando clipes e música.
 
-Mostre também, sempre, a foto que vai pro Veo: a do campo `foto` do roteiro (ou
-a do `--foto=<imagem>`), e, sem nenhuma das duas, a primeira foto do anúncio, que
-está em `coleta.json`. É ela que alimenta o Veo. Na coleta de concorrente a foto
-é a do campo `foto`, do fornecedor ou do seu produto: foto de terceiro fere a
-regra do ML. O carimbo guarda essa foto, e trocar a imagem depois do sim derruba
-a aprovação.
+Mostre também, sempre, a foto que vai pro Veo: a do campo `foto` do roteiro e,
+sem ela, a primeira foto do anúncio, que está em `coleta.json`. É ela que
+alimenta o Veo. O dry-run imprime a linha "foto que vai pro Veo"; é ela que você
+mostra. Na coleta de concorrente a foto é a do campo `foto`, do fornecedor ou do
+seu produto: foto de terceiro fere a regra do ML. O carimbo guarda essa foto, e
+trocar a imagem depois do sim derruba a aprovação.
 
 Só depois do sim da pessoa, carimbe:
 
@@ -188,10 +189,10 @@ folga de US$ 0,01 por bloco com algo faltando (a voz custa frações de centavo)
 
 O que ele faz sozinho:
 
-1. baixa a foto principal do anúncio (ou usa `--foto=<imagem>`) e ajusta pra
-   vertical, completando com branco. Por isso a foto de referência tem que ter
-   fundo claro. Na coleta de concorrente, `--foto` é obrigatório e tem que ser a
-   mesma imagem do campo `foto` aprovado no gate 1;
+1. usa a imagem do campo `foto` aprovado no gate 1 (sem ela, baixa a foto
+   principal do anúncio) e ajusta pra vertical, completando com branco. Por isso
+   a foto de referência tem que ter fundo claro. Foto declarada que sumiu da
+   pasta, ou `--foto=<imagem>` diferente dela, para antes de gastar;
 2. gera um clipe por bloco;
 3. mantém a mesma pessoa: o último quadro do primeiro bloco com pessoa vira a
    imagem de partida dos blocos de pessoa seguintes;

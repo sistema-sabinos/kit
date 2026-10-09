@@ -31,7 +31,7 @@ if (ehCli) {
   }
   let lista
   try { lista = lerPlaylist(url) } catch (e) {
-    console.error(`Nao consegui abrir a playlist. Confira se o link abre no navegador sem login e se o yt-dlp esta instalado (/configurar-video instala). Detalhe: ${e.message.split('\n')[0]}`)
+    console.error(`Nao consegui abrir a playlist. Confira se o link abre no navegador sem login e se o yt-dlp esta instalado (Windows: winget install --id yt-dlp.yt-dlp -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity; Mac: brew install yt-dlp; depois feche todas as janelas do VS Code e abra de novo). Detalhe: ${e.message.split('\n')[0]}`)
     process.exit(1)
   }
   const r = ordenarAulas(lista.itens)

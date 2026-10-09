@@ -19,7 +19,7 @@ conversa; mesma resposta.
 Procure o ícone do Claude na lateral do VS Code e clique. Escreva `oi` e
 aperte Enter. Ele faz as perguntas sobre você e o seu negócio ali mesmo, uma
 por vez, quase sempre com opções de clicar, e monta o seu sistema: pasta do
-projeto, memória, comandos sob medida pro seu negócio. Se você vende em marketplace, ele oferece também o pacote que cuida dos seus anúncios, e os de vídeo e de redes sociais. Se vende direto pro cliente, pelo WhatsApp ou por encomenda, oferece o pacote de loja (atendimento, caixa, cobrança e, pra quem é MEI, o calendário do MEI). Se quer criar um app ou sistema seu, oferece o pacote criar app.
+projeto, memória, comandos sob medida pro seu negócio. Se você vende em marketplace, ele oferece também o pacote que cuida dos seus anúncios e o de vídeo. Se você posta em rede social, oferece o pacote de redes sociais, vendendo em marketplace ou não. Se vende direto pro cliente, pelo WhatsApp ou por encomenda, oferece o pacote de loja (atendimento, caixa, cobrança e, pra quem é MEI, o calendário do MEI). Se é MEI e vende só em marketplace, oferece o calendário do MEI do mesmo jeito. Se quer criar um app ou sistema seu, oferece o pacote criar app.
 Prefere escrever com calma? As mesmas perguntas estão no `RESPONDA-AQUI.txt`:
 responda, salve e diga oi.
 

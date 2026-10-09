@@ -32,8 +32,8 @@ final é da pessoa. Nada aqui é limiar automático.
 - `_contexto/mercado-livre.md`: o piso de margem (`margem_minima_rs`,
   `margem_minima_pct`, `margem_minima_kit_rs`), `imposto_pct`, `reputacao` e
   `loja_oficial`
-- `_contexto/vereditos-legais.md`: só produto com PODE ou PODE COM RESSALVA
-  válido entra no plano
+- `_contexto/vereditos-legais.md`: só entra no plano produto com PODE ou PODE
+  COM RESSALVA válido do produto ou do tipo dele (Gate 0 da `/mercado-livre`)
 - `.claude/skills/mercado-livre/referencias/precificacao.md` e `contratos.md`
 - `_contexto/empresa.md`, `_contexto/preferencias.md`, `_contexto/estrategia.md`
 
@@ -58,7 +58,7 @@ Entra no plano quem tem, ao mesmo tempo:
 - margem projetada dentro do piso da configuração, em reais e em porcentagem,
   os dois juntos (em ticket baixo o valor em reais manda); quem fica abaixo do
   piso só continua como candidato a kit (passo 3A), nunca como individual
-- veredito legal válido
+- veredito válido do produto ou do tipo dele (Gate 0 da `/mercado-livre`)
 
 A margem projetada se calcula pela `precificacao.md`: preço na mediana, menos a
 comissão da categoria (Clássico; Premium é mais 5 pontos), menos o custo de
@@ -170,8 +170,12 @@ Ao aprovar, pra cada anúncio aprovado:
 
 1. Criar `dados/pipeline/<slug>/decisao.json` (contrato 3 do `contratos.md`,
    com `aprovado: true` e a data) e `status.json` (contrato 2, `etapa_atual:
-   "decidido"`, etapa `decisao` com `aprovado`). Slug: minúsculas, sem acento,
-   hífen no lugar de espaço.
+   "decidido"`, etapa `decisao` com `aprovado`), copiando o nome do produto
+   letra por letra do `catalogo-analisado.csv` e as variações da coluna
+   `variacoes`. Slug: minúsculas, sem acento, hífen no lugar de espaço.
+   `marca_autorizada` fica `null`; só quando a pessoa disser que é a dona da
+   marca ou revendedora autorizada por escrito, perguntar o nome e gravar ali
+   (sem isso, a ficha leva `Genérica`).
 2. Ressalva do veredito legal entra em `pendencias` do `status.json`.
 3. Atualizar a etapa `decisao` de `dados/pipeline/_categorias/<f>-<categoria>.json`
    (contrato 1) com o caminho do plano e os slugs gerados.

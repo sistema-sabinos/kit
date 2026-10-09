@@ -32,12 +32,14 @@ skill; `_contexto/`, `dados/`, `fornecedores/` e `anuncios/` são da raiz do pro
 
 ## Antes de tudo: você já vende?
 
-Se `_contexto/mercado-livre.md` não existe:
+Primeiro, `_contexto/trilha.md`: se existe e o `etapa_atual` dele é menor que
+8, dizer em que etapa a pessoa está e oferecer continuar a trilha, exista ou
+não o `mercado-livre.md` (a `/comecar-a-vender` grava um mínimo dele na etapa
+6). Aqui não se pergunta se ela já vende.
 
-- `_contexto/trilha.md` existe e o `etapa_atual` dele é menor que 8: dizer em
-  que etapa a pessoa está e oferecer continuar a trilha. Aqui não se pergunta
-  se ela já vende.
-- Sem trilha, a primeira pergunta é: "Você já vende no Mercado Livre?" (por
+Sem trilha e sem `_contexto/mercado-livre.md`:
+
+- A primeira pergunta é: "Você já vende no Mercado Livre?" (por
   que pergunto: quem ainda não vende precisa de outras coisas antes, como MEI
   e fornecedor; exemplos: "já vendo há um ano" / "ainda não, estou começando
   do zero"). Já vende: segue daqui, pela configuração abaixo.
@@ -46,8 +48,10 @@ Se `_contexto/mercado-livre.md` não existe:
 
 ## Primeiro de tudo: existe configuração?
 
-Se `_contexto/mercado-livre.md` não existir, rodar a entrevista antes de
-qualquer outra coisa. Uma pergunta por mensagem, no formato de 4 partes
+Se `_contexto/mercado-livre.md` não existir, ou existir sem
+`margem_minima_rs`, sem `margem_minima_pct` ou (com dropshipping) sem
+`fornecedores/<f>/fornecedor.md`, rodar a entrevista antes de qualquer outra
+coisa, só nos campos vazios. Uma pergunta por mensagem, no formato de 4 partes
 (pergunta simples, por que pergunto, dois exemplos, repergunta se vier vago).
 Pular o que `empresa.md` já responde.
 
@@ -172,9 +176,15 @@ própria conversa roda a skill especialista, na mesma ordem.
 
 ## Gate 0, antes de gastar qualquer pesquisa
 
-Produto novo não entra sem veredito válido em `_contexto/vereditos-legais.md`
-(PODE, com menos de 6 meses). Veredito ausente, vencido, NÃO PODE ou
-INCONCLUSIVO: rodar `/pode-vender` antes da pesquisa. Reprovado não avança e
+Esta é a regra única do Gate 0; as outras skills só apontam pra cá. Roda no
+passo 0 de `/mercado-livre <categoria>`, antes de despachar o `ml-minerador`,
+sobre os produtos OK e CUIDADO do `catalogo-analisado.csv`. Agrupar por tipo
+(ex.: "luminária de mesa"). Tipo não regulado: um veredito PODE válido do tipo
+em `_contexto/vereditos-legais.md` (com menos de 6 meses) cobre todos os
+produtos dele. Categoria regulada (suplemento, alimento, cosmético, saneante,
+eletrônico com homologação): veredito do produto ou do ingrediente. Tipo ou
+produto sem veredito válido (ausente, vencido, NÃO PODE ou INCONCLUSIVO) roda
+`/pode-vender` antes da pesquisa. Reprovado não avança e
 não consome pesquisa. PODE COM RESSALVA segue, e a ressalva entra em
 `status.json` como pendência que o `ml-auditor` cobra. Pesquisa de mercado mede
 demanda, e demanda não diz se é legal vender.
@@ -202,8 +212,15 @@ pra tocar agora, oferecer continuar o mais avançado.
 **`/mercado-livre <produto>`** (ex.: "leva o kit de suspiros até publicar"):
 ler `dados/pipeline/<slug>/status.json` e continuar da etapa atual:
 
-1. Copy pendente: despachar `ml-copywriter`. Mostrar o recibo em 5 linhas e
-   seguir (se a pessoa quiser revisar, pausar).
+1. Copy pendente: o `ml-copywriter` não roda comando (lê texto de concorrente),
+   então a conversa principal roda por ele. Antes do despacho, com o Chrome
+   dedicado aberto, rodar o simulador da `/montar-anuncio` no `alvo_pos_desconto`
+   da decisão, nas duas modalidades, e mandar no despacho a `tarifa_venda` e o
+   `custo_envio` de cada uma, com a data; sem Chrome, despachar sem, e o copy
+   leva a comissão como pendência. Depois do recibo, com a /humanizar no
+   projeto, rodar `node .claude/skills/humanizar/scripts/varrer.mjs
+   dados/humanizar/copy-<slug>.txt` e juntar o achado ao recibo como aviso.
+   Mostrar o recibo em 5 linhas e seguir (se a pessoa quiser revisar, pausar).
 2. Imagens pendentes: conferir `anuncios/<slug>/fotos-cruas/`. Vazia é
    bloqueio: pedir as fotos e parar. Senão, antes de despachar, rodar
    `node .claude/skills/gerar-imagens/scripts/estilo.mjs --slug <slug>`. Saída 2
@@ -264,9 +281,11 @@ perto de publicar sem bloqueio e propor continuar ele.
   seguir pra outro produto se houver.
 - Paralelismo: copies de anúncios diferentes rodam em paralelo, espionagens
   também. Rodar `abrir-chrome.mjs` antes de despachar, pra não abrir dois Chromes. O `ml-designer` é sequencial por produto.
-- Fim de ciclo: ao publicar, acrescentar uma linha curta em
-  `_contexto/estrategia.md` e lembrar: processo fechou, próximo produto vale
-  conversa nova.
+- Fim de ciclo: ao publicar, acrescentar uma linha no diário (caminho no Mapa
+  do `AGENTS.md`): data, slug, código do anúncio e preço; o `status.json` e o
+  `publicacao.json` seguem sendo o registro da esteira. No `estrategia.md` só
+  entra mudança de foco, se a pessoa decidir uma. Lembrar: processo fechou,
+  próximo produto vale conversa nova.
 - Regra de plataforma citada em qualquer referência leva data. Antes de agir
   sobre ela, conferir ao vivo.
 

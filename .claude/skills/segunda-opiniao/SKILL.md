@@ -62,7 +62,8 @@ com ela.
 
 Várias confirmações da mesma tarefa (o `/setup` pergunta várias coisas seguidas)
 viram um pacote só, revisado uma vez antes do ok final, nunca uma revisão por
-pergunta. Na dúvida entre duas doses, a maior.
+pergunta. Quando a skill da tarefa diz a dose, ela vence esta tabela, menos no que
+gasta dinheiro: aí vale sempre a completa. Sem dose dita e na dúvida, a maior.
 
 ## Passo 3, o revisor
 

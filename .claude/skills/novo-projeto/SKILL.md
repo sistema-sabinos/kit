@@ -197,6 +197,13 @@ projeto principal.
 
 ## Passo 2, descoberta de skills
 
+Antes de escolher as skills, fazer as ofertas de pacote do Passo 3, na ordem em que
+aparecem lá: Anúncio pago, Venda em marketplace, Vídeo, Mídia social, Loja e Criar app.
+Aqui só se pergunta e se anota a resposta; a cópia continua no Passo 3. A escolha das 3 a
+6 skills considera o que entrou: com o pacote de mídia social aceito, `publicar-instagram`
+e `roteiro-post` da biblioteca ficam fora (o pacote já posta, e a `/pauta` faz roteiro e
+carrossel em `producao/`), senão ficam duas rotas pro mesmo trabalho.
+
 Detectar o perfil do projeto novo a partir das respostas do Passo 1:
 `agencia` (múltiplos clientes com processo de entrega), `freelancer` (solo,
 vende serviço), `solopreneur` (negócio próprio, produto ou audiência),
@@ -256,7 +263,7 @@ Guardar a escolha para aplicar na cópia do `settings.json` abaixo.
 
 Perguntar na conversa, no formato de 4 partes:
 
-> "Você investe em anúncio pago hoje, ou pretende investir nos próximos meses?
+> "Você investe em anúncio pago no Instagram ou no Facebook hoje, ou pretende investir nos próximos meses?
 >
 > Pergunto porque, se sim, eu já instalo aqui o comando que cuida disso: ele
 > calcula quanto vale um resultado pro seu negócio e, toda vez que você chamar,
@@ -269,7 +276,8 @@ Resposta positiva ou "pretendo": copiar a pasta `_modelo/.claude/skills/trafego/
 inteira, com `referencias/` e `scripts/` dentro, pro `.claude/skills/` do
 projeto, e registrar em `_contexto/ferramentas.md` que a skill está instalada e
 ainda sem régua, porque a régua nasce na primeira vez que a pessoa rodar
-`/trafego`.
+`/trafego`. Quem anuncia só dentro do Mercado Livre (Mercado Ads) não recebe a
+`trafego`: o Ads vem no pacote de marketplace, oferecido logo abaixo.
 
 Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o `/trafego`
 existe e pode ser instalado depois com o `/mapear`, que acha a skill em
@@ -318,6 +326,14 @@ inteiro ou não vai: as skills dividem a mesma biblioteca de scripts. Depois:
 - Em `_contexto/ferramentas.md`: `| pacote Mercado Livre | instalado | <AAAA-MM-DD> | sem configuração: nasce na primeira /mercado-livre |`
 - Em `tarefas.md`: "rodar `/mercado-livre` (ele pergunta se você já vende e, se não, abre a trilha do zero), e o `/conectar` (seção Mercado Livre e Bling) pra ligar as contas".
 
+MEI que vende em marketplace: quando o pacote de loja não entrar (o bloco Loja vem mais
+abaixo), fazer depois dele a pergunta do regime de lá. Com MEI, oferecer a `/mei` (o DAS
+de todo mês, a declaração anual e o teto, somando a venda do marketplace anotada nela),
+dizendo que ela traz junto os scripts do caixa (`atendimento`, `caixa` e `cobrar`), que
+ficam quietos até alguém chamar o `/caixa`. Com o sim, copiar as quatro pastas e anotar
+`**Registro:** MEI` no `_contexto/empresa.md`. Os outros regimes se anotam igual ao bloco
+Loja, sem copiar nada.
+
 Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o pacote de
 marketplace existe e pode ser instalado depois pelo `/mapear`.
 
@@ -362,14 +378,14 @@ formato de 4 partes:
 > usar; a única parte paga é uma análise de vídeo mais caprichada, opcional e
 > sempre avisada antes. Quer que eu instale?
 >
-> Pergunto porque ele é grande (seis comandos que trabalham juntos), então só
+> Pergunto porque ele é grande (sete comandos que trabalham juntos), então só
 > entra se fizer sentido.
 >
 > Tipo: 'quero, pra loja', 'quero, mas pro meu perfil pessoal', ou 'agora não'."
 
-Resposta positiva: copiar pro projeto as seis pastas inteiras de
+Resposta positiva: copiar pro projeto as sete pastas inteiras de
 `_modelo/.claude/skills/` (`midia-social`, `pauta`, `decupar-referencia`,
-`publicar-social`, `auditar-instagram`, `gerenciar-youtube`). Nunca copiar
+`publicar-social`, `auditar-instagram`, `gerenciar-youtube`, `carrossel`). Nunca copiar
 arquivo terminado em `.test.mjs` nem pasta `node_modules/`. O pacote vai
 inteiro ou não vai: as skills dividem a mesma biblioteca de scripts. Copiar
 também, se ainda não estiverem no projeto, a `assistir-video` e a `transcribe`:
@@ -494,8 +510,8 @@ perguntar outro nome antes de seguir.
 
 - `.claude/settings.json`: copiar como está se o auto-sync ficou ligado; se a
   pessoa recusou, copiar sem o bloco `Stop`. Nesse caso de recusa, a regra 5 do
-  `AGENTS.md` do projeto (que hoje descreve o hook salvando tudo sozinho e
-  proíbe oferecer `/syncar`) precisa ser reescrita: dizer que não existe backup
+  `AGENTS.md` do projeto (que descreve o hook salvando sozinho com o GitHub ligado
+  e, sem GitHub, manda lembrar o `/syncar` uma vez) precisa ser reescrita: dizer que não existe backup
   automático configurado e que o assistente deve sugerir `/syncar` ao fim das
   sessões de trabalho. Caminho padrão (auto-sync aceito) mantém a regra 5 como
   está no `_modelo/AGENTS.md`.
@@ -508,6 +524,9 @@ perguntar outro nome antes de seguir.
 - `.claude/hooks/auto-sync.mjs`, só o script (nunca o `auto-sync.test.mjs`). É o
   backup automático que o bloco `Stop` do `settings.json` chama. Vai sempre, como a
   trava: sem ele o projeto nasce com o `settings.json` apontando pra um script que não existe.
+- `.claude/detalhe-regras.md`, copiar como está. É o detalhe das regras (formato
+  do diário e do recado, rotina, criação de skill, Codex) que o `AGENTS.md` manda
+  ler antes de escrever; sem ele o Mapa aponta pra um arquivo que não existe.
 - `.gitignore`, copiar como está.
 - `.gitattributes`, copiar como está. Faz o diário e as decisões, que só recebem
   linha nova, juntarem as duas versões sozinhos quando dois computadores escrevem
@@ -521,7 +540,9 @@ perguntar outro nome antes de seguir.
   aviso `NOT CONFIGURED` no projeto final. No `ferramentas.md`, uma linha pra
   cada um dos sete assuntos, como o `/setup` faz (Passo 5): o que já vale pra
   pessoa em qualquer projeto vem do `ferramentas.md` do projeto irmão; o que
-  for só deste projeto, perguntar numa mensagem.
+  for só deste projeto, perguntar numa mensagem. No `preferencias.md`, o
+  parágrafo do nível (o que o molde marca com `<!-- nível: iniciante ... -->`)
+  segue o do projeto irmão: se lá ele já virou a versão direta, aqui também.
 - `marca/design-guide.md`: perguntar rapidamente se este projeto muda algo do
   visual já usado nos outros projetos da pessoa. Identidade própria, preencher
   com ela. Mesma identidade dos outros, copiar o `design-guide.md` já
@@ -580,8 +601,9 @@ Partir de `_modelo/AGENTS.md` inteiro e mexer só no título e na seção
 pelo nome do projeto novo e por um resumo real do que ele é, vindo das
 respostas do Passo 1. As outras seções (`## Mapa`, `## Tabela de destinos`,
 `## Gatilhos`, `## Recall`, `## Rotinas`, `## Regras de operação`,
-`## Estrutura de pastas`) não se mexem, tirando a Estrutura de pastas (abaixo)
-e a regra 5 quando o auto-sync foi recusado (acima). Onde o texto cita a
+`## Estrutura de pastas`, `## Codex`) não se mexem, com três exceções: a regra 5
+quando o auto-sync foi recusado (acima), a lista de `## Estrutura de pastas` e as
+linhas do perfil que entram na `## Tabela de destinos` (as duas abaixo). Onde o texto cita a
 biblioteca por `../_modelo/templates/skills/` (o relativo da pasta do projeto
 até a pasta-mãe, já que `templates/` não é copiada), só conferir que continua
 assim e deixar como está. Reescrever esse caminho de novo gera
@@ -594,8 +616,7 @@ arquivos.
 
 A lista de pastas dentro de "Estrutura de pastas" precisa refletir o que
 existe **de verdade** neste projeto, não o que está escrito no `_modelo/` nem
-no template do perfil: tirar a linha de `templates/` (a biblioteca não é
-copiada, só existe na pasta-mãe) e usar como
+no template do perfil: usar como
 inspiração a lista do template de perfil correspondente em
 `_modelo/templates/perfis/agents-md-<perfil>.md` (`agencia`, `freelancer`,
 `solopreneur` e `empresa` têm modelo pronto; `criador` parte do de
@@ -616,7 +637,8 @@ que não guarda pasta vazia.
 
 Criar na raiz do projeto com as pendências que apareceram na conversa:
 decisões adiadas (ex: identidade visual sem definir) e qualquer item que a
-pessoa mencionou querer resolver depois.
+pessoa mencionou querer resolver depois. As linhas do topo são as do Passo 4
+(Registrar e encerrar, item 2).
 
 ### Ponte pro Codex
 
@@ -691,9 +713,14 @@ qual é o próximo passo ao terminar cada etapa)".
    o `.gitignore` antigo, aberto, de quem veio de versão anterior à 4.4.
 2. Semear `_contexto/agora.md` do projeto:
    - **Onde paramos:** "Projeto recém-criado pelo SabinOS."
-   - **Pendências:** "Abrir esta pasta no VS Code e rodar /iniciar",
-     "/conectar pra ligar as ferramentas", "/mapear pra criar mais
-     comandos", "/syncar pra configurar o backup no GitHub".
+   - **Pendências:** fica vazia (só entra o que espera alguém de fora:
+     fornecedor, cliente, contador, plataforma).
+
+   E, no topo do `tarefas.md`, nesta ordem: "Abrir esta pasta no VS Code e
+   rodar /iniciar", "/conectar pra ligar as ferramentas", "/mapear pra criar
+   mais comandos" e, enquanto o projeto não tem GitHub ligado (o normal no
+   primeiro dia, com ou sem auto-sync), "/syncar pra ligar o backup no GitHub".
+   Essa linha é o lembrete único que a regra 5 do `AGENTS.md` pede.
 3. Registrar o projeto novo em `~/.claude/contexto/projetos.md` (criar a
    pasta e o arquivo se não existirem): uma linha com nome, pasta e o que o
    projeto faz, sem apagar as linhas dos projetos que já estavam lá. A seção
@@ -702,7 +729,7 @@ qual é o próximo passo ao terminar cada etapa)".
    Passo 3 do `/setup`). Mostrar a linha adicionada antes de gravar.
 4. Registrar a versão do SabinOS no projeto. Da pasta-mãe, rodar
    `node _ferramentas/atualizar-projeto.mjs plano <pasta-do-projeto>` e depois
-   `node _ferramentas/atualizar-projeto.mjs aplicar <pasta-do-projeto>`. Tudo sai
+   `node _ferramentas/atualizar-projeto.mjs aplicar <pasta-do-projeto> --registro`. Tudo sai
    "igual" e nada é trocado: o que fica é o recibo `.sabinos/instalado.json` e o
    motor guardado, que deixam o `/atualizar-sabinos` saber, na versão seguinte,
    o que veio do SabinOS e o que é da pessoa.
@@ -726,9 +753,11 @@ qual é o próximo passo ao terminar cada etapa)".
 
 - Gerar tudo do Passo 3 em diante de uma vez só, depois de fechados os
   Passos 0 a 2. Nunca criar arquivo por arquivo durante a conversa. As
-  confirmações do Passo 3 (auto-sync, anúncio pago, identidade visual e a
-  estrutura de pastas proposta) vêm antes de gerar, em bloco, e não contam como
-  quebrar essa regra.
+  confirmações do Passo 3 (auto-sync, identidade visual e a estrutura de pastas
+  proposta) vêm antes de gerar, cada uma no seu bloco, uma por vez, e não contam
+  como quebrar essa regra. Quando a conversa já deu a resposta, a opção
+  correspondente vem primeiro, com "(sugerido)". O anúncio pago e as ofertas de
+  pacote seguem a ordem do Passo 2.
 - Depois de gerar, mostrar só o resumo do que foi criado, não o conteúdo de
   cada arquivo linha por linha.
 - Resposta vaga ou em branco, perguntada uma vez e ainda vaga: aceitar o que

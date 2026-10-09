@@ -1297,16 +1297,107 @@ test('fase 1 da espionagem reprova roteiro sem foto propria declarada', () => {
   assert.equal(rodar([`--mlb=${MLB_CONCORRENTE}`, '--fase=1']).status, 0)
 })
 
-test('fase 2 da espionagem sem --foto sai 2 e lembra que foto de terceiro fere a regra do ML', () => {
-  prepararEspionagem(carimbado({ ...roteiroValido(), foto: fotoPropria() }))
+test('fase 2 da espionagem sem --foto segue com roteiro.foto', () => {
+  const f = fotoPropria()
+  prepararEspionagem(carimbado({ ...roteiroValido(), foto: f }))
+  const r = rodar([`--mlb=${MLB_CONCORRENTE}`, '--fase=2', '--dry-run'])
+  assert.equal(r.status, 0, r.stderr)
+  assert.ok(r.stderr.includes(`foto que vai pro Veo: ${f}`), r.stderr)
+})
+
+test('fase 2 da espionagem com roteiro sem foto sai 2 e lembra que foto de terceiro fere a regra do ML', () => {
+  prepararEspionagem(carimbado(roteiroValido()))
   for (const extra of [['--dry-run'], PRECOS_AUTORIZADO]) {
     const r = rodar([`--mlb=${MLB_CONCORRENTE}`, '--fase=2', ...extra])
     assert.equal(r.status, 2, r.stderr)
-    assert.match(r.stderr, /--foto=/)
+    assert.match(r.stderr, /"foto"/)
     assert.match(r.stderr, /fornecedor/)
     assert.match(r.stderr, /logo/)
     assert.match(r.stderr, /terceiro/)
   }
+})
+
+// F.1 (5.7): no anuncio proprio a foto aprovada no gate 1 era trocada pela
+// primeira foto do anuncio na fase 2.
+test('fase 2 de anuncio proprio usa a foto do roteiro', () => {
+  const f = fotoPropria('foto-do-roteiro.jpg')
+  preparar(carimbado({ ...roteiroValido(), foto: f }))
+  fs.writeFileSync(path.join(pasta, 'referencia.jpg'), 'foto do anuncio')
+  const r = rodar([`--mlb=${MLB}`, '--fase=2', '--dry-run'])
+  assert.equal(r.status, 0, r.stderr)
+  assert.ok(r.stderr.length > 0)
+  const linha = r.stderr.split('\n').find((l) => l.includes('foto que vai pro Veo'))
+  assert.ok(linha, r.stderr)
+  assert.ok(linha.includes(f), linha)
+  assert.doesNotMatch(linha, /referencia\.jpg/)
+})
+
+test('fase 2 de anuncio proprio sem foto no roteiro mostra a referencia do anuncio', () => {
+  preparar(carimbado(roteiroValido()))
+  fs.writeFileSync(path.join(pasta, 'referencia.jpg'), 'foto do anuncio')
+  const r = rodar([`--mlb=${MLB}`, '--fase=2', '--dry-run'])
+  assert.equal(r.status, 0, r.stderr)
+  assert.match(r.stderr, /foto que vai pro Veo: .*referencia\.jpg/)
+})
+
+test('fase 2 de anuncio proprio com --foto diferente de roteiro.foto sai 2', () => {
+  const f = fotoPropria()
+  preparar(carimbado({ ...roteiroValido(), foto: f }))
+  const outra = fotoPropria('outra.jpg')
+  for (const extra of [['--dry-run'], PRECOS_AUTORIZADO]) {
+    const r = rodar([`--mlb=${MLB}`, '--fase=2', ...extra, `--foto=${outra}`])
+    assert.equal(r.status, 2, r.stderr)
+    assert.match(r.stderr, /nao e a foto aprovada no gate 1/)
+  }
+  assert.equal(rodar([`--mlb=${MLB}`, '--fase=2', '--dry-run', `--foto=${f}`]).status, 0)
+})
+
+test('fase 2 de anuncio proprio com --foto e roteiro sem foto sai 2 pedindo "foto" no roteiro', () => {
+  preparar(carimbado(roteiroValido()))
+  const r = rodar([`--mlb=${MLB}`, '--fase=2', '--dry-run', `--foto=${fotoPropria()}`])
+  assert.equal(r.status, 2, r.stderr)
+  assert.match(r.stderr, /declare a imagem em "foto" no roteiro\.json/)
+})
+
+// Correcao 1 do Codex no plano da 5.7: foto declarada e ausente para antes de
+// baixar qualquer coisa, e a fase 1 nao aprova foto que nao existe.
+test('fase 2 com a foto do roteiro ausente sai 2 antes de baixar a referencia', () => {
+  const f = fotoPropria()
+  preparar(carimbado({ ...roteiroValido(), foto: f }))
+  fs.rmSync(f)
+  for (const extra of [['--dry-run'], PRECOS_AUTORIZADO]) {
+    const r = rodar([`--mlb=${MLB}`, '--fase=2', ...extra])
+    assert.equal(r.status, 2, r.stderr)
+    assert.match(r.stderr, /foto aprovada no gate 1 .* nao existe/)
+    assert.equal(fs.existsSync(path.join(pasta, 'referencia.jpg')), false)
+  }
+})
+
+test('fase 1 de anuncio proprio recusa aprovar foto que nao existe', () => {
+  const sumida = path.join(raiz, 'nao-existe.jpg')
+  preparar({ ...roteiroValido(), foto: sumida })
+  const r = rodar([`--mlb=${MLB}`, '--fase=1', '--aprovar'])
+  assert.equal(r.status, 1, r.stderr)
+  assert.match(r.stderr, /que nao existe/)
+  assert.equal(JSON.parse(fs.readFileSync(path.join(pasta, 'roteiro.json'), 'utf8')).aprovadoEm, undefined)
+})
+
+// F.7 (5.7): os exemplos da fase 2 vem sem --foto porque o padrao e a foto do roteiro.
+test('SKILL.md diz que a fase 2 usa a foto do roteiro e que o dry-run mostra a linha da foto', () => {
+  const skill = fs.readFileSync(fileURLToPath(new URL('../SKILL.md', import.meta.url)), 'utf8').replace(/\r?\n\s*/g, ' ')
+  assert.ok(skill.includes('A fase 2 usa sempre a `foto` do roteiro; `--foto` só é aceito se for a mesma.'))
+  assert.ok(skill.includes('O dry-run imprime a linha "foto que vai pro Veo"; é ela que você mostra.'))
+  assert.doesNotMatch(skill, /`--foto` é obrigatório/)
+})
+
+test('fase 2 real com a foto do roteiro trocada depois do sim sai 3 sem gastar', () => {
+  const f = fotoPropria()
+  preparar(carimbado({ ...roteiroValido(), foto: f }))
+  fs.writeFileSync(f, 'imagem trocada depois do sim')
+  const r = rodar([`--mlb=${MLB}`, '--fase=2', ...PRECOS_AUTORIZADO])
+  assert.equal(r.status, 3, r.stderr)
+  assert.match(r.stderr, /MUDOU depois da aprovacao/)
+  assert.equal(fs.existsSync(path.join(pasta, 'referencia.jpg')), false)
 })
 
 test('fase 2 da espionagem com --foto diferente da aprovada sai 2; com a aprovada, segue', () => {

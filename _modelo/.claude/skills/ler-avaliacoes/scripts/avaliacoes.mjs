@@ -139,9 +139,11 @@ export function lerAvaliacoes(caminho) {
   })))
 }
 
-// Ponte com a /espionar-concorrente: le o _raw-concorrentes-<slug>.json. O Mercado Livre nao da
-// link nem data por avaliacao, entao link = anuncio, data vazia (sem perder peso por idade) e
-// fonte = codigo do anuncio: "pouca prova" passa a querer dizer "so um concorrente reclama".
+// Ponte com a /espionar-concorrente: le o _raw-concorrentes-<slug>.json. Contrato (o mesmo do topo
+// do espionar.mjs): anuncio.avaliacoes.avaliacoes = [{ nota, titulo, texto, data, curtidas }], lidas
+// da pagina do anuncio; data AAAA-MM-DD ou null (bruto de antes da 5.7 nao tem data). O Mercado
+// Livre nao da link por avaliacao, entao link = anuncio e fonte = codigo do anuncio: "pouca prova"
+// passa a querer dizer "so um concorrente reclama". Sem data, a avaliacao nao perde peso por idade.
 export function deEspionagem(caminho) {
   if (!existsSync(caminho)) throw new Error(`nao achei o arquivo ${caminho}; confira o nome e a pasta`)
   let bruto
@@ -152,7 +154,7 @@ export function deEspionagem(caminho) {
     for (const v of a?.avaliacoes?.avaliacoes || []) {
       // titulo e texto em linhas separadas: a citacao nunca junta os dois numa frase so
       const texto = [v.titulo, v.texto].map(s => String(s ?? '').trim()).filter(Boolean).join('\n')
-      brutas.push({ fonte: a.id, link: a.url, data: null, nota: lerNota(v.nota), texto })
+      brutas.push({ fonte: a.id, link: a.url, data: lerData(v.data), nota: lerNota(v.nota), texto })
     }
   }
   const r = juntar(brutas, { comLink: true })

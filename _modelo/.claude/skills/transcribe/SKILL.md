@@ -33,7 +33,7 @@ python3 --version
 Precisa do Python 3.8 ou mais novo. Se não tiver, ou se for mais antigo, orientar:
 - **Mac:** `brew install python3`
 - **Linux:** `sudo apt install python3 python3-pip`
-- **Windows:** baixar em python.org
+- **Windows:** `winget install --id Python.Python.3.12 -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity`, depois feche todas as janelas do VS Code e abra de novo
 
 ### Passo 2: conferir os pacotes do Python
 
@@ -49,7 +49,7 @@ pip3 show faster-whisper 2>/dev/null && echo "OK: faster-whisper" || echo "MISSI
 pip3 show yt-dlp 2>/dev/null && echo "OK: yt-dlp" || echo "MISSING: yt-dlp"
 ```
 
-Se faltar algum pacote, instalar.
+Se faltar algum pacote, instalar. O yt-dlp daqui é a biblioteca de Python que o script importa, por isso vem pelo pip; o programa `yt-dlp` que a `/assistir-video` e a `/aprender-curso` chamam vem pelo winget no Windows. Os dois convivem.
 
 Windows:
 ```bash
@@ -72,7 +72,7 @@ which ffmpeg && ffmpeg -version | head -1 || echo "MISSING: ffmpeg"
 Se não tiver:
 - **Mac:** `brew install ffmpeg`
 - **Linux:** `sudo apt install ffmpeg`
-- **Windows:** baixar em ffmpeg.org e colocar no PATH (a lista de pastas onde o Windows procura programas)
+- **Windows:** `winget install --id Gyan.FFmpeg -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity`, depois feche todas as janelas do VS Code e abra de novo
 
 ### Passo 4: conferir o script
 

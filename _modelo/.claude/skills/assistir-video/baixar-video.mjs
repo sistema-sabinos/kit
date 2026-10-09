@@ -44,7 +44,8 @@ function viaYtDlp(url, destino) {
   if (!temNoPath('yt-dlp')) {
     console.error(
       '[baixar] yt-dlp não encontrado no PATH.\n' +
-      '  Windows: winget install yt-dlp\n' +
+      '  Windows: winget install --id yt-dlp.yt-dlp -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity\n' +
+      '           (depois feche todas as janelas do VS Code e abra de novo)\n' +
       '  Mac:     brew install yt-dlp'
     );
     return { motivo: 'yt-dlp ausente' };

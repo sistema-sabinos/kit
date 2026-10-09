@@ -4,7 +4,7 @@
 // ninguem mexeu, pergunta o que foi mexido, nunca toca semente nem arquivo do negocio.
 // Uso:
 //   node atualizar-projeto.mjs plano <projeto> [--kit <kit>] [--componentes a,b|todos]
-//   node atualizar-projeto.mjs aplicar <projeto> [--tambem caminho1,caminho2]
+//   node atualizar-projeto.mjs aplicar <projeto> [--tambem caminho1,caminho2] [--registro]
 //   node atualizar-projeto.mjs conferir <projeto> [--kit <kit>]
 //   node atualizar-projeto.mjs registrar <projeto> <id-da-mudanca> aplicada|recusada
 //   node atualizar-projeto.mjs desfazer <projeto> [--backup <antes-...>]
@@ -192,7 +192,7 @@ function carimboDe(agora) {
   return `${agora.getFullYear()}${z(agora.getMonth() + 1)}${z(agora.getDate())}-${z(agora.getHours())}${z(agora.getMinutes())}${z(agora.getSeconds())}`
 }
 
-export function aplicarPlano({ kit, projeto, plano, tambem = [], agora = new Date() }) {
+export function aplicarPlano({ kit, projeto, plano, tambem = [], registro = false, agora = new Date() }) {
   const porCaminho = new Map(plano.itens.map(i => [i.caminho, i]))
   for (const c of tambem) {
     const i = porCaminho.get(c)
@@ -201,21 +201,27 @@ export function aplicarPlano({ kit, projeto, plano, tambem = [], agora = new Dat
   const copiar = plano.itens.filter(i => ['adicionar', 'trocar'].includes(i.acao) || (i.acao === 'perguntar' && tambem.includes(i.caminho)))
   const remover = plano.itens.filter(i => i.acao === 'sugerir-remover' && tambem.includes(i.caminho))
 
-  const backup = nomeLivre(projeto, `antes-${plano.versaoKit}`, agora)
-  const pasta = join(projeto, '.sabinos', backup)
   garantirGitignore(projeto)
-  mkdirSync(pasta, { recursive: true })
-  // misto e recibo entram sempre: a conversa mexe nos mistos depois do motor
-  const guardar = [...copiar, ...remover].map(i => i.caminho).concat(plano.mistos, RECIBO.split(sep).join('/'))
-  for (const rel of guardar) {
-    const origem = join(projeto, rel)
-    if (!existsSync(origem)) continue
-    mkdirSync(dirname(join(pasta, 'arquivos', rel)), { recursive: true })
-    copyFileSync(origem, join(pasta, 'arquivos', rel))
+  // o setup registrando a versao (--registro), nada pra trocar e sem recibo: so o recibo, sem
+  // copia antes-, senao o desfazer acharia ali a copia do dia da instalacao e voltaria o projeto
+  // a ela. Sem o --registro, projeto antigo sem recibo ganha copia: a conversa ainda mexe nos mistos
+  const soRegistro = registro && !copiar.length && !remover.length && !existsSync(join(projeto, RECIBO))
+  const backup = soRegistro ? null : nomeLivre(projeto, `antes-${plano.versaoKit}`, agora)
+  if (backup) {
+    const pasta = join(projeto, '.sabinos', backup)
+    mkdirSync(pasta, { recursive: true })
+    // misto e recibo entram sempre: a conversa mexe nos mistos depois do motor
+    const guardar = [...copiar, ...remover].map(i => i.caminho).concat(plano.mistos, RECIBO.split(sep).join('/'))
+    for (const rel of guardar) {
+      const origem = join(projeto, rel)
+      if (!existsSync(origem)) continue
+      mkdirSync(dirname(join(pasta, 'arquivos', rel)), { recursive: true })
+      copyFileSync(origem, join(pasta, 'arquivos', rel))
+    }
+    const adicionados = copiar.map(i => i.caminho).filter(rel => !existsSync(join(projeto, rel)))
+    if (!existsSync(join(projeto, RECIBO))) adicionados.push(RECIBO.split(sep).join('/'))
+    writeFileSync(join(pasta, 'adicionados.json'), JSON.stringify(adicionados, null, 2) + '\n')
   }
-  const adicionados = copiar.map(i => i.caminho).filter(rel => !existsSync(join(projeto, rel)))
-  if (!existsSync(join(projeto, RECIBO))) adicionados.push(RECIBO.split(sep).join('/'))
-  writeFileSync(join(pasta, 'adicionados.json'), JSON.stringify(adicionados, null, 2) + '\n')
 
   for (const i of copiar) {
     mkdirSync(dirname(join(projeto, i.caminho)), { recursive: true })
@@ -289,11 +295,13 @@ export function registrarMudanca({ projeto, id, estado, agora = new Date() }) {
 // So as opcoes que o motor conhece, sempre com valor. Opcao digitada errada (--tambme)
 // para com erro: em silencio ela engolia o valor e nada era aprovado.
 const OPCOES = ['kit', 'componentes', 'tambem', 'backup']
+const BANDEIRAS = ['registro']
 function lerArgs(argv) {
   const o = { _: [] }
   for (let i = 0; i < argv.length; i++) {
     if (!argv[i].startsWith('--')) { o._.push(argv[i]); continue }
     const nome = argv[i].slice(2)
+    if (BANDEIRAS.includes(nome)) { o[nome] = true; continue }
     if (!OPCOES.includes(nome)) throw new Error(`opcao desconhecida: --${nome} (as que existem: ${OPCOES.map(x => '--' + x).join(', ')})`)
     if (i + 1 >= argv.length || argv[i + 1].startsWith('--')) throw new Error(`--${nome} precisa de um valor`)
     o[nome] = argv[++i]
@@ -321,12 +329,12 @@ function principal(argv) {
     const plano = lerJson(arqPlano)
     const atual = montarPlano({ kit: plano.kit, projeto, escolhidos: plano.escolhidos })
     if (JSON.stringify(atual.itens) !== JSON.stringify(plano.itens)) throw new Error('o projeto mudou depois do plano; rode "plano" de novo')
-    const r = aplicarPlano({ kit: plano.kit, projeto, plano, tambem: a.tambem ? a.tambem.split(',') : [] })
+    const r = aplicarPlano({ kit: plano.kit, projeto, plano, tambem: a.tambem ? a.tambem.split(',') : [], registro: a.registro === true })
     // o motor fica no projeto pra o desfazer funcionar mesmo depois que o kit baixado sumir
     copyFileSync(fileURLToPath(import.meta.url), join(projeto, '.sabinos', 'atualizar-projeto.mjs'))
     rmSync(arqPlano)
     console.log(`Aplicado. Copiados: ${r.copiados.length}. Removidos: ${r.removidos.length}.`)
-    console.log(`Copia de seguranca: .sabinos/${r.backup}`)
+    console.log(r.backup ? `Copia de seguranca: .sabinos/${r.backup}` : 'Nada trocado; so o registro da versao.')
   } else if (cmd === 'conferir') {
     const pend = montarPlano({ kit, projeto }).itens.filter(i => ['adicionar', 'trocar'].includes(i.acao))
     if (pend.length) {

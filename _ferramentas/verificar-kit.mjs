@@ -74,6 +74,8 @@ const OBRIGATORIOS = [
   '_modelo/.gitattributes',
   '_modelo/.claude/hooks/barrar-perigoso.mjs',
   '_modelo/.claude/hooks/auto-sync.mjs',
+  // a regra curta do AGENTS.md do molde manda ler o detalhe aqui (5.7, D.1)
+  '_modelo/.claude/detalhe-regras.md',
   '_modelo/_contexto/empresa.md', '_modelo/_contexto/preferencias.md',
   '_modelo/_contexto/estrategia.md', '_modelo/_contexto/agora.md',
   '_modelo/_contexto/licoes.md', '_modelo/_contexto/ferramentas.md',
@@ -546,6 +548,15 @@ export function rodarGates(dirKit, opcoes = {}) {
       for (const b of blocos) {
         const id = b.split(/\r?\n/)[0].trim()
         for (const campo of CAMPOS_MUDANCA) if (!b.includes(`**${campo}:**`)) falha10('_ferramentas/mudancas.md', `${id} sem o campo "${campo}"`)
+        // o motor ja traz o nucleo respeitando o "fica a sua"; entrada que manda copiar a
+        // pasta dele, ou que afeta "sempre", passa por cima da escolha da pessoa (5.7, C.2).
+        // Pasta de pacote (mei, carrossel) segue valendo: oferece a quem ainda nao tem.
+        if (/\*\*Te afeta se:\*\*\s*sempre\b/i.test(b)) falha10('_ferramentas/mudancas.md', `${id} diz "Te afeta se: sempre": dizer o que falta no projeto, senao a entrada volta em toda atualizacao`)
+        const nucleo = regras?.componentes?.nucleo?.caminhos ?? []
+        const aplicar = b.match(/\*\*Como aplicar:\*\*(.*)/)?.[1] ?? ''
+        for (const [, pasta] of aplicar.matchAll(/copiar a pasta `([^`]+)`/g)) {
+          if (nucleo.some(p => (p.endsWith('/') ? pasta.startsWith(p) : pasta === p))) falha10('_ferramentas/mudancas.md', `${id} manda copiar pasta que o motor ja traz (${pasta}, do nucleo)`)
+        }
       }
     }
   }

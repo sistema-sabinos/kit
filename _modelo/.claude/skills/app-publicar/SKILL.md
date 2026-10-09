@@ -4,7 +4,8 @@ description: >
   Coloca o app no ar com o seu nome: checagem que barra (testes, funções obrigatórias,
   marca da referência varrida, ficha de loja, páginas legais), banco e chaves de produção,
   hospedagem (Cloudflare ou Vercel Pro), domínio, cobrança real e, se tiver, App Store e
-  Google Play. Tudo que gasta ou publica espera o "pode ir". Use quando o usuário chamar
+  Google Play. Etapa 11 de 11 do pacote criar app. Tudo que gasta ou publica espera o
+  "pode ir". Use quando o usuário chamar
   /app-publicar, disser "publica o app", "coloca no ar", "sobe o app", "liga meu
   domínio", "manda pra produção", "põe na App Store", ou depois da /app-lancar.
 ---
@@ -206,9 +207,11 @@ conferido lá antes de rodar. Next.js na Cloudflare segue o caminho de
 `app-cloudflare-nextjs`, o mesmo que o `app/arquitetura.md` registrou. A primeira publicação sai num endereço provisório
 da hospedagem: fazer o caminho principal nele antes de ligar o domínio.
 
+Ler o `app/marca.md`. Domínio já comprado na `/app-marca` (a linha `Domínio:`): pular a
+compra e ir direto pro DNS. Senão, a compra passa pelo gate.
+
 **Domínio** **(gasta)**. O aluno compra num registrador (a empresa que vende o
-endereço). `.com.br` no registro.br: `app-registro-br`. Antes de comprar, a
-`/app-marca` já conferiu o nome no INPI. Depois da compra, apontar o domínio
+endereço). `.com.br` no registro.br: `app-registro-br`. Depois da compra, apontar o domínio
 pra hospedagem pelo DNS (a lista que diz pra internet onde o seu endereço
 mora) **(conta)**. Os valores saem sempre do painel da hospedagem:
 
@@ -248,6 +251,9 @@ celular dele, e marca no `app/publicacao.md`.
 
 ### 6. Celular (opcional, depois do site no ar)
 
+Caminho do celular, depois do site no ar: `/app-construir` (versão Expo) → `/app-testar`
+no celular → `/app-lancar` (prints e ficha da loja) → volta aqui, nesta seção.
+
 Só quando a `/app-planejar` previu app de celular e a `/app-construir` montou a
 versão pelo Expo (a ferramenta que transforma o app em instalável de Android e
 iPhone).
@@ -277,7 +283,8 @@ No chat, só o resumo: no ar ou não, o endereço, o que falta e quanto foi gast
 
 ## Depois
 
-Esta é a última etapa do pacote: o app está no ar com o seu nome. Mudança nova
+Esta é a última etapa do site: o app está no ar com o seu nome. App de celular previsto:
+seguir o caminho da seção 6. Mudança nova
 volta pela `/app-construir` e pela `/app-testar` e passa de novo pela checagem
 do passo 1 antes de cada publicação. Com os primeiros clientes, a
 `/ler-avaliacoes` lê o que eles dizem do seu app.

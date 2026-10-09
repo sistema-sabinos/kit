@@ -5,7 +5,7 @@ description: >
   ferramentas, a hospedagem e o pagamento com o custo mensal de cada uma conferido e
   datado, desenha o banco de dados e a lista de rotas e põe a construção em ordem,
   começando por um caminho inteiro funcionando. Nada é cobrado aqui; a escolha de
-  hospedagem e pagamento fecha só com o "pode ir". Etapa 3 do pacote criar app. Use
+  hospedagem e pagamento fecha só com o "pode ir". Etapa 3 de 11 do pacote criar app. Use
   quando o usuário chamar /app-planejar, disser "planeja o meu app", "que ferramenta eu
   uso pro app", "quanto vai custar manter o app por mês", "Stripe ou Mercado Pago?",
   "onde eu hospedo o app", "monta o banco de dados do app", ou quando a /ler-avaliacoes
@@ -215,12 +215,13 @@ limite grátis do Expo (`app-expo-free`). Ninguém paga nada disso agora.
 
 **O gate.** Com as tabelas prontas:
 
-1. Passar a escolha pela `/segunda-opiniao` (dose rápida).
+1. Passar a escolha pela `/segunda-opiniao` (dose completa, porque fecha gasto).
 2. Mostrar ao aluno a pilha, o comparativo e o total do mês com as datas dos fatos, e
    perguntar: "Esta pilha custa isso com zero cliente e isso depois dos limites grátis. Fecho
    com <hospedagem> e <pagamento>, pode ir?"
-3. Esperar o "pode ir" naquele momento. Sem ele, o `app/arquitetura.md` fica com as duas opções
-   abertas e a próxima etapa espera.
+3. Esperar o "pode ir" naquele momento. Sem ele, a escolha fica 'em aberto' na seção Decisão
+   do aluno do `app/arquitetura.md`; visual e construção seguem com dado de mentira, a
+   `/app-servidor` fecha o pagamento e a `/app-publicar` fecha a hospedagem.
 4. Com o sim, gravar a escolha e a data no `app/arquitetura.md`.
 
 Esta etapa não grava nada em `dados/custos.jsonl`, porque ninguém pagou nada. A linha nasce

@@ -106,11 +106,13 @@ Gemini). Saida: `inteligencia/base-ideias/<perfil>.md`.
 No modo `loja`, rodar antes `node .claude/skills/pauta/scripts/perguntas.mjs`: lista as perguntas reais
 dos compradores que a `/espionar-concorrente` juntou. Sem pergunta (sem o pacote Mercado Livre ou sem
 briefing), dizer isso e seguir so com os perfis. Despachar `cargos/garimpeiro.md` com o numero de ideias
-(o dobro do `ritmo`, pra sobrar escolha) e o caminho das perguntas. Saida: `producao/_pauta/<DIA>-ideias.md`.
+(o dobro do `ritmo`, pra sobrar escolha) e o caminho das perguntas. Nas entradas, o caminho do radar de
+hoje, se o Passo 2b rodou. Saida: `producao/_pauta/<DIA>-ideias.md`.
 
 ## Gate 1, a pessoa escolhe (espera)
 
-Mostrar so o bloco "Pra escolher" (uma linha por ideia) e perguntar no formato da casa:
+Mostrar so o bloco "Pra escolher" (uma linha por ideia; ideia que veio do radar ou de ficha de
+decupagem aparece com a origem na linha) e perguntar no formato da casa:
 > "Quais vao essa semana?
 >
 > Pergunto porque a escolha define roteiro e dia de cada post.
@@ -137,9 +139,11 @@ vira regravacao.
 
 ## Passo 6, entrega
 
-Dizer que as pastas estao prontas em `producao/`, e que o video (ou as imagens do carrossel) sai pelo
-motor de video do SabinOS quando ele estiver instalado, ou gravado e editado pela pessoa; o arquivo
-pronto vai em `producao/<pasta>/final/`, e dai o `/publicar-social` agenda. Marcar no
+Dizer que as pastas estao prontas em `producao/`. Video: sai pelo motor de video do SabinOS quando ele
+estiver instalado, ou gravado e editado pela pessoa. Carrossel: a `/carrossel` gera os slides a partir
+da tabela `## Carrossel` do `roteiro.md` ja aprovado e grava `final/slide-NN.png`, de graca (HTML
+virando PNG no computador). Oferecer rodar agora, uma pasta por vez. O arquivo pronto vai em
+`producao/<pasta>/final/`, e dai o `/publicar-social` agenda. Marcar no
 `perfis/<perfil>/calendario.md` qual pasta toma qual horario.
 
 ## Passo 7, melhorias

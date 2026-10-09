@@ -116,9 +116,13 @@ seguir.
 ## Regras
 
 - Nunca enviar sem o "pode ir" daquele momento. O `--montar` existe pra isso.
-- Marca é a do fabricante, a que está na caixa. Marca da loja só em kit
-  montado por você ou produto sem fabricante identificado. Marca própria em
+- Marca na ficha: `Genérica` em kit, revenda e dropshipping. O nome do
+  fabricante só quando você é a dona da marca ou revendedora autorizada por
+  escrito, e aí ele vem de `decisao.json` em `marca_autorizada`. Nunca o nome
+  da loja. Marca fora da regra trava o `--montar` (o payload não nasce); marca própria em
   produto de terceiro derruba o anúncio por denúncia de propriedade intelectual.
+- Copy, imagens ou decisão mexidos depois da auditoria: o `--montar` recusa até
+  o `ml-auditor` rodar de novo (ele carimba a auditoria no fim).
 - GTIN nunca inventado. Kit montado por você não tem GTIN, e isso é o certo.
 - Condição "Novo" vai marcada: categoria de alimento recusa anúncio sem ela.
 - A descrição vai no campo que o Bling manda pro Mercado Livre, com as

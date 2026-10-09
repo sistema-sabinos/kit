@@ -40,8 +40,9 @@ autoral e dá ao dono o botão de derrubar o seu anúncio.
    frente e um pouco de cima, celular na horizontal da mesa). No dropshipping, a
    foto do fornecedor serve se a autorização está no `fornecedor.md`.
 3. Rodar `node .claude/skills/gerar-imagens/scripts/motor.mjs`. Ele diz o
-   degrau: `codex`, `gemini` ou `zero-ia`. Se disser que falta o Playwright,
-   rodar o comando que ele mostra e tentar de novo.
+   degrau: `codex`, `gemini` ou `zero-ia`. O primeiro script que desenha
+   (`recortar-fundo`, `compor-cena`, `montar-peca`) avisa se falta o
+   Playwright e mostra o comando; rodar e repetir o passo.
 4. Degrau `gemini` custa dinheiro por imagem. O preço, a estimativa e o "pode
    ir" acontecem na conversa principal: na `/mercado-livre`, ou nesta mesma
    conversa quando a pessoa chamou a `/gerar-imagens` direto. Ali: conferir na
@@ -76,6 +77,9 @@ as imagens finais em `anuncios/<slug>/imagens/NN-papel.jpg`, na ordem do mapa.
    Gemini, só depois do "pode ir" desta rodada (sem ele, nunca `--autorizado`):
    `--degrau gemini --preco-usd <preço do dia> --contexto "designer <slug>" --autorizado`.
    Quando dá errado:
+   - Saída diferente de 0, 1, 2 e 3 depois de gerar: conferir
+     `dados/custos.jsonl` e `anuncios/<slug>/cenarios/` antes de rodar de novo,
+     porque o gasto pode já ter acontecido.
    - Codex, saída 1 com `cota_estourada: true`: com gasto no Gemini já
      autorizado nesta rodada, repetir as que faltaram no Gemini; sem, seguir as
      que faltaram no `zero-ia` e avisar no recibo.

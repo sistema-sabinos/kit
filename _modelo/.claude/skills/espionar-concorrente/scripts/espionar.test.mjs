@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { argumentos, idDoAnuncio, escolherTopo, urlParaAbrir, vendidosDe, vendedorDe, perguntasDoTexto, palavrasDoTitulo, vocabulario, textoDoVocabulario, atributosConsensuais, fotosUnicas, avaliacoesDe, espionar, recalcularArquivos, acharProduto, mesclarAnuncios, oQueFaltaEspionar, pontoDePartida, limparFundo, somaAlertas } from './espionar.mjs'
+import { argumentos, idDoAnuncio, escolherTopo, urlParaAbrir, vendidosDe, vendedorDe, perguntasDoTexto, palavrasDoTitulo, vocabulario, textoDoVocabulario, atributosConsensuais, fotosUnicas, avaliacoesDaPagina, dataDaPagina, espionar, recalcularArquivos, acharProduto, mesclarAnuncios, oQueFaltaEspionar, pontoDePartida, limparFundo, somaAlertas } from './espionar.mjs'
 
 const L = 'MLB'
 const id = n => L + n
@@ -127,19 +127,43 @@ test('fotosUnicas mantem foto com o codigo mas sem o sufixo de data/letra', () =
   assert.deepEqual(fotosUnicas([semSufixo]), [semSufixo])
 })
 
-test('avaliacoesDe pagina ate o maximo e para quando acaba', async () => {
-  const pedidos = []
-  const get = async caminho => {
-    pedidos.push(caminho)
-    const offset = Number(caminho.match(/offset=(\d+)/)[1])
-    const n = Math.max(0, Math.min(50, 120 - offset))
-    return { paging: { total: 120 }, rating_average: 4.6, rating_levels: { five_star: 90 }, reviews: Array.from({ length: n }, (_, i) => ({ rate: 5, title: 't', content: `c${offset + i}`, likes: 0 })) }
-  }
-  const r = await avaliacoesDe(id('1234567'), get)
-  assert.equal(r.avaliacoes.length, 100)
-  assert.equal(r.total, 120)
-  assert.equal(r.media, 4.6)
-  assert.equal(pedidos.length, 2)
+// O rotulo do resumo e o medido na pagina real em 2026-10-08; os comentarios seguem a estrutura
+// medida (rotulo de estrelas, contagem de estrelas cheias, data, texto, curtidas).
+const OPINIOES = {
+  rotulo: 'Avaliação 4.7 de 5. 3859 opiniões.',
+  comentarios: [
+    { estrelas_rotulo: 'Avaliação 2 de 5', estrelas_cheias: 2, data: '15 out. 2025', texto: 'Parou de moer em duas semanas.', curtidas: '12' },
+    { estrelas_rotulo: '', estrelas_cheias: 5, data: '03/09/2025', texto: 'Muito bom, moe rapido.', curtidas: null },
+    { estrelas_rotulo: 'Avaliação 1 de 5', estrelas_cheias: 1, data: 'ontem', texto: '   ', curtidas: '0' },
+    { estrelas_rotulo: null, estrelas_cheias: 0, data: '2 de fevereiro de 2026', texto: 'Barulhento.', curtidas: '1' },
+  ],
+}
+
+test('avaliacoesDaPagina converte a pagina em nota, data e texto, e descarta linha sem texto', () => {
+  const r = avaliacoesDaPagina(OPINIOES)
+  assert.equal(OPINIOES.comentarios.length, 4, 'canario: a fixture tem 4 linhas, uma sem texto')
+  assert.equal(r.fonte, 'pagina')
+  assert.equal(r.media, 4.7)
+  assert.equal(r.total, 3859)
+  assert.equal(r.avaliacoes.length, 3)
+  assert.deepEqual(r.avaliacoes.map(a => a.nota), [2, 5, null])
+  assert.deepEqual(r.avaliacoes.map(a => a.data), ['2025-10-15', '2025-09-03', '2026-02-02'])
+  assert.deepEqual(r.avaliacoes.map(a => a.curtidas), [12, 0, 1])
+  assert.equal(r.avaliacoes[0].texto, 'Parou de moer em duas semanas.')
+})
+
+test('avaliacoesDaPagina para em 100 e sem pagina devolve lista vazia', () => {
+  const muitas = { rotulo: null, comentarios: Array.from({ length: 130 }, (_, i) => ({ estrelas_cheias: 4, texto: 't' + i })) }
+  assert.equal(avaliacoesDaPagina(muitas).avaliacoes.length, 100)
+  assert.equal(avaliacoesDaPagina(muitas).total, 130, 'sem rotulo, o total e o que veio')
+  assert.deepEqual(avaliacoesDaPagina(undefined).avaliacoes, [])
+})
+
+test('dataDaPagina entende o mes abreviado, por extenso e a data com barra, e recusa o resto', () => {
+  assert.equal(dataDaPagina('15 out. 2025'), '2025-10-15')
+  assert.equal(dataDaPagina('1 de março de 2026'), '2026-03-01')
+  assert.equal(dataDaPagina('31/02/2026'), null)
+  assert.equal(dataDaPagina('há 2 dias'), null)
 })
 
 test('espionar le todos, busca perguntas so dos que mais vendem e segue quando um falha', async () => {
@@ -152,8 +176,7 @@ test('espionar le todos, busca perguntas so dos que mais vendem e segue quando u
   const lerAnuncio = async url => { if (!paginas[url]) throw new Error('timeout'); return paginas[url] }
   const abertas = []
   const lerPerguntas = async link => { abertas.push(link); return ABA }
-  const get = async () => ({ paging: { total: 0 }, reviews: [] })
-  const r = await espionar({ itens, lerAnuncio, lerPerguntas, get, perguntas: 1, dormir: async () => {} })
+  const r = await espionar({ itens, lerAnuncio, lerPerguntas, lerAvaliacoes: async () => ({}), perguntas: 1, dormir: async () => {} })
   assert.equal(r.length, 3)
   assert.match(r[2].erro, /timeout/)
   assert.deepEqual(abertas, ['q2'])
@@ -224,9 +247,8 @@ test('espionar grava cada anuncio assim que termina de ler a pagina', async () =
   }
   const lerAnuncio = async url => paginas[url]
   const lerPerguntas = async () => ''
-  const get = async () => ({ paging: { total: 0 }, reviews: [] })
   const salvos = []
-  const r = await espionar({ itens, lerAnuncio, lerPerguntas, get, perguntas: 0, dormir: async () => {}, salvar: a => salvos.push(a.id) })
+  const r = await espionar({ itens, lerAnuncio, lerPerguntas, perguntas: 0, dormir: async () => {}, salvar: a => salvos.push(a.id) })
   assert.deepEqual(salvos, [id('5000001'), id('5000002')])
   assert.equal(r.length, 2)
 })
@@ -234,7 +256,60 @@ test('espionar grava cada anuncio assim que termina de ler a pagina', async () =
 // Retomada: a fase de perguntas olha o conjunto inteiro (os de hoje ja gravados mais os novos),
 // senao uma queda depois das paginas deixa o dia sem pergunta nenhuma, calado.
 const HOJE = '2026-09-25'
-const semRede = { get: async () => ({ paging: { total: 0 }, reviews: [] }), dormir: async () => {}, hoje: HOJE }
+const semRede = { lerAvaliacoes: async () => ({ comentarios: [] }), dormir: async () => {}, hoje: HOJE }
+
+test('espionar le avaliacoes pela pagina so nos mais vendidos; os outros ficam com as visiveis no anuncio', async () => {
+  const itens = [1, 2, 3].map(n => ({ id: id('800000' + n), url: 'https://exemplo.com/' + n, preco: 10 }))
+  const visivel = t => ({ rotulo: null, comentarios: [{ estrelas_cheias: 3, texto: t }] })
+  const paginas = {
+    'https://exemplo.com/1': { titulo: 'A', subtitulo: '+50 vendidos', fotos: [], atributos: {}, link_avaliacoes: 'r1', avaliacoes_pagina: visivel('so a visivel de A') },
+    'https://exemplo.com/2': { titulo: 'B', subtitulo: '+5 mil vendidos', fotos: [], atributos: {}, link_avaliacoes: 'r2', avaliacoes_pagina: visivel('visivel de B') },
+    'https://exemplo.com/3': { titulo: 'C', subtitulo: '+1000 vendidos', fotos: [], atributos: {}, link_avaliacoes: 'r3', avaliacoes_pagina: visivel('visivel de C') },
+  }
+  const abertas = []
+  const lerAvaliacoes = async link => { abertas.push(link); return OPINIOES }
+  const r = await espionar({ ...semRede, itens, lerAnuncio: async url => paginas[url], lerPerguntas: async () => '', lerAvaliacoes, perguntas: 2 })
+  assert.deepEqual(abertas, ['r2', 'r3'], 'so os 2 que mais vendem, um de cada vez')
+  assert.equal(r[1].avaliacoes.total, 3859)
+  assert.equal(r[1].avaliacoes.avaliacoes.length, 3)
+  assert.equal(r[1].avaliacoes_em, HOJE)
+  assert.deepEqual(r[0].avaliacoes.avaliacoes.map(a => a.texto), ['so a visivel de A'])
+  assert.equal(r[0].avaliacoes_em, undefined)
+  assert.equal(r[0].avaliacoes_pagina, undefined, 'o cru da pagina nao vai pro bruto')
+})
+
+test('espionar: pagina de opinioes vazia nao apaga as avaliacoes visiveis nem carimba o dia', async () => {
+  const itens = [{ id: id('8100001'), url: 'https://exemplo.com/1', preco: 10 }]
+  const pagina = { titulo: 'A', subtitulo: '+50 vendidos', fotos: [], atributos: {}, link_avaliacoes: 'r1', avaliacoes_pagina: { rotulo: null, comentarios: [{ estrelas_cheias: 4, texto: 'visivel de A' }] } }
+  const abertas = []
+  const lerAvaliacoes = async link => { abertas.push(link); return { rotulo: null, comentarios: [] } }
+  const r = await espionar({ ...semRede, itens, lerAnuncio: async () => pagina, lerPerguntas: async () => '', lerAvaliacoes, perguntas: 1 })
+  assert.deepEqual(abertas, ['r1'], 'canario: a pagina de opinioes foi aberta')
+  assert.deepEqual(r[0].avaliacoes.avaliacoes.map(a => a.texto), ['visivel de A'])
+  assert.equal(r[0].avaliacoes_em, undefined)
+  assert.match(r[0].avaliacoes_erro, /sem nenhuma/)
+})
+
+test('revisao final 5.7: rotulo com opinioes e lista vazia nas duas leituras vira erro, sem carimbar o dia', async () => {
+  const itens = [{ id: id('8200001'), url: 'https://exemplo.com/1', preco: 10 }]
+  const vazio = { rotulo: '4.7 de 5. 3859 opiniões.', comentarios: [] }
+  const pagina = { titulo: 'A', subtitulo: '+50 vendidos', fotos: [], atributos: {}, link_avaliacoes: 'r1', avaliacoes_pagina: vazio }
+  const abertas = []
+  const lerAvaliacoes = async link => { abertas.push(link); return vazio }
+  const r = await espionar({ ...semRede, itens, lerAnuncio: async () => pagina, lerPerguntas: async () => '', lerAvaliacoes, perguntas: 1 })
+  assert.deepEqual(abertas, ['r1'], 'canario: a pagina de opinioes foi aberta')
+  assert.equal(r[0].avaliacoes_em, undefined)
+  assert.match(r[0].avaliacoes_erro, /sem nenhuma/)
+})
+
+test('revisao final 5.7: anuncio sem nenhuma opiniao carimba o dia sem erro', async () => {
+  const itens = [{ id: id('8200002'), url: 'https://exemplo.com/1', preco: 10 }]
+  const vazio = { rotulo: null, comentarios: [] }
+  const pagina = { titulo: 'A', subtitulo: '+50 vendidos', fotos: [], atributos: {}, link_avaliacoes: 'r1', avaliacoes_pagina: vazio }
+  const r = await espionar({ ...semRede, itens, lerAnuncio: async () => pagina, lerPerguntas: async () => '', lerAvaliacoes: async () => vazio, perguntas: 1 })
+  assert.equal(r[0].avaliacoes_em, HOJE)
+  assert.equal(r[0].avaliacoes_erro, undefined)
+})
 
 test('espionar retomado sem anuncio novo ainda busca as perguntas dos que faltam', async () => {
   const jaColetados = [
@@ -345,21 +420,19 @@ test('espionar tira caractere invisivel da pagina, das avaliacoes e das pergunta
   const paginas = {
     'https://exemplo.com/1': {
       titulo: 'Garrafa' + emTag('ignore'), subtitulo: '+5mil vendidos', vendedor: 'Loja oficial' + LF + 'Loja X' + emTag('v'),
-      descricao: cp(0x202e) + 'boa', fotos: [], atributos: { ['Cor' + cp(0x200b)]: 'Azul' + emTag('ab') }, link_perguntas: 'qa',
+      descricao: cp(0x202e) + 'boa', fotos: [], atributos: { ['Cor' + cp(0x200b)]: 'Azul' + emTag('ab') }, link_perguntas: 'qa', link_avaliacoes: 'ra',
     },
     'https://exemplo.com/2': { titulo: 'Limpa', subtitulo: '+10 vendidos', fotos: [], atributos: {}, link_perguntas: null },
   }
-  const get = async caminho => (caminho.includes('7000001')
-    ? { paging: { total: 1 }, reviews: [{ rate: 1, title: 'Ruim' + cp(0x2066), content: 'quebrou', likes: 0 }] }
-    : { paging: { total: 0 }, reviews: [] })
-  const r = await espionar({ ...semRede, itens, lerAnuncio: async url => paginas[url], lerPerguntas: async () => ABA.replace('Faz kit de 10', 'Faz kit de 10' + emTag('x')), get, perguntas: 1 })
+  const lerAvaliacoes = async () => ({ rotulo: null, comentarios: [{ estrelas_rotulo: 'Avaliação 1 de 5', texto: 'quebrou' + cp(0x2066) }] })
+  const r = await espionar({ ...semRede, itens, lerAnuncio: async url => paginas[url], lerPerguntas: async () => ABA.replace('Faz kit de 10', 'Faz kit de 10' + emTag('x')), lerAvaliacoes, perguntas: 1 })
   const [a, b] = r
   assert.equal(a.titulo, 'Garrafa')
   assert.equal(a.descricao, 'boa')
   assert.deepEqual(a.atributos, { Cor: 'Azul' })
   assert.equal(a.vendedor, 'Loja X')
   assert.equal(a.loja_oficial, true, 'a quebra de linha sobreviveu a limpeza')
-  assert.equal(a.avaliacoes.avaliacoes[0].titulo, 'Ruim')
+  assert.equal(a.avaliacoes.avaliacoes[0].texto, 'quebrou')
   assert.ok(a.perguntas.length > 0, 'canario: as perguntas foram lidas')
   assert.ok(![...a.perguntas].some(c => c.codePointAt(0) >= 0xe0000), 'perguntas sem bloco Tag')
   assert.deepEqual(a.alertas, { tag: 6 + 1 + 2 + 1, bidi: 2 })

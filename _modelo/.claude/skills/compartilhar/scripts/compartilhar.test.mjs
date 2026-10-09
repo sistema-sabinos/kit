@@ -295,9 +295,22 @@ test('conferir relata skill da pasta que cita o projeto-pai, mas nao a syncar qu
   comProjeto({
     'acme/.claude/skills/x/SKILL.md': 'Ver em ../../../y.md\n',
     'acme/.claude/skills/syncar/SKILL.md': 'copiar o ../_modelo/.gitignore\n',
+    'acme/.claude/hooks/auto-sync.mjs': '// cita ../y, mas hook nao entra na conferencia de caminho\n',
     'acme/.claude/settings.local.json': '{}\n',
     'acme/AGENTS.md': 'tudo bem\n',
   }, raiz => {
     assert.deepEqual(conferir(join(raiz, 'acme')), [{ arquivo: '.claude/skills/x/SKILL.md', linha: 1 }])
+  })
+})
+
+// 5.7, D.5: a syncar roda o auto-sync.mjs --conferir; sem ele, a pasta sobe sem a trava de chave
+test('conferir acusa a syncar que vai sem o auto-sync.mjs', () => {
+  const arquivos = { 'acme/.claude/skills/syncar/SKILL.md': 'node .claude/hooks/auto-sync.mjs --conferir\n', 'acme/AGENTS.md': 'tudo bem\n' }
+  comProjeto(arquivos, raiz => {
+    assert.deepEqual(conferir(join(raiz, 'acme')), [{ arquivo: '.claude/skills/syncar/SKILL.md', linha: 0, motivo: 'a syncar vai sem o .claude/hooks/auto-sync.mjs que ela roda' }])
+  })
+  // canario: com o script copiado, limpo
+  comProjeto({ ...arquivos, 'acme/.claude/hooks/auto-sync.mjs': '// script\n' }, raiz => {
+    assert.deepEqual(conferir(join(raiz, 'acme')), [])
   })
 })

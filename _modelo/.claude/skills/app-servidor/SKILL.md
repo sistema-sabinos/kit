@@ -5,7 +5,7 @@ description: >
   em modo de teste (Stripe ou Mercado Pago, com o comparativo de taxa e a data),
   e-mail automático, tarefas que rodam sozinhas e integrações por API oficial, com a
   lista de segurança e a política de privacidade da LGPD. O aluno cria cada conta e
-  cola cada chave; a IA nunca digita senha, cartão nem chave. É a etapa 6 do pacote
+  cola cada chave; a IA nunca digita senha, cartão nem chave. Etapa 6 de 11 do pacote
   criar app. Use quando o usuário chamar /app-servidor, disser "põe login no app",
   "liga o banco de dados", "quero cobrar assinatura", "liga o pagamento", "conecta o
   Stripe", "conecta o Mercado Pago", "o app tem que mandar e-mail", "liga com o Google
@@ -58,7 +58,7 @@ Faltou o plano: rodar a `/app-planejar` primeiro. Faltou o código: `/app-constr
   etapa roda nele. Cobrança real só na `/app-publicar`.
 - **Gate em toda conta nova, todo gasto e todo envio pra fora.** Antes de pedir o
   "pode ir": mostrar o que vai acontecer, o custo com o id do fato e a data,
-  passar pela `/segunda-opiniao` (dose rápida), esperar o "pode ir" naquele
+  passar pela `/segunda-opiniao` (dose completa), esperar o "pode ir" naquele
   momento. Houve custo: uma linha no fim de `dados/custos.jsonl`, no formato
   `{"em":"<data e hora em UTC>","servico":"<serviço>","usd":<valor ou 0>,"brl":<valor em reais, se for em reais>,"contexto":"app <nome>, <pra quê>"}`.
 

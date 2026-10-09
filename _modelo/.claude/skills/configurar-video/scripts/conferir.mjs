@@ -16,12 +16,16 @@ const LIBS = 'numpy opencv-python pillow scipy onnxruntime'
 // e, se faltar, baixa as ferramentas de compilar da Apple (Command Line Tools, uns 2 GB).
 const BREW = '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
 
+// As mesmas 4 flags do setup: sem elas o winget pode parar perguntando do acordo da fonte num
+// shell sem entrada.
+const WINGET = (id) => `winget install --id ${id} -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity`
+
 export const ITENS = [
   { id: 'brew', mb: 2000, mac: BREW, soMac: true },
-  { id: 'node', mb: 100, win: 'winget install --id OpenJS.NodeJS.LTS -e', mac: 'brew install node' },
-  { id: 'python', mb: 100, win: 'winget install --id Python.Python.3.12 -e', mac: 'brew install python@3.12' },
+  { id: 'node', mb: 100, win: WINGET('OpenJS.NodeJS.LTS'), mac: 'brew install node' },
+  { id: 'python', mb: 100, win: WINGET('Python.Python.3.12'), mac: 'brew install python@3.12' },
   { id: 'python-libs', mb: 150, win: `<py> -m pip install ${LIBS}`, mac: `python3.12 -m venv <_video>/py && <_video>/py/bin/pip install ${LIBS}` },
-  { id: 'ffmpeg', mb: 200, win: 'winget install --id Gyan.FFmpeg -e', mac: 'brew install ffmpeg-full && brew link --overwrite --force ffmpeg-full' },
+  { id: 'ffmpeg', mb: 200, win: WINGET('Gyan.FFmpeg'), mac: 'brew install ffmpeg-full && brew link --overwrite --force ffmpeg-full' },
   { id: 'motor', mb: 750, cmd: 'node .claude/skills/configurar-video/scripts/sincronizar-motor.mjs && node .claude/skills/configurar-video/scripts/instalar-motor.mjs' },
   { id: 'whisper', mb: 500, cmd: 'node <_video>/motor/scripts/instalar-whisper.mjs --modelo <modelo>' },
   { id: 'deep-filter', mb: 26, cmd: 'node .claude/skills/configurar-video/scripts/baixar-deep-filter.mjs' },

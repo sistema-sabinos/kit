@@ -69,8 +69,14 @@ deep-filter**: diga em uma frase o que é, mostre o tamanho (`mb`) e o comando
   Mac e, se faltar, baixa as ferramentas de compilar da Apple (uns 2 GB), que o whisper
   usa. Pode abrir uma janela pedindo pra instalar essas ferramentas: é pra aceitar.
 - **node, python, ffmpeg**: são programas do computador, instalados pelo `winget` no Windows
-  e pelo `brew` no Mac. Se o instalador pedir permissão do computador, avise o aluno. Depois
-  de instalar, feche e abra o terminal pro computador achar o programa novo.
+  e pelo `brew` no Mac. Se o instalador pedir permissão do computador, avise o aluno. No
+  Windows, rode cada um pela PowerShell com timeout de 600000. Quem decide se deu certo é o
+  `conferir.mjs` rodado de novo; o código de saída do winget não vale (sai diferente de 0
+  quando o programa já existia). No Windows, instale primeiro todos os programas do
+  computador que faltam (node, python, ffmpeg) e só então diga: "Fecha todas as janelas do
+  VS Code, abre de novo nesta pasta e me chama numa conversa nova com /configurar-video. O
+  conferir retoma de onde parou." No Mac, rode o conferir de novo; se o programa continuar
+  faltando, peça o mesmo.
 - **python-libs**: as bibliotecas de imagem e som do Python (no Mac, dentro de um ambiente
   próprio em `_video/py`, porque o Python do brew não deixa instalar fora dele).
 - **motor**: duas partes, e a primeira roda **sempre**, mesmo com o motor aparecendo como ok (o conferir só vê se a biblioteca existe, e nunca checa se o motor está na versão do SabinOS atual; o script é barato e só copia o que mudou). Primeiro `node .claude/skills/configurar-video/scripts/sincronizar-motor.mjs`

@@ -6,6 +6,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { argumentos, montar, enviar, conferir, textoDoResumo } from './publicar-ml.mjs'
+import { carimbosDoAnuncio } from '../../mercado-livre/scripts/lib/pipeline.mjs'
 
 const SLUG = 'moedor-teste'
 const ATRIBUTOS = [
@@ -13,7 +14,7 @@ const ATRIBUTOS = [
   { id: 'EMPTY_GTIN_REASON', name: 'Motivo de GTIN vazio', tags: {}, values: [{ id: '17055160', name: 'O produto não tem código cadastrado' }] },
 ]
 
-function projeto({ erp = 'nenhum', auditoria = { veredito: 'aprovado', modalidade_escolhida: 'classico' }, imagensAprovadas = true, variacoes = '' } = {}) {
+function projeto({ erp = 'nenhum', auditoria = { veredito: 'aprovado', modalidade_escolhida: 'classico' }, imagensAprovadas = true, variacoes = '', nomeNaDecisao = 'Moedor Inox', carimbar = true } = {}) {
   const raiz = mkdtempSync(join(tmpdir(), 'publicar-ml-'))
   const pasta = join(raiz, 'dados', 'pipeline', SLUG)
   mkdirSync(pasta, { recursive: true })
@@ -23,10 +24,11 @@ function projeto({ erp = 'nenhum', auditoria = { veredito: 'aprovado', modalidad
   const j = (n, v) => writeFileSync(join(pasta, `${n}.json`), JSON.stringify(v))
   j('status', { slug: SLUG, fornecedor: 'forn-teste', categoria: 'casa', etapa_atual: 'auditado', etapas: {} })
   j('copy', { titulo: 'Moedor Eletrico Inox', descricao: 'Descricao do moedor', ficha: { Marca: 'Acme' }, precos: { ml_classico: 84.9 }, gtin: null })
-  j('decisao', { tipo: 'individual', composicao: [{ produto: 'Moedor Inox', qtd: 1 }], preco: { tabela: 96.5, alvo_pos_desconto: 84.9 } })
-  j('auditoria', auditoria)
+  j('decisao', { tipo: 'individual', composicao: [{ produto: nomeNaDecisao, qtd: 1 }], preco: { tabela: 96.5, alvo_pos_desconto: 84.9 }, marca_autorizada: 'Acme' })
   j('imagens', { aprovado_pelo_usuario: imagensAprovadas, imagens: [{ n: 2, arquivo: `anuncios/${SLUG}/imagens/02-uso.jpg` }, { n: 1, arquivo: `anuncios/${SLUG}/imagens/01-capa.jpg` }] })
   for (const f of ['01-capa.jpg', '02-uso.jpg']) writeFileSync(join(raiz, 'anuncios', SLUG, 'imagens', f), Buffer.from([0xff, 0xd8]))
+  // o ml-auditor carimba no fim (5.7, E.1): o projeto de teste nasce auditado em dia
+  j('auditoria', carimbar && auditoria.veredito === 'aprovado' ? { ...auditoria, carimbos: carimbosDoAnuncio(pasta) } : auditoria)
   writeFileSync(join(raiz, 'fornecedores', 'forn-teste', 'catalogo-analisado.csv'), `status,categoria,produto,ean,custo,peso_g,dimensoes_cm,variacoes,observacao\nOK,casa,Moedor Inox,,50.00,400,18x11x10,${variacoes},\n`)
   const cerca = '`'.repeat(3)
   writeFileSync(join(raiz, '_contexto', 'mercado-livre.md'), `# Mercado Livre\n\n${cerca}mercado-livre\nerp: ${erp}\n${cerca}\n`)
@@ -104,6 +106,65 @@ test('montar com pendencia ou recusa da validacao nao grava e apaga payload velh
     const r = await montar(SLUG, OPCOES, { api: apiFalsa({ ...LEITURAS, 'POST /items/validate': recusa }), raiz: p.raiz })
     assert.equal(r.gravado, false)
     assert.match(r.pendencias.join(' '), /embalagem/)
+  } finally {
+    rmSync(p.raiz, { recursive: true, force: true })
+  }
+})
+
+test('montar recusa copy mudado depois da auditoria e auditoria sem carimbo', async () => {
+  const p = projeto()
+  try {
+    const ok = await montar(SLUG, OPCOES, { api: apiFalsa({ ...LEITURAS, 'POST /items/validate': OK_VALIDA }), raiz: p.raiz })
+    assert.equal(ok.gravado, true, 'canario: auditado em dia monta')
+    writeFileSync(join(p.pasta, 'copy.json'), JSON.stringify({ ...p.ler('copy'), titulo: 'Moedor Eletrico Inox Novo' }))
+    await assert.rejects(montar(SLUG, OPCOES, { api: apiFalsa(LEITURAS), raiz: p.raiz }), /copy\.json mudou depois da auditoria/)
+  } finally {
+    rmSync(p.raiz, { recursive: true, force: true })
+  }
+  const nova = projeto({ carimbar: false, auditoria: { veredito: 'aprovado', modalidade_escolhida: 'classico', em: '2026-11-01' } })
+  try {
+    await assert.rejects(montar(SLUG, OPCOES, { api: apiFalsa(LEITURAS), raiz: nova.raiz }), /nao tem carimbo/)
+  } finally {
+    rmSync(nova.raiz, { recursive: true, force: true })
+  }
+  const antiga = projeto({ carimbar: false, auditoria: { veredito: 'aprovado', modalidade_escolhida: 'classico', em: '2026-09-23' } })
+  try {
+    const r = await montar(SLUG, OPCOES, { api: apiFalsa({ ...LEITURAS, 'POST /items/validate': OK_VALIDA }), raiz: antiga.raiz })
+    assert.equal(r.gravado, true, 'auditoria de antes do carimbo passa')
+    assert.match(r.avisos[0], /antes do carimbo/)
+    writeFileSync(join(antiga.pasta, 'copy.json'), JSON.stringify({ ...antiga.ler('copy'), titulo: 'Moedor Eletrico Inox Novo' }))
+    await assert.rejects(montar(SLUG, OPCOES, { api: apiFalsa(LEITURAS), raiz: antiga.raiz }), /copy\.json mudou depois da auditoria/, 'a passagem da auditoria antiga vale uma vez so')
+  } finally {
+    rmSync(antiga.raiz, { recursive: true, force: true })
+  }
+  const semData = projeto({ carimbar: false, auditoria: { veredito: 'aprovado', modalidade_escolhida: 'classico' } })
+  try {
+    await assert.rejects(montar(SLUG, OPCOES, { api: apiFalsa(LEITURAS), raiz: semData.raiz }), /nao tem carimbo/, 'auditoria sem data nao passa como antiga')
+  } finally {
+    rmSync(semData.raiz, { recursive: true, force: true })
+  }
+})
+
+test('montar recusa foto do mapa trocada depois da auditoria', async () => {
+  const p = projeto()
+  try {
+    const ok = await montar(SLUG, OPCOES, { api: apiFalsa({ ...LEITURAS, 'POST /items/validate': OK_VALIDA }), raiz: p.raiz })
+    assert.equal(ok.gravado, true, 'canario: auditado em dia monta')
+    writeFileSync(join(p.raiz, 'anuncios', SLUG, 'imagens', '01-capa.jpg'), Buffer.from([0xff, 0xd8, 0x00]))
+    await assert.rejects(montar(SLUG, OPCOES, { api: apiFalsa(LEITURAS), raiz: p.raiz }), /01-capa\.jpg mudou depois da auditoria/)
+  } finally {
+    rmSync(p.raiz, { recursive: true, force: true })
+  }
+})
+
+test('montar com nome da decisao diferente do CSV vira pendencia e nao grava', async () => {
+  const p = projeto({ nomeNaDecisao: 'Moedor inox' })
+  try {
+    writeFileSync(p.payload, '{"velho":true}')
+    const r = await montar(SLUG, OPCOES, { api: apiFalsa({ ...LEITURAS, 'POST /items/validate': OK_VALIDA }), raiz: p.raiz })
+    assert.equal(r.gravado, false)
+    assert.ok(r.pendencias.some(x => x.includes('"Moedor inox" da decisao.json nao casou')), r.pendencias.join(' | '))
+    assert.ok(!existsSync(p.payload))
   } finally {
     rmSync(p.raiz, { recursive: true, force: true })
   }

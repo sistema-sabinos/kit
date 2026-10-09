@@ -85,7 +85,7 @@ que a resposta deixou faltando.
    Quem decide se deu certo é a conferência rodada de novo; o código de saída do winget não
    vale (sai diferente de 0 quando o programa já existia). O esperado é `REINICIAR`, com o
    texto dele. Continuou `FALTA`: provavelmente a pessoa clicou em Não; oferecer de novo, ou
-   mandar pra seção 2 do Guia de Instalação. Com `sem-winget`: mandar pra seção 2, com
+   mandar pra seção 2 do Guia de Instalação (o PDF que veio junto com o zip, fora dele). Com `sem-winget`: mandar pra seção 2, com
    git-scm.com/downloads/win e nodejs.org, e pedir pra chamar de novo quando terminar.
 4. No Mac:
    - Git: rodar `xcode-select --install` e dizer: "Abriu uma janela da Apple oferecendo
@@ -97,7 +97,9 @@ que a resposta deixou faltando.
      ele pedir a senha do Mac, é a mesma de ligar o computador."
    - Depois, conferir de novo; continuou `FALTA`, pedir pra fechar e abrir o VS Code. Sem
      brew, que pede senha no terminal.
-5. ffmpeg e Python ficam com a `/configurar-video`.
+5. ffmpeg, Python e yt-dlp: quem instala é a skill que usa (`/configurar-video`, `/transcribe`,
+   `/assistir-video`): no Windows sempre pelo winget com as mesmas flags, no Mac pelo caminho
+   que a própria skill dá.
 
 Abrir `RESPONDA-AQUI.txt` e classificar cada uma das 17 perguntas em três estados:
 
@@ -121,8 +123,9 @@ Em seguida, o botão de ritmo, cabeçalho `Ritmo`, com três opções:
 
 - **Completo, uns 40 min:** as 17 perguntas, uns 20 minutos só nelas, e a memória fica
   bem melhor. Depois vêm umas confirmações rápidas e a montagem.
-- **Rápido, uns 25 min:** as 11 que não dá pra trabalhar sem, uns 10 minutos; as outras
-  6 ficam anotadas pra responder depois, quando quiser.
+- **Rápido, uns 25 min:** as 11 que não dá pra trabalhar sem, mais duas curtas de botão
+  (o seu ramo e, se ainda não ficou claro, os seus canais), uns 12 minutos; as outras 4
+  ficam anotadas pra me contar depois, quando quiser.
 - **Prefiro escrever no arquivo:** responder com calma no RESPONDA-AQUI.txt e chamar
   depois.
 
@@ -132,16 +135,19 @@ qualquer mensagem aqui." E parar.
 
 Com o completo ou o rápido, fazer as perguntas na ordem dos blocos (A a F), uma por vez,
 no formato da regra acima. No completo, são as 17, pulando as marcadas como (opcional) se
-a pessoa começar a cansar. No rápido, só as essenciais; as seis restantes entram no
-`tarefas.md` do projeto (Passo 5) como "responder no RESPONDA-AQUI.txt quando der".
+a pessoa começar a cansar. No rápido, só as essenciais, mais a 7 e a 6 pelas ressalvas
+abaixo; as quatro restantes (2, 5, 10 e 13) entram no `tarefas.md` do projeto (Passo 5),
+uma linha por pergunta adiada, com a pergunta resumida: "me contar aqui no projeto quando
+der: <pergunta>". A resposta entra pela Tabela de destinos, como qualquer fato novo.
 
 **Alguma respondida:** (a conversa caiu no meio, ou a pessoa escreveu no arquivo) dizer
 "Já tenho X das 17 respostas guardadas, sigo de onde parou.", com o X contado no arquivo, e
-seguir sem o botão de ritmo. Perguntar primeiro as essenciais vagas ou em branco e a 7, na
-ordem dos blocos, sem repetir o que já foi respondido bem. Depois, se faltar alguma não
-essencial, botão com [Responder agora] [Deixar pra depois]; o "depois" vai pro `tarefas.md`
-do projeto (Passo 5) como "responder no RESPONDA-AQUI.txt quando der". Com 10 ou mais
-respondidas, sem essencial faltando e com a 7 respondida, seguir direto pro Passo 1.
+seguir sem o botão de ritmo. Perguntar primeiro as essenciais vagas ou em branco e a 7 (e a
+6, pela ressalva abaixo), na ordem dos blocos, sem repetir o que já foi respondido bem.
+Depois, se faltar alguma não essencial, botão com [Responder agora] [Deixar pra depois]; o
+"depois" vai pro `tarefas.md` do projeto (Passo 5), uma linha por pergunta: "me contar aqui
+no projeto quando der: <pergunta>". Com 10 ou mais respondidas, sem essencial faltando, com
+a 7 respondida e os canais conhecidos (pela 6 ou pela 4), seguir direto pro Passo 1.
 
 Nos dois ramos, gravar cada resposta dentro do próprio `RESPONDA-AQUI.txt`, embaixo do "Sua
 resposta:" dela, **na hora, antes da pergunta seguinte**. Resposta de botão se grava pelo
@@ -151,9 +157,11 @@ gravação imediata é o que faz a conversa sobreviver a uma queda no meio das 1
 ela, a pessoa perde tudo e recomeça do zero.
 
 Essenciais: 1, 3, 4, 8, 9, 11, 12, 14, 15, 16 e 17. As outras seis (2, 5, 6, 7, 10 e 13)
-podem ficar pra depois, com a ressalva de que a 7 (ramo regulado) é perguntada em uma
-linha mesmo no rápido, porque restrição de conselho ou órgão muda o que toda skill pode
-escrever.
+podem ficar pra depois, com duas ressalvas que valem mesmo no rápido, as duas de botão. A 7
+(ramo regulado) é perguntada em uma linha, porque restrição de conselho ou órgão muda o que
+toda skill pode escrever. A 6 (canais) decide quais pacotes se oferecem no Passo 4: quando a
+resposta da 4 não citou canal nenhum, ela vira um botão direto com as opções dela; quando a
+4 já citou, a 6 se grava com o que a 4 disse, sem perguntar de novo.
 
 ## Passo 1, confirmar o entendimento
 
@@ -166,7 +174,8 @@ Antes de fechar o resumo, checar as perguntas **essenciais** (1, 3, 4, 8, 9, 11,
 recebe uma repergunta dirigida agora, no formato de 4 partes, antes de montar o
 resumo. As não essenciais (2, 5, 6, 7, 10, 13) que ficaram vagas ou em branco não
 travam o resumo: se a pessoa não completar quando perguntada uma vez, seguir e
-anotar a lacuna para o `tarefas.md` do projeto (Passo 5).
+anotar a lacuna para o `tarefas.md` do projeto (Passo 5), no mesmo formato: "me contar
+aqui no projeto quando der: <pergunta>".
 
 Se a mesma pergunta essencial voltar vaga depois da repergunta, aceitar o que veio,
 anotar a lacuna e seguir sem insistir mais uma vez.
@@ -187,9 +196,14 @@ Mostrar o conteúdo de `_modelo/_contexto/preferencias.md` resumido em 3 ou 4 li
 e perguntar:
 
 > "Esse é o jeito que eu venho configurado pra escrever: informal, direto, sem cara
-> de robô, sem enrolação. Quer que eu mude alguma coisa? Pode ser qualquer detalhe:
+> de robô, e explicando tudo bem simples, como pra quem está começando, com palavra
+> técnica só com a explicação do lado. Quer que eu mude alguma coisa? Pode ser qualquer detalhe:
 > mais formal com cliente, pode usar gíria, sempre responder curto, o que for do seu
 > jeito."
+
+Quem respondeu "Já me viro bem" na pergunta 3 ouve, no lugar do "explicando tudo bem
+simples", a versão direta: "linguagem direta, termo técnico sem explicação, explicando só
+quando você pedir".
 
 Se a pessoa pedir mudança, guardar a mudança para escrever no `preferencias.md` do
 projeto (Passo 5, não no `_modelo/`, que nunca se edita). Se disser "tá bom assim",
@@ -270,7 +284,7 @@ Vira o `_contexto/infra.md` do Passo 5. "Não tenho" é resposta: a seção diz 
 > jeito que vier na cabeça, sem caprichar. Tipo: 'faz um post', 'quanto cobro nisso?', 'me
 > ajuda com cliente chato'."
 
-Com botão, cabeçalho `Treino`: [Bora] [Pular]. Com o pedido em mãos, reescrever usando o que a entrevista contou: o que a pessoa quer, pra quê, e como sabe que ficou bom. Mostrar o antes e o depois em até 3 linhas e fechar com: "Pode pedir do seu jeito. Quando faltar algo, eu pergunto com opções, igual fiz agora. Se quiser render mais, a fórmula é dizer o que você quer, pra quê, e como sabe que ficou bom." Não executar o pedido (o projeto ainda não existe). Guardar o pedido bom como primeira linha do `tarefas.md` do projeto, no Passo 5.
+Com botão, cabeçalho `Treino`: [Bora] [Pular]. Com o pedido em mãos, reescrever usando o que a entrevista contou: o que a pessoa quer, pra quê, e como sabe que ficou bom. Mostrar o antes e o depois em até 3 linhas e fechar com: "Pode pedir do seu jeito. Quando faltar algo, eu pergunto com opções, igual fiz agora. Se quiser render mais, a fórmula é dizer o que você quer, pra quê, e como sabe que ficou bom." Não executar o pedido (o projeto ainda não existe). Guardar o pedido bom no `tarefas.md` do projeto, logo abaixo da linha de abrir a pasta (Passo 7, item 2).
 
 ## Passo 3, identidade global
 
@@ -280,7 +294,10 @@ desta pasta-mãe) uma seção demarcada por `<!-- sabinos:inicio -->` e
 
 - **Arquivo não existe:** criar com só essa seção dentro.
 - **Existe, sem os marcadores:** adicionar a seção no final do arquivo, sem tocar
-  em nada que já está escrito ali.
+  em nada que já está escrito ali. Antes de montar o bloco, ler o arquivo. Regra de
+  casa (as quatro abaixo) que já esteja escrita fora dos marcadores não se repete
+  dentro: o bloco leva só a linha "regras de casa: já no começo deste arquivo".
+  Mostrar o que foi pulado junto com o bloco.
 - **Existe, com os marcadores:** substituir só o miolo entre eles, mantendo tudo
   antes e depois.
 
@@ -295,9 +312,14 @@ de forma, nesta ordem de importância:
   assistente no Passo 2, uma linha logo abaixo: "Você se chama <nome>: atenda
   por esse nome e use ele quando se apresentar." Pedido de troca depois muda
   só essa linha, entre os marcadores. História, lista de projetos e
-  notas de ferramenta não entram: vão pra `~/.claude/contexto/` (criar a pasta,
-  um arquivo por assunto) e o bloco aponta pra ela em uma linha, "abrir quando a
-  tarefa pedir". Nunca com `@import`, senão volta tudo pra mesa.
+  notas de ferramenta não entram: vão pra `~/.claude/contexto/` e o bloco aponta
+  pra ela em uma linha, "abrir quando a tarefa pedir". Nunca com `@import`, senão
+  volta tudo pra mesa. Listar a pasta antes (criar se não existir). Nomes fixos:
+  `historia.md` (quem a pessoa é e de onde vem), `projetos.md` (uma linha por
+  projeto) e `ferramentas.md` (notas de ferramenta). Arquivo que já existe só
+  recebe acréscimo no fim, debaixo de um título `## SabinOS, <AAAA-MM-DD>`, e nunca
+  se reescreve. Mostrar a lista do que vai ser gravado ali junto com o bloco, antes
+  de gravar.
 - **Nunca copiar a lista de skills ou comandos.** O Claude Code já injeta, em
   toda conversa, o nome e a descrição de cada skill instalada. Cópia manual paga
   duas vezes e envelhece.
@@ -310,12 +332,22 @@ de forma, nesta ordem de importância:
   de escrita resumido em poucas linhas.
 - **Curto.** Meta: menos de 900 tokens, uns 3.500 caracteres. Regra que vale só
   pra um projeto não entra aqui; vai pro `AGENTS.md` daquele projeto. Cada regra
-  mora na camada mais alta em que é verdade, e só lá.
+  mora na camada mais alta em que é verdade, e só lá. Exceção de propósito: as
+  quatro regras de casa se repetem no `AGENTS.md` do projeto e no da pasta-mãe,
+  porque o projeto precisa valer sozinho no Codex e em outra máquina, que não
+  leem este arquivo.
 
 Mostrar o bloco inteiro para o usuário antes de gravar, com o tamanho em
 caracteres (`node _ferramentas/medir-mesa.mjs` mede depois de gravado).
 
 ## Passo 4, descoberta de skills
+
+Antes de escolher as skills, fazer as ofertas de pacote do Passo 5, na ordem em que
+aparecem lá: Anúncio pago, Venda em marketplace, Vídeo, Mídia social, Loja e Criar app.
+Aqui só se pergunta e se anota a resposta; a cópia continua no Passo 5. A escolha das 3 a
+6 skills considera o que entrou: com o pacote de mídia social aceito, `publicar-instagram`
+e `roteiro-post` da biblioteca ficam fora (o pacote já posta, e a `/pauta` faz roteiro e
+carrossel em `producao/`), senão ficam duas rotas pro mesmo trabalho.
 
 Detectar o perfil principal a partir das respostas colhidas: `agencia` (múltiplos
 clientes com processo de entrega), `freelancer` (solo, vende serviço), `solopreneur`
@@ -407,7 +439,7 @@ também assina com a origem.
 
 Perguntar na conversa, no formato de 4 partes:
 
-> "Você investe em anúncio pago hoje, ou pretende investir nos próximos meses?
+> "Você investe em anúncio pago no Instagram ou no Facebook hoje, ou pretende investir nos próximos meses?
 >
 > Pergunto porque, se sim, eu já instalo aqui o comando que cuida disso: ele
 > calcula quanto vale um resultado pro seu negócio e, toda vez que você chamar,
@@ -420,7 +452,8 @@ Resposta positiva ou "pretendo": copiar a pasta `_modelo/.claude/skills/trafego/
 inteira, com `referencias/` e `scripts/` dentro, pro `.claude/skills/` do
 projeto, e registrar em `_contexto/ferramentas.md` que a skill está instalada e
 ainda sem régua, porque a régua nasce na primeira vez que a pessoa rodar
-`/trafego`.
+`/trafego`. Quem anuncia só dentro do Mercado Livre (Mercado Ads) não recebe a
+`trafego`: o Ads vem no pacote de marketplace, oferecido logo abaixo.
 
 Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o `/trafego`
 existe e pode ser instalado depois com o `/mapear`, que acha a skill em
@@ -469,6 +502,14 @@ inteiro ou não vai: as skills dividem a mesma biblioteca de scripts. Depois:
 - Em `_contexto/ferramentas.md`: `| pacote Mercado Livre | instalado | <AAAA-MM-DD> | sem configuração: nasce na primeira /mercado-livre |`
 - Em `tarefas.md`: "rodar `/mercado-livre` (ele pergunta se você já vende e, se não, abre a trilha do zero), e o `/conectar` (seção Mercado Livre e Bling) pra ligar as contas".
 
+MEI que vende em marketplace: quando o pacote de loja não entrar (o bloco Loja vem mais
+abaixo), fazer depois dele a pergunta do regime de lá. Com MEI, oferecer a `/mei` (o DAS
+de todo mês, a declaração anual e o teto, somando a venda do marketplace anotada nela),
+dizendo que ela traz junto os scripts do caixa (`atendimento`, `caixa` e `cobrar`), que
+ficam quietos até alguém chamar o `/caixa`. Com o sim, copiar as quatro pastas e anotar
+`**Registro:** MEI` no `_contexto/empresa.md`. Os outros regimes se anotam igual ao bloco
+Loja, sem copiar nada.
+
 Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o pacote de
 marketplace existe e pode ser instalado depois pelo `/mapear`.
 
@@ -513,14 +554,14 @@ formato de 4 partes:
 > usar; a única parte paga é uma análise de vídeo mais caprichada, opcional e
 > sempre avisada antes. Quer que eu instale?
 >
-> Pergunto porque ele é grande (seis comandos que trabalham juntos), então só
+> Pergunto porque ele é grande (sete comandos que trabalham juntos), então só
 > entra se fizer sentido.
 >
 > Tipo: 'quero, pra loja', 'quero, mas pro meu perfil pessoal', ou 'agora não'."
 
-Resposta positiva: copiar pro projeto as seis pastas inteiras de
+Resposta positiva: copiar pro projeto as sete pastas inteiras de
 `_modelo/.claude/skills/` (`midia-social`, `pauta`, `decupar-referencia`,
-`publicar-social`, `auditar-instagram`, `gerenciar-youtube`). Nunca copiar
+`publicar-social`, `auditar-instagram`, `gerenciar-youtube`, `carrossel`). Nunca copiar
 arquivo terminado em `.test.mjs` nem pasta `node_modules/`. O pacote vai
 inteiro ou não vai: as skills dividem a mesma biblioteca de scripts. Copiar
 também, se ainda não estiverem no projeto, a `assistir-video` e a `transcribe`:
@@ -644,8 +685,8 @@ Windows no git, e o backup passa a ver o mesmo arquivo como dois.
 
 - `.claude/settings.json`: copiar como está se o auto-sync ficou ligado; se a
   pessoa recusou, copiar sem o bloco `Stop`. Nesse caso de recusa, a regra 5 do
-  `AGENTS.md` do projeto (que hoje descreve o hook salvando tudo sozinho e
-  proíbe oferecer `/syncar`) precisa ser reescrita: dizer que não existe backup
+  `AGENTS.md` do projeto (que descreve o hook salvando sozinho com o GitHub ligado
+  e, sem GitHub, manda lembrar o `/syncar` uma vez) precisa ser reescrita: dizer que não existe backup
   automático configurado e que o assistente deve sugerir `/syncar` ao fim das
   sessões de trabalho. Caminho padrão (auto-sync aceito) mantém a regra 5 como
   está no `_modelo/AGENTS.md`.
@@ -660,6 +701,9 @@ Windows no git, e o backup passa a ver o mesmo arquivo como dois.
   pro GitHub ao fim de cada resposta e, se outro computador mexeu no mesmo
   arquivo, para e deixa recado em vez de forçar. Vai sempre, como a trava: com o
   auto-sync recusado ele fica no projeto sem nada chamando.
+- `.claude/detalhe-regras.md`, copiar como está. É o detalhe das regras (formato
+  do diário e do recado, rotina, criação de skill, Codex) que o `AGENTS.md` manda
+  ler antes de escrever; sem ele o Mapa aponta pra um arquivo que não existe.
 - `.gitignore`, copiar como está. É fechado por padrão: só o tipo liberado (texto, planilha, imagem, PDF, script) vai pro backup.
 - `.gitattributes`, copiar como está. Faz o diário e as decisões, que só recebem
   linha nova, juntarem as duas versões sozinhos quando dois computadores escrevem
@@ -673,7 +717,14 @@ Windows no git, e o backup passa a ver o mesmo arquivo como dois.
   das respostas 14 e 15, com o assunto na frente na coluna Ferramenta ("Agenda:
   Google Agenda", "Reunião: nada"): o que ela usa e o sistema ainda não alcança
   fica `só você`; o que ela não tem fica `não ligada`, com o que o `/conectar`
-  liga pra isso na Observação. Nada se liga aqui: é só o mapa.
+  diz pra isso na Observação (o item do assunto, ou a seção 10 dele, que manda
+  pro catálogo de ferramentas); sem nada que sirva, a linha fica `só você`. Nada
+  se liga aqui: é só o mapa.
+  No `preferencias.md`, o parágrafo marcado pelo comentário `<!-- nível: iniciante ... -->`
+  segue a pergunta 3. "Nunca usei IA" e "Uso o básico" ficam como está. "Já me viro
+  bem" troca o parágrafo pela versão direta escrita no próprio comentário ("Linguagem
+  direta, termo técnico sem explicação; explicar só quando pedirem. ..."), e o
+  comentário sai junto. Mudança de tom pedida no Passo 2 vale por cima disso.
 - `marca/design-guide.md`, preenchido com o que veio do Passo 2 (identidade
   visual), ou mantido neutro se a pessoa não tinha nada ainda.
 - `marca/tom-de-voz.md`, preenchido com a voz da marca do Passo 2 (o exemplo real
@@ -694,10 +745,10 @@ Windows no git, e o backup passa a ver o mesmo arquivo como dois.
   pasta `trafego` inteira só se a pergunta de anúncio pago acima teve resposta
   positiva ou "pretendo".
   O pacote de marketplace segue o bloco "Venda em marketplace" acima.
-  Nunca deduzir o sistema operacional: nenhuma das 17 perguntas pede isso, então
-  na dúvida ele entra na pergunta em bloco do Passo 5, antes de listar qualquer
-  skill. Assumir Windows entrega a um usuário de Mac uma skill de PowerShell que
-  não roda, e o erro só aparece quando ele tenta usar.
+  Pra `otimizar-pc`, o Passo 0 já sabe, porque rodou a conferência pela
+  PowerShell (Windows) ou pela Bash do Mac. A pergunta do sistema operacional só
+  entra quando o Passo 0 não rodou. Assumir Windows sem saber entrega a quem usa
+  Mac uma skill de PowerShell que não roda, e o erro só aparece quando ele tenta usar.
 - As skills escolhidas no Passo 4 (as ativadas de `templates/skills/` mais as
   geradas do zero), já dentro de `<pasta-do-projeto>/.claude/skills/`. Template
   da biblioteca é arquivo solto (`<nome>.md`) ou pasta: vira
@@ -720,9 +771,10 @@ Partir de `_modelo/AGENTS.md` inteiro e preencher só a seção `## Sobre este
 negócio`: trocar o que o molde deixou marcado como não configurado pelo nome do
 negócio e por um resumo real de quem é a pessoa e o que o workspace representa.
 As outras seções (`## Mapa`, `## Tabela de destinos`, `## Gatilhos`, `## Recall`,
-`## Rotinas`, `## Regras de operação`, `## Estrutura de pastas`) não se mexem,
-com duas exceções: a regra 5 de `## Regras de operação` quando o auto-sync foi
-recusado (acima) e a lista de `## Estrutura de pastas` (abaixo). O caminho da
+`## Rotinas`, `## Regras de operação`, `## Estrutura de pastas`, `## Codex`) não se mexem,
+com três exceções: a regra 5 de `## Regras de operação` quando o auto-sync foi
+recusado (acima), a lista de `## Estrutura de pastas` e as linhas do perfil que
+entram na `## Tabela de destinos` (as duas abaixo). O caminho da
 biblioteca, `../_modelo/templates/skills/`, já vem certo do molde (o relativo da
 pasta do projeto até a pasta-mãe, já que `templates/` não é copiada): conferir e
 deixar como está. Reescrever esse caminho de novo gera `../_modelo/../_modelo/`,
@@ -757,6 +809,7 @@ some no primeiro backup pro GitHub, que não guarda pasta vazia.
 Criar na raiz do projeto com as pendências que apareceram na entrevista: lacunas de
 perguntas não essenciais deixadas em branco, decisões adiadas (ex: identidade
 visual sem definir) e qualquer item que a pessoa mencionou querer resolver depois.
+As linhas do topo são as do Passo 7, item 2.
 
 ### Ponte pro Codex
 
@@ -829,16 +882,24 @@ qual é o próximo passo ao terminar cada etapa)".
    o `.gitignore` antigo, aberto, de quem veio de versão anterior à 4.4.
 2. Semear `_contexto/agora.md` do projeto:
    - **Onde paramos:** "Sistema recém-criado pelo SabinOS."
-   - **Pendências:** "Abrir esta pasta no VS Code e rodar /iniciar", "/conectar
-     pra ligar as ferramentas", "/mapear pra criar mais comandos", "/syncar pra
-     configurar o backup no GitHub".
-3. Registrar a versão do SabinOS no projeto. Da pasta-mãe, rodar
+   - **Pendências:** fica vazia (só entra o que espera alguém de fora: fornecedor,
+     cliente, contador, plataforma).
+
+   E, no topo do `tarefas.md`, nesta ordem: "Abrir esta pasta no VS Code e rodar
+   /iniciar", o pedido do treino do Passo 2 (quando houve), "/conectar pra ligar as
+   ferramentas", "/mapear pra criar mais comandos" e, enquanto o projeto não tem
+   GitHub ligado (o normal no primeiro dia, com ou sem auto-sync), "/syncar pra ligar
+   o backup no GitHub". Essa linha é o lembrete único que a regra 5 do `AGENTS.md` pede.
+3. Registrar o projeto em `~/.claude/contexto/projetos.md` (criar a pasta e o
+   arquivo se não existirem): uma linha com nome, pasta e o que o projeto faz, sem
+   apagar as linhas que já estavam lá. Mostrar a linha antes de gravar.
+4. Registrar a versão do SabinOS no projeto. Da pasta-mãe, rodar
    `node _ferramentas/atualizar-projeto.mjs plano <pasta-do-projeto>` e depois
-   `node _ferramentas/atualizar-projeto.mjs aplicar <pasta-do-projeto>`. Tudo sai
+   `node _ferramentas/atualizar-projeto.mjs aplicar <pasta-do-projeto> --registro`. Tudo sai
    "igual" e nada é trocado: o que fica é o recibo `.sabinos/instalado.json` e o
    motor guardado, que deixam o `/atualizar-sabinos` saber, na versão seguinte,
    o que veio do SabinOS e o que é da pessoa.
-4. **Teste de aceite.** Reler do disco, nunca da memória da conversa, o
+5. **Teste de aceite.** Reler do disco, nunca da memória da conversa, o
    `_contexto/empresa.md`, o `_contexto/estrategia.md` e o
    `_contexto/preferencias.md` do projeto, e provar com três fatos tirados deles,
    numa frase só:
@@ -850,7 +911,7 @@ qual é o próximo passo ao terminar cada etapa)".
    anotar no `_contexto/licoes.md` do projeto (entendimento errado corrigido) e
    repetir só o fato corrigido. O teste lê o arquivo porque é ele que o sistema
    vai ler amanhã: fato que ficou só na conversa some.
-5. **`bem-vindo.html`.** Copiar `_modelo/templates/bem-vindo.template.html` pra
+6. **`bem-vindo.html`.** Copiar `_modelo/templates/bem-vindo.template.html` pra
    raiz do projeto como `bem-vindo.html` e trocar cada marcador:
    - `{{NEGOCIO}}`, `{{PESSOA}}` (como a pessoa prefere ser chamada) e `{{DATA}}`
      (AAAA-MM-DD de hoje);
@@ -867,7 +928,7 @@ qual é o próximo passo ao terminar cada etapa)".
      de aceite, já confirmados;
    - `{{COMANDOS}}` por um `<li>` por comando da lista final do Passo 6, na mesma
      linguagem simples;
-   - `{{PROXIMO_PASSO}}` pela primeira pendência do `agora.md`.
+   - `{{PROXIMO_PASSO}}` pela primeira linha do `tarefas.md`.
 
    Todo texto que vem das respostas da pessoa (nome, fatos, comandos, próximo passo)
    entra com `&` trocado por `&amp;` e `<` por `&lt;`, senão o navegador lê como
@@ -880,7 +941,7 @@ qual é o próximo passo ao terminar cada etapa)".
    `start bem-vindo.html`; Mac: `open bem-vindo.html`) e dizer em uma linha que é
    o retrato do que o sistema sabe hoje, tirado agora: a página não se atualiza
    sozinha quando os arquivos mudam.
-6. Mensagem final, ensinando clique a clique, cobrindo Windows e Mac, como abrir a
+7. Mensagem final, ensinando clique a clique, cobrindo Windows e Mac, como abrir a
    pasta nova no VS Code (menu Arquivo, opção Abrir Pasta, ou arrastar a pasta pro
    ícone do VS Code). Antes de fechar, dizer que a estrutura de hoje é o começo, com
    este texto:
@@ -897,12 +958,13 @@ qual é o próximo passo ao terminar cada etapa)".
 ## Regras gerais
 
 - Gerar tudo do Passo 5 em diante de uma vez só, depois de fechados os Passos 0 a
-  4. Nunca criar arquivo por arquivo durante a entrevista. As cinco confirmações
-  do Passo 5 (auto-sync, equipe e computadores, anúncio pago, Windows quando nenhuma resposta deixou
-  isso claro, e a estrutura de pastas proposta) vêm antes de gerar, em bloco, e
-  não contam como quebrar essa regra. As quatro primeiras saem juntas, numa
-  mensagem só, cada uma com a resposta já sugerida pelo que a pessoa disse
-  ("backup automático: sim; computadores: notebook e o da Bia; ...; muda alguma?").
+  4. Nunca criar arquivo por arquivo durante a entrevista. As confirmações do
+  Passo 5 (auto-sync, equipe e computadores, sistema operacional só quando o
+  Passo 0 não rodou, e por fim a estrutura de pastas proposta) vêm antes de gerar
+  e não contam como quebrar essa regra. Cada uma sai sozinha, no seu bloco, com
+  botão. Quando a entrevista já deu a resposta, a opção correspondente vem
+  primeiro, com "(sugerido)". O anúncio pago e as ofertas de pacote seguem a ordem
+  do Passo 4.
 - Depois de gerar, mostrar só o resumo do que foi criado, não o conteúdo de cada
   arquivo linha por linha.
 - Resposta vaga ou em branco não essencial, perguntada uma vez e ainda vaga: aceitar

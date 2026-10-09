@@ -37,7 +37,7 @@ As skills são o roteiro: nunca improvisar o fluxo.
    uma conversa nova na pasta do projeto".
 4. Erro corrigido no onboarding vira linha datada no `_contexto/licoes.md` do
    projeto criado.
-5. Nada que gasta dinheiro, envia mensagem pra fora ou altera conta de terceiros
+5. Nada que gasta dinheiro, publica, envia mensagem pra fora ou altera conta de terceiros
    roda sem aprovação explícita na hora.
 6. Chave e senha só em arquivo `.env`, nunca no chat nem em outro arquivo.
 7. Nunca editar `_modelo/` (o molde dos próximos projetos) sem o usuário pedir

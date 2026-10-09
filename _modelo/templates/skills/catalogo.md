@@ -1,6 +1,6 @@
 # Catalogo de Skills
 
-Skills externas prontas pra instalar. Use como referencia ao criar skills novas com `/mapear` ou instale diretamente as que fizerem sentido pro seu negocio.
+Skills externas prontas pra instalar. Use como referencia ao criar skills com o `/mapear`, que le, adapta e so instala com o seu sim.
 
 > Skills globais ficam em `~/.claude/skills/` e funcionam em qualquer projeto.
 > Skills locais ficam em `.claude/skills/` e so funcionam nesse projeto.
@@ -71,7 +71,7 @@ Skills externas prontas pra instalar. Use como referencia ao criar skills novas 
 **O que faz:** Transcreve videos de qualquer plataforma (YouTube, Instagram, TikTok, X/Twitter, Vimeo e 1000+ sites) usando yt-dlp + Whisper local, sem chave de API.
 **Bom pra:** Transcrever Reels, TikToks, posts de X/Twitter com video, qualquer URL de video, quando so o audio importa
 **Precisa de:** Python 3, yt-dlp, faster-whisper e ffmpeg (o `/transcribe install` confere e guia)
-**Como instalar:** Ja faz parte do molde do SabinOS: entra no projeto quando o negocio lida com video ou redes sociais, ou a pedido (o `/setup` e o `/novo-projeto` decidem). Pra ver o que aparece na tela, e nao so ouvir, a irma dela e a `/assistir-video`
+**Como instalar:** Ja vem em todo projeto do SabinOS (copia do molde). Pra ver o que aparece na tela, e nao so ouvir, a irma dela e a `/assistir-video`
 **Fonte:** Skill do SabinOS
 
 ---
@@ -106,8 +106,8 @@ Skills externas prontas pra instalar. Use como referencia ao criar skills novas 
 ### Find Skills
 **O que faz:** Ajuda a descobrir e instalar skills quando voce nao sabe se existe alguma pra resolver o que precisa. Funciona como um buscador de skills.
 **Bom pra:** Quando o `/mapear` nao acha template e voce quer pesquisar antes de criar do zero
-**Como instalar:** Oficial da Anthropic. Digite / no chat e procure o nome; se nao aparecer, instale pelo /plugin (marketplace oficial). Chamar com `/find-skills`
-**Fonte:** Skill nativa do Claude Code
+**Como instalar:** ja vem em todo projeto do SabinOS. So busca e le; o `/mapear` decide o que entra. Chamar com `/find-skills`
+**Fonte:** skill do SabinOS
 
 ### Context7 MCP
 **O que faz:** Busca documentacao atualizada de bibliotecas, frameworks e APIs (React, Next.js, Prisma, Tailwind, etc). Evita que o Claude use info desatualizada do treinamento.

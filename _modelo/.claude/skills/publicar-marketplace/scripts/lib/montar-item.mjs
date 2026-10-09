@@ -3,6 +3,7 @@
 // Formato conferido na conta real em 2026-09-30 com POST /items/validate: o titulo vai em
 // family_name (title junto e recusado), e medidas e peso da embalagem sao obrigatorios, em
 // numero inteiro, cm e g.
+import { marcaDaFicha } from '../../../mercado-livre/scripts/lib/pipeline.mjs'
 
 const DIACRITICOS = new RegExp('[\\u0300-\\u036f]', 'g')
 
@@ -11,16 +12,18 @@ export function normalizar(texto) {
 }
 
 // Preco de lista inflado (contrato 3: decisao.preco.tabela) pra dar margem ao desconto da Central
-// de Promocoes. Sem tabela, o preco do copy entra cheio e sem espaco pra desconto.
+// de Promocoes. O alvo depois do desconto e o preco da modalidade no copy (copy.precos.ml_<modalidade>,
+// o mesmo que o Bling usa), e so sem ele o alvo_pos_desconto da decisao. Sem tabela, o alvo entra
+// cheio e sem espaco pra desconto.
 export function precoDeLista({ decisao, copy, modalidade }) {
   const tabela = Number(decisao?.preco?.tabela)
-  const alvo = Number(decisao?.preco?.alvo_pos_desconto)
-  if (tabela > 0) {
-    return { preco: tabela, desconto_pct: alvo > 0 && alvo < tabela ? Math.round((1 - alvo / tabela) * 100) : null, aviso: null }
-  }
   const doCopy = Number(copy?.precos?.[`ml_${modalidade}`])
+  const alvo = doCopy > 0 ? doCopy : Number(decisao?.preco?.alvo_pos_desconto)
+  if (tabela > 0 && alvo > 0 && tabela > alvo) return { preco: tabela, desconto_pct: Math.round((1 - alvo / tabela) * 100), aviso: null }
+  if (tabela > 0 && alvo > 0) return { preco: alvo, desconto_pct: null, aviso: 'a tabela da decisao nao fica acima do preco da modalidade: entra no preco da modalidade, sem espaco pra desconto' }
+  if (tabela > 0) return { preco: tabela, desconto_pct: null, aviso: null }
   return {
-    preco: doCopy > 0 ? doCopy : null,
+    preco: alvo > 0 ? alvo : null,
     desconto_pct: null,
     aviso: 'sem preco de tabela na decisao: o anuncio entra no preco do copy, sem espaco pra desconto na Central de Promocoes',
   }
@@ -103,7 +106,7 @@ export function montarItem({ copy, decisao, auditoria, imagens, linha, categoria
   const titulo = String(copy?.titulo ?? '').trim()
   const limite = Number(categoria?.max_title_length) || 60
   if (!titulo) pendencias.push('o copy.json nao tem titulo')
-  else if (titulo.length > limite) pendencias.push(`o titulo tem ${titulo.length} caracteres e a categoria aceita ${limite}: encurte no copy.json e monte de novo`)
+  else if (titulo.length > limite) pendencias.push(`o titulo tem ${titulo.length} caracteres e a categoria aceita ${limite}: encurte no copy.json, rode o ml-auditor de novo e monte outra vez`)
 
   const modalidade = auditoria?.modalidade_escolhida
   const listingType = modalidadeDoML(modalidade)
@@ -117,9 +120,11 @@ export function montarItem({ copy, decisao, auditoria, imagens, linha, categoria
   if (!(Number.isInteger(garantiaDias) && garantiaDias > 0)) pendencias.push('falta a garantia: passe --garantia-dias N (ex.: 90)')
 
   const ficha = casarFicha(copy?.ficha, atributosDaCategoria)
-  for (const nome of ficha.faltando) pendencias.push(`a categoria exige "${nome}" e a ficha do copy.json nao tem: preencha e monte de novo`)
+  for (const nome of ficha.faltando) pendencias.push(`a categoria exige "${nome}" e a ficha do copy.json nao tem: preencha no copy.json, rode o ml-auditor de novo e monte outra vez`)
   for (const nome of ficha.faltandoCatalogo) avisos.push(`a ficha nao tem "${nome}": o Mercado Livre aceita sem, mas o anuncio perde forca na busca`)
   for (const f of ficha.foraDaLista) avisos.push(`"${f.nome}" vai como texto livre ("${f.valor}"); a categoria tem a lista ${f.opcoes.join(', ')}. Trocar na ficha por uma delas faz o anuncio aparecer no filtro`)
+  const marca = marcaDaFicha({ copy, decisao })
+  if (marca) pendencias.push(marca)
   if (ficha.semCasa.length) avisos.push(`campos da ficha que a categoria nao tem e ficaram de fora: ${ficha.semCasa.join(', ')}`)
 
   if (!String(copy?.descricao ?? '').trim()) pendencias.push('o copy.json nao tem descricao')

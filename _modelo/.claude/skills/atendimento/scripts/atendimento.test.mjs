@@ -131,6 +131,33 @@ test('o catalogo de exemplo que vai no kit e valido', () => {
   assert.ok(r.itens.length >= 3)
 })
 
+test('catalogo salvo fora do UTF-8 e recusado com recado de CSV UTF-8 (5.7, H.4)', () => {
+  const estragado = CATALOGO.replace('Brigadeiro', 'Brigadeiro ' + String.fromCharCode(0xfffd))
+  assert.ok(estragado.includes(String.fromCharCode(0xfffd)), 'canario: o dado tem o caractere de troca')
+  const r = validarCatalogo(estragado)
+  assert.deepEqual(r.itens, [])
+  assert.match(r.erros.join('\n'), /CSV UTF-8/)
+})
+
+test('linha de comando: catalogo de exemplo regravado em latin1 faz o validar sair 1 (5.7, H.4)', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'atend-'))
+  try {
+    const texto = readFileSync(EXEMPLO, 'utf8')
+    const cat = join(dir, 'catalogo.csv')
+    writeFileSync(cat, texto)
+    const bom = spawnSync(process.execPath, [SCRIPT, 'validar', '--catalogo', cat], { encoding: 'utf8' })
+    assert.equal(bom.status, 0, 'canario: em UTF-8 passa; ' + bom.stdout + bom.stderr)
+    assert.match(bom.stdout, /catalogo ok/)
+    writeFileSync(cat, Buffer.from(texto, 'latin1'))
+    const ruim = spawnSync(process.execPath, [SCRIPT, 'validar', '--catalogo', cat], { encoding: 'utf8' })
+    assert.ok(ruim.stdout.trim().length > 0, 'a saida veio vazia')
+    assert.equal(ruim.status, 1, ruim.stdout + ruim.stderr)
+    assert.match(ruim.stdout, /CSV UTF-8/)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test('como o aluno roda: de dentro do projeto, sem --catalogo, acha dados/catalogo.csv e le o rascunho', () => {
   const proj = mkdtempSync(join(tmpdir(), 'proj-'))
   try {

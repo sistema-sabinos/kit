@@ -5,6 +5,8 @@
 // avisar pelo maior nunca deixa passar do teto calado. Duvida fina vai pro contador.
 // Uso: node mei.mjs <comando> [--raiz <pasta do projeto>] [--hoje AAAA-MM-DD]
 //   configurar --abertura AAAA-MM-DD --tipo comercio|servico|misto
+//   externo --ano AAAA --valor X --origem "Mercado Livre"   (total vendido fora do /caixa no ano ate hoje)
+//   declarei AAAA   (declaracao anual daquele ano entregue; o aviso para)
 //   proximos   (DAS, declaracao anual e teto, completo)
 //   alertas    (so o que esta perto: DAS em 5 dias, declaracao em 30, teto a partir de 70%)
 //   vencidos   (fatos com mais de 60 dias, pra conferir na web)
@@ -12,7 +14,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { carregar, resumoPeriodo } from '../../caixa/scripts/caixa.mjs'
-import { reais, valoresEmReais } from '../../caixa/scripts/lib/dinheiro.mjs'
+import { reais, valoresEmReais, centavos } from '../../caixa/scripts/lib/dinheiro.mjs'
 import { lerArquivoFatos, vencidos, fato, dataValida, hojeLocal, diasEntre } from '../../caixa/scripts/lib/fatos.mjs'
 
 const AQUI = dirname(fileURLToPath(import.meta.url))
@@ -31,11 +33,35 @@ export function lerConfig(raiz) {
   return j
 }
 
+// Grava no mei.json mesclando com o que ja esta la (venda de fora e declaracao entregue
+// nao somem quando a pessoa roda o configurar de novo)
+function gravarConfig(raiz, mudar) {
+  const c = join(raiz, 'dados', 'mei.json')
+  const antigo = existsSync(c) ? JSON.parse(readFileSync(c, 'utf8')) : {}
+  mkdirSync(join(raiz, 'dados'), { recursive: true })
+  writeFileSync(c, JSON.stringify(mudar(antigo), null, 2) + '\n')
+}
+
 export function configurar(raiz, abertura, tipo) {
   if (!dataValida(abertura || '')) throw new Error(`abertura "${abertura}" fora do formato AAAA-MM-DD`)
   if (!TIPOS[tipo]) throw new Error(`tipo "${tipo}" nao existe; use comercio, servico ou misto`)
-  mkdirSync(join(raiz, 'dados'), { recursive: true })
-  writeFileSync(join(raiz, 'dados', 'mei.json'), JSON.stringify({ abertura, tipo }, null, 2) + '\n')
+  gravarConfig(raiz, j => ({ ...j, abertura, tipo }))
+}
+
+// Total vendido no ano fora do /caixa, por origem (Mercado Livre, Shopee...). E o total do
+// ano ate hoje, entao substitui o valor anterior da mesma origem.
+export function anotarExterno(raiz, ano, valor, origem, hoje) {
+  if (!/^\d{4}$/.test(ano || '')) throw new Error(`ano "${ano}" fora do formato AAAA`)
+  const c = centavos(valor)
+  if (c === null || c < 0) throw new Error(`valor "${valor}" nao e um valor em reais`)
+  if (!origem || !String(origem).trim()) throw new Error('externo precisa de --origem (ex.: "Mercado Livre")')
+  gravarConfig(raiz, j => ({ ...j, externo: { ...j.externo, [ano]: { ...j.externo?.[ano], [String(origem).trim()]: { valor: c, em: hoje } } } }))
+  return c
+}
+
+export function anotarDeclaracao(raiz, ano, hoje) {
+  if (!/^\d{4}$/.test(ano || '')) throw new Error(`ano "${ano}" fora do formato AAAA`)
+  gravarConfig(raiz, j => ({ ...j, declaradas: { ...j.declaradas, [ano]: hoje } }))
 }
 
 // Dia 20; no sabado ou domingo vai pro dia util seguinte. Feriado a lista nao sabe.
@@ -60,12 +86,15 @@ export function valorDas(fatos, tipo) {
 }
 
 // Prazo da declaracao do ano anterior; null quando o MEI abriu depois do ano que ela cobre.
-export function proximaDeclaracao(hoje, abertura) {
+// Com a entrega anotada (declarei <ano>), devolve tambem o dia em que foi anotada.
+export function proximaDeclaracao(hoje, abertura, declaradas = {}) {
   let ano = Number(hoje.slice(0, 4))
   if (hoje > `${ano}-05-31`) ano++
   const referente = ano - 1
   if (Number(abertura.slice(0, 4)) > referente) return null
-  return { prazo: `${ano}-05-31`, referente, dias: diasEntre(hoje, `${ano}-05-31`) }
+  const r = { prazo: `${ano}-05-31`, referente, dias: diasEntre(hoje, `${ano}-05-31`) }
+  if (declaradas[referente]) r.entregue = declaradas[referente]
+  return r
 }
 
 export function limiteDoAno(fatos, abertura, ano) {
@@ -77,21 +106,24 @@ export function limiteDoAno(fatos, abertura, ano) {
   return aa === ano ? { limite: mensal * (12 - ma + 1), meses: 12 - ma + 1 } : { limite: anual, meses: 12 }
 }
 
-export function situacaoTeto(fatos, abertura, dados, ano) {
+// externoDoAno: { "Mercado Livre": { valor: <centavos>, em: "AAAA-MM-DD" } }, venda fora do /caixa
+export function situacaoTeto(fatos, abertura, dados, ano, externoDoAno = {}) {
   const { limite, meses } = limiteDoAno(fatos, abertura, ano)
   // no ano da abertura, venda de antes do CNPJ (como pessoa fisica) nao entra no teto do MEI
   const conta = abertura.startsWith(String(ano))
     ? { ...dados, pedidos: dados.pedidos.filter(p => p.data >= abertura), pagamentos: dados.pagamentos.filter(x => x.data >= abertura) }
     : dados
   const r = resumoPeriodo(conta, String(ano))
-  const faturamento = Math.max(r.vendido, r.recebido)
+  const origens = Object.entries(externoDoAno).map(([origem, x]) => ({ origem, valor: Number(x.valor) || 0, em: x.em }))
+  const externo = origens.reduce((s, o) => s + o.valor, 0)
+  const faturamento = Math.max(r.vendido, r.recebido) + externo
   const pct = Math.floor((faturamento / limite) * 100)
   let faixa = 'ok'
   if (faturamento > Math.round(limite * 1.2)) faixa = 'passou-20'
   else if (faturamento > limite) faixa = 'passou'
   else if (pct >= 90) faixa = '90'
   else if (pct >= 70) faixa = '70'
-  return { limite, meses, vendido: r.vendido, recebido: r.recebido, faturamento, pct, faixa }
+  return { limite, meses, vendido: r.vendido, recebido: r.recebido, externo, origens, faturamento, pct, faixa }
 }
 
 function fraseTeto(t, ano) {
@@ -127,22 +159,33 @@ export function executar(argv, log = console.log) {
     configurar(raiz, valor('--abertura'), valor('--tipo'))
     return log(`MEI configurado: aberto em ${valor('--abertura')}, ${valor('--tipo')}`)
   }
-  if (cmd !== 'proximos' && cmd !== 'alertas') throw new Error('comando desconhecido; use configurar, proximos, alertas ou vencidos')
+  if (cmd === 'externo') {
+    const c = anotarExterno(raiz, valor('--ano'), valor('--valor'), valor('--origem'), hoje)
+    return log(`venda de fora anotada: ${reais(c)} em ${valor('--ano')} (${String(valor('--origem')).trim()}), em ${hoje}`)
+  }
+  if (cmd === 'declarei') {
+    anotarDeclaracao(raiz, a[0], hoje)
+    return log(`declaração anual de ${a[0]} anotada como entregue em ${hoje}`)
+  }
+  if (cmd !== 'proximos' && cmd !== 'alertas') throw new Error('comando desconhecido; use configurar, externo, declarei, proximos, alertas ou vencidos')
   const cfg = lerConfig(raiz)
   const ano = Number(hoje.slice(0, 4))
   const das = fraseDas(fatos, cfg.tipo, hoje)
-  const decl = proximaDeclaracao(hoje, cfg.abertura)
-  const teto = situacaoTeto(fatos, cfg.abertura, carregar(raiz), ano)
+  const decl = proximaDeclaracao(hoje, cfg.abertura, cfg.declaradas)
+  const teto = situacaoTeto(fatos, cfg.abertura, carregar(raiz), ano, cfg.externo?.[ano])
   const velhos = vencidos(fatos, hoje)
   const linhas = []
   if (cmd === 'proximos') {
     linhas.push(das.texto)
-    linhas.push(decl ? `declaração anual de ${decl.referente}: até ${decl.prazo}, faltam ${decl.dias} dia(s)` : `declaração anual: a primeira é em maio de ${Number(cfg.abertura.slice(0, 4)) + 1}`)
-    linhas.push(fraseTeto(teto, ano) + `. Conta pelo maior entre o vendido (${reais(teto.vendido)}) e o recebido (${reais(teto.recebido)}) que estão no /caixa`)
+    if (decl?.entregue) linhas.push(`declaração anual de ${decl.referente}: entregue (anotado em ${decl.entregue})`)
+    else linhas.push(decl ? `declaração anual de ${decl.referente}: até ${decl.prazo}, faltam ${decl.dias} dia(s)` : `declaração anual: a primeira é em maio de ${Number(cfg.abertura.slice(0, 4)) + 1}`)
+    const fora = teto.externo ? `, mais ${reais(teto.externo)} de fora (${teto.origens.map(o => `${o.origem}, anotado em ${o.em}`).join('; ')})` : ''
+    linhas.push(fraseTeto(teto, ano) + `. Conta pelo maior entre o vendido (${reais(teto.vendido)}) e o recebido (${reais(teto.recebido)}) que estão no /caixa${fora}`)
     if (velhos.length) linhas.push(`fatos com mais de 60 dias (conferir na web antes de usar): ${velhos.map(f => f.id).join(', ')}`)
   } else {
-    if (das.dias <= 5) linhas.push(das.texto)
-    if (decl && decl.dias <= 30) linhas.push(`declaração anual de ${decl.referente} até ${decl.prazo}, faltam ${decl.dias} dia(s)`)
+    // uma vez por mes, junto do DAS: teto zerado no ano costuma ser venda que nao foi anotada
+    if (das.dias <= 5) linhas.push(das.texto + (teto.faturamento === 0 ? ` (teto do MEI: nada anotado em ${ano}; venda fora do /caixa se anota com /mei)` : ''))
+    if (decl && decl.dias <= 30 && !decl.entregue) linhas.push(`declaração anual de ${decl.referente} até ${decl.prazo}, faltam ${decl.dias} dia(s)`)
     if (teto.faixa !== 'ok') linhas.push(fraseTeto(teto, ano))
     if (velhos.length) linhas.push(`fatos do MEI com mais de 60 dias, conferir na web: ${velhos.map(f => f.id).join(', ')}`)
   }

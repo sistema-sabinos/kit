@@ -43,6 +43,13 @@ export function atualizarPronto(r, meta, hoje) {
   return r
 }
 
+// posts.json e o indice do perfil inteiro: coleta de poucos codigos (a /decupar-referencia baixa um
+// Reel so) troca so os registros desses codigos e mantem os outros (achado do Codex na 5.7).
+export function juntarComAnteriores(anteriores, novos) {
+  const codigos = new Set(novos.map(r => r.codigo))
+  return [...anteriores.filter(r => !codigos.has(r.codigo)), ...novos]
+}
+
 // Carrossel guarda a legenda tambem no legenda.txt, que o analista le: limpa o arquivo sempre
 // que a limpeza muda algo, com ou sem alerta, porque largura zero sai calada (achado do Codex).
 export function limparLegendaTxt(caminho) {
@@ -80,9 +87,12 @@ async function main(argv) {
   const arqJson = join(raiz, 'posts.json')
   const log = (...a) => console.error(`[${perfil}]`, ...a)
   const prontos = {}
-  try { for (const r of JSON.parse(readFileSync(arqJson, 'utf8'))) if (r.arquivo && existsSync(join(raiz, r.arquivo))) prontos[r.codigo] = r } catch {}
+  let anteriores = []
+  try { anteriores = JSON.parse(readFileSync(arqJson, 'utf8')) } catch {}
+  if (!Array.isArray(anteriores)) anteriores = []
+  for (const r of anteriores) if (r.arquivo && existsSync(join(raiz, r.arquivo))) prontos[r.codigo] = r
   const resultado = []
-  const salvar = () => writeFileSync(arqJson, JSON.stringify(resultado, null, 2))
+  const salvar = () => writeFileSync(arqJson, JSON.stringify(juntarComAnteriores(anteriores, resultado), null, 2))
 
   const { page, fechar } = await abrirPagina()
   const esperarSeBloqueado = async () => {

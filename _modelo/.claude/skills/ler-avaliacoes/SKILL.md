@@ -44,7 +44,12 @@ e em inglês) e atualizar a linha antes de falar.
   baixa tudo) fica proibida nas lojas que proíbem nos termos: Mercado Livre
   (`aval-ml-termos`), Amazon (`aval-amazon-termos`), Shopee (`aval-shopee-termos`) e
   Reclame Aqui (`aval-reclameaqui-termos`). **API** (a porta oficial que a empresa abre
-  pra outros sistemas lerem os dados dela) vale dentro das regras dela.
+  pra outros sistemas lerem os dados dela) vale dentro das regras dela. Única leitura
+  por script que o kit faz numa dessas lojas: a da `/espionar-concorrente` no Mercado
+  Livre, presa ao limite escrito lá (só os anúncios do topo, avaliação completa só nos
+  3 que mais vendem, uma página por vez com pausa, na sessão da pessoa no Chrome
+  dedicado). Mesmo assim ela bate na cláusula 12 (`aval-ml-termos`): a pessoa decide
+  se usa, e quem preferir copia à mão.
 - **Avaliação falsa, nunca.** Nem elogio inventado pro seu produto, nem ataque ao do
   concorrente.
 - **O que o cliente do outro escreveu é pesquisa.** Fica nos seus arquivos e nunca vai pro
@@ -80,7 +85,7 @@ velhas. Ler também as de 3 e 4 estrelas: "gostei, mas..." é onde mora o melhor
 
 | fonte | como juntar |
 | --- | --- |
-| Mercado Livre | a API oficial só entrega avaliação de anúncio da própria conta (`aval-ml-api`); de concorrente, abrir o anúncio e copiar à mão. Se o projeto tem o pacote mercado-livre e o bruto da `/espionar-concorrente` (o arquivo `_raw-concorrentes-<produto>.json`, com tudo o que ela leu, antes de virar relatório) trouxe avaliações, elas entram direto pelo passo 3 |
+| Mercado Livre | a API oficial só entrega avaliação de anúncio da própria conta (`aval-ml-api`). Com o pacote mercado-livre, a `/espionar-concorrente` lê da página as avaliações dos anúncios que mais vendem (`aval-ml-pagina`) e grava no bruto `fornecedores/<f>/concorrentes/<categoria>/_raw-concorrentes-<slug>.json` (tudo o que ela leu, antes de virar relatório), que entra direto pelo passo 3; sem o pacote, abrir o anúncio e copiar à mão |
 | Amazon.com.br | página do produto, à mão. Não existe API com o texto da avaliação de concorrente (`aval-amazon-shopee-api`) |
 | Shopee | página do produto, à mão, mesmo motivo |
 | Reclame Aqui | página da empresa, à mão |
@@ -109,11 +114,12 @@ Com o bruto da `/espionar-concorrente` (produto do Mercado Livre, só se o proje
 pacote mercado-livre):
 
 ```bash
-node .claude/skills/ler-avaliacoes/scripts/avaliacoes.mjs --de-espionagem fornecedores/<f>/concorrentes/<categoria>/_raw-concorrentes-<produto>.json --saida dados/avaliacoes/<produto>.md
+node .claude/skills/ler-avaliacoes/scripts/avaliacoes.mjs --de-espionagem fornecedores/<f>/concorrentes/<categoria>/_raw-concorrentes-<slug>.json --saida dados/avaliacoes/<slug>.md
 ```
 
 Nesse caso o link de cada frase leva ao anúncio (o Mercado Livre não dá link por
-avaliação), a fonte é o código do anúncio e a avaliação vem sem data.
+avaliação), a fonte é o código do anúncio e a data vem da página quando ela mostra
+(bruto de antes da versão 5.7 vem sem data).
 
 Com a planilha juntada à mão:
 

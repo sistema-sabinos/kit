@@ -5,11 +5,11 @@ description: >
   Suporta dois métodos: Post for Me (mais simples, multi-plataforma) ou
   Graph API do Instagram (direto, sem intermediário).
   Inclui setup guiado na primeira vez pra configurar credenciais.
-  Use quando o usuário mencionar "publicar", "postar no instagram", "publicar carrossel",
-  "publicar no tiktok", "postar isso", ou pedir pra enviar imagens pro Instagram/TikTok.
+  Use quando o usuário disser "publicar no Instagram", "publicar no TikTok", "postar o carrossel
+  no Instagram", ou pedir pra enviar imagens pro Instagram/TikTok.
 ---
 
-# /publicar, Publicar no Instagram e TikTok
+# /publicar-instagram, Publicar no Instagram e TikTok
 
 > Alternativa ao pacote de mídia social (`/publicar-social`, pelo Buffer), só pra quem não quer o
 > Buffer. Nunca promover num projeto que já tem o pacote: ficariam duas rotas pro mesmo trabalho.
@@ -45,13 +45,12 @@ Se escolheu Post for Me:
 
 1. **Criar conta:**
    > "Acessa postforme.dev, cria uma conta e conecta teu Instagram (e TikTok se quiser).
-   > Depois vai em Settings > API e copia a API Key. Cola aqui."
+   > Depois vai em Settings > API e copia a API Key. Abre o arquivo `.env` na raiz do projeto,
+   > acrescenta a linha `POSTFORME_API_KEY=<a chave>` e salva; me avisa quando terminar (não cola a
+   > chave aqui no chat)."
 
-2. **Salvar a key:**
-   Receber a API key e adicionar no `.env`:
-   ```
-   POSTFORME_API_KEY=pfm_live_xxxxx
-   ```
+2. **Conferir a key:** só pelo teste do passo 3. Ninguém lê o `.env` pelo terminal nem pede a chave
+   no chat.
 
 3. **Testar conexão:**
    ```bash
@@ -64,7 +63,7 @@ Se escolheu Post for Me:
    O `scripts/publish-postforme.js` vem dentro desta skill e roda de lá (`.claude/skills/publicar-instagram/scripts/publish-postforme.js` depois de promovida). Não copiar pra fora: assim a skill viaja inteira quando a pasta for compartilhada.
 
 5. Confirmar:
-   > "Pronto! Script de publicação no lugar. Tua conta tá conectada. Pra publicar, é só chamar /publicar com as imagens."
+   > "Pronto! Script de publicação no lugar. Tua conta tá conectada. Pra publicar, é só chamar /publicar-instagram com as imagens."
 
 ---
 
@@ -81,41 +80,33 @@ Se escolheu Graph API:
    >    - instagram_content_publish
    >    - instagram_basic
    >    - pages_read_engagement
-   > 5. Cola o token aqui"
+   > 5. Abre o arquivo `.env` na raiz do projeto, acrescenta as linhas `INSTAGRAM_TOKEN_CURTO=<o token>`,
+   >    `META_APP_ID=<o App ID>` e `META_APP_SECRET=<o App Secret>` (os dois ficam em Configurações do
+   >    app > Básico) e salva; me avisa quando terminar (não cola nada disso aqui no chat)."
 
-2. **Converter token pra longa duração (60 dias):**
+2. **Trocar pelo token de 60 dias e achar a conta:**
    ```bash
-   curl -s "https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=APP_ID&client_secret=APP_SECRET&fb_exchange_token=TOKEN_CURTO"
+   node --env-file=.env .claude/skills/publicar-instagram/scripts/publish-graph-api.js --configurar
    ```
-   Pedir App ID e App Secret ao usuário.
+   Troca o token curto pelo longo, acha a Página e a conta do Instagram ligada a ela, grava
+   `INSTAGRAM_ACCESS_TOKEN` e `INSTAGRAM_USER_ID` no `.env`, apaga o `INSTAGRAM_TOKEN_CURTO` e só
+   imprime "ok, conta @x ligada". Se o login tiver mais de uma conta ligada, ele lista as contas e não
+   grava nada: a pessoa escreve `INSTAGRAM_CONTA=<a conta que publica>` no `.env` e roda de novo.
+   Nenhum segredo vai pra tela nem pra linha de comando. A versão da
+   Graph API é a v25.0; outra versão vai no `.env` como `META_GRAPH_VERSAO=v26.0`.
 
-3. **Pegar Instagram User ID:**
-   ```bash
-   curl -s "https://graph.facebook.com/v21.0/me/accounts?access_token=TOKEN_LONGO" | python3 -m json.tool
-   ```
-   Com o Page ID:
-   ```bash
-   curl -s "https://graph.facebook.com/v21.0/PAGE_ID?fields=instagram_business_account&access_token=TOKEN_LONGO"
-   ```
-
-4. **Configurar imgbb (host de imagens):**
+3. **Configurar imgbb (host de imagens):**
    > "A Graph API precisa de URL pública pra cada imagem. O imgbb faz isso de graça:
    > 1. Acessa api.imgbb.com
    > 2. Cria conta e copia a API Key
-   > 3. Cola aqui"
+   > 3. Abre o `.env`, acrescenta a linha `IMGBB_API_KEY=<a chave>` e salva; me avisa quando
+   >    terminar (não cola a chave aqui no chat)"
 
-5. **Salvar tudo no `.env`:**
-   ```
-   INSTAGRAM_ACCESS_TOKEN=token_longo_aqui
-   INSTAGRAM_USER_ID=id_aqui
-   IMGBB_API_KEY=key_aqui
-   ```
-
-6. **Conferir o script:**
+4. **Conferir o script:**
    O `scripts/publish-graph-api.js` vem dentro desta skill e roda de lá (`.claude/skills/publicar-instagram/scripts/publish-graph-api.js` depois de promovida). Não copiar pra fora.
 
-7. **Avisar sobre renovação:**
-   > "Importante: teu token do Instagram expira em 60 dias. Quando parar de funcionar, roda /publicar de novo que eu te guio pra renovar."
+5. **Avisar sobre renovação:**
+   > "Importante: teu token do Instagram expira em 60 dias. Quando parar de funcionar, roda /publicar-instagram de novo que eu te guio pra renovar (token curto novo no `.env` e o `--configurar` de novo)."
 
 ---
 
@@ -123,12 +114,10 @@ Se escolheu Graph API:
 
 ### 1. Detectar o que publicar
 
-Se o usuário chamou `/publicar` sem argumentos, verificar:
-- Existe `conteudo/carrosseis/` com PNGs recentes? Se sim, oferecer publicar o mais recente
-- Se não, perguntar: "O que tu quer publicar? Me passa o caminho das imagens ou roda /carrossel primeiro"
+Se o usuário chamou `/publicar-instagram` sem argumentos, olhar `producao/*/final/` (fora `_molde` e `_pauta`) com `slide-NN.png` e sem `publicacao.md`; oferecer o mais recente. A legenda é a seção `## Legenda` do `post.md` da mesma pasta. Sem nenhuma, perguntar: "O que tu quer publicar? Me passa o caminho das imagens."
 
-Se chamou com caminho (ex: `/publicar conteudo/carrosseis/ia-no-varejo/instagram/`):
-- Usar os PNGs e o `carousel-text.md` (legenda) daquela pasta
+Se chamou com caminho (ex: `/publicar-instagram producao/2026-10-08-moedor/`):
+- Usar os PNGs de `final/` e a seção `## Legenda` do `post.md` daquela pasta
 
 ### 2. Detectar o método configurado
 
@@ -157,13 +146,13 @@ Os comandos rodam da raiz do projeto (onde está o `.env`), chamando o script de
 # Post for Me
 node --env-file=.env .claude/skills/publicar-instagram/scripts/publish-postforme.js \
   --platform "instagram" \
-  --images "slide-01.png,slide-02.png,..." \
+  --images "producao/<slug>/final/slide-01.png,producao/<slug>/final/slide-02.png,..." \
   --caption "legenda" \
   --dry-run
 
 # Graph API
 node --env-file=.env .claude/skills/publicar-instagram/scripts/publish-graph-api.js \
-  --images "slide-01.png,slide-02.png,..." \
+  --images "producao/<slug>/final/slide-01.png,producao/<slug>/final/slide-02.png,..." \
   --caption "legenda" \
   --dry-run
 ```
@@ -177,19 +166,19 @@ Mostrar resultado do dry-run. Se OK, perguntar:
 # Post for Me, Instagram
 node --env-file=.env .claude/skills/publicar-instagram/scripts/publish-postforme.js \
   --platform "instagram" \
-  --images "slide-01.png,slide-02.png,..." \
+  --images "producao/<slug>/final/slide-01.png,producao/<slug>/final/slide-02.png,..." \
   --caption "legenda"
 
 # Post for Me, TikTok (SEMPRE como draft pro usuario escolher musica no app)
 node --env-file=.env .claude/skills/publicar-instagram/scripts/publish-postforme.js \
   --platform "tiktok" \
-  --images "slide-01.png,slide-02.png,..." \
+  --images "producao/<slug>/final/slide-01.png,producao/<slug>/final/slide-02.png,..." \
   --caption "legenda tiktok" \
   --draft
 
 # Graph API, Instagram
 node --env-file=.env .claude/skills/publicar-instagram/scripts/publish-graph-api.js \
-  --images "slide-01.png,slide-02.png,..." \
+  --images "producao/<slug>/final/slide-01.png,producao/<slug>/final/slide-02.png,..." \
   --caption "legenda"
 ```
 

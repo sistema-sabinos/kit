@@ -71,6 +71,9 @@ modelo:
   avaliações de 1 a 3 estrelas do briefing é respondida antes de o cliente
   perguntar, posicionando o produto pra atrair quem dá 5 estrelas e afastar
   quem devolveria.
+- Seção Avaliações do briefing vazia ou com erro: a fonte vira as perguntas
+  reais e as descrições dos concorrentes, e o recibo diz "sem avaliações de
+  concorrente nesta rodada"; nunca completar objeção de cabeça.
 - Emprestar a língua das avaliações de 4 e 5 estrelas.
 - Original: o texto do concorrente é referência de vocabulário, nunca de frase.
 - Kit: a composição exata, com a quantidade de cada item.
@@ -80,8 +83,11 @@ modelo:
 ### 4. A ficha técnica
 
 Os atributos consensuais do nicho (`atributos.json`), preenchidos com o que o
-catálogo e o briefing dizem. Marca: a do fabricante, ou "Sem marca" em kit e
-produto revendido sem marca própria, nunca o nome da loja. Peso e dimensões
+catálogo e o briefing dizem. Marca na ficha: `Genérica` (o valor que o Mercado
+Livre pede pra produto sem marca, conferido em 2026-10-08) em kit, revenda e
+dropshipping. O nome do fabricante só quando você é a dona da marca ou
+revendedora autorizada por escrito, e aí ele vem de `decisao.json` em
+`marca_autorizada`. Nunca o nome da loja. Peso e dimensões
 com o dado real do catálogo; sem dado, `[PREENCHER]` e pendência, porque peso
 errado custa dinheiro em toda venda. GTIN: o EAN do catálogo quando confiável;
 kit montado por você nunca tem, e código inventado derruba o anúncio. NCM: o
@@ -95,7 +101,10 @@ o qual a comissão incide); `preco.tabela` é a lista inflada. A conta é a da
 `precificacao.md`: preço menos comissão da categoria (Clássico, e Premium com
 mais 5 pontos), menos custo de envio (nunca zero abaixo de R$ 79), menos
 `imposto_pct` sobre o preço, menos custo. A comissão sai da API que a `precificacao.md` cita ou da Central de
-Vendedores, com data. Respeitar o degrau dos R$ 79 e terminar em ,90. O degrau
+Vendedores, com data. Clássico no alvo da decisão; Premium no preço que
+segura a mesma margem com os 5 pontos a mais, terminado em ,90 e abaixo de
+`preco.tabela` (a publicação desconta da tabela até o preço de cada
+modalidade). Respeitar o degrau dos R$ 79 e terminar em ,90. O degrau
 dos R$ 79 e a comissão estão datados na `precificacao.md`; conferir ao vivo
 antes de cravar preço.
 

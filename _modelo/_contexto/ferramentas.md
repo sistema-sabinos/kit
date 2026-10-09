@@ -7,7 +7,7 @@ assuntos abaixo; depois o `/conectar`, a cada conexão concluída.
 
 - **Ferramenta:** linha de um dos sete assuntos leva o assunto na frente ("Agenda:
   Google Agenda", "Reunião: nada").
-- **Status:** `ligado`; `não ligada` (dá pra ligar pelo `/conectar`); `só você` (a
+- **Status:** `ligado`; `não ligada` (o `/conectar` diz o que liga, ou que fica com você); `só você` (a
   ferramenta existe, mas quem mexe é a pessoa, na mão); `pendente` (começou a ligar
   e falta um passo); ou `instalado` (pacote de skills, que se configura no primeiro
   uso).

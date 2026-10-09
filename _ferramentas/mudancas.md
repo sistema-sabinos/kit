@@ -220,7 +220,7 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **O que é:** o modelo de carrossel passa a salvar cada post em `producao/<data>-<assunto>/`, com os slides em `final/` e a legenda num `post.md`, o formato que a `/publicar-social` agenda. Antes ia pra `conteudo/carrosseis/`, onde o agendamento não acha. Também deixou de mandar rodar o `/setup` de dentro do projeto e de citar preço fixo de gerador de imagem.
 **Por quê:** carrossel pronto que não dá pra agendar obriga a pessoa a mover arquivo na mão.
 **Te afeta se:** o projeto tem `.claude/skills/carrossel/SKILL.md` e ele cita `conteudo/carrosseis`.
-**Como aplicar:** essa skill foi adaptada ao negócio quando entrou, então não se substitui inteira. Mostrar à pessoa as seções "Onde o post mora" e de custo do modelo novo (`../_modelo/templates/skills/carrossel/SKILL.md` na pasta-mãe) e, com o sim, trocar só essas partes na skill dela, mantendo o tom, as cores e os exemplos que ela já tinha.
+**Como aplicar:** essa skill foi adaptada ao negócio quando entrou, então não se substitui inteira. Mostrar à pessoa as seções "Onde o post mora" e de custo do modelo novo (`../_modelo/.claude/skills/carrossel/SKILL.md` na pasta-mãe) e, com o sim, trocar só essas partes na skill dela, mantendo o tom, as cores e os exemplos que ela já tinha.
 **Como testar:** a skill do projeto cita `producao/` e `post.md` e não cita mais `conteudo/carrosseis`.
 
 ## gitignore-fechado
@@ -403,16 +403,16 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 **O que é:** comando novo nas skills base, `/ler-avaliacoes`: lê as avaliações reais dos clientes de um concorrente (coladas à mão da página do Mercado Livre, Amazon, Shopee, Reclame Aqui ou loja de app, ou do bruto da espionagem quando ele traz avaliações) e ranqueia o que eles mais reclamam, o que pedem e o que ninguém resolve, com a frase literal e o link de cada um.
 **Por quê:** a reclamação do cliente do concorrente é o diferencial mais barato que existe, pra anúncio de marketplace e pra quem quer criar um app melhor que o que já existe.
-**Te afeta se:** sempre; é skill base, entra em todo projeto.
-**Como aplicar:** copiar a pasta `.claude/skills/ler-avaliacoes/` inteira, sem os arquivos terminados em `.test.mjs`.
+**Te afeta se:** o projeto não tem `.claude/skills/ler-avaliacoes/`.
+**Como aplicar:** a pasta chega pelo motor do `/atualizar-sabinos` junto do núcleo, sem pergunta nova; esta entrada só confere que ela existe e apresenta o comando à pessoa em uma frase.
 **Como testar:** colar umas 30 avaliações de um produto concorrente (com o link da página), rodar a `/ler-avaliacoes` e conferir que cada citação do relatório aparece igual no que foi colado.
 
 ## skill-humanizar
 
 **O que é:** comando novo nas skills base, `/humanizar`: confere um texto e aponta o que soa robô, por categoria, ou arruma o texto quando você pede, com número, preço, prazo, medida e marca intocados e uma trava que reprova se algum deles sumiu ou apareceu.
 **Por quê:** anúncio, post e resposta de cliente com cara de IA perdem confiança, e o pedido "sem cara de IA" nunca dizia o que era isso; reescrever sem trava ainda arriscava trocar um preço ou inventar um prazo.
-**Te afeta se:** sempre; é skill base, entra em todo projeto.
-**Como aplicar:** copiar a pasta `.claude/skills/humanizar/` inteira, sem os arquivos terminados em `.test.mjs`.
+**Te afeta se:** o projeto não tem `.claude/skills/humanizar/`.
+**Como aplicar:** a pasta chega pelo motor do `/atualizar-sabinos` junto do núcleo, sem pergunta nova; esta entrada só confere que ela existe e apresenta o comando à pessoa em uma frase.
 **Como testar:** `node .claude/skills/humanizar/scripts/varrer.mjs` num texto com "Espero ter ajudado!" aponta o fecho de robô.
 **Crédito:** ideias de conorbronsdon/avoid-ai-writing, epoko77-ai/im-not-ai, miqdadbadjuber/anti-slop, alirezarezvani/claude-skills, blader/humanizer, mackswendhell/humanizer-pt-br e fabricioctelles/skills; nenhum trecho copiado.
 
@@ -434,7 +434,7 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## pacote-criar-app
 
-**O que é:** pacote novo pra criar um app ou SaaS próprio, com dez comandos na ordem que se segue: `/app-estudar`, `/app-planejar`, `/app-visual`, `/app-construir`, `/app-servidor`, `/app-testar`, `/app-comparar`, `/app-marca`, `/app-lancar` e `/app-publicar` (a `/ler-avaliacoes`, base, entra entre o estudo e o plano).
+**O que é:** pacote novo pra criar um app ou SaaS próprio, com dez comandos na ordem que se segue: `/app-estudar`, `/app-planejar`, `/app-visual`, `/app-construir`, `/app-servidor`, `/app-testar`, `/app-comparar`, `/app-marca`, `/app-lancar` e `/app-publicar` (a `/ler-avaliacoes`, base, entra entre o estudo e o plano como etapa 2: onze etapas no total).
 **Por quê:** quem um dia quiser construir um sistema ou app pra vender já encontra o caminho pronto, do estudo de um app de referência até o seu no ar com marca própria, com custo avisado antes e a lei brasileira (INPI, LGPD, CDC) no meio do caminho.
 **Te afeta se:** o projeto quer criar um app, sistema ou SaaS; pacote opcional, nada muda pra quem não instalar.
 **Como aplicar:** oferecer o pacote como no bloco "Criar app" do `/setup`; se a pessoa quiser, copiar as dez pastas, aplicar a entrada `gitignore-criar-app` e rodar `/app-estudar`.
@@ -460,8 +460,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 **O que é:** comando novo nas skills base, `/pedir`: responde se a IA consegue fazer algo no seu negócio (dá, dá em parte ou não dá, o que falta ligar e se custa, com 2 ou 3 primeiros passos pra escolher) e transforma pedido vago em pedido completo, mostrando o antes e o depois e perguntando "faço agora?". Vem com um cardápio de 6 exemplos de pedido de quem vende em marketplace.
 **Por quê:** quem ainda não sabe pedir travava no "dá pra?" e no pedido pela metade, e a dúvida voltava pro suporte; vendo o pedido bem escrito toda vez, a pessoa aprende sem aula.
-**Te afeta se:** sempre; é skill base, entra em todo projeto.
-**Como aplicar:** copiar a pasta `.claude/skills/pedir/` inteira, sem os arquivos terminados em `.test.mjs`.
+**Te afeta se:** o projeto não tem `.claude/skills/pedir/`.
+**Como aplicar:** a pasta chega pelo motor do `/atualizar-sabinos` junto do núcleo, sem pergunta nova; esta entrada só confere que ela existe e apresenta o comando à pessoa em uma frase.
 **Como testar:** perguntar "a IA consegue ver minhas vendas?": a resposta diz dá, dá em parte ou não dá, oferece os primeiros passos com opção e fecha com "da próxima vez, pode pedir assim".
 
 ## gatilho-pedir
@@ -471,3 +471,75 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** a seção Gatilhos do `AGENTS.md` do projeto tem a linha com `a IA consegue` e ela não tem `` skill `/pedir`; sem ela no projeto ``.
 **Como aplicar:** nessa linha, trocar "→ `ferramentas.md` e as skills" por "→ skill `/pedir`; sem ela no projeto, `ferramentas.md` e as skills". Mostrar o antes e o depois.
 **Como testar:** a seção Gatilhos tem `a IA consegue` uma vez só e essa linha contém `` skill `/pedir`; sem ela no projeto ``.
+
+## agents-enxuto
+
+**O que é:** o `AGENTS.md` do projeto fica mais curto. O formato do recado, o detalhe das rotinas, a seção Criação de skills, a nota do Codex e o texto inteiro de algumas regras passam pro `.claude/detalhe-regras.md`, que o kit atualiza e o `AGENTS.md` manda ler antes de escrever recado, rotina ou skill. A regra Auto-sync passa a lembrar o `/syncar` uma vez quando o backup ainda não está ligado, e a regra Camadas de regra diz que as regras repetidas do global ficam de propósito.
+**Por quê:** o `AGENTS.md` entra em toda conversa; formato e detalhe que só servem pra uma tarefa encareciam todas, e o `/checar` mandava cortar regra que veio do kit.
+**Te afeta se:** o `AGENTS.md` do projeto não cita `.claude/detalhe-regras.md`.
+**Como aplicar:** o `.claude/detalhe-regras.md` chega pelo motor do `/atualizar-sabinos` junto do núcleo. No `AGENTS.md` do projeto, achando cada trecho pelo texto e mostrando o antes e o depois: (1) no fim do Mapa, acrescentar a linha que começa com `- formato de recado, rotina, criar skill, Codex` do `_modelo/AGENTS.md` do kit; (2) nos Gatilhos, logo depois da linha que começa com `- antes de tarefa`, acrescentar a linha que começa com `- vai escrever recado, rotina ou skill`; (3) trocar pelo texto do `_modelo/AGENTS.md` do kit o parágrafo que começa com `Diário:` (fim da Tabela de destinos), o parágrafo de `## Rotinas` e as regras **Auto-sync**, **Camadas de regra** e **Um projeto por pasta** que o projeto tiver, cada regra achada pelo título e com o número que ela já tem no projeto; a regra **Auto-sync** reescrita pelo `/setup` porque a pessoa recusou o backup automático fica como está; (4) as seções `## Compatibilidade com outros agentes` e `## Criação de skills` saem, e no lugar entra a seção `## Codex` do `_modelo/AGENTS.md` do kit. O resto do arquivo fica como está.
+**Como testar:** o `AGENTS.md` do projeto cita `.claude/detalhe-regras.md`, o arquivo `.claude/detalhe-regras.md` existe, a regra **Camadas de regra** contém `não cortar` e não existe mais a seção `## Criação de skills`.
+
+## pendencias-de-fora
+
+**O que é:** as Pendências do `agora.md` passam a guardar só o que espera alguém de fora (fornecedor, cliente, contador, plataforma); o que você mesmo ou o sistema vai fazer vai pro `tarefas.md`.
+**Por quê:** as duas listas guardavam a mesma coisa, e a tarefa anotada numa era esquecida na outra.
+**Te afeta se:** a Tabela de destinos do `AGENTS.md` do projeto não tem `esperando alguém de fora`.
+**Como aplicar:** no `AGENTS.md`, achando pelo texto: no Mapa, trocar a linha `` - pendência pra depois: `tarefas.md` `` pela linha que começa com `- tarefa pra depois` do Mapa do `_modelo/AGENTS.md` do kit; na Tabela de destinos, trocar a linha que começa com `- pendência pra depois →` pela que começa com `- tarefa pra depois` da Tabela do kit. No `_contexto/agora.md`, se a seção Pendências ainda tem o texto de exemplo entre colchetes, trocar pelo do kit; se já tem pendência de verdade, mostrar à pessoa as linhas que são tarefa dela e, com o sim, levar pro `tarefas.md`. Mostrar o antes e o depois.
+**Como testar:** a Tabela de destinos do `AGENTS.md` do projeto contém `esperando alguém de fora` e o arquivo não tem mais `pendência pra depois`.
+
+## fontes-de-curso-na-raiz
+
+**O que é:** o `/aprender-curso` mandava gravar a legenda, a transcrição e a análise do Gemini de cada aula em `fontes/`, na raiz do projeto; agora grava em `inteligencia/cursos/<nome>/fontes/`, que fica fora do backup.
+**Por quê:** na raiz o `.gitignore` não segura esses arquivos, e o material do curso (às vezes pago) subia pro GitHub.
+**Te afeta se:** o projeto tem `.claude/skills/aprender-curso/` e uma pasta `fontes/` na raiz com arquivo `.vtt`, `.whisper.txt` ou `.gemini.md`.
+**Como aplicar:** a skill corrigida chega pelo motor do `/atualizar-sabinos`. Mostrar à pessoa os arquivos de `fontes/` da raiz e, com o sim, mover cada um pra `inteligencia/cursos/<nome>/fontes/` do curso dele (o id do vídeo no nome do arquivo aparece no `curso.md` do curso); arquivo que a pessoa não reconhece fica onde está. Se `git ls-files fontes/` listar arquivo, ele já subiu: dizer que fica no histórico do GitHub e, só com o sim, tirar do backup com `git rm -r --cached fontes/`, que mantém o arquivo no computador.
+**Como testar:** `git ls-files fontes/` volta vazio e a pasta `fontes/` da raiz não tem mais `.vtt`, `.whisper.txt` nem `.gemini.md` de aula que a pessoa reconheceu.
+
+## carrossel-no-pacote
+
+**O que é:** a `/carrossel` saiu da biblioteca de modelos e virou a sétima skill do pacote de mídia social. A `/pauta` passa a oferecer gerar os slides do roteiro aprovado, e os slides saem pelo `slides.mjs` da `/midia-social`, no Chrome do computador, sem baixar navegador.
+**Por quê:** o carrossel escolhido na `/pauta` ficava sem quem fizesse os slides, e o modelo antigo mandava baixar um navegador inteiro e montar caminho de arquivo à mão.
+**Te afeta se:** o projeto tem `.claude/skills/midia-social/` e não tem `.claude/skills/carrossel/`, ou tem `.claude/skills/carrossel/SKILL.md` que ainda cita `npx playwright`.
+**Como aplicar:** a skill chega pelo motor do `/atualizar-sabinos` junto do pacote. Projeto sem a pasta: nada a fazer além do motor. Projeto que já tinha promovido o modelo de carrossel: a skill dele foi adaptada ao negócio, então o motor pergunta arquivo por arquivo; o `references/design-carrossel.md` dele fica como está (é o estilo que a pessoa escolheu), e do `SKILL.md` mostrar à pessoa as partes novas (seção "5. Playwright", o passo 5 da Fase 2 e a Fase 3 com o `slides.mjs`, quantidade de slides de 6 a 9) e trocar só com o sim, mantendo o tom e os exemplos dela. Projeto sem o pacote de mídia social e com o carrossel promovido: o motor passa a contar o pacote como instalado e lista as outras seis skills como novas; dizer isso à pessoa e só adicionar com o sim dela.
+**Como testar:** `.claude/skills/carrossel/SKILL.md` cita `slides.mjs` e não cita `npx playwright`, e `node .claude/skills/midia-social/scripts/slides.mjs` sem argumento mostra a linha de uso.
+
+## publicar-instagram-chave-no-env
+
+**O que é:** o modelo `publicar-instagram` não pede mais chave, token nem App Secret no chat: cada um vai pro `.env`, e o `publish-graph-api.js --configurar` troca o token curto pelo de 60 dias e acha a conta sozinho. O comando passa a se chamar `/publicar-instagram` em todo o texto, os slides vêm de `producao/<slug>/final/` com a legenda do `post.md`, e a Graph API sai da v21.0 (vence em 21/01/2027) pra v25.0.
+**Por quê:** chave colada no chat fica gravada na conversa, e os comandos antigos punham o segredo na linha de comando.
+**Te afeta se:** o projeto tem `.claude/skills/publicar-instagram/` e o `SKILL.md` dela cita `Cola aqui` ou o `scripts/publish-graph-api.js` cita `v21.0`.
+**Como aplicar:** a skill é modelo promovido e adaptado, então não se substitui inteira. Trocar o `scripts/publish-graph-api.js` pelo de `../_modelo/templates/skills/publicar-instagram/scripts/` na pasta-mãe, com o sim. Do `SKILL.md`, mostrar à pessoa as seções de setup e o passo 1 do workflow do modelo novo e trocar só essas partes, com o sim. Se o `.env` já tem `INSTAGRAM_ACCESS_TOKEN`, nada a refazer até o token vencer.
+**Como testar:** `grep -n "Cola aqui\|v21.0" -r .claude/skills/publicar-instagram` volta vazio.
+
+## auditoria-carimbada
+
+**O que é:** o `ml-auditor` passa a carimbar a auditoria aprovada com o hash do `copy.json`, do `imagens.json` e da `decisao.json`, e o `--montar` da `/publicar-marketplace` e da `/cadastrar-bling` recusa quando algum deles mudou depois.
+**Por quê:** copy corrigido depois da auditoria ia pra publicação sem ninguém conferir de novo.
+**Te afeta se:** o projeto tem `dados/pipeline/<slug>/auditoria.json` com `"veredito": "aprovado"` e sem `carimbos`, de anúncio ainda não publicado.
+**Como aplicar:** as skills e o agente chegam pelo motor do `/atualizar-sabinos`. Auditoria sem carimbo com data (`em`) de antes de 2026-10-08 passa uma vez no `--montar`, com aviso; dizer isso à pessoa e, se ela mexeu no copy, nas imagens ou na decisão depois da auditoria, oferecer rodar o `ml-auditor` de novo naquele anúncio antes de montar.
+**Como testar:** `node .claude/skills/mercado-livre/scripts/carimbar-auditoria.mjs` sem slug mostra a linha de uso.
+
+## veredito-exemplo-whey
+
+**O que é:** o exemplo de veredito da `/pode-vender` ("Whey Exemplo 900 g") deixa de ter formato de entrada válida, e a skill passa a copiar só o cabeçalho e o molde quando cria o `_contexto/vereditos-legais.md`.
+**Por quê:** quem criou o arquivo copiando o exemplo inteiro ficou com um veredito de mentira valendo até 2027, e o Gate 0 o aceitava.
+**Te afeta se:** o `_contexto/vereditos-legais.md` do projeto contém `Whey Exemplo 900 g`.
+**Como aplicar:** mostrar à pessoa a entrada que começa com `## Whey Exemplo 900 g` (até a próxima linha `## `) e, com o sim, apagar só ela. Se a pessoa vende whey de verdade e usou aquela entrada, oferecer rodar a `/pode-vender` no produto real.
+**Como testar:** `grep -c "Whey Exemplo 900 g" _contexto/vereditos-legais.md` dá 0.
+
+## marca-generica-na-ficha
+
+**O que é:** a Marca da ficha do anúncio passa a seguir uma regra só em todas as skills do Mercado Livre: `Genérica` (o valor que o Mercado Livre pede pra produto sem marca) em kit, revenda e dropshipping, e o nome do fabricante só quando a pessoa é a dona da marca ou revendedora autorizada por escrito, gravado em `marca_autorizada` na `decisao.json`. O `--montar` vira pendência com marca fora da regra.
+**Por quê:** a `/montar-anuncio`, a `/publicar-marketplace` e a `/cadastrar-bling` davam três regras diferentes, e marca de fabricante sem autorização pode derrubar o anúncio por denúncia.
+**Te afeta se:** algum `dados/pipeline/<slug>/copy.json` de anúncio ainda não publicado tem na ficha uma `Marca` diferente de `Genérica`.
+**Como aplicar:** as skills chegam pelo motor do `/atualizar-sabinos`. Pra cada copy afetado, mostrar a marca e perguntar se a pessoa é a dona da marca ou revendedora autorizada por escrito: com o sim, gravar o nome em `marca_autorizada` na `decisao.json`; sem, trocar a `Marca` do `copy.json` e do `copy.md` por `Genérica`. Nos dois casos o anúncio passa de novo pelo `ml-auditor`.
+**Como testar:** o `--montar` daquele anúncio não lista pendência de Marca.
+
+## mei-venda-de-fora
+
+**O que é:** a `/mei` passa a somar no teto o total do ano vendido fora do `/caixa` (Mercado Livre, Shopee, loja virtual), anotado com `externo`, e guarda a declaração anual entregue com `declarei <ano>`, que faz o aviso parar. Ela serve também a quem é MEI e vende só em marketplace, e traz junto os scripts do `/caixa`, que ficam quietos até alguém chamar o `/caixa`.
+**Por quê:** o MEI que vende no Mercado Livre e não lança no `/caixa` via o teto em 0% calado, e a `/mei` só entrava pelo pacote loja.
+**Te afeta se:** a linha **Registro:** do `_contexto/empresa.md` começa com `MEI` e o projeto não tem `.claude/skills/mei/`; ou o projeto tem `.claude/skills/mei/` e o `dados/mei.json` não tem o campo `externo`.
+**Como aplicar:** projeto com a pasta: a skill chega pelo motor do `/atualizar-sabinos`; fazer à pessoa a pergunta 3 da "Primeira vez" da `/mei` (vende fora do `/caixa`? quanto no ano, no painel de cada um?) e gravar cada resposta com `externo`. Projeto sem a pasta: oferecer a `/mei` dizendo que ela traz junto os scripts do `/caixa`; com o sim, trazer da pasta-mãe as pastas do pacote loja que faltam e a da `mei` (`_modelo/.claude/skills/caixa/`, `atendimento/`, `cobrar/` e `mei/`) e seguir a "Primeira vez" da `/mei`.
+**Como testar:** `node .claude/skills/mei/scripts/mei.mjs proximos` mostra o teto, e com venda de fora anotada a linha traz `de fora (`.

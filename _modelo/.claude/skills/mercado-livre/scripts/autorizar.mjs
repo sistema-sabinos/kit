@@ -112,6 +112,6 @@ if (ehCli) {
     }
   } catch (e) {
     console.error(e.message)
-    process.exit(1)
+    process.exitCode = 1
   }
 }

@@ -20,12 +20,22 @@ da pra ver. O objetivo e aprender o mecanismo; copiar o video nao e o objetivo. 
 
 Roda sem IA paga, so com ferramentas do computador:
 
-1. **Baixar** pelo Chrome dedicado (o Instagram barra download sem navegador):
-   ```
-   node .claude/skills/assistir-video/ver-video.mjs "<url>" --so-baixar --manter
-   ```
-   O script imprime o caminho do arquivo. Lote vai um por vez. Se o Instagram pedir login (pagina sem
-   descricao), nenhuma rota sem conta abre: pedir o arquivo a pessoa.
+1. **Baixar.** Lote vai um por vez.
+   - **Reel ou post do Instagram:** pelo Chrome dedicado (secao "Chrome dedicado" da `/midia-social`),
+     com o codigo do link (`--posts` em vez de `--reels` pra post de carrossel):
+     ```
+     node .claude/skills/pauta/scripts/coletar.mjs --perfil <@ do criador> --reels <codigo do link>
+     ```
+     O @ aparece no topo do post quando o link abre no Chrome dedicado; o script abre a pagina do
+     perfil antes de ler o post.
+     O mp4 sai em `inteligencia/base-ideias/<perfil>/videos/<codigo>.mp4`. Se a pagina pedir login,
+     nenhuma rota sem conta abre: pedir o arquivo a pessoa.
+   - **TikTok, YouTube e outros:**
+     ```
+     node .claude/skills/assistir-video/ver-video.mjs "<url>" --so-baixar --manter
+     ```
+     Ele usa o yt-dlp e imprime o caminho do arquivo; se o yt-dlp faltar, o proprio script mostra o
+     comando de instalacao.
 2. **Folha de contato** (uma imagem por segundo) pra ver o video inteiro:
    ```
    ffmpeg -i <video> -vf "fps=1,scale=360:-1,tile=6x5" contato-%02d.png
@@ -34,7 +44,9 @@ Roda sem IA paga, so com ferramentas do computador:
 3. **Cortes:** `ffmpeg -i <video> -vf "select='gt(scene,0.06)',showinfo" -f null -` (os tempos saem
    nas linhas `pts_time`).
 4. **Som:** `silencedetect` pros silencios e `ebur128` pro volume (ler o bloco `Summary`).
-5. **Fala:** `python .claude/skills/pauta/scripts/transcrever.py <video>` (gratis, no computador).
+5. **Fala:** `python .claude/skills/pauta/scripts/transcrever.py <video>` (gratis, no computador). Pra
+   Reel coletado, `python .claude/skills/pauta/scripts/transcrever.py <perfil>` transcreve a pasta
+   `videos/` do perfil.
 6. **Numeros do post:** curtidas e comentarios pela descricao da pagina publica, e a data pelo codigo
    do link.
 7. Montar a ficha (formato abaixo) olhando as imagens, os tempos e a transcricao.

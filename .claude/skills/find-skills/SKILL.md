@@ -7,7 +7,8 @@ description: >
   skill", quiser estender o sistema com skill de fora, ou quando outra skill do
   SabinOS precisar descobrir skills prontas antes de criar uma nova (o `/setup`
   e o `/novo-projeto` chamam esta aqui). Não use pra "dá pra", "a IA consegue"
-  ou "como eu faço X" no negócio da pessoa: isso é da `/pedir`, que olha antes o
+  ou "como eu faço X" no negócio da pessoa: isso é da `/pedir` (dentro da pasta do
+  projeto; na pasta-mãe, responder direto e sugerir abrir o projeto), que olha antes o
   que já está ligado e as skills já instaladas.
 ---
 
@@ -167,7 +168,9 @@ conteúdo sem instalar, de um destes jeitos:
 
 Depois, aplicar a política do topo desta skill: ler o conteúdo, aproveitar só
 o que serve e gerar uma skill própria adaptada ao negócio do usuário, dentro
-do projeto dele. A pasta temporária se apaga no fim.
+do projeto dele. A pasta temporária fica no computador, fora do projeto; não
+apagar daqui (a trava barra apagar pasta inteira). Se a pessoa quiser, ela apaga à
+mão depois, e dizer onde está.
 
 ## Categorias comuns de busca
 
@@ -196,8 +199,9 @@ Se não existir skill relevante:
 
 1. Falar claramente que a busca não achou nada
 2. Oferecer ajudar com a tarefa direto, usando a capacidade geral do agente
-3. Sugerir criar uma skill própria com `npx skills init` ou pela skill
-   `/mapear`, que existe dentro da pasta de cada projeto do SabinOS
+3. Quando quem chamou foi o `/setup` ou o `/novo-projeto`, devolver pra ele,
+   que cria a skill do zero dentro do projeto. Fora disso, sugerir o `/mapear`
+   dentro da pasta do projeto, que cria pela skill-creator e mostra o plano antes
 
 Exemplo:
 
@@ -205,6 +209,6 @@ Exemplo:
 Busquei skill pronta pra isso e não achei nada. Posso te ajudar com a tarefa
 direto agora mesmo. Quer que eu siga?
 
-Se isso for algo que você vai repetir, dá pra criar uma skill sua:
-npx skills init minha-skill
+Se isso for algo que você vai repetir, dentro do projeto o /mapear transforma
+em comando seu.
 ```

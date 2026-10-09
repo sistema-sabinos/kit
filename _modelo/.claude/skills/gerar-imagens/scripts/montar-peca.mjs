@@ -29,6 +29,6 @@ if (ehCli) {
     console.log(JSON.stringify(await montarPeca({ html: a.html, out: a.out, largura, altura })))
   } catch (e) {
     console.error(e.message)
-    process.exit(1)
+    process.exitCode = 1
   }
 }

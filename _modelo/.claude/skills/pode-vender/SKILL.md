@@ -29,8 +29,11 @@ pode. Volume de anúncio prova só que a fiscalização é reativa.
 
 ## Quando roda
 
-- Gate 0 da esteira: produto novo entra aqui antes da pesquisa de mercado.
-  Reprovado não avança e não consome pesquisa.
+- Gate 0 da `/mercado-livre`: produto ou tipo sem veredito válido entra aqui
+  antes da pesquisa de mercado (a regra de quando o tipo basta mora lá).
+  Reprovado não avança e não consome pesquisa. Tipo não regulado: grave o
+  veredito com o nome do tipo no título da entrada, pra valer pros outros
+  produtos dele.
 - Fornecedor novo: antes de fechar, rodar em 3 a 5 produtos representativos do
   catálogo dele. O que o crivo revela sobre um costuma valer pro catálogo
   inteiro. Comece pelo gate de marca com a lista de marcas dele (`--marcas`):
@@ -44,9 +47,11 @@ pode. Volume de anúncio prova só que a fiscalização é reativa.
 - `_contexto/empresa.md`: o ramo, o CNPJ e o que já está anotado sobre
   restrições do negócio
 - `_contexto/mercado-livre.md`: os fornecedores e se o estoque é próprio ou
-  drop (muda a exigência de alvará)
+  drop (muda a exigência de alvará). Sem o arquivo (uso avulso), perguntar na
+  hora se é dropshipping ou estoque próprio e seguir; não criar o arquivo aqui
 - `_contexto/vereditos-legais.md`: a memória dos vereditos. Não existe na
-  primeira vez: criar copiando `referencias/vereditos-exemplo.md`
+  primeira vez: criar copiando de `referencias/vereditos-exemplo.md` só o
+  cabeçalho e o molde (até antes de "Exemplo preenchido")
 - `_contexto/conformidade/<nicho>/`: a pasta de conformidade do nicho, quando o
   ramo é regulado (seção "A pasta de conformidade do seu nicho")
 - O Chrome dedicado do pacote Mercado Livre, pro gate de marca (passo 0). Na

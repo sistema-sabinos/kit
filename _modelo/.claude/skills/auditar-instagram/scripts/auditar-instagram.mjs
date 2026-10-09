@@ -157,6 +157,12 @@ export async function medir(pastaRel, { fetchFn = fetch, agora = new Date(), rai
   const { config, env } = lerConfig({ raiz })
   exigir({ config, env }, ['IG_ACCESS_TOKEN', 'BUFFER_API_KEY'])
   const dir = join(raiz, 'producao', pastaRel)
+  // medir de novo duplicava a secao; a guarda vem antes de qualquer chamada de rede (5.7, G.7)
+  const arqBriefAntes = join(dir, 'brief.md')
+  if (existsSync(arqBriefAntes) && /^## Resultado/m.test(readFileSync(arqBriefAntes, 'utf8'))) {
+    console.log(`producao/${pastaRel}/brief.md ja tem a secao Resultado; nada gravado. Pra medir de novo, apagar a secao antiga primeiro`)
+    return null
+  }
   const arqPub = join(dir, 'publicacao.md')
   if (!existsSync(arqPub)) throw new Error(`producao/${pastaRel} nao tem publicacao.md: o post foi agendado pelo /publicar-social?`)
   const idBuffer = idInstagramValido(readFileSync(arqPub, 'utf8'))

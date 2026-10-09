@@ -2,7 +2,7 @@
 // Rodar: node --test _ferramentas/atualizar-projeto.test.mjs
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, readdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
@@ -351,6 +351,55 @@ test('aplicarPlano tambem garante o .gitignore da .sabinos', () => comPasta(raiz
   const { kit, projeto } = cenario(raiz)
   aplicarPlano({ kit, projeto, plano: montarPlano({ kit, projeto }) })
   assert.deepEqual(linhasDe(projeto), GITIGNORE)
+}))
+
+test('aplicar em projeto sem recibo e tudo igual só registra, sem pasta antes-', () => comPasta(raiz => {
+  const kit = montarKit(raiz, { [INICIAR]: 'novo\n', 'AGENTS.md': 'kit\n' })
+  const projeto = montarProjeto(raiz, { [INICIAR]: 'novo\n', 'AGENTS.md': 'kit\n' })
+  const r = aplicarPlano({ kit, projeto, plano: montarPlano({ kit, projeto }), registro: true })
+  assert.ok(existsSync(join(projeto, '.sabinos/instalado.json')), 'canario: o recibo foi gravado')
+  const nomes = readdirSync(join(projeto, '.sabinos'))
+  assert.ok(nomes.length > 0, 'canario: .sabinos nao esta vazia')
+  assert.deepEqual(nomes.filter(n => n.startsWith('antes-')), [])
+  assert.equal(r.backup, null)
+}))
+
+test('atualizacao de projeto antigo sem recibo e tudo igual guarda o misto (sem --registro)', () => comPasta(raiz => {
+  const kit = montarKit(raiz, { [INICIAR]: 'novo\n', 'AGENTS.md': 'kit\n' })
+  const projeto = montarProjeto(raiz, { [INICIAR]: 'novo\n', 'AGENTS.md': 'do usuario\n' })
+  const plano = montarPlano({ kit, projeto })
+  assert.ok(plano.mistos.includes('AGENTS.md'), 'canario: AGENTS.md e misto no plano')
+  const r = aplicarPlano({ kit, projeto, plano })
+  assert.ok(r.backup, 'sem copia, o desfazer nao volta o AGENTS.md que a conversa mexer')
+  assert.equal(ler(projeto, `.sabinos/${r.backup}/arquivos/AGENTS.md`), 'do usuario\n')
+}))
+
+test('linha de comando: registro do setup, depois atualizacao, desfazer sem --backup acha uma copia só', () => comPasta(raiz => {
+  const kit = montarKit(raiz, { [INICIAR]: 'novo\n', 'AGENTS.md': 'kit\n' })
+  const projeto = montarProjeto(raiz, { [INICIAR]: 'novo\n', 'AGENTS.md': 'kit\n' })
+  assert.equal(rodar(['plano', projeto, '--kit', kit]).codigo, 0)
+  const reg = rodar(['aplicar', projeto, '--registro'])
+  assert.equal(reg.codigo, 0, reg.saida)
+  assert.match(reg.saida, /Nada trocado; so o registro da versao\./)
+  const kit2 = montarKit(join(raiz, 'v2'), { [INICIAR]: 'mais novo\n', 'AGENTS.md': 'kit\n' }, { [INICIAR]: { 'novo\n': '3.4' } })
+  assert.equal(rodar(['plano', projeto, '--kit', kit2]).codigo, 0)
+  const ap = rodar(['aplicar', projeto])
+  assert.match(ap.saida, /Copia de seguranca: /, 'canario: a atualizacao de verdade fez copia')
+  const d = rodar(['desfazer', projeto])
+  assert.equal(d.codigo, 0, d.saida)
+  assert.ok(!/Outras:/.test(d.saida), d.saida)
+  assert.equal(ler(projeto, INICIAR), 'novo\n')
+}))
+
+test('linha de comando: registrar rodado de outra pasta (a pasta-mae) grava no recibo do projeto', () => comPasta(raiz => {
+  const { kit, projeto } = cenario(raiz)
+  aplicarPlano({ kit, projeto, plano: montarPlano({ kit, projeto }) })
+  const mae = join(raiz, 'mae')
+  mkdirSync(mae)
+  const r = execFileSync(process.execPath, [MOTOR, 'registrar', projeto, 'skill-pedir', 'aplicada'], { cwd: mae, encoding: 'utf8' })
+  assert.match(r, /Registrado: skill-pedir aplicada/)
+  assert.match(JSON.parse(ler(projeto, '.sabinos/instalado.json')).mudancas['skill-pedir'], /^aplicada /)
+  assert.ok(!existsSync(join(mae, '.sabinos')), 'nada gravado na pasta de onde rodou')
 }))
 
 test('linha de comando: desfazer duas vezes sem --backup nao reaplica a atualizacao', () => comPasta(raiz => {

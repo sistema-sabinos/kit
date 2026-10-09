@@ -13,7 +13,7 @@ fornecedores/<nome>/
   _raw-pesquisa-<categoria>.json   coleta bruta
   pesquisa-tendencia-<categoria>.md e .csv
   concorrentes/<categoria>/<produto>.md, vocabulario.txt, atributos.json
-  concorrentes/<categoria>/_raw-concorrentes-<produto>.json   coleta bruta da espionagem
+  concorrentes/<categoria>/_raw-concorrentes-<slug>.json   coleta bruta da espionagem
   bling.json                       CNPJ do fornecedor e categorias no Bling (só com Bling)
   fornecedor.md                    estado, prazo de despacho, nota e fotos (só no drop), da /comecar-a-vender
   plano-anuncios-<categoria>.md    saída da /decidir-anuncio
@@ -125,6 +125,8 @@ agente para e avisa.
   "slug": "kit-5-suspiros",
   "tipo": "kit",
   "composicao": [{ "produto": "Suspiro 100g", "custo": 4.5, "qtd": 5 }],
+  "variacoes": [],
+  "marca_autorizada": null,
   "custo_total": 22.5,
   "posicionamento": "premium",
   "preco": { "tabela": 56.7, "alvo_pos_desconto": 49.9, "margem_projetada_rs": 10 },
@@ -137,6 +139,13 @@ agente para e avisa.
 }
 ```
 
+`composicao[].produto` é o texto exato da coluna `produto` do
+`catalogo-analisado.csv`, copiado, nunca reescrito (nome que não casa vira
+pendência na publicação e no cadastro); `variacoes` lista cor, tamanho ou sabor
+quando o anúncio tem, vazio quando não. `marca_autorizada` fica `null`, e só
+leva o nome do fabricante quando a pessoa é a dona da marca ou revendedora
+autorizada por escrito.
+
 ## 4. `<slug>/copy.json` (copywriter escreve; designer, auditor e publicador leem)
 
 ```json
@@ -144,7 +153,7 @@ agente para e avisa.
   "slug": "kit-5-suspiros",
   "titulo": "Kit 5 Suspiros 500g Sabores Sortidos Festa Lembrancinha",
   "descricao": "<texto completo>",
-  "ficha": { "Marca": "Sem marca", "Peso líquido": "500g" },
+  "ficha": { "Marca": "Genérica", "Peso líquido": "500g" },
   "precos": { "ml_classico": 49.9, "ml_premium": 52.9 },
   "margem_provisoria_rs": 10,
   "gtin": null,
@@ -158,8 +167,13 @@ agente para e avisa.
 }
 ```
 
-Um título só e uma capa só: é um anúncio por produto. `Marca` é a do
-fabricante ou `Sem marca`, nunca a da loja. `gtin` fica `null` quando não há
+Um título só e uma capa só: é um anúncio por produto. Marca na ficha:
+`Genérica` em kit, revenda e dropshipping. O nome do fabricante só quando você
+é a dona da marca ou revendedora autorizada por escrito, e aí ele vem de
+`decisao.json` em `marca_autorizada`. Nunca o nome da loja. `precos.ml_classico`
+fica no `alvo_pos_desconto` da decisão e `precos.ml_premium` pode ser maior; a
+publicação usa o preço da modalidade escolhida como alvo do desconto sobre
+`preco.tabela`. `gtin` fica `null` quando não há
 código confiável, e kit montado por você nunca tem GTIN. `ncm` vem do
 fornecedor ou da contadora; sem dado, `null` e pendência.
 
@@ -203,9 +217,16 @@ checklist de publicação diz a ordem.
     "sem_contato_externo": { "ok": true }
   },
   "falhas": [],
-  "em": "2026-09-23"
+  "em": "2026-09-23",
+  "carimbos": { "copy": "<sha256>", "imagens": "<sha256>", "decisao": "<sha256>", "fotos": { "anuncios/kit-5-suspiros/imagens/01-capa.jpg": "<sha256>" } }
 }
 ```
+
+`carimbos` é o que o `carimbar-auditoria.mjs` grava no fim da auditoria
+aprovada: o hash de cada arquivo que o auditor leu, inclusive cada foto do
+mapa. O `--montar` da publicação e do cadastro recusa quando algum mudou
+depois disso; auditoria sem carimbo com `em` de antes da versão 5.7 passa uma
+vez com aviso e é carimbada ali mesmo.
 
 `veredito`: `aprovado` ou `reprovado`. `modalidade_escolhida` (`classico` ou
 `premium`) é a que o simulador apontou com mais lucro líquido. Em `falhas`,

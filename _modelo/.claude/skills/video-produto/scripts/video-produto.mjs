@@ -472,13 +472,15 @@ export function explicarFalhaDoVeo(erro) {
       '[bloqueio de conteudo] O Veo aceitou o pedido, cobrou a operacao e devolveu SEM video.',
       'Causas comuns: marca de terceiro ou texto visivel na imagem de entrada, ou uma cena que se contradiz (ex.: pessoa que "fala" com a voz unica ligada).',
       '',
-      'O que o --foto= espera receber: imagem do PRODUTO, sem texto de venda, sem logo e sem marca de terceiro,',
-      'fundo claro e de preferencia ja vertical (a preparacao completa com branco pra chegar em 9:16, o que so',
-      'fica invisivel em fundo claro). As imagens da /gerar-imagens levam texto de venda:',
+      'O que a "foto" do roteiro (e o --foto=, que so vale igual a ela) espera receber: imagem do PRODUTO, sem texto de venda,',
+      'sem logo e sem marca de terceiro, fundo claro e de preferencia ja vertical (a preparacao completa com branco pra',
+      'chegar em 9:16, o que so fica invisivel em fundo claro). As imagens da /gerar-imagens levam texto de venda:',
       'prefira as fotos cruas do fornecedor, ou uma imagem limpa feita so pra isso.',
       'Teto de 3 tentativas por video: se a terceira cair, a leitura da regra esta errada na raiz e insistir so gasta.',
       '',
-      `  node ${CAMINHO_CLI} --mlb=<MLB> --fase=2 --foto=<caminho da imagem limpa> --preco-usd=<US$/s> --autorizado`,
+      'Escreva o caminho da imagem limpa em "foto" no roteiro.json, mostre ela pra pessoa, aprove de novo e rode:',
+      `  node ${CAMINHO_CLI} --mlb=<MLB> --fase=1 --aprovar`,
+      `  node ${CAMINHO_CLI} --mlb=<MLB> --fase=2 --preco-usd=<US$/s> --autorizado`,
       '',
       `Detalhe cru da API: ${msg.slice(0, 300)}`,
     ].join('\n')
@@ -520,7 +522,7 @@ const USO = [
   '  --preco-musica-usd=<US$>               preco do dia de uma musica (obrigatorio se faltar a musica)',
   '  --preco-tts-entrada=<US$/Mtok> --preco-tts-saida=<US$/Mtok>                   precos do dia da voz',
   '  --preco-transcricao-entrada=<US$/Mtok> --preco-transcricao-saida=<US$/Mtok>   precos do dia da transcricao',
-  '  --foto=<caminho>      imagem de referencia do Veo (use uma imagem limpa quando o Veo barrar a foto do anuncio; obrigatoria na coleta de concorrente, e igual a "foto" do roteiro)',
+  '  --foto=<caminho>      opcional: so aceito se for igual a "foto" do roteiro, que e a imagem aprovada no gate 1 e a que vai pro Veo (imagem nova entra em "foto" e passa pelo gate 1 de novo)',
   '  --slug=<slug>         pasta do produto em vez do slug da coleta (obrigatorio com --de-espionagem: nome do seu produto, sem marca)',
   '  --producao=<pasta>    raiz das pastas de producao (padrao: producao)',
   '  --modelo-musica=<nome>  modelo de musica, se a descoberta automatica nao achar',
@@ -617,8 +619,15 @@ const arred = (n) => Math.round(n * 1e4) / 1e4
 const ehDeEspionagem = (coleta) => coleta?.origem === 'espionagem'
 const FOTO_PROPRIA = 'use uma foto do fornecedor ou do seu proprio produto, sem logo e sem texto. A foto do anuncio do concorrente e de terceiro, e usar foto de terceiro fere a regra do Mercado Livre'
 
-function errosDaFotoDaEspionagem(roteiro) {
-  if (!roteiro.foto) return [`falta "foto" no roteiro: a coleta veio de um concorrente, entao ${FOTO_PROPRIA}. Escreva o caminho da imagem em "foto" e mostre a imagem no gate 1`]
+// Em qualquer origem, foto declarada tem que existir: o carimbo de uma foto
+// ausente guarda impressao digital nula, e aprovar isso nao prova imagem nenhuma.
+// Na espionagem a foto e obrigatoria.
+function errosDaFoto(roteiro, coleta) {
+  if (!roteiro.foto) {
+    return ehDeEspionagem(coleta)
+      ? [`falta "foto" no roteiro: a coleta veio de um concorrente, entao ${FOTO_PROPRIA}. Escreva o caminho da imagem em "foto" e mostre a imagem no gate 1`]
+      : []
+  }
   if (!fs.existsSync(roteiro.foto)) return [`"foto" aponta ${roteiro.foto}, que nao existe. Confira o caminho (a partir da pasta do projeto)`]
   return []
 }
@@ -686,7 +695,7 @@ async function fase1({ mlb, base, slug, a, d }) {
 
   // roteiro existe: gate de conteudo ANTES de mostrar qualquer coisa pra pessoa
   const erros = conferirRoteiro(roteiro)
-  if (!erros.length && ehDeEspionagem(coleta)) erros.push(...errosDaFotoDaEspionagem(roteiro))
+  if (!erros.length) erros.push(...errosDaFoto(roteiro, coleta))
   if (erros.length) {
     console.error(`[gate de conteudo] roteiro reprovado (${erros.length}):\n- ${erros.join('\n- ')}`)
     console.error('\nRegras em referencias/regras-clips-ml.md. Consertar o roteiro.json e rodar de novo.')
@@ -750,17 +759,27 @@ async function fase2({ mlb, base, slug, a, d, precos }) {
 
   for (const aviso of avisosDoRoteiro(roteiro)) console.error(`[aviso] ${aviso}`)
 
-  // coleta de concorrente: a foto do anuncio dele nunca vai pro Veo. Exige
-  // --foto, e tem que ser a mesma que foi aprovada no gate 1 (roteiro.foto).
-  if (ehDeEspionagem(coleta)) {
-    if (!a.arg('foto')) {
-      console.error(`[fase 2] a coleta veio de um concorrente: passe --foto=<imagem>. ${FOTO_PROPRIA}. Nada foi gasto.`)
+  // A foto que vai pro Veo e a aprovada no gate 1 (roteiro.foto), em qualquer
+  // origem, e --foto so vale igual a ela. Foto declarada e ausente para aqui,
+  // antes de baixar ou gerar qualquer coisa. O conteudo do arquivo entra no
+  // carimbo (hashDoRoteiro): trocou a imagem depois do sim, o podeGastar barra.
+  // Na coleta de concorrente a foto do anuncio dele nunca vai pro Veo.
+  const fotoArg = a.arg('foto')
+  if (roteiro.foto) {
+    if (fotoArg && path.resolve(fotoArg) !== path.resolve(roteiro.foto)) {
+      console.error(`[fase 2] --foto=${fotoArg} nao e a foto aprovada no gate 1 (${roteiro.foto}). Escreva a imagem nova em "foto" no roteiro.json, mostre ela pra pessoa e aprove de novo. Nada foi gasto.`)
       return 2
     }
-    if (!roteiro.foto || path.resolve(a.arg('foto')) !== path.resolve(roteiro.foto)) {
-      console.error(`[fase 2] --foto=${a.arg('foto')} nao e a foto aprovada no gate 1 (${roteiro.foto ?? 'o roteiro nao declara "foto"'}). Escreva a imagem nova em "foto" no roteiro.json, mostre ela pra pessoa e aprove de novo. Nada foi gasto.`)
+    if (!fs.existsSync(roteiro.foto)) {
+      console.error(`[fase 2] a foto aprovada no gate 1 (${roteiro.foto}) nao existe. Confira o caminho (a partir da pasta do projeto); se a imagem for outra, escreva ela em "foto", mostre pra pessoa e aprove de novo. Nada foi gasto.`)
       return 2
     }
+  } else if (fotoArg) {
+    console.error(`[fase 2] --foto=${fotoArg} nao passou pelo gate 1: declare a imagem em "foto" no roteiro.json, mostre no gate 1 e aprove de novo. Nada foi gasto.`)
+    return 2
+  } else if (ehDeEspionagem(coleta)) {
+    console.error(`[fase 2] a coleta veio de um concorrente e o roteiro nao declara "foto": ${FOTO_PROPRIA}. Escreva a imagem em "foto" no roteiro.json, mostre no gate 1 e aprove de novo. Nada foi gasto.`)
+    return 2
   }
 
   const dryRun = a.tem('dry-run')
@@ -830,10 +849,12 @@ async function fase2({ mlb, base, slug, a, d, precos }) {
   const custoPrevisto = precos.clipe ? `, ~${usd(clipesFaltando * SEGUNDOS_POR_BLOCO * precos.clipe)} de Veo` : ''
   console.error(`[fase 2] ${clipesFaltando} clipe(s) a gerar${custoPrevisto}${dryRun ? ' (DRY-RUN, nao gasta nada)' : ''}.`)
 
-  // imagem de referencia: --foto manda, senao a foto principal do anuncio,
-  // baixada uma vez so. Sem clipe a gerar nao se baixa nada: a rodada pode ser
-  // so pra completar narracao de bloco cujo clipe ja esta pago.
-  const foto = a.arg('foto') ?? path.join(pasta, 'referencia.jpg')
+  // imagem de referencia: a foto do roteiro (o --foto, se veio, ja e igual a
+  // ela), senao a foto principal do anuncio, baixada uma vez so. Sem clipe a
+  // gerar nao se baixa nada: a rodada pode ser so pra completar narracao de
+  // bloco cujo clipe ja esta pago.
+  const foto = fotoArg ?? roteiro.foto ?? path.join(pasta, 'referencia.jpg')
+  console.error(`[fase 2] foto que vai pro Veo: ${foto}`)
   if (clipesFaltando && !fs.existsSync(foto)) {
     if (a.arg('foto')) { console.error(`[fase 2] --foto=${foto} nao existe.`); return 1 }
     if (dryRun) {

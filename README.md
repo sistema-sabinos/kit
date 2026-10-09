@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 5.6 (2026-10-08)
+Versão 5.7 (2026-10-08)
 
 Um sistema de trabalho com IA pro seu negócio, rodando dentro do VS Code com o Claude Code.
 
@@ -18,7 +18,7 @@ A ideia é simples: em vez de conversar com uma IA que esquece tudo a cada conve
 
 **4. Assine o Claude** em [claude.com](https://claude.com/). Depois, no VS Code, abra a aba de extensões (ícone de blocos na lateral), busque "Claude Code", instale e faça login.
 
-**5. Descompacte este kit** numa pasta definitiva sua (ex: `Documentos/SabinOS-Sistema`), não deixe em Downloads.
+**5. Descompacte este kit** dentro de `Documentos` (o zip já traz a pasta `SabinOS-Sistema`, não crie outra com esse nome). Não deixe em Downloads, nem dentro de uma pasta que já é repositório git. Abrindo a pasta, você tem que ver o `COMECE-AQUI.md` logo de cara; se aparecer só outra pasta `SabinOS-Sistema`, abra a de dentro.
 
 **6. Abra a pasta no VS Code** (`Arquivo > Abrir Pasta`) e siga o [COMECE-AQUI.md](COMECE-AQUI.md).
 
@@ -35,7 +35,7 @@ Todo o passo a passo de leigo está no [COMECE-AQUI.md](COMECE-AQUI.md): abrir a
 - `AGENTS.md`, o cérebro desta sala de controle (como ela conduz o onboarding); `CLAUDE.md` é só o ponteiro pro Claude Code ler o mesmo arquivo
 - `_modelo/`, o molde completo de um projeto (skills, contexto, estrutura de pastas), de onde cada projeto novo nasce. Não é pasta de trabalho
 - `_ferramentas/`, o verificador do kit e uma biblioteca pronta contra automação que trava
-- `docs/`, guias de apoio e roteiro de próximos passos
+- `docs/`, o guia avançado (Codex e Hermes Agent) e o roteiro de próximos passos. Os dois guias em PDF, de instalação (`Guia-SabinOS-Instalacao`) e de comandos (`Guia-SabinOS-Comandos`), vêm junto com o zip, fora desta pasta
 - `<projeto>/`, uma pasta por projeto que você criar, cada uma vira um workspace próprio no VS Code
 
 **Comandos desta pasta-mãe** (digite `/` na conversa pra ver):
@@ -46,7 +46,7 @@ Todo o passo a passo de leigo está no [COMECE-AQUI.md](COMECE-AQUI.md): abrir a
 - `/syncar`, salva o estado da pasta-mãe no GitHub
 - `/atualizar-kit`, traz uma versão nova do SabinOS (do GitHub ou de um zip) sem tocar nos seus projetos
 
-Dentro de cada projeto criado, outro conjunto de comandos entra em ação (`/iniciar`, `/conectar`, `/mapear`, `/atualizar`, `/checar` e mais), explicado no guia de instalação (seção 7.3); dentro do projeto, digite `/` pra ver a lista.
+Dentro de cada projeto criado, outro conjunto de comandos entra em ação (`/iniciar`, `/conectar`, `/mapear`, `/atualizar`, `/checar` e mais), explicados no PDF `Guia-SabinOS-Comandos`, que veio junto com este zip (ele fica fora da pasta); dentro do projeto, digite `/` pra ver a lista.
 
 O projeto guarda o que foi feito e por quê em `_memoria/` (diário, decisões e recados dos robôs), e vem com `/faxina` (confere uma vez por mês se a memória envelheceu e só mexe com o seu sim), `/compartilhar` (manda a pasta de um cliente ou sócio pro GitHub dela, sem senha e sem o resto do projeto) e `/segunda-opiniao` (um revisor que não viu a conversa confere a proposta antes de você aprovar gasto, publicação, envio pra fora ou mudança de pasta, ou quando você pede).
 
@@ -54,11 +54,13 @@ A marca tem duas metades em `marca/`: o visual e a voz com que o sistema escreve
 
 Quem vende em marketplace ganha, se quiser, o pacote `/mercado-livre`: do "posso vender esse produto?" ao anúncio publicado e à conta auditada, sem custo (as partes pagas são opcionais e sempre avisadas antes de rodar: gerar imagem por IA e a leitura das fotos dos concorrentes na `/engenharia-reversa`). O `/setup` oferece quando suas respostas falam em marketplace.
 
-Junto com ele vêm mais dois pacotes opcionais. O de vídeo faz o vídeo do produto sem você filmar (`/video-produto`, a partir das dúvidas dos compradores nos concorrentes; rode antes a `/espionar-concorrente`) e edita o vídeo que você gravou (`/editar-video`). A instalação, pela `/configurar-video`, pede uns 4 GB livres na hora e uns 3 GB depois (música e efeito sonoro você baixa grátis, o kit mostra onde); gerar vídeo por IA é pago, com o valor mostrado antes, e o teto padrão de gasto é US$ 4 por rodada. O de redes sociais (`/midia-social`) faz a pauta da semana, agenda no Instagram, TikTok e YouTube pelo Buffer e mede o resultado, grátis (análise pelo Gemini opcional).
+Junto com ele vem mais um pacote opcional. O de vídeo faz o vídeo do produto sem você filmar (`/video-produto`, a partir das dúvidas dos compradores nos concorrentes; rode antes a `/espionar-concorrente`) e edita o vídeo que você gravou (`/editar-video`). A instalação, pela `/configurar-video`, pede uns 4 GB livres na hora e uns 3 GB depois (música e efeito sonoro você baixa grátis, o kit mostra onde); gerar vídeo por IA é pago, com o valor mostrado antes, e o teto padrão de gasto é US$ 4 por rodada.
 
-Quem vende direto pro cliente (encomenda, WhatsApp, Instagram, Pix) ganha, se quiser, o pacote de loja: `/atendimento` responde as mensagens com o preço e o prazo da sua tabela, conferidos antes de chegar em você (o Claude rascunha, você manda); `/caixa` anota pedido e sinal, mostra quem está devendo e fecha o mês; `/cobrar` rascunha a cobrança no seu tom. Pra quem é MEI, o `/mei` avisa do DAS de todo dia 20, da declaração anual até 31 de maio e do faturamento perto do teto, com os valores conferidos em fonte oficial. Tudo grátis. O `/setup` oferece quando suas respostas falam em venda direta, e pergunta se o negócio tem CNPJ antes de instalar o `/mei`.
+Quem posta em rede social ganha, se quiser, o pacote de redes sociais (`/midia-social`), com ou sem marketplace: faz a pauta da semana, agenda no Instagram, TikTok e YouTube pelo Buffer e mede o resultado, grátis (análise pelo Gemini opcional). O `/setup` oferece quando suas respostas falam em Instagram, TikTok, YouTube, post ou vídeo.
 
-Todo projeto vem com a `/ler-avaliacoes`, que lê as avaliações reais dos clientes de um concorrente e ranqueia o que eles mais reclamam e pedem, com a frase de cada um. E quem quer criar um app ou sistema próprio pra vender ganha, se quiser, o pacote criar app: dez comandos, de `/app-estudar` a `/app-publicar`, do estudo de um app que já existe até o seu no ar com marca própria. Montar é grátis, mas gasta bastante do seu plano Claude; domínio, hospedagem paga, conta nas lojas de celular e taxa do INPI aparecem antes, com o valor, e só andam com o seu ok. O `/setup` oferece quando suas respostas falam em app, sistema ou SaaS.
+Quem vende direto pro cliente (encomenda, WhatsApp, Instagram, Pix) ganha, se quiser, o pacote de loja: `/atendimento` responde as mensagens com o preço e o prazo da sua tabela, conferidos antes de chegar em você (o Claude rascunha, você manda); `/caixa` anota pedido e sinal, mostra quem está devendo e fecha o mês; `/cobrar` rascunha a cobrança no seu tom. Pra quem é MEI, o `/mei` avisa do DAS de todo dia 20, da declaração anual até 31 de maio e do faturamento perto do teto, somando o total que você anota das vendas de fora do `/caixa` (Mercado Livre, Shopee), com os valores conferidos em fonte oficial. Tudo grátis. O `/setup` oferece quando suas respostas falam em venda direta, e pergunta se o negócio tem CNPJ antes de instalar o `/mei`. Ao MEI que vende só em marketplace, ele oferece o `/mei` também, que traz junto os scripts do caixa.
+
+Todo projeto vem com a `/ler-avaliacoes`, que lê as avaliações reais dos clientes de um concorrente e ranqueia o que eles mais reclamam e pedem, com a frase de cada um. E quem quer criar um app ou sistema próprio pra vender ganha, se quiser, o pacote criar app: dez comandos, de `/app-estudar` a `/app-publicar`, mais a `/ler-avaliacoes` como etapa 2: onze etapas, do estudo de um app que já existe até o seu no ar com marca própria. Montar é grátis, mas gasta bastante do seu plano Claude; domínio, hospedagem paga, conta nas lojas de celular e taxa do INPI aparecem antes, com o valor, e só andam com o seu ok. O `/setup` oferece quando suas respostas falam em app, sistema ou SaaS.
 
 Todo projeto também vem com a `/humanizar`: ela aponta o que soa robô num anúncio, post ou resposta de cliente e, quando você pede, reescreve sem mexer em preço, prazo, medida e marca, com um conferidor que reprova se algum número sumiu ou mudou. Grátis.
 

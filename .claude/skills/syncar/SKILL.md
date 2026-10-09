@@ -20,7 +20,7 @@ Explicar em uma frase antes de começar:
 
 1. Verificar se `git` está instalado; se não, orientar a instalação do Git for Windows/Mac com o link oficial
 2. Configurar `user.name` e `user.email` se estiverem vazios (perguntar nome e email)
-3. `git init` se a pasta não for repositório
+3. `git init` se a pasta não for repositório ou for pedaço de um repositório de fora (`git rev-parse --show-prefix` não vazio)
 4. Se a pasta ainda não tiver `.gitignore`, criar com pelo menos: `.env`, `.env.*`,
    `node_modules/`, `*.log` e os formatos de vídeo e áudio (o GitHub recusa arquivo
    acima de 100 MB, e um vídeo baixado dentro da pasta derruba o backup inteiro).

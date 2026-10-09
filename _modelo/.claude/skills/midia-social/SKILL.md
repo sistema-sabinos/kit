@@ -26,9 +26,10 @@ proximo passo.
 | `/publicar-social` | agenda o post pronto no Instagram, TikTok e YouTube | gratis |
 | `/auditar-instagram` | raio-x da conta e medicao do post 7 dias depois | gratis |
 | `/gerenciar-youtube` | le o canal e troca titulo e descricao | gratis |
+| `/carrossel` | transforma o roteiro aprovado em slides prontos (PNG) | gratis |
 
-O caminho de um post: `/pauta` escreve o roteiro em `producao/<post>/`, o video ou o carrossel e
-feito (pelo motor de video do SabinOS, por um editor ou no celular) e o arquivo pronto vai em
+O caminho de um post: `/pauta` escreve o roteiro em `producao/<post>/`, o video e feito (pelo motor
+de video do SabinOS, por um editor ou no celular) ou o carrossel sai pela `/carrossel`, e o arquivo pronto vai em
 `producao/<post>/final/`, o `/publicar-social` agenda, e 7 dias depois o `/auditar-instagram --medir`
 conta o resultado.
 
@@ -51,7 +52,8 @@ conta o resultado.
    ```
    Ele cria o `_contexto/midia-social.md` e as pastas `perfis/<nome>/`, `inteligencia/`,
    `biblioteca/` e `producao/_molde/`, sem apagar nada que ja exista. Mostrar o que foi criado.
-5. Oferecer o proximo passo: preencher a bio e o tom (`perfis/<nome>/`) ou ligar o Buffer
+5. Oferecer o proximo passo: preencher a bio (`perfis/<nome>/`) e, so se o perfil fala diferente da
+   marca, o `tom.md`, ou ligar o Buffer
    (secao "Buffer" de `.claude/skills/midia-social/referencias/configurar.md`).
 
 ## Estado (quando o pacote ja esta configurado)

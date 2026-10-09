@@ -1,10 +1,30 @@
-# Blocos 1 (caches, risco zero) e 3 (sobras de programa antigo). Escopo do usuario, nao precisa admin.
-# Uso: .\limpar.ps1 -Blocos 1,3     ou    .\limpar.ps1 -Blocos 1
-param([int[]]$Blocos = @(1))
+# Blocos 1 (caches, risco zero) e 3 (sobras de programa antigo, so os ids escolhidos),
+# e a lixeira a parte. Escopo do usuario, nao precisa admin.
+# Uso: .\limpar.ps1 -Blocos 1    .\limpar.ps1 -Lixeira    .\limpar.ps1 -Blocos 1,3 -Itens gradle,fortnite
+# Sem bloco padrao: cada coisa apagada tem de vir pedida (a lixeira aprovada sozinha nao leva os caches junto)
+param([int[]]$Blocos = @(), [string[]]$Itens = @(), [switch]$Lixeira)
 
 . (Join-Path $PSScriptRoot '_comum.ps1')
 $ErrorActionPreference = 'SilentlyContinue'
-$log = Iniciar-Log ('limpeza-blocos-' + ($Blocos -join '-'))
+
+# Pelo -File a lista chega como um texto so ("gradle,fortnite"): separa na virgula
+$Itens = @($Itens | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+# Confere tudo antes de apagar qualquer coisa
+if ($Blocos.Count -eq 0 -and -not $Lixeira) {
+    Diga 'nada pedido: passe -Blocos com o que o usuario aprovou, ou -Lixeira; nada apagado'
+    exit 2
+}
+$log = Iniciar-Log ('limpeza-blocos-' + ($Blocos -join '-') + $(if ($Lixeira) { '-lixeira' } else { '' }))
+if (($Blocos -contains 3) -and $Itens.Count -eq 0) {
+    Diga 'bloco 3 precisa de -Itens com o que o usuario escolheu; nada apagado'
+    exit 2
+}
+foreach ($id in $Itens) {
+    if (-not $Global:Sobras.Contains($id)) {
+        Diga ("item desconhecido: {0}. Validos: {1}. Nada apagado" -f $id, ($Global:Sobras.Keys -join ', '))
+        exit 2
+    }
+}
 
 $antes = LivreNoSistema
 Diga ('Livre no inicio: {0:N1} GB' -f ($antes / 1GB))
@@ -55,28 +75,23 @@ if ($Blocos -contains 1) {
     $sWin = Bytes $tmpWin
     Get-ChildItem -LiteralPath $tmpWin -Force | Remove-Item -Recurse -Force
     Diga ('{0,9:N0} MB  TEMP do Windows' -f (($sWin - (Bytes $tmpWin)) / 1MB))
+}
 
+if ($Lixeira) {
+    Diga ''
+    Diga '########## LIXEIRA (aprovada a parte, apaga de vez) ##########'
     Clear-RecycleBin -Force -Confirm:$false
     Diga '           lixeira esvaziada'
 }
 
 if ($Blocos -contains 3) {
     Diga ''
-    Diga '########## BLOCO 3: SOBRAS DE PROGRAMA ANTIGO ##########'
-    Diga '(so rodar depois do usuario confirmar que nao usa mais)'
-    [void](Remover (Join-Path $env:USERPROFILE '.p2')                        'Eclipse (.p2)')
-    [void](Remover (Join-Path $env:USERPROFILE '.gradle')                    'Gradle')
-    [void](Remover (Join-Path $env:USERPROFILE '.m2')                        'Maven')
-    [void](Remover (Join-Path $env:USERPROFILE '.android')                   'Android SDK')
-    [void](Remover (Join-Path $env:LOCALAPPDATA 'Google\AndroidStudio2021.1') 'Android Studio 2021')
-    [void](Remover (Join-Path $env:LOCALAPPDATA 'FortniteGame')              'Fortnite')
-    [void](Remover (Join-Path $env:LOCALAPPDATA 'TslGame')                   'PUBG')
-    [void](Remover (Join-Path $env:LOCALAPPDATA 'Battle.net')                'Battle.net (local)')
-    [void](Remover (Join-Path $env:APPDATA      'Battle.net')                'Battle.net (roaming)')
-    [void](Remover (Join-Path $env:ProgramData  'Battle.net_components')     'Battle.net components')
-    [void](Remover (Join-Path $env:APPDATA      'playstation-now')           'PlayStation Now')
-    [void](Remover (Join-Path $env:APPDATA      'Tencent')                   'Tencent')
-    [void](Remover (Join-Path $env:APPDATA      'McAfee')                    'McAfee (resto de desinstalacao)')
+    Diga '########## BLOCO 3: SOBRAS DE PROGRAMA ANTIGO (so os itens escolhidos) ##########'
+    foreach ($id in $Itens) {
+        foreach ($c in $Global:Sobras[$id].Caminhos) {
+            [void](Remover $c ('{0} ({1})' -f $Global:Sobras[$id].Rotulo, $c))
+        }
+    }
 }
 
 $depois = LivreNoSistema

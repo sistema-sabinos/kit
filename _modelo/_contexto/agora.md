@@ -12,7 +12,7 @@
 
 ## Pendências
 
-[o que está em aberto esperando você ou terceiros, uma por linha, com data. Sai daqui com motivo (feito, virou projeto, mandaram soltar), nunca em silêncio]
+[o que espera alguém de fora (fornecedor, cliente, contador, plataforma), uma por linha, com data e de quem. O que você mesmo vai fazer vai pro `tarefas.md`. Sai daqui com motivo (feito, virou projeto, mandaram soltar), nunca em silêncio]
 
 ## Quente agora
 

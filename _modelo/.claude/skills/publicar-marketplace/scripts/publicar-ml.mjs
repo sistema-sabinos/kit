@@ -15,7 +15,7 @@ import { existsSync, readFileSync, statSync, rmSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
-import { lerJson, gravarJson, dataLocal } from '../../mercado-livre/scripts/lib/pipeline.mjs'
+import { lerJson, gravarJson, dataLocal, conferirAuditoria } from '../../mercado-livre/scripts/lib/pipeline.mjs'
 import { lerConfiguracao } from '../../mercado-livre/scripts/lib/config.mjs'
 import { mlGet, mlEscrever, mlSubirImagem } from '../../mercado-livre/scripts/lib/ml-api.mjs'
 import { tokenMl } from '../../mercado-livre/scripts/lib/tokens.mjs'
@@ -71,15 +71,19 @@ function carregar(slug, raiz) {
   if (dados.auditoria?.veredito !== 'aprovado') throw new Error('a auditoria desse anuncio nao esta aprovada: rode o ml-auditor antes de publicar')
   if (dados.imagens?.aprovado_pelo_usuario !== true) throw new Error('as imagens desse anuncio ainda nao foram aprovadas por voce na prancha')
   if (!dados.copy) throw new Error(`nao existe dados/pipeline/${slug}/copy.json`)
+  dados.avisoAuditoria = conferirAuditoria(pasta, dados.auditoria).aviso
   return dados
 }
 
-function linhaDoFornecedor({ status, decisao }, raiz) {
-  if (decisao?.tipo === 'kit') return null
+// A linha do catalogo do fornecedor do produto individual. Nome da decisao que nao casa com
+// nenhuma linha vira pendencia (sem a linha, produto com variacao nao cairia no plano B).
+export function linhaDoFornecedor({ status, decisao }, raiz) {
+  if (decisao?.tipo === 'kit') return { linha: null, pendencia: null }
   const csv = join(raiz, 'fornecedores', status.fornecedor || '', 'catalogo-analisado.csv')
   const nome = decisao?.composicao?.[0]?.produto
-  if (!status.fornecedor || !nome || !existsSync(csv)) return null
-  return lerCsv(readFileSync(csv, 'utf8')).find(l => l.produto === nome) || null
+  if (!status.fornecedor || !nome || !existsSync(csv)) return { linha: null, pendencia: null }
+  const linha = lerCsv(readFileSync(csv, 'utf8')).find(l => l.produto === nome) || null
+  return { linha, pendencia: linha ? null : `o produto "${nome}" da decisao.json nao casou com nenhuma linha do catalogo-analisado.csv: copie na composicao o nome exato da coluna produto` }
 }
 
 function exigirSemErp(raiz) {
@@ -111,11 +115,14 @@ export async function montar(slug, opcoes, { api, raiz = RAIZ }) {
   const { payload } = caminhos(slug, raiz)
   const titulo = String(d.copy.titulo ?? '').trim()
   const cat = await descobrirCategoria(api, { titulo, categoria: opcoes.categoria })
+  const fornecedor = linhaDoFornecedor(d, raiz)
   const r = montarItem({
     copy: d.copy, decisao: d.decisao, auditoria: d.auditoria, imagens: d.imagens,
-    linha: linhaDoFornecedor(d, raiz), ...cat,
+    linha: fornecedor.linha, ...cat,
     estoque: opcoes.estoque, garantiaDias: opcoes.garantiaDias, embalagemFlag: opcoes.embalagem, pesoFlag: opcoes.pesoG,
   })
+  if (fornecedor.pendencia) r.pendencias.push(fornecedor.pendencia)
+  if (d.avisoAuditoria) r.avisos.unshift(d.avisoAuditoria)
   const falhou = extra => { rmSync(payload, { force: true }); return { ...r, ...extra, gravado: false } }
   if (r.planoB) return falhou({})
   if (r.pendencias.length) return falhou({})
@@ -372,19 +379,19 @@ if (ehCli) {
     if (a.acao === 'montar') {
       const r = await montar(a.slug, a, { api })
       console.log(textoDoResumo(r))
-      process.exit(r.planoB ? 2 : r.gravado ? 0 : 1)
+      process.exitCode = r.planoB ? 2 : r.gravado ? 0 : 1
     } else if (a.acao === 'enviar') {
       const r = await enviar(a.slug, { api })
       console.log(`Anuncio ${r.anuncio_id}: ${r.estado.toUpperCase()}\n${r.link || ''}`)
       for (const x of [...r.avisos, ...r.pendencias]) console.log(`- ${x}`)
-      process.exit(r.pendencias.length ? 1 : 0)
+      process.exitCode = r.pendencias.length ? 1 : 0
     } else {
       const r = await conferir(a.slug, { api })
       console.log(r.publicado ? `Anuncio ${r.anuncio_id} ATIVO: etapa de publicacao fechada.` : `Anuncio ${r.anuncio_id} esta ${r.estado}: ative no painel e rode --conferir de novo.`)
-      process.exit(r.publicado ? 0 : 1)
+      process.exitCode = r.publicado ? 0 : 1
     }
   } catch (e) {
     console.error(e.message)
-    process.exit(1)
+    process.exitCode = 1
   }
 }

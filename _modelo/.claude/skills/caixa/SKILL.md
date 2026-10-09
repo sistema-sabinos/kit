@@ -29,7 +29,7 @@ Todos os comandos rodam da raiz do projeto, com
 
 | a pessoa diz | comando |
 |---|---|
-| "anota o pedido da Marina, bolo 2 kg, 170, entrega sábado, pagou 85 de sinal" | `pedido --cliente "Marina" --item "bolo 2 kg" --valor 170 --entrega AAAA-MM-DD --sinal 85 --forma pix` |
+| "anota o pedido da Marina, bolo 2 kg, 170, entrega sábado, pagou 85 de sinal (já caiu)" | `pedido --cliente "Marina" --item "bolo 2 kg" --valor 170 --entrega AAAA-MM-DD --sinal 85 --forma pix` |
 | "a Marina pagou o resto" | `aberto` pra achar o id, depois `pago <id> --valor 85 --forma pix` |
 | "cancela o pedido do Rui" | `cancelar <id>` |
 | "devolvi os 30 do sinal do Rui" | `devolvido <id> --valor 30` |
@@ -41,6 +41,11 @@ Forma de pagamento: `pix`, `dinheiro`, `cartao` ou outra palavra curta. Data dif
 de hoje: `--data AAAA-MM-DD`. Antes de gravar pedido ou pagamento, repetir em uma linha o
 que vai ser anotado e esperar o sim. Data de entrega dita como "sábado" vira data
 completa, confirmada na mesma linha.
+
+Sinal: antes de usar `--sinal`, perguntar "o sinal já caiu na conta?". Caiu: `--sinal`
+com `--data-sinal` do dia do Pix, se não foi hoje. Só combinado: anotar o pedido sem
+`--sinal` e, no dia em que cair, `pago <id> --valor <sinal>`. O sinal combinado aparece
+no `aberto` como parte do que falta.
 
 O script recusa pagamento maior que o que falta e sinal maior que o pedido: mostrar o
 recado e conferir o valor com a pessoa, nunca contornar.

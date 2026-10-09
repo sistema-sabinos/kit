@@ -113,7 +113,7 @@ Usar com intenção pra criar profundidade:
 
 ## Tratamento de imagens
 
-Imagens em `conteudo/carrosseis/[tema]/imagens/`, referência relativa no HTML.
+Imagens em `producao/<slug>/imagens/`, referência relativa no HTML (`../imagens/<arquivo>`).
 
 - **Capa com foto:** full-bleed + gradiente escuro (0.7-0.9 opacity). Contraste 4.5:1
 - **Slide escuro com foto:** overlay 80-90%. Legibilidade primeiro

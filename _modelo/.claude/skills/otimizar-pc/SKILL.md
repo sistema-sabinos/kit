@@ -35,18 +35,26 @@ Os blocos:
 
 | Bloco | O que é | Risco |
 |---|---|---|
-| 1 | Caches: navegador, npm, pip, HuggingFace, drivers já instalados, TEMP, lixeira, crash dumps | zero, tudo reconstrói sozinho |
+| 1 | Caches: navegador, npm, pip, HuggingFace, drivers já instalados, TEMP, crash dumps | zero, tudo reconstrói sozinho |
+| Lixeira | O que está na lixeira do Windows | apaga de vez o que você já tinha jogado fora, sem volta |
 | 2 | Instaladores órfãos do `C:\Windows\Installer` → **quarentena** em outro disco | baixo, é movido e reversível |
-| 3 | Sobras de programa antigo e jogo desinstalado em AppData | baixo, confirmar que não usa mais |
+| 3 | Sobras de programa antigo e jogo, **item por item**, só o que o raio-X achou | baixo, mas sem volta: confirmar cada um |
 | 4 | DISM no WinSxS | zero, mas perde a opção de desinstalar atualização antiga do Windows |
 | 5 | Atualizar apps (winget) + Windows Update | baixo |
 | 6 | Tirar programa da inicialização | zero, reversível no Gerenciador de Tarefas |
 
+A lixeira se pergunta à parte, com o tamanho que o raio-X mediu.
+
+Bloco 3 aprovado: uma segunda pergunta com multi-select por item, só com os ids que o raio-X mostrou, cada um com o tamanho e o que é. `android` leva o aviso 'apaga a chave de teste e os emuladores do Android, sem volta'. Mais de 4 itens: dividir em perguntas de até 4 opções.
+
 ### 3. Executar o que foi aprovado
 
 ```powershell
-# blocos 1 e 3 (escopo do usuário, não precisa admin)
-& "...\scripts\limpar.ps1" -Blocos 1,3
+# blocos 1 e 3 (escopo do usuário, não precisa admin); -Itens só com os ids aprovados
+& "...\scripts\limpar.ps1" -Blocos 1,3 -Itens gradle,fortnite
+
+# lixeira, só se aprovada à parte (sozinha, sem -Blocos, não mexe em mais nada)
+& "...\scripts\limpar.ps1" -Lixeira
 
 # bloco 2 (precisa admin, dispara UAC)
 & "...\scripts\quarentena-installer.ps1"

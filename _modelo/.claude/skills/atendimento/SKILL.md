@@ -31,7 +31,9 @@ preço. Mostrar o exemplo (`.claude/skills/atendimento/referencias/catalogo-exem
 e perguntar, uma coisa por vez: o que vende, em que tamanhos, quanto custa cada um e com
 quantos dias de antecedência precisa do pedido. Foto do cardápio ou da tabela que ela já
 manda pros clientes resolve mais rápido: ler a foto e montar a partir dela. Gravar o
-arquivo com ponto e vírgula entre as colunas (abre direto no Excel) e rodar:
+arquivo com ponto e vírgula entre as colunas (abre direto no Excel). Abriu e salvou no
+Excel? Tem que ser como 'CSV UTF-8'; em outro formato o acento estraga e o script para com
+recado. Depois, rodar:
 
 `node .claude/skills/atendimento/scripts/atendimento.mjs validar`
 

@@ -8,7 +8,8 @@
       ".claude/skills/humanizar/",
       ".claude/skills/pedir/",
       "_contexto/arquivo/README.md", "dados/README.md",
-      ".claude/hooks/auto-sync.mjs"
+      ".claude/hooks/auto-sync.mjs",
+      ".claude/detalhe-regras.md"
     ] },
     "bastao": { "depende": [], "caminhos": [".claude/skills/bastao/"] },
     "checar": { "depende": ["nucleo"], "caminhos": [".claude/skills/checar/"] },
@@ -45,6 +46,7 @@
       ".claude/skills/publicar-social/",
       ".claude/skills/auditar-instagram/",
       ".claude/skills/gerenciar-youtube/",
+      ".claude/skills/carrossel/",
       ".claude/agents/pauta-leitor.md"
     ] },
     "loja": { "depende": ["nucleo"], "caminhos": [".claude/skills/atendimento/", ".claude/skills/caixa/", ".claude/skills/cobrar/"] },

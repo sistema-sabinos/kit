@@ -253,10 +253,13 @@ function travar(dir, agora) {
   } catch { return null }
 }
 
-// Devolve o que aconteceu, pra teste e pra quem chamar: sem-repo, sem-remoto, ocupado,
-// em-andamento, nada, enviado, puxado-e-enviado, parado (conflito), sem-internet ou falhou.
+// Devolve o que aconteceu, pra teste e pra quem chamar: sem-repo, fora-do-repo, sem-remoto,
+// ocupado, em-andamento, nada, enviado, puxado-e-enviado, parado (conflito), sem-internet ou falhou.
 export function autoSync(dir, agora = new Date(), { limiteBytes = LIMITE_BYTES } = {}) {
   if (!git(dir, ['rev-parse', '--git-dir']).ok) return 'sem-repo'
+  // pasta que e pedaco de um repositorio de fora: o add -A e o push seriam do repositorio
+  // de cima, com o trabalho de outra pessoa junto (5.7, D.2)
+  if (git(dir, ['rev-parse', '--show-prefix']).out !== '') return 'fora-do-repo'
   if (!git(dir, ['remote', 'get-url', 'origin']).ok) return 'sem-remoto'
   const trava = travar(dir, agora)
   if (!trava) return 'ocupado'

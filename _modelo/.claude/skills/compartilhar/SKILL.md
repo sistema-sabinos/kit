@@ -105,7 +105,9 @@ pessoa. Com o sim:
    pasta depende de skill do projeto, perguntar: copiar pra dentro, ou tirar a
    dependência. Prometer comando que não vai existir do outro lado é pior que não
    ter. Quem vai trabalhar junto leva também a `syncar` (copiar
-   `.claude/skills/syncar/` pra dentro), que é como os dois salvam e mandam.
+   `.claude/skills/syncar/` pra dentro) e o script que ela roda,
+   `.claude/hooks/auto-sync.mjs` (só ele, sem o `.test.mjs`), em
+   `<pasta>/.claude/hooks/`: é como os dois salvam e mandam.
 5. **`CLAUDE.md`** com a linha `@AGENTS.md`, e o **`.gitignore`** fechado (só
    sobe o tipo de arquivo liberado; `.env` nunca): copiar o do projeto se a
    primeira regra dele é `*`; senão, o do molde (`../_modelo/.gitignore`, a

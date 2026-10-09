@@ -120,13 +120,13 @@ Depois, nesta ordem:
 
 ## Campanha nova
 
-A estrutura do teste (quantas campanhas, quantos conjuntos de anúncio e quantos anúncios em cada um) e o orçamento diário inicial saem da tabela de perfis do `referencias/metodo.md`, junto com quantos dias esperar antes de julgar. Copy e criativo saem das skills `copy-venda`, `roteiro-post` e `roteiro-video`.
+A estrutura do teste (quantas campanhas, quantos conjuntos de anúncio e quantos anúncios em cada um) e o orçamento diário inicial saem da tabela de perfis do `referencias/metodo.md`, junto com quantos dias esperar antes de julgar. Copy e criativo saem das skills `copy-venda`, `roteiro-post` e `roteiro-video`, se estiverem instaladas em `.claude/skills/`; senão, oferecer ativar a partir de `../_modelo/templates/skills/` (seção "Criação de skills" de `.claude/detalhe-regras.md`).
 
 ## O gate
 
 Propor a lista e esperar o "pode ir". Nenhuma pausa, nenhuma mudança de verba e nenhuma campanha nova acontece antes disso, e aprovação de ontem não vale pra rodada de hoje.
 
-Com o "pode ir" dado, aplicar pelo MCP um por um, dizendo o que fez a cada passo, e registrar cada ação em `dados/trafego/decisoes.jsonl`, uma linha por ação:
+Com o "pode ir" dado, aplicar pelo MCP um por um, dizendo o que fez a cada passo, e registrar cada ação em `dados/trafego/decisoes.jsonl`, uma linha por ação. Sem MCP: passar uma ação por vez o que clicar no Gerenciador de Anúncios (anúncio, campo, valor antigo, valor novo), esperar a pessoa dizer "feito" e só então gravar a linha da ata, com `"via":"manual"`:
 
 ```json
 {"data":"<AAAA-MM-DD>","anuncio":"<id>","faixa":"<CRITICO, PASSE ou AVISO>","motivo":"<o motivo que o script deu>","resposta":"<o que o usuário respondeu>"}

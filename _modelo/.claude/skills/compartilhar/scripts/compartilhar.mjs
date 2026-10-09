@@ -95,6 +95,9 @@ export function conferir(pasta) {
     }
   }
   andar(pasta)
+  // a syncar confere chave pelo auto-sync.mjs; sem ele do outro lado, ela nao tem como subir seguro
+  if (existsSync(join(pasta, '.claude', 'skills', 'syncar', 'SKILL.md')) && !existsSync(join(pasta, '.claude', 'hooks', 'auto-sync.mjs')))
+    fora.push({ arquivo: '.claude/skills/syncar/SKILL.md', linha: 0, motivo: 'a syncar vai sem o .claude/hooks/auto-sync.mjs que ela roda' })
   return fora
 }
 

@@ -88,6 +88,33 @@ test('pagamento maior que o saldo e recusado e nada e gravado', () => comRaiz(ra
   assert.equal(rodar(raiz, 'aberto', '--hoje', '2026-10-20'), 'nenhum pedido com saldo em aberto')
 }))
 
+test('sinal com --data-sinal: o pagamento do sinal leva o dia em que caiu (5.7, H.3)', () => comRaiz(raiz => {
+  const id = idDe(rodar(raiz, 'pedido', '--cliente', 'Marina', '--item', 'bolo', '--valor', '170', '--sinal', '85', '--data-sinal', '2026-10-07', '--entrega', '2026-10-10', '--hoje', '2026-10-06', '--data', '2026-10-06'))
+  const d = carregar(raiz)
+  assert.equal(d.pedidos[0].data, '2026-10-06', 'canario: o pedido fica no dia do pedido')
+  assert.deepEqual(d.pagamentos.map(p => [p.pedido, p.data, p.valor]), [[id, '2026-10-07', '85,00']])
+  // sem --data-sinal e pedido de hoje, o sinal fica em hoje
+  rodar(raiz, 'pedido', '--cliente', 'Rui', '--item', 'torta', '--valor', '100', '--sinal', '40', '--entrega', '2026-10-10', '--hoje', '2026-10-06')
+  assert.equal(carregar(raiz).pagamentos[1].data, '2026-10-06')
+}))
+
+test('revisao final 5.7: pedido retroativo sem --data-sinal lanca o sinal em hoje, nao no dia do pedido', () => comRaiz(raiz => {
+  rodar(raiz, 'pedido', '--cliente', 'Lia', '--item', 'bolo', '--valor', '170', '--sinal', '85', '--entrega', '2026-10-10', '--data', '2026-09-30', '--hoje', '2026-10-08')
+  const d = carregar(raiz)
+  assert.equal(d.pedidos[0].data, '2026-09-30', 'canario: o pedido fica no dia dele')
+  assert.equal(d.pagamentos[0].data, '2026-10-08')
+}))
+
+test('--data-sinal invalida ou sem --sinal e recusada antes de gravar qualquer arquivo (5.7, H.3)', () => comRaiz(raiz => {
+  rodar(raiz, 'pedido', '--cliente', 'Ana', '--item', 'bolo', '--valor', '100', '--sinal', '50', '--entrega', '2026-10-10', '--hoje', '2026-10-06')
+  const a = arquivos(raiz)
+  const antes = [readFileSync(a.pedidos, 'utf8'), readFileSync(a.pagamentos, 'utf8')]
+  assert.ok(antes[0].includes('Ana') && antes[1].includes('50,00'), 'canario: os dois arquivos existem com o pedido da Ana')
+  assert.throws(() => rodar(raiz, 'pedido', '--cliente', 'Bia', '--item', 'torta', '--valor', '80', '--sinal', '40', '--data-sinal', '2026-02-30', '--entrega', '2026-10-10', '--hoje', '2026-10-06'), /data-sinal/)
+  assert.throws(() => rodar(raiz, 'pedido', '--cliente', 'Bia', '--item', 'torta', '--valor', '80', '--data-sinal', '2026-10-07', '--entrega', '2026-10-10', '--hoje', '2026-10-06'), /--data-sinal sem --sinal/)
+  assert.deepEqual([readFileSync(a.pedidos, 'utf8'), readFileSync(a.pagamentos, 'utf8')], antes)
+}))
+
 test('sinal maior que o pedido e valor ilegivel sao recusados', () => comRaiz(raiz => {
   assert.throws(() => rodar(raiz, 'pedido', '--cliente', 'X', '--item', 'Y', '--valor', '50', '--sinal', '60', '--entrega', '2026-10-06'), /sinal/)
   assert.throws(() => rodar(raiz, 'pedido', '--cliente', 'X', '--item', 'Y', '--valor', 'cem', '--entrega', '2026-10-06'), /valor/)

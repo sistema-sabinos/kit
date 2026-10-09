@@ -29,7 +29,8 @@ const rodar = (raiz, ...args) => {
 
 // pedido ja quitado, pra o vendido e o recebido andarem juntos
 function venda(raiz, valor, data) {
-  caixa(['pedido', '--cliente', 'C', '--item', 'bolo', '--valor', valor, '--sinal', valor, '--entrega', data, '--data', data, '--raiz', raiz], () => {})
+  // venda paga no dia: o sinal leva a mesma data (sem --data-sinal ele cairia em hoje, 5.7)
+  caixa(['pedido', '--cliente', 'C', '--item', 'bolo', '--valor', valor, '--sinal', valor, '--data-sinal', data, '--entrega', data, '--data', data, '--raiz', raiz], () => {})
 }
 
 test('o fatos.md do MEI tem o que o script le, e os numeros batem entre si', () => {
@@ -149,6 +150,52 @@ test('configurar recusa data e tipo errados; sem configurar, o recado diz o que 
   const r = spawnSync(process.execPath, [SCRIPT, 'proximos', '--raiz', raiz], { encoding: 'utf8' })
   assert.equal(r.status, 1)
   assert.match(r.stderr, /falta configurar/)
+}))
+
+test('venda de fora do /caixa entra no teto, no proximos e no alertas (5.7, H.5)', () => comRaiz(raiz => {
+  rodar(raiz, 'configurar', '--abertura', '2020-01-01', '--tipo', 'comercio')
+  assert.match(rodar(raiz, 'proximos', '--hoje', '2026-10-06'), /teto 2026: R\$ 0,00 de R\$ 81\.000,00, 0%/, 'canario: sem o externo o teto fica em zero')
+  rodar(raiz, 'externo', '--ano', '2026', '--valor', '70000', '--origem', 'Mercado Livre', '--hoje', '2026-10-01')
+  const p = rodar(raiz, 'proximos', '--hoje', '2026-10-06')
+  assert.match(p, /teto 2026: R\$ 70\.000,00 de R\$ 81\.000,00, 86%/)
+  assert.match(p, /mais R\$ 70\.000,00 de fora \(Mercado Livre, anotado em 2026-10-01\)/)
+  assert.match(rodar(raiz, 'alertas', '--hoje', '2026-10-06'), /teto 2026: R\$ 70\.000,00 de R\$ 81\.000,00, 86%\. Vale começar a conversa com o contador/)
+  // o mesmo comando de novo troca o total daquela origem, nao soma
+  rodar(raiz, 'externo', '--ano', '2026', '--valor', '75000', '--origem', 'Mercado Livre', '--hoje', '2026-10-05')
+  assert.match(rodar(raiz, 'proximos', '--hoje', '2026-10-06'), /teto 2026: R\$ 75\.000,00 de R\$ 81\.000,00, 92%/)
+  // venda de outro ano nao conta neste
+  assert.equal(situacaoTeto(fatos, '2020-01-01', carregar(raiz), 2025).faturamento, 0)
+}))
+
+test('configurar depois de externo e declarei preserva os dois campos (5.7, H.5 e H.6)', () => comRaiz(raiz => {
+  rodar(raiz, 'configurar', '--abertura', '2020-01-01', '--tipo', 'comercio')
+  rodar(raiz, 'externo', '--ano', '2026', '--valor', '1000', '--origem', 'Shopee', '--hoje', '2026-10-01')
+  rodar(raiz, 'declarei', '2025', '--hoje', '2026-05-10')
+  rodar(raiz, 'configurar', '--abertura', '2021-02-01', '--tipo', 'servico')
+  const j = JSON.parse(readFileSync(join(raiz, 'dados', 'mei.json'), 'utf8'))
+  assert.equal(j.abertura, '2021-02-01')
+  assert.deepEqual(j.externo, { 2026: { Shopee: { valor: 100000, em: '2026-10-01' } } })
+  assert.deepEqual(j.declaradas, { 2025: '2026-05-10' })
+  assert.throws(() => rodar(raiz, 'externo', '--ano', '26', '--valor', '10', '--origem', 'X'), /ano "26"/)
+  assert.throws(() => rodar(raiz, 'externo', '--ano', '2026', '--valor', '10'), /--origem/)
+}))
+
+test('teto zerado no ano: a linha do DAS do alertas lembra de anotar venda de fora (5.7, H.5)', () => comRaiz(raiz => {
+  rodar(raiz, 'configurar', '--abertura', '2020-01-01', '--tipo', 'comercio')
+  assert.equal(rodar(raiz, 'alertas', '--hoje', '2026-10-06'), '', 'canario: longe do DAS o alertas fica calado')
+  assert.match(rodar(raiz, 'alertas', '--hoje', '2026-10-17'), /vence em 3 dia\(s\).*\(teto do MEI: nada anotado em 2026; venda fora do \/caixa se anota com \/mei\)/)
+  rodar(raiz, 'externo', '--ano', '2026', '--valor', '500', '--origem', 'Mercado Livre', '--hoje', '2026-10-01')
+  assert.doesNotMatch(rodar(raiz, 'alertas', '--hoje', '2026-10-17'), /nada anotado/)
+}))
+
+test('declarei <ano> para o aviso da declaracao e o proximos diz que foi entregue (5.7, H.6)', () => comRaiz(raiz => {
+  rodar(raiz, 'configurar', '--abertura', '2020-01-01', '--tipo', 'comercio')
+  assert.match(rodar(raiz, 'alertas', '--hoje', '2026-05-10'), /declaração anual de 2025/, 'canario: sem o declarei, avisa')
+  rodar(raiz, 'declarei', '2025', '--hoje', '2026-05-08')
+  assert.doesNotMatch(rodar(raiz, 'alertas', '--hoje', '2026-05-10'), /declaração anual/)
+  assert.match(rodar(raiz, 'proximos', '--hoje', '2026-05-10'), /declaração anual de 2025: entregue \(anotado em 2026-05-08\)/)
+  // a do ano seguinte volta a contar
+  assert.match(rodar(raiz, 'proximos', '--hoje', '2026-06-01'), /declaração anual de 2026: até 2027-05-31/)
 }))
 
 test('fatos.md com linha quebrada para tudo, em vez de usar numero errado', () => comRaiz(raiz => {

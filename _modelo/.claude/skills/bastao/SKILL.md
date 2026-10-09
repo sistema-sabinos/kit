@@ -44,4 +44,4 @@ Depois de salvar, dizer ao usuário: o caminho do arquivo e que ele já pode fec
 2. Conferir o estado REAL antes de agir: os arquivos citados existem? `git status`/log recente bate? O teste apontado como falhando ainda falha? Se a realidade divergir do bastão, avisar o usuário e perguntar antes de seguir; nunca continuar por cima de estado imaginado.
 3. Não relitigar decisão registrada na seção "Decisões tomadas só no chat".
 4. Dizer em 2-3 frases de onde está pegando o trabalho e executar o passo 1 dos próximos passos.
-5. Acrescentar no topo do arquivo a linha `Retomado em AAAA-MM-DD`. Quando o projeto terminar de vez, apagar o arquivo.
+5. Acrescentar no fim do arquivo a linha `Retomado em AAAA-MM-DD`. Quando o último dos Próximos passos fechar, perguntar "a tarefa do bastão acabou? apago o `.claude/bastao.md`?" e apagar só com o sim.

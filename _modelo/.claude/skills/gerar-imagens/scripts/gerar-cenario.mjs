@@ -149,30 +149,35 @@ function limiteDeGasto() {
 }
 
 const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
-if (ehCli) {
+// Saida por process.exitCode, nunca process.exit: depois de rede paga, sair na marra pode cortar a
+// gravacao do custo no meio (licao 3.12). 0 ok, 1 faltou imagem ou erro, 2 entrada ruim, 3 parou antes de gastar.
+async function main() {
   const a = lerArgs(process.argv.slice(2))
   let cenas
   try {
     if (!['codex', 'gemini'].includes(a.degrau) || !a.cenas) throw new Error('uso: --degrau codex|gemini --cenas <cenas.json> (veja o topo do arquivo)')
     cenas = JSON.parse(readFileSync(a.cenas, 'utf8'))
     if (!Array.isArray(cenas) || !cenas.length || cenas.some(c => !c.out || !c.descricao)) throw new Error('cenas.json e uma lista de { "out", "descricao" }')
-  } catch (e) { console.error(e.message); process.exit(2) }
+  } catch (e) { console.error(e.message); process.exitCode = 2; return }
   try {
     if (a.degrau === 'codex') {
       console.error(`[codex] gerando ${cenas.length} cenario(s); sem cobranca por imagem dentro da cota do plano; credito avulso do Codex, se voce comprou, e gasto ao passar dela`)
       const r = await viaCodex(cenas)
       console.log(JSON.stringify(r, null, 2))
-      process.exit(r.faltaram.length ? 1 : 0)
+      process.exitCode = r.faltaram.length ? 1 : 0
+      return
     }
     const precoUsd = numero(a, 'preco-usd', undefined, { min: 0.001, max: 5 })
-    if (precoUsd === undefined) { console.error('falta --preco-usd: confira o preco por imagem do Gemini na pagina oficial hoje e passe aqui'); process.exit(2) }
+    if (precoUsd === undefined) { console.error('falta --preco-usd: confira o preco por imagem do Gemini na pagina oficial hoje e passe aqui'); process.exitCode = 2; return }
     const est = estimar({ n: cenas.length, precoUsd, limiteUsd: limiteDeGasto() })
-    if (!est.cabe) { console.log(JSON.stringify({ parou: 'passa do limite_gasto_usd da configuracao', estimativa_usd: est.total })); process.exit(3) }
-    if (!a.autorizado) { console.log(JSON.stringify({ parou: 'precisa do pode ir da pessoa', estimativa_usd: est.total, imagens: cenas.length })); process.exit(3) }
+    if (!est.cabe) { console.log(JSON.stringify({ parou: 'passa do limite_gasto_usd da configuracao', estimativa_usd: est.total })); process.exitCode = 3; return }
+    if (!a.autorizado) { console.log(JSON.stringify({ parou: 'precisa do pode ir da pessoa', estimativa_usd: est.total, imagens: cenas.length })); process.exitCode = 3; return }
     const chave = lerEnv().GEMINI_API_KEY
-    if (!chave) { console.error('falta GEMINI_API_KEY no .env (o /conectar ensina a pegar)'); process.exit(2) }
+    if (!chave) { console.error('falta GEMINI_API_KEY no .env (o /conectar ensina a pegar)'); process.exitCode = 2; return }
     const r = await viaGemini(cenas, { chave, precoUsd, contexto: a.contexto || 'gerar-imagens' })
     console.log(JSON.stringify(r, null, 2))
-    process.exit(r.faltaram.length ? 1 : 0)
-  } catch (e) { console.error(e.message); process.exit(1) }
+    process.exitCode = r.faltaram.length ? 1 : 0
+  } catch (e) { console.error(e.message); process.exitCode = 1 }
 }
+
+if (ehCli) await main()

@@ -57,6 +57,20 @@ test('pasta sem git e repositorio sem remoto saem quietos', () => {
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
+test('projeto dentro de repositorio de fora sai fora-do-repo e nao commita', () => {
+  const r = montar()
+  try {
+    const dentro = join(r.a, 'projeto')
+    mkdirSync(dentro)
+    writeFileSync(join(dentro, 'x.md'), 'x\n')
+    assert.equal(git(dentro, 'rev-parse', '--show-prefix'), 'projeto/', 'canario: a pasta e pedaco do repositorio a')
+    const antes = git(r.a, 'rev-parse', 'HEAD')
+    assert.equal(autoSync(dentro, AGORA), 'fora-do-repo')
+    assert.equal(git(r.a, 'rev-parse', 'HEAD'), antes, 'nenhum commit novo no repositorio de fora')
+    assert.match(git(r.a, 'status', '--porcelain'), /\?\? projeto\//, 'o arquivo continua solto')
+  } finally { rmSync(r.raiz, { recursive: true, force: true }) }
+})
+
 test('sozinho: manda direto, assina com a origem e a data local, limpa o .backup-falhou', () => {
   const r = montar()
   try {

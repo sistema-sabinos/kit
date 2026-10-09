@@ -54,8 +54,8 @@ Usar pelo menos 3 layouts diferentes entre os slides pra manter o interesse visu
 
 ## Tratamento de imagens
 
-As imagens ficam na pasta `conteudo/carrosseis/[tema]/imagens/`.
-Referenciar no HTML com caminho relativo: `<img src="imagens/foto-capa.jpg">`
+Imagens em `producao/<slug>/imagens/`, referência relativa no HTML (`../imagens/<arquivo>`).
+Exemplo: `<img src="../imagens/foto-capa.jpg">`
 
 ### Capa com foto
 Imagem full-bleed com gradiente escuro por cima (opacity 0.7-0.9), texto branco.

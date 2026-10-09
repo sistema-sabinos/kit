@@ -141,7 +141,9 @@ O aluno escolhe 1 dos 5. Grava no `app/marca.md` o nome, as 7 buscas com data e 
 **Domínio** **(gasta)**. Domínio é o endereço do app na internet, tipo `seuapp.com.br`.
 `.com.br` no registro.br: `app-registro-br`. `.com` ou outro final não tem linha no
 `fatos.md`: o custo é o que o registrador mostrar no carrinho, conferido no dia. O aluno compra no site do registrador, no nome
-dele. Comprar agora segura o endereço; a `/app-publicar` liga ele ao app depois.
+dele. Comprar agora segura o endereço; a `/app-publicar` liga ele ao app depois. Depois da
+compra aprovada, gravar no `app/marca.md` a linha `Domínio: <endereço>, comprado em
+<AAAA-MM-DD> no <registrador>`, que a `/app-publicar` lê pra não comprar de novo.
 
 **Perfis nas redes** **(conta)**. Criar o @ nas redes que o aluno vai usar, pra ninguém pegar
 antes. O aluno cria; o Claude sugere o @ e a bio curta.
@@ -246,13 +248,20 @@ trava de versão (lockfile) e os binários (imagem, fonte, vídeo).
 A varredura lê texto. Ficam pra conferir no olho, abrindo o app: o favicon, o título de
 cada página, os e-mails automáticos, a imagem de compartilhamento e o ícone do app.
 
+**Testes.** Texto novo quebra o teste que procura o texto antigo. Trocar em
+`app/codigo/e2e/` cada nome dos `getByRole`/`getByText` e o `AVISO_DE_FICHA_ALHEIA` pelos
+textos novos, e rodar `npx playwright test` de dentro de `app/codigo/`, com o servidor
+local ligado, até ficar tudo verde.
+
 ## Saída
 
-- `app/marca.md`: nome com as 7 buscas e as datas, paleta, pedido de logo, voz e os 10
-  textos reescritos
+- `app/marca.md`: nome com as 7 buscas e as datas, paleta, pedido de logo, voz, os 10
+  textos reescritos e, se comprou, a linha `Domínio: <endereço>, comprado em <data> no
+  <registrador>`
 - `app/marca.json`: o que a varredura procura
 - `app/visual/tokens.json` com a paleta nova e o contraste aprovado
 - `app/codigo/` com os textos novos e a varredura limpa
+- testes da `/app-testar` verdes com os textos novos
 - linha em `dados/custos.jsonl` pra cada gasto aprovado
 
 No chat, só o resumo: o nome escolhido, o que ficou a rodar, a varredura limpa ou não e

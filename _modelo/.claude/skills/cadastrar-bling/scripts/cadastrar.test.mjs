@@ -1,9 +1,30 @@
 // Testes do cadastro no Bling. Nada vai pra rede: o req falso grava cada chamada e responde por roteiro.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { lerCsv, textoParaHtml, prefixoDoSku, proximoNumero, dimensoesDe, montarPayload, separar, resumo, proximoSkuLivre, enviar, jaCadastrado, possiveisDuplicados, argumentos, montarLote, resumoLote, enviarLote, conferirNoBling, resumoEnvioLote } from './cadastrar.mjs'
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { lerCsv, textoParaHtml, prefixoDoSku, proximoNumero, dimensoesDe, montarPayload, separar, resumo, proximoSkuLivre, enviar, jaCadastrado, possiveisDuplicados, argumentos, montarLote, resumoLote, enviarLote, conferirNoBling, resumoEnvioLote, montarUm, payloadParaEnviar } from './cadastrar.mjs'
+import { carimbosDoAnuncio } from '../../mercado-livre/scripts/lib/pipeline.mjs'
 
-const copy = { titulo: 'Suspiro Tradicional 1 kg Doce Pra Festa', descricao: 'Linha 1\nLinha 2 & <3>', precos: { ml_classico: 54.9, ml_premium: 59.9 }, gtin: '7890000000000', ncm: '1905.90.90', ficha: { Marca: 'Sem marca' } }
+// Projeto de mentira numa pasta temporaria (apagada no finally de quem chama), auditado e carimbado.
+function projetoBling({ nomeNaDecisao = 'Suspiro Tradicional 1 kg' } = {}) {
+  const raiz = mkdtempSync(join(tmpdir(), 'cadastrar-'))
+  const pasta = join(raiz, 'dados', 'pipeline', 'suspiro')
+  mkdirSync(pasta, { recursive: true })
+  mkdirSync(join(raiz, 'fornecedores', 'forn'), { recursive: true })
+  const j = (n, v) => writeFileSync(join(pasta, `${n}.json`), JSON.stringify(v))
+  j('status', { slug: 'suspiro', fornecedor: 'forn', categoria: 'doces' })
+  j('copy', copy)
+  j('decisao', { tipo: 'individual', composicao: [{ produto: nomeNaDecisao, qtd: 1 }], custo_total: 30 })
+  j('auditoria', { veredito: 'aprovado', modalidade_escolhida: 'classico', em: '2026-10-08', carimbos: carimbosDoAnuncio(pasta) })
+  writeFileSync(join(raiz, 'fornecedores', 'forn', 'bling.json'), JSON.stringify({ cnpj: '00.000.000/0001-00', categorias: { doces: 123 } }))
+  writeFileSync(join(raiz, 'fornecedores', 'forn', 'catalogo-analisado.csv'), 'status,categoria,produto,ean,custo,peso_g,dimensoes_cm\nOK,doces,Suspiro Tradicional 1 kg,,30.00,1050,30x20x10\n')
+  return { raiz, pasta }
+}
+const semBling = async () => ({ data: [] })
+
+const copy = { titulo: 'Suspiro Tradicional 1 kg Doce Pra Festa', descricao: 'Linha 1\nLinha 2 & <3>', precos: { ml_classico: 54.9, ml_premium: 59.9 }, gtin: '7890000000000', ncm: '1905.90.90', ficha: { Marca: 'Genérica' } }
 const linha = { status: 'OK', categoria: 'doces', produto: 'Suspiro Tradicional 1 kg', ean: '7890000000000', custo: '30.00', peso_g: '1050', dimensoes_cm: '30x20x10' }
 const decisao = { tipo: 'individual', categoria: 'doces', custo_total: 30 }
 const config = { sku_prefixo: 'LOJA', deposito_id: '777' }
@@ -32,7 +53,7 @@ test('montarPayload de produto individual leva tudo que tem e so pendencia de im
   const { payload, pendencias } = montarPayload({ copy, decisao, linha, config, categoriaId: 123, modalidade: 'classico', estoque: 10, cnpj: '00.000.000/0001-00' })
   assert.deepEqual(payload, {
     nome: copy.titulo, tipo: 'P', situacao: 'A', formato: 'S', condicao: 1, preco: 54.9, unidade: 'UN',
-    descricaoCurta: 'Linha 1<br>Linha 2 &amp; &lt;3&gt;', categoria: { id: 123 }, gtin: '7890000000000', marca: 'Sem marca',
+    descricaoCurta: 'Linha 1<br>Linha 2 &amp; &lt;3&gt;', categoria: { id: 123 }, gtin: '7890000000000', marca: 'Genérica',
     pesoLiquido: 1.05, pesoBruto: 1.05, dimensoes: { profundidade: 30, largura: 20, altura: 10, unidadeMedida: 1 },
     _skuPrefix: 'LOJA-DOC-', _ncm: '1905.90.90', _depositoId: 777, _estoque: 10, _fornecedor: { cnpj: '00.000.000/0001-00', custo: 30 },
   })
@@ -355,4 +376,47 @@ test('resumoEnvioLote mostra os numeros e onde parou', () => {
   assert.match(r, /Ja estavam:\s+1/)
   assert.match(r, /Conferidos no Bling: 1\/1/)
   assert.match(r, /Parou em: c \(preco invalido\)/)
+})
+
+test('montarUm recusa copy mudado depois da auditoria', async () => {
+  const p = projetoBling()
+  try {
+    const ok = await montarUm('suspiro', { config, req: semBling, raiz: p.raiz })
+    assert.equal(ok.payload.nome, copy.titulo, 'canario: auditado em dia monta')
+    writeFileSync(join(p.pasta, 'copy.json'), JSON.stringify({ ...copy, titulo: 'Outro titulo' }))
+    await assert.rejects(montarUm('suspiro', { config, req: semBling, raiz: p.raiz }), /copy\.json mudou depois da auditoria/)
+  } finally {
+    rmSync(p.raiz, { recursive: true, force: true })
+  }
+})
+
+test('montarUm com nome da decisao diferente do CSV vira pendencia', async () => {
+  const p = projetoBling({ nomeNaDecisao: 'Suspiro tradicional 1 kg' })
+  try {
+    const r = await montarUm('suspiro', { config, req: semBling, raiz: p.raiz })
+    assert.ok(r.pendencias.some(x => x.includes('"Suspiro tradicional 1 kg" da decisao.json nao casou')), r.pendencias.join(' | '))
+  } finally {
+    rmSync(p.raiz, { recursive: true, force: true })
+  }
+})
+
+test('montarPayload: marca de fabricante sem marca_autorizada trava; Genérica e marca autorizada passam', () => {
+  const fabricante = { ...copy, ficha: { Marca: 'Acme' } }
+  assert.throws(() => montarPayload({ copy: fabricante, decisao, linha, config, categoriaId: 1, modalidade: 'classico' }), /Marca "Acme" fora da regra/)
+  assert.ok(!montarPayload({ copy: fabricante, decisao: { ...decisao, marca_autorizada: 'Acme' }, linha, config, categoriaId: 1, modalidade: 'classico' }).pendencias.some(p => /Marca/.test(p)))
+  assert.ok(!montarPayload({ copy, decisao, linha, config, categoriaId: 1, modalidade: 'classico' }).pendencias.some(p => /Marca/.test(p)))
+})
+
+test('payloadParaEnviar recusa payload antigo com marca fora da regra', () => {
+  const p = projetoBling()
+  try {
+    mkdirSync(join(p.raiz, 'anuncios', 'suspiro'), { recursive: true })
+    const gravar = marca => writeFileSync(join(p.raiz, 'anuncios', 'suspiro', 'bling-payload.json'), JSON.stringify({ nome: copy.titulo, marca }))
+    gravar('Genérica')
+    assert.equal(payloadParaEnviar('suspiro', p.raiz).marca, 'Genérica', 'canario: payload na regra sai')
+    gravar('Acme')
+    assert.throws(() => payloadParaEnviar('suspiro', p.raiz), /Marca "Acme" fora da regra/)
+  } finally {
+    rmSync(p.raiz, { recursive: true, force: true })
+  }
 })

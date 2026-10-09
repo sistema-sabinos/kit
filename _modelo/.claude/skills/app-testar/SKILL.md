@@ -5,7 +5,7 @@ description: >
   a partir dos caminhos que a /app-estudar mapeou (o caminho normal, os casos esquisitos e
   os casos de erro), escreve testes automáticos que clicam sozinhos no app, faz a passada
   à mão no que não dá pra automatizar e registra cada defeito com gravidade, passos e
-  prova. É a etapa 7 do pacote criar app, custo zero. Use quando o usuário chamar
+  prova. Etapa 7 de 11 do pacote criar app, custo zero. Use quando o usuário chamar
   /app-testar, disser "testa meu app", "acha os defeitos", "clica em tudo pra ver se
   quebra", "tá funcionando?", "escreve os testes", ou depois da /app-construir e da
   /app-servidor.
@@ -82,7 +82,8 @@ A ferramenta é o Playwright, que abre um navegador de verdade e clica no app so
 Um arquivo de teste por caminho, rodando contra o servidor local com os dados de mentira.
 O teste acha cada botão pelo papel e pelo nome que a pessoa lê na tela
 (`getByRole('button', { name: 'Agendar' })`). Assim o teste sobrevive quando a cor ou o
-visual mudam na `/app-marca`. Modelo pronto em `e2e-exemplo.spec.ts`.
+visual mudam na `/app-marca`; quando o texto muda, o nome no teste muda junto (a
+`/app-marca` faz isso). Modelo pronto em `e2e-exemplo.spec.ts`.
 
 Pra tela que estoura pro lado, o modelo `.claude/skills/app-testar/larguras.spec.ts` abre
 cada tela em 320, 390 e 1440 px de largura (celular pequeno, celular comum e computador) e

@@ -113,5 +113,5 @@ if (ehCli) {
   try {
     await token(process.argv[2])
     console.log(resumoDoToken(process.argv[2], lerEnv()))
-  } catch (e) { console.error(e.message); process.exit(1) }
+  } catch (e) { console.error(e.message); process.exitCode = 1 }
 }

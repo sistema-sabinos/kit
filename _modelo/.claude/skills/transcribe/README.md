@@ -30,7 +30,7 @@ brew install ffmpeg  # macOS
 sudo apt install ffmpeg  # Ubuntu/Debian
 ```
 
-No Windows, baixar em ffmpeg.org e colocar no PATH (a lista de pastas onde o Windows procura programas).
+No Windows: `winget install --id Gyan.FFmpeg -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity`, depois feche todas as janelas do VS Code e abra de novo.
 
 > Na primeira transcrição, o Whisper baixa o modelo (uns 1,5 GB). Isso acontece uma vez só e demora alguns minutos, dependendo da internet.
 

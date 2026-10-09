@@ -6,4 +6,4 @@ Jogue aqui planilhas, CSVs, PDFs, listas de produto, extratos, qualquer arquivo 
 
 Com o pacote de loja, mora aqui também a tabela de preços e prazos (`catalogo.csv`) e o caixa (`caixa/`, com pedidos e pagamentos). Esses o sistema grava sozinho: pra mudar, peça na conversa.
 
-Também é por aqui que você compartilha prints e imagens com o Claude quando uma skill pedir (ex: o /setup pede prints da sua marca por aqui).
+Também é por aqui que você compartilha prints e imagens com o Claude quando uma skill pedir (ex: o logo da marca que chegou depois: joga aqui e pede na conversa pra atualizar o guia visual).

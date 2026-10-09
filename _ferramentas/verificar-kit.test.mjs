@@ -908,6 +908,32 @@ test('gate 10 acusa VERSAO diferente do README, dependencia inexistente e mudanc
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
+// 5.7 C.2: entrada que manda copiar pasta do nucleo, ou que afeta "sempre", passava por
+// cima do "fica a sua" em toda primeira atualizacao
+const mudancaCom = (afeta, aplicar) => MUDANCA_OK.replace('**Te afeta se:** c.', `**Te afeta se:** ${afeta}`).replace('**Como aplicar:** d.', `**Como aplicar:** ${aplicar}`)
+
+test('gate 10 reprova entrada que manda copiar pasta do nucleo', () => {
+  const dir = kitComAtualizador()
+  try {
+    writeFileSync(join(dir, '_ferramentas/mudancas.md'), mudancaCom('o projeto nao tem a pasta mei.', 'copiar a pasta `.claude/skills/mei/` inteira.'))
+    assert.deepEqual(gate10(dir), [], 'canario: pasta de pacote, fora do nucleo, passa')
+    writeFileSync(join(dir, '_ferramentas/mudancas.md'), mudancaCom('o projeto nao tem a pasta iniciar.', 'copiar a pasta `.claude/skills/iniciar/` inteira.'))
+    const f = gate10(dir).map(x => x.detalhe)
+    assert.ok(f.some(d => /regra-x manda copiar pasta que o motor ja traz/.test(d)), f.join(' | '))
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 10 reprova entrada com "Te afeta se: sempre"', () => {
+  const dir = kitComAtualizador()
+  try {
+    writeFileSync(join(dir, '_ferramentas/mudancas.md'), mudancaCom('o projeto nao tem a pasta mei; sempre que faltar.', 'd.'))
+    assert.deepEqual(gate10(dir), [], 'canario: "sempre" no meio da frase passa')
+    writeFileSync(join(dir, '_ferramentas/mudancas.md'), mudancaCom('sempre; é skill base, entra em todo projeto.', 'd.'))
+    const f = gate10(dir).map(x => x.detalhe)
+    assert.ok(f.some(d => /regra-x diz "Te afeta se: sempre"/.test(d)), f.join(' | '))
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
 // ---------------------------------------------------------------------------
 // Pacote Mercado Livre (3.6): gates aceitam o nome de plataforma e conferem agentes
 // ---------------------------------------------------------------------------

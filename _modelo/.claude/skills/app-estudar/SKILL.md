@@ -3,8 +3,8 @@ name: app-estudar
 description: >
   Estuda um app ou sistema que já existe e monta o mapa dele: as telas, os caminhos que o
   cliente percorre, as fichas que o sistema guarda e a lista de funções, tudo a partir de
-  página pública, print, loja de app, central de ajuda e da conta da própria pessoa. É a
-  primeira etapa do pacote criar app, custo zero. Use quando o usuário chamar
+  página pública, print, loja de app, central de ajuda e da conta da própria pessoa.
+  Etapa 1 de 11 do pacote criar app, custo zero. Use quando o usuário chamar
   /app-estudar, disser "quero um app igual ao [app]", "quero fazer meu próprio [sistema]",
   "como o [app] funciona por dentro", "que telas o [app] tem", "dá pra fazer um sistema
   igual ao Bling mais barato?", "quero um app de agenda pro meu salão", ou colar o link

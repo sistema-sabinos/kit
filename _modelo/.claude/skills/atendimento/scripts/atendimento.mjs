@@ -22,6 +22,8 @@ const compacto = s => normal(s).replace(/\s/g, '')
 const escaparRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 export function validarCatalogo(texto) {
+  // arquivo salvo fora do UTF-8 chega com o caractere de troca no lugar do acento
+  if (String(texto).includes(String.fromCharCode(0xfffd))) return { itens: [], erros: ['o catalogo foi salvo num formato que estraga acento; no Excel, salve de novo como "CSV UTF-8 (delimitado por virgulas)"'] }
   const { colunas, linhas } = lerCsv(texto)
   const erros = []
   const faltam = COLUNAS.filter(c => !colunas.includes(c))

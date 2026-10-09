@@ -55,7 +55,6 @@ $alvos = [ordered]@{
     'TEMP do usuario'                             = $env:TEMP
     'TEMP do Windows'                             = (Join-Path $env:SystemRoot 'Temp')
     'cache do Windows Update'                     = (Join-Path $env:SystemRoot 'SoftwareDistribution\Download')
-    'lixeira'                                     = (Join-Path $env:SystemDrive '$Recycle.Bin')
 }
 $totalLixo = 0
 foreach ($k in $alvos.Keys) {
@@ -74,21 +73,12 @@ foreach ($k in $alvos.Keys) {
     if ($b -gt 10MB) { Diga ('{0,9:N0} MB  {1}' -f ($b / 1MB), $k); $totalLixo += $b }
 }
 Diga ('---------  TOTAL EM CACHE DESCARTAVEL: {0:N1} GB' -f ($totalLixo / 1GB))
+Diga ('{0,9:N0} MB  lixeira (item separado, apaga de vez)' -f ((Bytes (Join-Path $env:SystemDrive '$Recycle.Bin')) / 1MB))
 
 Diga ''
 Diga '########## SOBRAS DE PROGRAMA ANTIGO / JOGO ##########'
-$sobras = [ordered]@{
-    'Eclipse (.p2)'         = (Join-Path $env:USERPROFILE '.p2')
-    'Gradle'                = (Join-Path $env:USERPROFILE '.gradle')
-    'Maven'                 = (Join-Path $env:USERPROFILE '.m2')
-    'Android SDK'           = (Join-Path $env:USERPROFILE '.android')
-    'Fortnite'              = (Join-Path $env:LOCALAPPDATA 'FortniteGame')
-    'PUBG'                  = (Join-Path $env:LOCALAPPDATA 'TslGame')
-    'Battle.net'            = (Join-Path $env:ProgramData 'Battle.net_components')
-    'PlayStation Now'       = (Join-Path $env:APPDATA 'playstation-now')
-    'Tencent'               = (Join-Path $env:APPDATA 'Tencent')
-}
-foreach ($k in $sobras.Keys) { $b = Bytes $sobras[$k]; if ($b -gt 10MB) { Diga ('{0,9:N0} MB  {1}' -f ($b / 1MB), $k) } }
+Diga '(o id e o que vai no -Itens do limpar.ps1)'
+MostrarSobras
 
 Diga ''
 Diga '########## INSTALADORES ORFAOS (C:\Windows\Installer) ##########'

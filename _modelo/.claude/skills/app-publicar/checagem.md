@@ -38,7 +38,7 @@ em que foram conferidos.
 
 ## Domínio
 
-- [ ] comprado pelo aluno: {{domínio}}, {{R$}} ({{app-registro-br}}, conferido em {{data}})
+- [ ] domínio: {{domínio}}, comprado {{na /app-marca em <data> / agora}}, {{R$}} ({{app-registro-br}}, conferido em {{data}})
 - [ ] A @ -> {{valor do painel}}
 - [ ] CNAME www -> {{valor do painel}}
 - [ ] SPF, DKIM e DMARC feitos

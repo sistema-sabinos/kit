@@ -15,17 +15,23 @@ Simples Nacional e nos outros regimes o imposto sai de cada venda, e quem faz a 
 contador.
 
 Todo valor e prazo vem do `referencias/fatos.md`, com a fonte oficial e o dia em que foi
-conferido. O faturamento do ano vem do `/caixa`. Comandos rodam da raiz do projeto, com
+conferido. O faturamento do ano vem do `/caixa` e do total de fora que a pessoa anota
+(Mercado Livre, Shopee, loja virtual). Comandos rodam da raiz do projeto, com
 `node .claude/skills/mei/scripts/mei.mjs <comando>`.
 
 ## Primeira vez
 
-Se `dados/mei.json` não existe, perguntar duas coisas, uma por vez:
+Se `dados/mei.json` não existe, perguntar três coisas, uma por vez:
 
 1. Em que dia o MEI foi aberto? (está no cartão do CNPJ; muda o teto no primeiro ano)
 2. Vende produto, presta serviço ou os dois? (muda o valor do DAS)
+3. Vende também fora do /caixa (Mercado Livre, Shopee, loja virtual)? Se sim, qual o
+   total vendido no ano até hoje, no painel de cada um? Se o MEI abriu este ano,
+   pedir o total só desde o dia da abertura (o painel filtra por período): venda
+   de antes do CNPJ não entra no teto, e o script soma o valor de fora inteiro.
 
-E gravar: `configurar --abertura AAAA-MM-DD --tipo comercio|servico|misto`. No
+E gravar: `configurar --abertura AAAA-MM-DD --tipo comercio|servico|misto` e, pra cada
+lugar da pergunta 3, `externo --ano AAAA --valor X --origem "Mercado Livre"`. No
 `_contexto/empresa.md`, a linha **Registro:** fica `MEI (<tipo>), aberto em <data>`:
 completar a que o setup deixou, ou criar se não existir.
 
@@ -44,8 +50,11 @@ mudar, o `mei-teto` muda junto.
 
 O script compara o maior entre o que foi **vendido** e o que **entrou** no ano, porque a
 regra fala em receita do ano sem dizer qual das duas contas: assim o aviso nunca chega
-tarde. Ele só enxerga o que está no `/caixa`; venda que não passou por lá não conta, e
-isso se diz junto do número. No ano em que o MEI abriu, só conta o que veio depois da
+tarde. Ele soma o que está no `/caixa` com o total de fora anotado pelo `externo`; venda
+que não passou por nenhum dos dois não conta, e isso se diz junto do número. O `externo`
+guarda o total do ano até aquele dia, então rodar de novo com a mesma origem troca o
+valor. O `proximos` mostra a data de cada valor de fora; passou de 30 dias, perguntar o
+total novo. No ano em que o MEI abriu, só conta o que veio depois da
 abertura; pedido feito antes e pago depois entra pelo recebido, e esse caso vai pro
 contador decidir.
 
@@ -69,7 +78,8 @@ nenhum aviso.
 - DAS: pelo app MEI ou pelo PGMEI, no Portal do Simples Nacional, com o CNPJ. Pagou
   atrasado: a guia nova já sai com multa e juros pelo mesmo lugar
 - Declaração anual (DASN-SIMEI): no mesmo portal, com o faturamento do ano anterior, que
-  é o `caixa.mjs ano <ano>`. Multa por atraso: fato `mei-dasn-multa`
+  é o `caixa.mjs ano <ano>` mais o que veio de fora. Multa por atraso: fato `mei-dasn-multa`.
+  Entregou a DASN-SIMEI: `declarei <ano>`, e o aviso para
 - Abrir o MEI é grátis e só pelo gov.br (fato `mei-abrir`). Site que cobra pela abertura é golpe
 
 ## Nota fiscal

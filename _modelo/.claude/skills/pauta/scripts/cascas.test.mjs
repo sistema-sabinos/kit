@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { opcoes, lista, exigirFfmpeg } from './lib/pagina.mjs'
-import { tagDeEncode, escolherFaixas, atualizarPronto, limparLegendaTxt } from './coletar.mjs'
+import { tagDeEncode, escolherFaixas, atualizarPronto, limparLegendaTxt, juntarComAnteriores } from './coletar.mjs'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { juntarLevas } from './refiltrar.mjs'
@@ -41,6 +41,14 @@ test('juntarLevas deixa cada perfil uma vez so', () => {
   const r = juntarLevas([{ perfis: [{ user: 'a', posts: [] }, { user: 'b', posts: [] }] }, { perfis: [{ user: 'a', posts: [1] }] }])
   assert.deepEqual(r.map(p => p.user), ['a', 'b'])
   assert.deepEqual(r[0].posts, [])
+})
+
+test('juntarComAnteriores troca so os codigos coletados agora e mantem o resto do posts.json', () => {
+  const antes = [{ codigo: 'A1', curtidas: 10 }, { codigo: 'B2', curtidas: 20 }, { codigo: 'C3', curtidas: 30 }]
+  const r = juntarComAnteriores(antes, [{ codigo: 'B2', curtidas: 99 }, { codigo: 'D4', curtidas: 5 }])
+  assert.ok(r.length > 0, 'canario: veio lista')
+  assert.deepEqual(r, [{ codigo: 'A1', curtidas: 10 }, { codigo: 'C3', curtidas: 30 }, { codigo: 'B2', curtidas: 99 }, { codigo: 'D4', curtidas: 5 }])
+  assert.deepEqual(juntarComAnteriores([], [{ codigo: 'X' }]), [{ codigo: 'X' }])
 })
 
 test('cada casca responde ao --help sem abrir Chrome', () => {

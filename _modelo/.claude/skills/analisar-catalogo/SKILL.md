@@ -68,7 +68,7 @@ conferir com o fornecedor", "sem EAN no catálogo". Nunca inventar.
 
 ### 4. Classificar
 
-- **OK**: livre, segue pra pesquisa. É o padrão.
+- **OK**: sem bloqueio no catálogo; ainda passa pelo Gate 0 da `/mercado-livre` antes da pesquisa. É o padrão.
 - **CUIDADO**: pode, mas com regra obrigatória. Entram aqui: produto com
   veredito PODE COM RESSALVA em `_contexto/vereditos-legais.md` (a ressalva vai
   na observação) e restrição própria do negócio anotada em

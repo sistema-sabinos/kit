@@ -163,9 +163,17 @@ sai do produto (`mei-ocupacao`). Com o dinheiro e as horas da etapa 0:
 
 1. Conversar 3 a 5 ideias de nicho (gosto dela, o que ela conhece, ticket que
    cabe no investimento).
-2. Rodar `/pode-vender` em cada finalista. Reprovado sai.
+2. Rodar `/pode-vender` em cada finalista. Reprovado sai. Antes, o gate de
+   marca precisa do Chrome dedicado com sessão (o Mercado Livre pede login
+   depois de poucas buscas sem conta, medido em 2026-10-08): rodar
+   `npm install --prefix .claude/skills/mercado-livre` e
+   `node .claude/skills/mercado-livre/scripts/abrir-chrome.mjs`; na janela,
+   entrar com qualquer conta de comprador do Mercado Livre (a pessoal serve;
+   criar é grátis). INCONCLUSIVO por login ou leitura nesta etapa não reprova o
+   finalista: entrar e rodar de novo; persistindo, seguir pela busca manual da
+   seção 3 da `/pode-vender` e revalidar na etapa 8.
 3. Medir a demanda dos que sobraram pela busca aberta do Mercado Livre, no
-   navegador comum dela, sem login, guiada por print: quantos anúncios
+   navegador comum dela, guiada por print: quantos anúncios
    aparecem, a faixa de preço dos primeiros resultados e quantos vendidos eles
    mostram.
 4. Fechar com até 3 produtos candidatos e o nicho escolhido.
@@ -263,7 +271,10 @@ No dropshipping, marcar esta etapa como "não se aplica" e pular pra 8.
    muda pra `bling` se ela usar.
 2. Seguir a seção "Primeira vez" do `/mercado-livre`, inclusive o item 4
    (autorizar a conta do Mercado Livre), que pra quem vem da trilha acontece
-   aqui, com a conta da etapa 6 criada e antes da esteira.
+   aqui, com a conta da etapa 6 criada e antes da esteira. No Chrome dedicado,
+   sair da conta de comprador da etapa 2 e entrar na conta da empresa criada
+   na etapa 6. Finalista que ficou INCONCLUSIVO na etapa 2 roda a `/pode-vender`
+   de novo agora.
 3. Fotos: produto próprio, a pessoa fotografa (`ml-fotos`); dropshipping, as
    fotos do fornecedor, com a autorização de uso dele.
 4. Código de barras (`ml-gtin`): o do fabricante, nunca inventado.
@@ -297,6 +308,8 @@ Gravar na trilha, como gatilhos:
   despachando o seu estoque.
 - Contador: se ainda não tem, agora.
 - Sair do MEI (só quem é MEI): média acima de R$ 6.750 por mês, conversar com o contador
-  (`mei-teto`).
+  (`mei-teto`). Quem acompanha é a `/mei`, com o total vendido no Mercado Livre anotado
+  nela, quando o pacote dela está no projeto; sem a pasta `.claude/skills/mei/`, oferecer
+  trazer a skill.
 
 Fechar dizendo que dali em diante o trabalho é na esteira: `/mercado-livre`.

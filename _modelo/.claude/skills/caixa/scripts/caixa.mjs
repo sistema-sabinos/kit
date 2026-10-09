@@ -4,7 +4,8 @@
 // linhas de pagamento, pra bater com o extrato do banco). O script grava o CSV pra nome com
 // virgula ou aspas nao quebrar a planilha. Mais cobrancas.csv, pro /cobrar saber o degrau.
 // Uso: node caixa.mjs <comando> [--raiz <pasta do projeto>] [--hoje AAAA-MM-DD]
-//   pedido --cliente "Marina" --item "bolo 2 kg" --valor 180 --entrega AAAA-MM-DD [--sinal 90] [--forma pix] [--data AAAA-MM-DD]
+//   pedido --cliente "Marina" --item "bolo 2 kg" --valor 180 --entrega AAAA-MM-DD [--sinal 90 [--data-sinal AAAA-MM-DD]] [--forma pix] [--data AAAA-MM-DD]
+//     (--sinal so com o dinheiro ja na conta; --data-sinal e o dia em que caiu, se nao foi hoje)
 //   pago <id> --valor 90 [--forma pix] [--data AAAA-MM-DD]
 //   cancelar <id>
 //   devolvido <id> --valor 30 [--data AAAA-MM-DD]
@@ -95,11 +96,17 @@ export function registrarPedido(raiz, o) {
   const valor = exigirValor(o.valor, 'valor')
   const sinal = o.sinal !== undefined ? exigirValor(o.sinal, 'sinal') : 0
   if (sinal > valor) throw new Error(`sinal de ${reais(sinal)} maior que o pedido de ${reais(valor)}`)
+  // dia em que o sinal caiu na conta (o Pix pode ter vindo antes ou depois do pedido);
+  // conferido aqui, antes de gravar qualquer arquivo, pra nao sobrar pedido sem o sinal
+  if (o['data-sinal'] !== undefined && !sinal) throw new Error('--data-sinal sem --sinal; sinal so combinado se anota depois com "pago <id> --valor"')
+  // sem --data-sinal o sinal caiu hoje, e nao no dia do pedido: pedido retroativo com o Pix
+  // de hoje iria pro mes errado no fechamento (revisao final 5.7)
+  const dataSinal = sinal ? exigirData(o['data-sinal'] ?? o.hoje ?? hojeLocal(), 'data-sinal') : null
   const id = novoId(dados.pedidos, data)
   const a = arquivos(raiz)
   const linha = { id, data, cliente: o.cliente, item: o.item, valor: paraCsv(valor), entrega, situacao: 'ativo' }
   gravarArquivoCsv(a.pedidos, COL_PEDIDOS, [...dados.pedidos, linha])
-  if (sinal) gravarArquivoCsv(a.pagamentos, COL_PAGAMENTOS, [...dados.pagamentos, { pedido: id, data, valor: paraCsv(sinal), forma: o.forma || 'pix' }])
+  if (sinal) gravarArquivoCsv(a.pagamentos, COL_PAGAMENTOS, [...dados.pagamentos, { pedido: id, data: dataSinal, valor: paraCsv(sinal), forma: o.forma || 'pix' }])
   return { id, valor, sinal, falta: valor - sinal }
 }
 

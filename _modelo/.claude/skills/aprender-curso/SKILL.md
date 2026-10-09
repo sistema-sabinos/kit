@@ -67,13 +67,13 @@ Uma aula por vez, gravando em `inteligencia/cursos/<nome>/fontes/`:
    AAAAMMDD). E ela que data os numeros do curso, entao nunca pular.
 2. **Legenda do YouTube**, pedindo a trilha original primeiro (a trilha `pt` comum pode ser traducao
    automatica de outra lingua):
-   `yt-dlp --skip-download --write-auto-subs --sub-langs "pt-orig" --sub-format vtt -o "fontes/%(id)s.%(ext)s" "<link>"`.
+   `yt-dlp --skip-download --write-auto-subs --sub-langs "pt-orig" --sub-format vtt -o "inteligencia/cursos/<nome>/fontes/%(id)s.%(ext)s" "<link>"`.
    Sem `pt-orig`, repetir com `--write-subs --sub-langs "pt"`. Depois limpar, que a legenda
    automatica repete cada frase tres vezes:
-   `node .claude/skills/aprender-curso/scripts/limpar-legenda.mjs fontes/<id>.<lingua>.vtt` (grava o
+   `node .claude/skills/aprender-curso/scripts/limpar-legenda.mjs "inteligencia/cursos/<nome>/fontes/<id>.<lingua>.vtt"` (grava o
    `.txt` ao lado).
 3. **Sem legenda, ou erro `429`** (pedido demais em pouco tempo): transcrever no computador com a
-   `/transcribe` (`--timestamps`), gravando em `fontes/<id>.whisper.txt`. Demora uns minutos por aula.
+   `/transcribe` (`--timestamps`), gravando em `inteligencia/cursos/<nome>/fontes/<id>.whisper.txt`. Demora uns minutos por aula.
    Video no computador: a `/transcribe` aceita o caminho do arquivo no lugar do link.
 4. Arquivo vazio ou so com lixo nao conta como texto: conferir o tamanho antes de seguir, e aula sem
    texto nenhum fica marcada no `curso.md`.
@@ -97,7 +97,7 @@ Uma aula por vez, gravando em `inteligencia/cursos/<nome>/fontes/`:
    GitHub e que mover tira ele do backup daqui pra frente. Sem o sim pra mover, copiar e anotar no
    `curso.md` que o original segue no backup.
 2. Rodar `node .claude/skills/aprender-curso/scripts/ler-pdf.mjs "inteligencia/cursos/<nome>/fontes/<arquivo>.pdf"`.
-   Ele grava `fontes/<arquivo>.txt` com a marca `[p. N]` no comeco de cada pagina.
+   Ele grava, ao lado do PDF, `inteligencia/cursos/<nome>/fontes/<arquivo>.txt` com a marca `[p. N]` no comeco de cada pagina.
 3. Saida 1 (escaneado, com senha, sem permissao de copia, nao abriu, sem `pdftotext`): passar a
    mensagem do script pra pessoa e parar. Escaneado, senha e permissao nunca se contornam, nada de
    OCR. Sem `pdftotext`, nunca cair no Read do PDF acima de 10 paginas.
@@ -125,7 +125,7 @@ de memoria, e perguntar:
 
 So com o "pode ir". Uma aula por vez, no modo barato:
 ```
-node .claude/skills/assistir-video/ver-video.mjs "<link da aula>" --barato > "fontes/<id>.gemini.md"
+node .claude/skills/assistir-video/ver-video.mjs "<link da aula>" --barato > "inteligencia/cursos/<nome>/fontes/<id>.gemini.md"
 ```
 O script anota o custo de cada aula em `dados/custos.jsonl` e imprime no fim. Se o gasto real passar
 50% da estimativa, parar e avisar. Se a linha de custo nao aparecer no arquivo, anotar a mao com o que

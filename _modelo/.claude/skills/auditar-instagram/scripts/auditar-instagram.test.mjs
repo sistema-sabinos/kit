@@ -61,6 +61,23 @@ test('medir com 7 dias grava o Resultado no brief com o prometido', async () => 
   } finally { rmSync(raiz, { recursive: true, force: true }) }
 })
 
+test('medir duas vezes grava uma secao so', async () => {
+  const raiz = projeto('IG_ACCESS_TOKEN=t\nBUFFER_API_KEY=k\n')
+  try {
+    const base = postPublicado(raiz, '2026-09-26T12:00:00+0000')
+    let chamadas = 0
+    const fetchFn = async url => { chamadas++; return base(url) }
+    const agora = new Date('2026-10-04T12:00:00Z')
+    assert.ok(await medir('p1', { fetchFn, agora, raiz }), 'canario: a primeira medida gravou')
+    assert.ok(chamadas > 0, 'canario: a primeira medida usou a rede')
+    chamadas = 0
+    assert.equal(await medir('p1', { fetchFn, agora, raiz }), null)
+    assert.equal(chamadas, 0, 'a segunda medida nao pode chamar a rede')
+    const brief = readFileSync(join(raiz, 'producao', 'p1', 'brief.md'), 'utf8')
+    assert.equal(brief.match(/## Resultado/g).length, 1)
+  } finally { rmSync(raiz, { recursive: true, force: true }) }
+})
+
 test('medir antes de 7 dias nao grava nada', async () => {
   const raiz = projeto('IG_ACCESS_TOKEN=t\nBUFFER_API_KEY=k\n')
   try {

@@ -21,7 +21,7 @@ const copy = {
   precos: { ml_classico: 84.9, ml_premium: 89.9 },
   gtin: null,
 }
-const decisao = { tipo: 'individual', preco: { tabela: 96.5, alvo_pos_desconto: 84.9 } }
+const decisao = { tipo: 'individual', preco: { tabela: 96.5, alvo_pos_desconto: 84.9 }, marca_autorizada: 'Acme' }
 const auditoria = { veredito: 'aprovado', modalidade_escolhida: 'classico' }
 const imagens = { aprovado_pelo_usuario: true, imagens: [
   { n: 2, arquivo: 'anuncios/x/imagens/02-uso.jpg' },
@@ -46,6 +46,30 @@ test('precoDeLista sem tabela cai no preco do copy e avisa', () => {
   assert.equal(r.desconto_pct, null)
   assert.match(r.aviso, /sem preco de tabela/)
   assert.equal(precoDeLista({ decisao: {}, copy: { precos: {} }, modalidade: 'classico' }).preco, null)
+})
+
+test('precoDeLista premium usa o preco do copy e desconta da tabela', () => {
+  const d = { preco: { tabela: 56.7, alvo_pos_desconto: 49.9 } }
+  const c = { precos: { ml_classico: 49.9, ml_premium: 52.9 } }
+  assert.deepEqual(precoDeLista({ decisao: d, copy: c, modalidade: 'premium' }), { preco: 56.7, desconto_pct: 7, aviso: null })
+  assert.deepEqual(precoDeLista({ decisao: d, copy: c, modalidade: 'classico' }), { preco: 56.7, desconto_pct: 12, aviso: null })
+})
+
+test('precoDeLista com o preco da modalidade acima da tabela entra no preco da modalidade e avisa', () => {
+  const r = precoDeLista({ decisao: { preco: { tabela: 50, alvo_pos_desconto: 45 } }, copy: { precos: { ml_premium: 52.9 } }, modalidade: 'premium' })
+  assert.equal(r.preco, 52.9)
+  assert.equal(r.desconto_pct, null)
+  assert.match(r.aviso, /nao fica acima do preco da modalidade/)
+})
+
+test('marca de fabricante sem marca_autorizada vira pendencia; Genérica e marca autorizada passam', () => {
+  const semAutorizacao = montarItem({ ...base, decisao: { ...decisao, marca_autorizada: null } })
+  assert.ok(semAutorizacao.pendencias.some(p => /Marca "Acme" fora da regra/.test(p)), semAutorizacao.pendencias.join(' | '))
+  const generica = montarItem({ ...base, copy: { ...copy, ficha: { ...copy.ficha, Marca: 'Genérica' } }, decisao: { ...decisao, marca_autorizada: null } })
+  assert.ok(!generica.pendencias.some(p => /Marca/.test(p)), generica.pendencias.join(' | '))
+  assert.ok(!montarItem(base).pendencias.some(p => /Marca/.test(p)), 'marca autorizada passa')
+  const semMarca = montarItem({ ...base, copy: { ...copy, ficha: { ...copy.ficha, Marca: 'Sem marca' } }, decisao: { ...decisao, marca_autorizada: null } })
+  assert.ok(semMarca.pendencias.some(p => /use "Genérica"/.test(p)), 'Sem marca nao e o valor do Mercado Livre')
 })
 
 test('modalidadeDoML traduz e recusa o que nao conhece', () => {

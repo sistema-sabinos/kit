@@ -5,7 +5,8 @@ description: >
   sem mexer no que é seu: mostra o que muda, só aplica o que você aprovar, guarda
   cópia de segurança e desfaz com um comando. Use quando o usuário chamar
   /atualizar-sabinos, disser "atualiza o SabinOS", "tem versão nova?", "puxa as
-  melhorias", "atualiza o sistema".
+  melhorias", "atualiza o sistema". Na pasta-mãe (a que tem _modelo/) é a
+  /atualizar-kit.
 ---
 
 # /atualizar-sabinos, versão nova sem perder nada
@@ -107,7 +108,9 @@ registrar.
 2. Se o projeto tem `.claude/settings.json`, conferir que continua JSON válido:
    `node -e "JSON.parse(require('fs').readFileSync('.claude/settings.json','utf8'))"`.
 3. Anotar no diário de hoje (`_memoria/diario/AAAA-MM-DD.md`, ou `AAAA-MM-DD-<origem>.md` quando o `.origem` existe e é diferente de `dono`; criando a pasta e o arquivo com `# AAAA-MM-DD` se faltar): `- HH:MM, SabinOS atualizado pra <v>: <o que entrou em uma linha>`. Mudança do `mudancas.md` que a pessoa recusou vira linha no `_memoria/decisoes.md`, no formato do cabeçalho dele, com o motivo dela.
-4. Fechar: "Pronto, projeto na versão <v>. Se algo ficou estranho, é só pedir
+4. Fechar: "Pronto, projeto na versão <v>. A pasta-mãe (de onde nascem os
+   projetos novos) continua na versão dela; antes de criar outro projeto, rode
+   `/atualizar-kit` lá. Se algo ficou estranho, é só pedir
    'desfaz a atualização' que eu volto tudo como estava. Esse processo fechou,
    abre uma conversa nova." O download fica na pasta temporária do computador
    (uns 2 MB) e pode ser apagado à mão quando quiser.
@@ -118,7 +121,7 @@ Pedido de desfazer: `node .sabinos/atualizar-projeto.mjs desfazer .` (o motor
 fica guardado no projeto justamente pra isso). Volta os arquivos de antes, inclusive
 `AGENTS.md` e `settings.json`, e apaga o que tinha entrado. Antes de voltar, ele guarda o estado de agora em `.sabinos/antes-desfazer-<data>/`, então até o desfazer tem volta. Mostrar a saída.
 
-Se o `aplicar` falhou no meio e foi rodado de novo, existem duas cópias `antes-`: a volta ao estado original é pela mais antiga, com `node .sabinos/atualizar-projeto.mjs desfazer . --backup <nome-da-mais-antiga>`.
+Se o `aplicar` falhou no meio e foi rodado de novo, existem duas cópias `antes-<v>-` da mesma versão `<v>`: a volta ao estado original é pela mais antiga **dessa versão**, com `node .sabinos/atualizar-projeto.mjs desfazer . --backup <nome>`. Cópia de outra versão (por exemplo a da instalação) fica de fora.
 
 ## Regras
 

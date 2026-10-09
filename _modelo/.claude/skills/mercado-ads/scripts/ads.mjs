@@ -98,9 +98,12 @@ export async function coletar({ get, env, dias = 30, agora = new Date(), pasta =
     bruto = await buscarCampanhas({ get, site, anunciante, jan, apiVersion })
   }
   let campanhas = normalizar(bruto, historicoDeSnapshots(pasta), agora)
-  if (dias > 7) {
-    try { campanhas = mesclarJanelaCurta(campanhas, await buscarCampanhas({ get, site, anunciante, jan: janela(7, agora), apiVersion })) } catch (e) { log(`janela de 7 dias falhou (${e.message.slice(0, 80)}): o relatorio sai sem a tendencia`) }
-  }
+  // a janela de 7 dias entra sempre (o gasto diario do diagnostico sai dela): com --dias 7 e a
+  // mesma coleta, sem segunda chamada; com menos de 7, busca os 7 dias do mesmo jeito
+  try {
+    const bruto7 = dias === 7 ? bruto : await buscarCampanhas({ get, site, anunciante, jan: janela(7, agora), apiVersion })
+    campanhas = mesclarJanelaCurta(campanhas, bruto7)
+  } catch (e) { log(`janela de 7 dias falhou (${e.message.slice(0, 80)}): o relatorio sai sem a tendencia`) }
   const totais = campanhas.reduce((a, c) => ({ cost: a.cost + c.cost, conversions: a.conversions + c.conversions, total_amount: a.total_amount + c.total_amount }), { cost: 0, conversions: 0, total_amount: 0 })
   return { data: dia(agora), dias, anunciante, site, janela: jan, campanhas, totais, api_version: apiVersion }
 }

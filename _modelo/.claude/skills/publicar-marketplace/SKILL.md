@@ -82,7 +82,8 @@ Os comandos rodam da raiz do projeto.
      ir". Categoria errada: montar de novo com `--categoria MLB123`.
    - Código 1: o resumo lista o que falta resolver (campo da ficha,
      medidas da embalagem com `--embalagem CxLxA --peso-g N`, título longo).
-     Resolver e montar de novo. Nada foi enviado.
+     Resolver no copy, auditar de novo pelo ml-auditor e montar de novo. Nada
+     foi enviado.
    - Código 2: PLANO B. Seguir pelo checklist do painel (seção "Fluxo").
 3. Com o "pode ir":
    `node .claude/skills/publicar-marketplace/scripts/publicar-ml.mjs --enviar <slug>`.
@@ -110,8 +111,8 @@ Os comandos rodam da raiz do projeto.
    mesma hora, senão ele vende no preço de lista, que é inflado. Quando ela
    disser que ativou:
    `node .claude/skills/publicar-marketplace/scripts/publicar-ml.mjs --conferir <slug>`.
-   Ativo: a etapa fecha e o produto fica `publicado`. Acrescentar a linha em
-   `_contexto/estrategia.md`, como no passo 4 do fluxo.
+   Ativo: a etapa fecha e o produto fica `publicado`. Acrescentar uma linha no
+   diário (caminho no Mapa do `AGENTS.md`), como no passo 4 do fluxo.
 
 ## Fluxo
 
@@ -175,7 +176,7 @@ depois de publicar, senão o anúncio fica no preço cheio.
 2. anuncios/<slug>/imagens/02-<papel>.jpg
 
 ## Atributos da categoria
-- Marca: <fabricante ou "Sem marca">
+- Marca: <"Genérica", ou a marca_autorizada da decisão>
 - <cada atributo da ficha, com o valor>
 - Registro no órgão: <número, ou em branco; nunca "não se aplica">
 
@@ -195,8 +196,10 @@ depois de publicar, senão o anúncio fica no preço cheio.
 Quando a pessoa voltar com o código do anúncio: gravar em
 `dados/pipeline/<slug>/publicacao.json` (contrato 7, bloco `canais`, com
 modalidade e preço), marcar `status.json` com etapa `publicacao` `ok` e
-`etapa_atual` `publicado`, e acrescentar uma linha em
-`_contexto/estrategia.md`. Conferir por API que o anúncio existe
+`etapa_atual` `publicado`, e acrescentar uma linha no diário (caminho no Mapa
+do `AGENTS.md`): data, slug, código do anúncio e preço; o `status.json` e o
+`publicacao.json` seguem sendo o registro da esteira, e no `estrategia.md` só
+entra mudança de foco, se a pessoa decidir uma. Conferir por API que o anúncio existe
 (`GET /items/<código>`), e que a promoção pegou.
 
 ## O que já derrubou anúncio (conferido em conta real, 2026-06 a 2026-08)
@@ -205,8 +208,11 @@ modalidade e preço), marcar `status.json` com etapa `publicacao` `ok` e
 - Na rota Bling, a descrição vai no campo de descrição principal (curta), que
   é o que o Mercado Livre puxa; texto puro com quebra de linha colapsa no
   editor, por isso `<p>` e `<br>`; negrito não renderiza.
-- Marca "Sem marca" em kit e produto revendido; nome do fabricante em anúncio
-  seu pode virar denúncia, e o nome da loja conflita com catálogo.
+- Marca na ficha: `Genérica` em kit, revenda e dropshipping. O nome do
+  fabricante só quando você é a dona da marca ou revendedora autorizada por
+  escrito, e aí ele vem de `decisao.json` em `marca_autorizada`. Nunca o nome
+  da loja. Nome do fabricante sem autorização pode virar denúncia, e o nome da
+  loja conflita com catálogo; o `--montar` barra marca fora da regra.
 - Anúncio duplicado (Clássico e Premium do mesmo produto) divide esforço e faz
   as campanhas de anúncio darem lance uma contra a outra. Um por produto.
 - Chamada da API com 401: token vencido; renove o token com

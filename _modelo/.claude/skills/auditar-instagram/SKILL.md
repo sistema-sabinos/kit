@@ -61,7 +61,8 @@ node .claude/skills/auditar-instagram/scripts/auditar-instagram.mjs --medir <pas
 Le o post do Instagram na secao "VALIDO AGORA" do `publicacao.md`, confere no Buffer que ele ja saiu,
 acha o post na conta e, com 7 dias ou mais no ar, escreve a secao "Resultado" no fim do `brief.md`
 (alcance, salvamentos, compartilhamentos, visualizacoes, seguidores) ao lado do que a pauta prometia.
-Antes de 7 dias, diz quantos faltam e nao grava. No chat, comparar com a mediana do ultimo retrato.
+Antes de 7 dias, diz quantos faltam e nao grava. Brief que ja tem `## Resultado` nao e medido de novo.
+No chat, comparar com a mediana do ultimo retrato.
 
 ## Modo 3, renovar o token
 

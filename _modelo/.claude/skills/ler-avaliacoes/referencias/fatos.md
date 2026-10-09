@@ -10,7 +10,8 @@
 | id | fato | fonte | conferido_em |
 |---|---|---|---|
 | aval-ml-api | Avaliações do Mercado Livre pela API oficial: `GET /reviews/item/<código do anúncio>` com a autorização de app do vendedor só responde pra anúncio da própria conta; medido em 2026-10-08, deu 403 (acesso negado) em 5 anúncios de concorrente com autorização válida e 200 no anúncio próprio | https://developers.mercadolivre.com.br/pt_br/opinioes-sobre-um-produto | 2026-10-08 |
-| aval-ml-termos | Termos do Mercado Livre (cláusula 12): proíbem robô, raspador e qualquer programa que varre o site sem autorização | https://www.mercadolivre.com.br/ajuda/991 | 2026-10-07 |
+| aval-ml-termos | Termos do Mercado Livre (cláusula 12, "Uso Automatizado do Site e Acesso à Informação", versão de 30/09/2026): proíbem sistema automatizado (robô, raspador, programa que varre o site) que acessa, extrai ou copia qualquer conteúdo do site sem autorização expressa, e o envio massivo de solicitações | https://www.mercadolivre.com.br/ajuda/991 | 2026-10-08 |
+| aval-ml-pagina | Avaliações de concorrente na página do anúncio: a página mostra algumas e traz o link de todas as opiniões (`/noindex/catalog/reviews/<código>`), com nota de 1 a 5, data e texto de cada uma; a página pede login depois de poucas aberturas sem sessão | medição no Chrome, https://www.mercadolivre.com.br | 2026-10-08 |
 | aval-amazon-termos | Termos da Amazon.com.br: proíbem coleta de dados e uso de robô no site | https://www.amazon.com.br/gp/help/customer/display.html?nodeId=GLSBYFE9MGKKQXXM | 2026-10-07 |
 | aval-shopee-termos | Termos da Shopee: proíbem robô e programa que varre o site (itens 3.1 e 6.2(k)) e coletar dado de outro usuário (6.2(o)) | https://help.shopee.com.br/portal/4/article/77113 | 2026-10-07 |
 | aval-reclameaqui-termos | Termos do Reclame Aqui: proíbem raspagem do site (item 5.9) | https://www.reclameaqui.com.br/termos-de-uso/ | 2026-10-07 |

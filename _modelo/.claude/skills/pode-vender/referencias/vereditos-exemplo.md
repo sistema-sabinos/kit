@@ -21,7 +21,11 @@
 - **Condições ou rota alternativa:** <o que fazer>
 - **Ficha de conformidade:** <frase de regularização; alegações autorizadas, literais; palavras proibidas> ou "não se aplica"
 
-## Whey Exemplo 900 g (suplemento): PODE COM RESSALVA (2026-09-29, revalidar até 2027-03-29)
+---
+
+## Exemplo preenchido (NÃO COPIAR: não vale como veredito)
+
+### EXEMPLO Whey 900 g (suplemento), PODE COM RESSALVA, de 2026-09-29
 - **Categoria:** suplemento · **Órgão:** ANVISA
 - **Motivo:** rótulo e ingredientes dentro da lista autorizada; a marca está
   viva no Mercado Livre e sem dossiê, mas a busca da ANVISA não achou
@@ -33,4 +37,6 @@
   mandar o número de notificação e ele for conferido na consulta da ANVISA; sem
   número, só lote fabricado antes de 01/09/2026, dentro da validade, com nota
   fiscal.
-- **Ficha de conformidade:** não se aplica enquanto não houver número
+- **Ficha de conformidade:** parcial: frase de regularização espera o número de
+  notificação; alegações autorizadas: nenhuma até o número; palavras proibidas:
+  doença, sintoma, parte do corpo

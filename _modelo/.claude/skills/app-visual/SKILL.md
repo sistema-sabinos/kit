@@ -214,7 +214,7 @@ passa pelo gate:
   ficam fora do `fatos.md`. Antes de qualquer compra:
   1. Abrir a página oficial do vendedor e mostrar ao aluno o que vai ser comprado, o
      preço e a data de hoje como data da consulta.
-  2. Passar a proposta pela `/segunda-opiniao` (dose rápida), com a alternativa aberta
+  2. Passar a proposta pela `/segunda-opiniao` (dose completa), com a alternativa aberta
      que faz o mesmo trabalho.
   3. Esperar o "pode ir" do aluno naquele momento. O pagamento é feito pelo próprio
      aluno, na página do vendedor, com o cartão dele.

@@ -93,19 +93,7 @@ Se vier vago ("vendo de tudo"), reperguntar uma vez pedindo o produto que mais v
 
 ### 5. Playwright
 
-Verificar se Playwright tá instalado:
-
-```bash
-npx playwright screenshot --help 2>/dev/null && echo "OK" || echo "INSTALAR"
-```
-
-Se precisar instalar:
-
-```bash
-npx playwright install chromium
-```
-
-Avisar o usuário que tá instalando (demora uns 30s na primeira vez).
+Conferir se `.claude/skills/midia-social/node_modules/playwright` existe; senão, `npm install --prefix .claude/skills/midia-social` (o mesmo da seção Chrome dedicado da `/midia-social`). Ele desenha os slides no Google Chrome do computador, sem baixar outro navegador.
 
 ---
 
@@ -115,7 +103,7 @@ Avisar o usuário que tá instalando (demora uns 30s na primeira vez).
 - **Regras de design:** `references/design-carrossel.md` (dentro desta skill)
 - **Contexto:** `_contexto/empresa.md`
 - **Tom de voz:** a voz da marca, com as proibições de escrita do `_contexto/preferencias.md`
-- **Playwright CLI:** `npx playwright screenshot`
+- **Render dos slides:** o `slides.mjs` da `/midia-social`
 
 ## Input
 
@@ -135,16 +123,7 @@ Cada carrossel é uma pasta `producao/<slug>/`, com `<slug>` no formato `AAAA-MM
 
 **Pasta que veio da `/pauta`.** Antes de criar uma pasta nova, olhar `producao/*/roteiro.md` (fora `_molde` e `_pauta`) atrás de uma pasta do mesmo assunto com a tabela `## Carrossel` preenchida. Achando uma ou mais, listar em ordem de data e perguntar qual é. Confirmada, usar essa pasta: o texto dos slides parte da tabela do `roteiro.md` (já aprovado no Gate 2 da `/pauta`), e o `post.md` que ela escreveu fica, só revisado. Sem pasta da `/pauta`, criar `producao/<slug>/`.
 
-**Molde do `post.md`.** Usar o primeiro que existir: `producao/_molde/post.md` ou `.claude/skills/midia-social/moldes/producao/_molde/post.md`. Sem nenhum dos dois, o projeto não tem o pacote de mídia social: escrever o `post.md` à mão com estas linhas, que é o mesmo formato:
-
-```
-# Post: <título curto>
-
-ia: nao
-
-## Legenda
-<legenda>
-```
+**Molde do `post.md`.** Usar o primeiro que existir: `producao/_molde/post.md` ou `.claude/skills/midia-social/moldes/producao/_molde/post.md`.
 
 ---
 
@@ -164,7 +143,7 @@ ia: nao
 
 6. **Briefing rápido**, perguntar ao usuário (numa mensagem só):
    > "Antes de escrever, me confirma:
-   > - Quantos slides? (padrão: 8-10)
+   > - Quantos slides? (padrão: 6 a 9; teto de 10, o limite do agendador)
    > - Vai querer imagem na capa ou dentro dos slides? Se sim, quantas imagens tu tem?
    >   - Se tiver imagens: joga na pasta `producao/<slug>/imagens/` e me diz os nomes
    >   - Se não tiver: faço um design visual que funciona bem sem foto
@@ -211,9 +190,9 @@ ia: nao
 
    **Slides 3-4 (Mecanismo):** Explica POR QUE isso acontece, indo além do "o que" pra mostrar o motor por trás. Dados concretos aqui: número + fonte + ano. Se não tiver dado, usar um exemplo real e específico (nome de empresa, produto, caso). Nunca genérico.
 
-   **Slides 5-7 (Provas e aprofundamento):** Um ponto por slide, cada um aprofundando um aspecto diferente. Cada slide deve adicionar uma camada nova, não repetir o anterior com palavras diferentes. Se o slide 5 apresenta um dado, o slide 6 contradiz ou expande, o slide 7 conecta com a realidade do leitor.
+   **Do slide 5 ao antepenúltimo (Provas e aprofundamento):** Um ponto por slide, cada um aprofundando um aspecto diferente. Cada slide deve adicionar uma camada nova, não repetir o anterior com palavras diferentes. Se um slide apresenta um dado, o seguinte contradiz ou expande, e o outro conecta com a realidade do leitor. Num carrossel de 6 essa faixa não existe e as provas entram junto do mecanismo, nos slides 3 e 4.
 
-   **Slide 8-9 (Virada):** Aqui o carrossel muda de tom: em vez de resumir o que foi dito, traz uma virada genuína, tipo "e o que isso significa pra quem tá lendo?" ou "o que muda a partir de agora?". Conexão prática e específica, não genérica.
+   **Penúltimo (Virada e item salvável):** Aqui o carrossel muda de tom: em vez de resumir o que foi dito, traz uma virada genuína, tipo "e o que isso significa pra quem tá lendo?" ou "o que muda a partir de agora?". Conexão prática e específica, não genérica.
 
    **Slide final (CTA):** Chamada pra ação + menção ao canal/marca. Curto. O CTA precisa ter uma frase-ponte que conecta o conteúdo do carrossel com a ação (não um "segue pra mais" solto).
 
@@ -263,17 +242,16 @@ ia: nao
 2. Ler `references/design-carrossel.md` pra regras de design (layouts, ritmo, imagens, elementos fixos)
 3. Criar HTMLs seguindo as regras do arquivo de design
 4. Salvar HTMLs em `producao/<slug>/html/`
-5. Renderizar via CLI, com o PNG direto em `final/`:
+5. Renderizar, com o PNG direto em `final/` (1080x1350). **Slide 1 primeiro**, e mostrar pro usuário:
    ```bash
-   npx playwright screenshot --viewport-size=1080,1350 --full-page "file:///caminho/absoluto/producao/<slug>/html/slide-01.html" "producao/<slug>/final/slide-01.png"
+   node .claude/skills/midia-social/scripts/slides.mjs --pasta producao/<slug> --so 01
    ```
-   Renderizar **slide 1 primeiro** e mostrar pro usuário.
 
-**CHECKPOINT:** Mostrar slide 1 renderizado. Se aprovado, renderizar os demais. Se pedir ajuste, editar o HTML e re-renderizar só aquele slide.
+**CHECKPOINT:** Mostrar slide 1 renderizado. Se aprovado, renderizar os demais com o mesmo comando sem `--so`. Se pedir ajuste, editar o HTML e re-renderizar só aquele slide (`--so NN`). Mais de 10 HTMLs em `html/`: o script não grava nada, porque o agendador aceita no máximo 10.
 
 Os PNGs ficam em `producao/<slug>/final/`, com nome `slide-01.png`, `slide-02.png`... (dois dígitos, é por esse nome que o agendador acha e ordena os slides).
 
-> **Dica:** se o usuário não gostar do visual, as regras de design ficam em `references/design-carrossel.md`. Pode editar direto ou pedir: "muda a regra X no design do carrossel".
+> **Dica:** se o usuário não gostar do visual, separar o que é da marca do que é do formato. Cor, fonte e logo mudam no guia visual da marca (linha "a marca" do Mapa no `AGENTS.md`), e valem pra todo conteúdo. Layout, ritmo e elementos do carrossel mudam em `references/design-carrossel.md`: pode editar direto ou pedir "muda a regra X no design do carrossel".
 
 ---
 
@@ -285,9 +263,9 @@ Após finalizar o Instagram, perguntar:
 Se sim:
 - Adaptar os HTMLs: height 1920px, aumentar padding, ajustar espaçamento
 - **Bottom safe zone:** deixar 230px livres embaixo (UI do TikTok sobrepõe)
-- Salvar os HTMLs em `producao/<slug>/html-916/` e renderizar via CLI:
+- Salvar os HTMLs em `producao/<slug>/html-916/` e renderizar (1080x1920):
   ```bash
-  npx playwright screenshot --viewport-size=1080,1920 --full-page "file:///caminho/absoluto/producao/<slug>/html-916/slide-01.html" "producao/<slug>/final-916/slide-01.png"
+  node .claude/skills/midia-social/scripts/slides.mjs --pasta producao/<slug> --916
   ```
 - Os PNGs ficam em `producao/<slug>/final-916/`, com o mesmo número de slides do `final/`
 
@@ -305,10 +283,7 @@ producao/<AAAA-MM-DD-assunto>/
   html-916/, final-916/     <- versão TikTok (se pedida)
 ```
 
-Fechar dizendo onde está a pasta e como sai pro ar:
-
-- **Com o pacote de mídia social** (existe `.claude/skills/publicar-social/`): "Pra agendar no Instagram e no TikTok, chama a `/publicar-social` com essa pasta e o horário."
-- **Sem o pacote:** "Os slides estão em `final/` e a legenda no `post.md`, prontos pra postar à mão. A pasta já está no formato que a `/publicar-social` lê: quando o pacote de mídia social for instalado, ela agenda daqui mesmo."
+Fechar dizendo onde está a pasta e como sai pro ar: "Pra agendar no Instagram e no TikTok, chama a `/publicar-social` com essa pasta e o horário."
 
 ## Geração de imagens (opcional)
 
@@ -341,15 +316,10 @@ Se o usuário já tiver chave de algum serviço pago de imagem (OpenAI, Stabilit
 1. **Preço do dia.** Abrir a página oficial de preços do serviço, hoje, e anotar o preço por imagem no tamanho que vai ser pedido. Preço de imagem por IA muda de um mês pro outro: nunca dizer de memória.
 2. **Avisar o custo antes.** Mostrar a conta: "São N imagens a US$ X cada, total US$ Y, pelo preço de hoje na página do <serviço>. Pode ir?"
 3. **Esperar o "pode ir".** Sem ele, nada é gerado.
-4. **Registrar o gasto** em `dados/custos.jsonl`, uma linha por rodada, no contrato `{em, servico, usd, contexto}`. Com o pacote de mídia social instalado, o registrador pronto faz isso:
+4. **Registrar o gasto** em `dados/custos.jsonl`, uma linha por rodada, no contrato `{em, servico, usd, contexto}`. O registrador do pacote faz isso:
    ```bash
    node .claude/skills/midia-social/scripts/lib/custos.mjs --servico "<serviço> (carrossel)" --usd <total em dólar> --contexto "<slug>, N imagens"
    ```
-   Sem o pacote, acrescentar no fim do `dados/custos.jsonl` (criar o arquivo e a pasta se não existirem) uma linha só, em JSON, assim (valores de exemplo):
-   ```
-   {"em":"2026-10-05T14:30:00.000Z","servico":"<serviço> (carrossel)","usd":0.12,"contexto":"<slug>, 3 imagens"}
-   ```
-   `em` é a data e hora da geração em UTC, `usd` é número com ponto (não texto), e cada gasto é uma linha nova, nunca editando as antigas.
 
 Imagem gerada por IA no slide deixa o `post.md` com `ia: sim`.
 
@@ -363,4 +333,4 @@ Imagem gerada por IA no slide deixa o `post.md` com `ia: sim`.
 - Sem travessões no texto por padrão, a menos que preferencias.md diga o contrário
 - Se o setup já foi feito antes, não repetir as perguntas. Ir direto pro workflow
 - Se faltar algo no meio do caminho (ex: Playwright não instalado), resolver na hora sem travar
-- Regras de design vivem em `references/design-carrossel.md`. Se o usuário quiser mudar algo visual, editar lá
+- Cor, fonte e logo são da marca: mudam no guia visual da marca (linha "a marca" do Mapa no `AGENTS.md`). Layout, ritmo e elementos do formato carrossel mudam em `references/design-carrossel.md`

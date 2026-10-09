@@ -277,6 +277,29 @@ test('ponte --de-espionagem: fonte por anuncio, link do anuncio, sem data', () =
   }
 })
 
+test('ponte --de-espionagem com o bruto lido da pagina: data de cada avaliacao entra e pesa a idade', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'avaliacoes-'))
+  try {
+    const bruto = {
+      produto: 'Moedor', anuncios: [
+        { id: 'MLB444', url: 'https://www.mercadolivre.com.br/a/MLB444', avaliacoes: { fonte: 'pagina', media: 4.7, total: 3859, niveis: null, avaliacoes: [
+          { nota: 2, titulo: '', texto: 'Parou de moer em duas semanas.', data: '2026-09-15', curtidas: 12 },
+          { nota: 1, titulo: '', texto: 'Veio quebrado e a tampa não fecha.', data: '2023-01-10', curtidas: 0 },
+          { nota: 5, titulo: '', texto: 'Muito bom.', data: null, curtidas: 0 },
+        ] } },
+      ],
+    }
+    const caminho = join(dir, '_raw-concorrentes-moedor.json')
+    writeFileSync(caminho, JSON.stringify(bruto))
+    const lidas = deEspionagem(caminho)
+    assert.equal(lidas.avaliacoes.length, 3, 'canario: as 3 avaliacoes do bruto foram lidas')
+    assert.deepEqual(lidas.avaliacoes.map(a => a.data), ['2026-09-15', '2023-01-10', null])
+    assert.ok(peso(lidas.avaliacoes[1], HOJE, 18) < peso({ ...lidas.avaliacoes[1], data: null }, HOJE, 18), 'a velha pesa menos')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test('sem nenhuma flag opcional: relatorio no terminal, temas de marketplace', () => comFixture(({ caminho }) => {
   const r = rodar([caminho])
   assert.equal(r.codigo, 0, r.erro)

@@ -123,3 +123,11 @@ test('whisper: modelo baixado pela metade (tamanho diferente do esperado) nao co
   assert.equal(com(1533763059, 'medium').ok, true)
   assert.equal(com(487601967, 'medium').ok, false)
 })
+
+// F.5 (5.7): o winget sem as flags do setup para perguntando do acordo da fonte num shell sem entrada.
+test('todo comando winget dos itens leva as 4 flags do setup', () => {
+  const flags = ['--source winget', '--accept-source-agreements', '--accept-package-agreements', '--disable-interactivity']
+  const comWinget = ITENS.filter(i => (i.win ?? '').startsWith('winget'))
+  assert.ok(comWinget.length >= 3, `so ${comWinget.length} itens com winget`)
+  for (const i of comWinget) for (const f of flags) assert.ok(i.win.includes(f), `${i.id} sem ${f}`)
+})

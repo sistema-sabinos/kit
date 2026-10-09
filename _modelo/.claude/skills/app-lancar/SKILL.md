@@ -6,7 +6,7 @@ description: >
   reclamações de cobrança, os planos criados no pagamento em modo de teste, a ficha
   da App Store e do Google Play revisada contra os limites e as regras de cópia, e o
   plano dos primeiros clientes. Tudo que cria conta, manda e-mail ou publica espera
-  o "pode ir". É a etapa 10 do pacote criar app. Use quando o usuário chamar
+  o "pode ir". Etapa 10 de 11 do pacote criar app. Use quando o usuário chamar
   /app-lancar, disser "faz a página de venda do app", "quanto eu cobro pelo app",
   "monta os planos", "escreve a ficha da App Store", "descrição pro Google Play",
   "como eu lanço o app", "lista de espera", ou depois da /app-marca.
@@ -222,7 +222,9 @@ Preparar também, pra entregar à `/app-publicar`:
 
 - prints do app nos tamanhos que a loja pede no dia do envio (conferir na
   App Store Connect e no Play Console, os painéis em que o dono do app
-  cadastra a ficha na Apple e no Google, na hora, porque mudam);
+  cadastra a ficha na Apple e no Google, na hora, porque mudam) (app de
+  celular: os prints saem da versão Expo, que a `/app-construir` monta depois
+  do site no ar; até lá, esta parte fica pendente);
 - rótulo de privacidade da Apple e formulário de segurança de dados do
   Google: o que o app coleta e pra quê, igual à política de privacidade;
 - endereço da política de privacidade e da página de suporte;
