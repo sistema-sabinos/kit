@@ -85,11 +85,11 @@ Se a pessoa pedir detalhe, mostrar o diff daquele arquivo resumido em prosa (o q
 
 ## Catálogo de estilos de vídeo
 
-A pasta `_estilos-video/` guarda os estilos de edição que a `/aplicar-estilo` usa (uns 150 MB de vídeo, som e foto). Ela entra inteira ou não entra, nunca arquivo por arquivo, e nunca vai pro backup: o `.gitignore` da pasta-mãe a deixa fora de propósito. Rodar este passo depois do Passo 3, mesmo se a pessoa recusou o resto.
+A pasta `_estilos-video/` guarda os estilos de edição que a `/aplicar-estilo` usa (uns 230 MB de vídeo, som e foto). Ela entra inteira ou não entra, nunca arquivo por arquivo, e nunca vai pro backup: o `.gitignore` da pasta-mãe a deixa fora de propósito. Rodar este passo depois do Passo 3, mesmo se a pessoa recusou o resto.
 
 1. Ler a versão do catálogo daqui: a primeira linha de `_estilos-video/VERSAO` (sem a pasta, a pessoa ainda não tem os estilos).
 2. **Zip que a pessoa já baixou (caminho 2 do Passo 1):** se a pasta extraída tem `_estilos-video/VERSAO` diferente da daqui, o catálogo aparece como um item a mais no resumo do Passo 2 ("Estilos de edição de vídeo: versão nova") e, aprovado, entra inteiro.
-3. **Baixar do GitHub (caminho 1):** o catálogo não vem no download do kit, porque tem repositório próprio. Ler a versão publicada com `curl -fsSL https://raw.githubusercontent.com/sistema-sabinos/estilos-video/main/VERSAO`. Igual à daqui: nada a fazer e nada a dizer. Diferente, ou sem pasta aqui: avisar "tem estilos de edição de vídeo novos (ou: os estilos de edição de vídeo ainda não estão nesta pasta), são uns 150 MB pra baixar; baixo agora?" e esperar o sim. Com o sim:
+3. **Baixar do GitHub (caminho 1):** o catálogo não vem no download do kit, porque tem repositório próprio. Ler a versão publicada com `curl -fsSL https://raw.githubusercontent.com/sistema-sabinos/estilos-video/main/VERSAO`. Igual à daqui: nada a fazer e nada a dizer. Diferente, ou sem pasta aqui: avisar "tem estilos de edição de vídeo novos (ou: os estilos de edição de vídeo ainda não estão nesta pasta), são uns 230 MB pra baixar; baixo agora?" e esperar o sim. Com o sim:
    - baixar numa pasta temporária nova e vazia, fora da pasta-mãe: `curl -fL -o "<temp>/estilos.zip" https://github.com/sistema-sabinos/estilos-video/archive/refs/heads/main.zip`;
    - extrair como no Passo 1 (no Windows pelo `"C:/Windows/System32/tar.exe"`, no Mac pelo `unzip`); a pasta extraída é `<temp>/estilos-video-main/`;
    - conferir que ela tem `catalogo.md` e que a primeira linha do `VERSAO` dela é a mesma lida no raw; se não for, parar e dizer que o download veio diferente;

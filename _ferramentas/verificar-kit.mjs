@@ -24,6 +24,13 @@ export function carregarProibidos(caminho = CAMINHO_PROIBIDOS) {
   const termos = JSON.parse(readFileSync(caminho, 'utf8')).termos
   return Array.isArray(termos) ? termos : []
 }
+// excecao escrita do dono, por arquivo e por termo ({ "caminho no kit": ["termo"] }), na mesma lista
+export function carregarExcecoes(caminho = CAMINHO_PROIBIDOS) {
+  if (!existsSync(caminho)) return {}
+  const ex = JSON.parse(readFileSync(caminho, 'utf8')).excecoes
+  return ex && typeof ex === 'object' ? ex : {}
+}
+export const termoDoAchado = (detalhe) => detalhe.match(/^termo proibido: (.+?)(?: \(com espaco, pontuacao ou acento\))?$/)?.[1] ?? null
 // termos permitidos: nome do produto (sabinos) nao pode acusar falso positivo do mesmo nome sem o "s" final
 const PERMITIDOS = [/sabinos/gi, /sabinos\.zip/gi]
 // o teste do detector precisa CONTER exemplos sinteticos de segredo e de termo (inclusive o
@@ -264,9 +271,11 @@ export function rodarGates(dirKit, opcoes = {}) {
   const set = new Set(arquivos)
 
   let PROIBIDOS = opcoes.proibidos
+  let EXCECOES = opcoes.excecoes ?? {}
   if (!Array.isArray(PROIBIDOS)) {
     const caminho = opcoes.caminhoProibidos || CAMINHO_PROIBIDOS
     PROIBIDOS = carregarProibidos(caminho)
+    EXCECOES = opcoes.excecoes ?? carregarExcecoes(caminho)
     // Na pasta-mae do aluno nao existe bancada/ ao lado do kit, e o aviso seria jargao na tela
     // dele. Na bancada (a pasta existe e o arquivo sumiu) o aviso continua, porque ai o gate ficou cego.
     if (!PROIBIDOS.length && existsSync(dirname(caminho))) avisos.push(`Gate 1: lista de termos da bancada nao encontrada em ${caminho}; so os detectores estruturais rodaram`)
@@ -278,7 +287,10 @@ export function rodarGates(dirKit, opcoes = {}) {
     if (!ehTextoGate1(rel)) continue
     if (ISENTOS_CONTEUDO.includes(rel)) continue
     const txt = readFileSync(join(dirKit, rel), 'utf8')
-    for (const detalhe of vazamentosNoTexto(txt, PROIBIDOS)) falhas.push({ gate: 1, arquivo: rel, detalhe })
+    const permitidos = EXCECOES[rel] ?? []
+    for (const detalhe of vazamentosNoTexto(txt, PROIBIDOS)) {
+      if (!permitidos.includes(termoDoAchado(detalhe))) falhas.push({ gate: 1, arquivo: rel, detalhe })
+    }
   }
   for (const rel of arquivos) {
     // pasta proibida so conta como pasta de PRIMEIRO NIVEL do kit ou do _modelo/
@@ -612,7 +624,7 @@ export function rodarGates(dirKit, opcoes = {}) {
       .find(l => l && !l.startsWith('#'))
     if (primeira !== '*') falhas.push({ gate: 11, arquivo: '.gitignore', detalhe: "é o antigo (aberto); seguir o passo 'Arquivos misturados da pasta-mãe' do .claude/skills/atualizar-kit/SKILL.md" })
     // o catalogo de estilos de video fica fora do backup de proposito: e conteudo do kit
-    // (~150 MB de video, som e foto) e volta pelo /atualizar-kit, nunca coisa do aluno
+    // (~230 MB de video, som e foto) e volta pelo /atualizar-kit, nunca coisa do aluno
     const fora = foraDoBackup(dirKit, arquivos.filter(r => !r.startsWith('_modelo/') && !r.startsWith(CATALOGO_ESTILOS)))
     if (fora === null) semGit11('o .gitignore da pasta-mae')
     else for (const r of fora) falhas.push({ gate: 11, arquivo: r, detalhe: 'fora do repositorio da pasta-mae: liberar o tipo ou o caminho no .gitignore da pasta-mae' })

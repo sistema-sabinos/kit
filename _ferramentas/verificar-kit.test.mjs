@@ -51,6 +51,20 @@ test('gate 1 pega termo grudado da lista escrito com espaco, ponto, hifen ou ace
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
+test('gate 1 aceita a excecao escrita so no arquivo e no termo dela', () => {
+  const dir = kitFalso()
+  try {
+    writeFileSync(join(dir, 'a.md'), 'Feito por Fulano de Tal e Beltrano.\n')
+    writeFileSync(join(dir, 'b.md'), 'Feito por Fulano de Tal.\n')
+    const termos = ['fulano de tal', 'beltrano']
+    // canario: sem excecao, os dois arquivos acusam
+    assert.equal(rodarGates(dir, { proibidos: termos }).falhas.filter(f => f.gate === 1).length, 3)
+    const { falhas } = rodarGates(dir, { proibidos: termos, excecoes: { 'a.md': ['fulano de tal'] } })
+    const g1 = falhas.filter(f => f.gate === 1).map(f => `${f.arquivo} ${f.detalhe}`)
+    assert.deepEqual(g1.sort(), ['a.md termo proibido: beltrano', 'b.md termo proibido: fulano de tal'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
 test('gate 1 nao junta palavras vizinhas: o termo espacado so conta em fronteira de palavra', () => {
   const dir = kitFalso()
   try {

@@ -1,5 +1,5 @@
 {
- "versao": "5.9",
+ "versao": "5.10",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -165,10 +165,11 @@
   },
   ".claude/skills/aplicar-estilo/SKILL.md": {
    "4cff679a3a014193": "5.9",
-   "fd7ac77ce00b2349": "5.9"
+   "791c17dba081c9d8": "5.10",
+   "fd7ac77ce00b2349": "anterior-5.9"
   },
   ".claude/skills/aplicar-estilo/scripts/estilos.mjs": {
-   "0b379143cece82ee": "5.9",
+   "0b379143cece82ee": "anterior-5.9",
    "27d6aff9c1b3a0e4": "5.9"
   },
   ".claude/skills/app-comparar/SKILL.md": {

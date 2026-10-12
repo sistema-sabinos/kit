@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 5.9 (2026-10-11)
+Versão 5.10 (2026-10-12)
 
 Um sistema de trabalho com IA pro seu negócio, rodando dentro do VS Code com o Claude Code.
 
@@ -35,7 +35,7 @@ Todo o passo a passo de leigo está no [COMECE-AQUI.md](COMECE-AQUI.md): abrir a
 - `AGENTS.md`, o cérebro desta sala de controle (como ela conduz o onboarding); `CLAUDE.md` é só o ponteiro pro Claude Code ler o mesmo arquivo
 - `_modelo/`, o molde completo de um projeto (skills, contexto, estrutura de pastas), de onde cada projeto novo nasce. Não é pasta de trabalho
 - `_ferramentas/`, o verificador do kit e uma biblioteca pronta contra automação que trava
-- `_estilos-video/`, os mais de 70 estilos prontos de edição de vídeo que a `/aplicar-estilo` usa (uns 150 MB). Fica fora do backup e se atualiza pela `/atualizar-kit`
+- `_estilos-video/`, os mais de 70 estilos prontos de edição de vídeo que a `/aplicar-estilo` usa (uns 230 MB). Fica fora do backup e se atualiza pela `/atualizar-kit`
 - `docs/`, o guia avançado (Codex e Hermes Agent) e o roteiro de próximos passos. Os dois guias em PDF, de instalação (`Guia-SabinOS-Instalacao`) e de comandos (`Guia-SabinOS-Comandos`), vêm junto com o zip, fora desta pasta
 - `<projeto>/`, uma pasta por projeto que você criar, cada uma vira um workspace próprio no VS Code
 

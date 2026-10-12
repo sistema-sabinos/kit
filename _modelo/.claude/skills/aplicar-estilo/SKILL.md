@@ -42,7 +42,7 @@ fica em `<_video>/estilos/<AAAA-MM-DD-assunto>`, fora do projeto e do backup.
 Rode `estilos.mjs conferir`. Saída 3 é que falta algo; diga o quê em uma frase e mande pro
 lugar certo:
 
-- **catálogo:** rode a `/atualizar-kit` na pasta-mãe (ela baixa os estilos, uns 150 MB);
+- **catálogo:** rode a `/atualizar-kit` na pasta-mãe (ela baixa os estilos, uns 230 MB);
 - **skill do Remotion:** o passo 5 da `/configurar-video` instala, com o sim do aluno;
 - **Node** ou **espaço no caminho:** a `/configurar-video` resolve.
 
