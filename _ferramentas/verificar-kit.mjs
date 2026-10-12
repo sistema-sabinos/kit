@@ -35,6 +35,8 @@ const RE_SEGREDO = /(API_KEY|ACCESS_TOKEN|REFRESH_TOKEN|CLIENT_SECRET|BOT_TOKEN|
 // valor que e placeholder ou leitura de variavel, nao chave real
 const RE_PLACEHOLDER = /xxx|aqui|exemplo|placeholder|process\.env|sua.?chave|seu.?token/i
 const RE_LINK = /\[[^\]]*\]\(([^)]+)\)/g
+// pasta da pasta-mae com os estilos de edicao de video (5.9): vai no zip, fica fora do backup
+export const CATALOGO_ESTILOS = '_estilos-video/'
 // Gate 6: dependencia de Windows chumbada (exportado pro teste dos guias na bancada)
 export const RE_WIN = /(?:\b[A-Z]:[\\/]{1,2}[\w\\/]|schtasks|\.bat\b|\\\\Users\\\\)/i
 
@@ -44,8 +46,14 @@ export function vazamentosNoTexto(txt, proibidos) {
   const achados = []
   let baixo = txt.toLowerCase()
   for (const re of PERMITIDOS) baixo = baixo.replace(re, '')
+  let semAcento = null
   for (const termo of proibidos) {
-    if (baixo.includes(termo)) achados.push(`termo proibido: ${termo}`)
+    if (baixo.includes(termo)) { achados.push(`termo proibido: ${termo}`); continue }
+    // o mesmo termo com espaco, ponto, hifen ou sublinhado entre as letras, ou com acento
+    // ("Nome Sobrenome" contra "nomesobrenome"), so em fronteira de palavra: sem ela, palavras vizinhas
+    // no codigo ("start, flux") formariam um termo (medido no pacote de estilos da 5.9)
+    semAcento ??= baixo.normalize('NFD').replace(/\p{M}/gu, '')
+    if (termoEspacado(termo).test(semAcento)) achados.push(`termo proibido: ${termo} (com espaco, pontuacao ou acento)`)
   }
   if (RE_MLB.test(txt)) achados.push('id de anuncio (MLB)')
   for (const m of txt.matchAll(RE_SEGREDO)) {
@@ -206,8 +214,10 @@ export function foraDoBackup(dirModelo, rels) {
 
 // Na pasta-mae do aluno o /atualizar-kit roda o verificador com os projetos dele dentro: projeto
 // (pasta com _contexto/, menos o _modelo) e backup _kit-anterior-* sao do aluno e nunca vao no zip.
+// A _video tambem: nasce no /configurar-video (motor copiado, whisper, python) e o gitignore da
+// pasta-mae a deixa fora do backup, entao varrer ela deixava o Gate 11 vermelho pra quem ja edita video.
 function ehDoAluno(dir, nome) {
-  if (/^_kit-anterior-/.test(nome)) return true
+  if (/^_kit-anterior-/.test(nome) || nome === '_video') return true
   return nome !== '_modelo' && existsSync(join(dir, nome, '_contexto'))
 }
 
@@ -224,6 +234,23 @@ function listar(dir, base = dir, acc = []) {
 
 function ehTexto(rel) {
   return /\.(md|json|txt|mjs|js|cjs|yml|yaml|ps1|py|sh)$/i.test(rel)
+}
+
+// Gate 1 le tambem .ts e .tsx (motor de video e estilos guardam nome em codigo de tela). O
+// ehTexto fica como esta porque o Gate 12 usa ele, e .ts/.tsx guardam travessao de tela.
+function ehTextoGate1(rel) {
+  return ehTexto(rel) || /\.(ts|tsx)$/i.test(rel)
+}
+
+const CACHE_ESPACADO = new Map()
+function termoEspacado(termo) {
+  let re = CACHE_ESPACADO.get(termo)
+  if (!re) {
+    const letras = [...termo.normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]/g, '')]
+    re = new RegExp('(?<![a-z0-9])' + letras.join('[ ._-]?') + '(?![a-z0-9])')
+    CACHE_ESPACADO.set(termo, re)
+  }
+  return re
 }
 
 // opcoes.proibidos: lista de termos do Gate 1 (os testes passam a sua). Sem ela, carrega de
@@ -248,7 +275,7 @@ export function rodarGates(dirKit, opcoes = {}) {
 
   // Gate 1: vazamento de informacao nossa
   for (const rel of arquivos) {
-    if (!ehTexto(rel)) continue
+    if (!ehTextoGate1(rel)) continue
     if (ISENTOS_CONTEUDO.includes(rel)) continue
     const txt = readFileSync(join(dirKit, rel), 'utf8')
     for (const detalhe of vazamentosNoTexto(txt, PROIBIDOS)) falhas.push({ gate: 1, arquivo: rel, detalhe })
@@ -584,7 +611,9 @@ export function rodarGates(dirKit, opcoes = {}) {
     const primeira = readFileSync(join(dirKit, '.gitignore'), 'utf8').split('\n').map(l => l.trim())
       .find(l => l && !l.startsWith('#'))
     if (primeira !== '*') falhas.push({ gate: 11, arquivo: '.gitignore', detalhe: "é o antigo (aberto); seguir o passo 'Arquivos misturados da pasta-mãe' do .claude/skills/atualizar-kit/SKILL.md" })
-    const fora = foraDoBackup(dirKit, arquivos.filter(r => !r.startsWith('_modelo/')))
+    // o catalogo de estilos de video fica fora do backup de proposito: e conteudo do kit
+    // (~150 MB de video, som e foto) e volta pelo /atualizar-kit, nunca coisa do aluno
+    const fora = foraDoBackup(dirKit, arquivos.filter(r => !r.startsWith('_modelo/') && !r.startsWith(CATALOGO_ESTILOS)))
     if (fora === null) semGit11('o .gitignore da pasta-mae')
     else for (const r of fora) falhas.push({ gate: 11, arquivo: r, detalhe: 'fora do repositorio da pasta-mae: liberar o tipo ou o caminho no .gitignore da pasta-mae' })
   }

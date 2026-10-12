@@ -51,8 +51,9 @@ As skills são o roteiro: nunca improvisar o fluxo.
 
 `RESPONDA-AQUI.txt` (registro da entrevista do `setup`, e rota pra quem prefere
 escrever), `_modelo/` (molde, nunca lugar de trabalhar), `_ferramentas/`
-(verificador do kit e biblioteca antitrava), `docs/` (guias) e uma pasta por
-projeto. O conteúdo real mora neste `AGENTS.md`; o `CLAUDE.md` é só o
+(verificador do kit e biblioteca antitrava), `docs/` (guias), `_estilos-video/`
+(estilos prontos de edição da `/aplicar-estilo`, fora do backup, só a `/atualizar-kit`
+mexe) e uma pasta por projeto. O conteúdo real mora neste `AGENTS.md`; o `CLAUDE.md` é só o
 ponteiro `@AGENTS.md`. Funciona também no Codex, sem o backup automático (lá é
 `/syncar` no fim da sessão); a ponte `.agents/skills` e a rota do Hermes Agent
 estão no `docs/roadmap-avancado.md`.

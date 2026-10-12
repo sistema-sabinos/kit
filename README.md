@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 5.8 (2026-10-08)
+Versão 5.9 (2026-10-11)
 
 Um sistema de trabalho com IA pro seu negócio, rodando dentro do VS Code com o Claude Code.
 
@@ -35,6 +35,7 @@ Todo o passo a passo de leigo está no [COMECE-AQUI.md](COMECE-AQUI.md): abrir a
 - `AGENTS.md`, o cérebro desta sala de controle (como ela conduz o onboarding); `CLAUDE.md` é só o ponteiro pro Claude Code ler o mesmo arquivo
 - `_modelo/`, o molde completo de um projeto (skills, contexto, estrutura de pastas), de onde cada projeto novo nasce. Não é pasta de trabalho
 - `_ferramentas/`, o verificador do kit e uma biblioteca pronta contra automação que trava
+- `_estilos-video/`, os mais de 70 estilos prontos de edição de vídeo que a `/aplicar-estilo` usa (uns 150 MB). Fica fora do backup e se atualiza pela `/atualizar-kit`
 - `docs/`, o guia avançado (Codex e Hermes Agent) e o roteiro de próximos passos. Os dois guias em PDF, de instalação (`Guia-SabinOS-Instalacao`) e de comandos (`Guia-SabinOS-Comandos`), vêm junto com o zip, fora desta pasta
 - `<projeto>/`, uma pasta por projeto que você criar, cada uma vira um workspace próprio no VS Code
 
@@ -54,7 +55,7 @@ A marca tem duas metades em `marca/`: o visual e a voz com que o sistema escreve
 
 Quem vende em marketplace ganha, se quiser, o pacote `/mercado-livre`: do "posso vender esse produto?" ao anúncio publicado e à conta auditada, sem custo (as partes pagas são opcionais e sempre avisadas antes de rodar: gerar imagem por IA e a leitura das fotos dos concorrentes na `/engenharia-reversa`). O `/setup` oferece quando suas respostas falam em marketplace.
 
-Junto com ele vem mais um pacote opcional. O de vídeo faz o vídeo do produto sem você filmar (`/video-produto`, a partir das dúvidas dos compradores nos concorrentes; rode antes a `/espionar-concorrente`) e edita o vídeo que você gravou (`/editar-video`). A instalação, pela `/configurar-video`, pede uns 4 GB livres na hora e uns 3 GB depois (música e efeito sonoro você baixa grátis, o kit mostra onde); gerar vídeo por IA é pago, com o valor mostrado antes, e o teto padrão de gasto é US$ 4 por rodada.
+Junto com ele vem mais um pacote opcional. O de vídeo faz o vídeo do produto sem você filmar (`/video-produto`, a partir das dúvidas dos compradores nos concorrentes; rode antes a `/espionar-concorrente`) e edita o vídeo que você gravou (`/editar-video`, do seu jeito, ou `/aplicar-estilo`, num dos mais de 70 estilos prontos de profissional). A instalação, pela `/configurar-video`, pede uns 4 GB livres na hora e uns 3 GB depois (música e efeito sonoro você baixa grátis, o kit mostra onde); gerar vídeo por IA é pago, com o valor mostrado antes, e o teto padrão de gasto é US$ 4 por rodada.
 
 Quem posta em rede social ganha, se quiser, o pacote de redes sociais (`/midia-social`), com ou sem marketplace: faz a pauta da semana, agenda no Instagram, TikTok e YouTube pelo Buffer e mede o resultado, grátis (análise pelo Gemini opcional). O `/setup` oferece quando suas respostas falam em Instagram, TikTok, YouTube, post ou vídeo.
 

@@ -35,6 +35,48 @@ test('gate 1 pega termo proibido', () => {
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
+// nome de gente vem com espaco e acento no texto e grudado na lista ("Nome Sobrenome" contra
+// "nomesobrenome"); na 5.9 so 1 de 139 arquivos do pacote de estilos com o nome foi barrado
+test('gate 1 pega termo grudado da lista escrito com espaco, ponto, hifen ou acento', () => {
+  const dir = kitFalso()
+  try {
+    writeFileSync(join(dir, 'a.md'), 'Feito por Fulano de Tal.\n')
+    writeFileSync(join(dir, 'b.md'), 'Revisao do fulano.de-tal.\n')
+    writeFileSync(join(dir, 'c.md'), 'Ideia do Fulano D' + String.fromCharCode(0xe9) + ' Tal.\n')
+    const { falhas } = rodarGates(dir, { proibidos: ['fulanodetal'] })
+    for (const arquivo of ['a.md', 'b.md', 'c.md']) {
+      assert.ok(falhas.some(f => f.gate === 1 && f.arquivo === arquivo && /fulanodetal/.test(f.detalhe)),
+        `gate 1 devia acusar o termo espacado em ${arquivo}`)
+    }
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 1 nao junta palavras vizinhas: o termo espacado so conta em fronteira de palavra', () => {
+  const dir = kitFalso()
+  try {
+    // "start flux" contem "art flux" e "grafulano de talhe" contem "fulano de tal": so a
+    // fronteira de palavra segura (virgula e aspas ja nao contam como separador)
+    writeFileSync(join(dir, 'a.mjs'), "const classe = 'start flux'\nconst nota = 'grafulano de talhe'\n")
+    const { falhas } = rodarGates(dir, { proibidos: ['artflux', 'fulanodetal'] })
+    assert.deepEqual(falhas.filter(f => f.gate === 1), [])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 1 le .ts e .tsx, e o gate 12 continua sem ler', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_estilos-video/x/src'), { recursive: true })
+    const travessao = String.fromCharCode(0x2014)
+    writeFileSync(join(dir, '_estilos-video/x/src/tema.ts'), '// revisao do termo-secreto-exemplo\n')
+    writeFileSync(join(dir, '_estilos-video/x/src/Cena.tsx'), `export const espera = '${travessao}' // termo-secreto-exemplo\n`)
+    const { falhas } = rodarGates(dir, { proibidos: TERMOS })
+    for (const arquivo of ['tema.ts', 'Cena.tsx']) {
+      assert.ok(falhas.some(f => f.gate === 1 && f.arquivo.endsWith(arquivo)), `gate 1 devia ler ${arquivo}`)
+    }
+    assert.deepEqual(falhas.filter(f => f.gate === 12), [], 'gate 12 nao le .tsx (texto de tela fica como veio)')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
 test('na pasta-mae do aluno, projeto e backup do /atualizar-kit ficam fora da varredura', () => {
   const dir = kitFalso()
   try {
@@ -52,6 +94,21 @@ test('na pasta-mae do aluno, projeto e backup do /atualizar-kit ficam fora da va
     const g1 = falhas.filter(f => f.gate === 1)
     assert.ok(g1.some(f => f.arquivo === '_modelo/_contexto/a.md'), 'canario: o _modelo segue varrido')
     assert.deepEqual(g1.filter(f => /^(loja|_kit-anterior)/.test(f.arquivo)), [])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('na pasta-mae do aluno, a _video do /configurar-video fica fora da varredura', () => {
+  const dir = kitFalso()
+  try {
+    // a _video nao tem _contexto/: motor copiado, whisper e python do aluno, fora do backup
+    mkdirSync(join(dir, '_video/motor'), { recursive: true })
+    writeFileSync(join(dir, '_video/motor/package.json'), '{ "name": "termo-secreto-exemplo" }\n')
+    writeFileSync(join(dir, '_video/maquina.json'), '{ "nota": "' + String.fromCharCode(0x2014) + '" }\n')
+    mkdirSync(join(dir, '_videos-velhos'), { recursive: true })
+    writeFileSync(join(dir, '_videos-velhos/a.md'), 'Conta termo-secreto-exemplo.\n')
+    const { falhas } = rodarGates(dir, { proibidos: TERMOS })
+    assert.ok(falhas.some(f => f.gate === 1 && f.arquivo === '_videos-velhos/a.md'), 'canario: so o nome exato _video sai')
+    assert.deepEqual(falhas.filter(f => f.arquivo.startsWith('_video/')), [])
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
@@ -1078,14 +1135,16 @@ test('o .gitignore da pasta-mae libera o kit e deixa fora segredo, midia, projet
   const dir = mkdtempSync(join(tmpdir(), 'gi-mae-'))
   try {
     writeFileSync(join(dir, '.gitignore'), GITIGNORE_MAE)
-    const entra = arquivosDoKitForaDoModelo(RAIZ_KIT).filter(r => r !== '.gitignore')
+    // o catalogo de estilos e do kit e fica fora do backup de proposito (5.9): vai pro "fica"
+    const entra = arquivosDoKitForaDoModelo(RAIZ_KIT).filter(r => r !== '.gitignore' && !r.startsWith('_estilos-video/'))
     assert.ok(entra.length > 20, 'canario: a lista real do kit veio cheia')
     for (const r of ['VERSAO', 'RESPONDA-AQUI.txt', '.claude/skills/.gitkeep', '_ferramentas/componentes.json', 'docs/roadmap-avancado.md'])
       assert.ok(entra.includes(r), `canario: ${r} esta na lista`)
     const fica = ['.env', '.env.local', 'video.mp4', 'SabinOS-Sistema-4.4.zip', 'node_modules/x.js', '.backup-falhou',
       '.claude/settings.local.json', '.agents/skills/x.md', 'meu-projeto/_contexto/empresa.md', 'meu-projeto/AGENTS.md',
       '_kit-anterior-4.3/x.md', '_kit-anterior-4.3/_modelo/AGENTS.md', 'docs/aula.mp4', '.origem',
-      '.claude/skills/x/.secrets/k.json', '.claude/skills/x/secrets/k.json']
+      '.claude/skills/x/.secrets/k.json', '.claude/skills/x/secrets/k.json',
+      '_estilos-video/catalogo.md', '_estilos-video/modelo-aula/SKILL.md', '_estilos-video/modelo-aula/assets/template/package.json']
     // canario: o .json da skill fora de pasta de chave continua no backup
     const fora = foraDoBackup(dir, ['.gitignore', ...entra, '.claude/skills/x/config.json', ...fica])
     assert.ok(fora !== null, 'git rodou')
@@ -1104,6 +1163,21 @@ test('gate 11 acusa arquivo do kit fora do _modelo que o .gitignore da pasta-mae
     const g11 = rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 11)
     assert.ok(g11.length > 0, 'canario: o gate rodou e achou alguma coisa')
     assert.deepEqual(g11.map(f => f.arquivo), ['docs/aula.mp4'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 11 deixa o catalogo de estilos fora do backup da pasta-mae, e so ele', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_estilos-video/modelo-um/assets/template/src'), { recursive: true })
+    mkdirSync(join(dir, '_estilos-videos'), { recursive: true })
+    writeFileSync(join(dir, '.gitignore'), GITIGNORE_MAE)
+    writeFileSync(join(dir, '_estilos-video/catalogo.md'), '# catalogo\n')
+    writeFileSync(join(dir, '_estilos-video/modelo-um/assets/template/src/Cena.tsx'), 'export {}\n')
+    writeFileSync(join(dir, '_estilos-videos/x.md'), '# nome parecido\n')
+    writeFileSync(join(dir, 'VERSAO'), '5.9\n')
+    const g11 = rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 11)
+    assert.deepEqual(g11.map(f => f.arquivo), ['_estilos-videos/x.md'], 'canario: pasta de nome parecido segue acusada')
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 

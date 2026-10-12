@@ -543,3 +543,11 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** a linha **Registro:** do `_contexto/empresa.md` começa com `MEI` e o projeto não tem `.claude/skills/mei/`; ou o projeto tem `.claude/skills/mei/` e o `dados/mei.json` não tem o campo `externo`.
 **Como aplicar:** projeto com a pasta: a skill chega pelo motor do `/atualizar-sabinos`; fazer à pessoa a pergunta 3 da "Primeira vez" da `/mei` (vende fora do `/caixa`? quanto no ano, no painel de cada um?) e gravar cada resposta com `externo`. Projeto sem a pasta: oferecer a `/mei` dizendo que ela traz junto os scripts do `/caixa`; com o sim, trazer da pasta-mãe as pastas do pacote loja que faltam e a da `mei` (`_modelo/.claude/skills/caixa/`, `atendimento/`, `cobrar/` e `mei/`) e seguir a "Primeira vez" da `/mei`.
 **Como testar:** `node .claude/skills/mei/scripts/mei.mjs proximos` mostra o teto, e com venda de fora anotada a linha traz `de fora (`.
+
+## aplicar-estilo
+
+**O que é:** skill nova do pacote de vídeo, a `/aplicar-estilo`: edita o vídeo da pessoa num dos mais de 70 estilos prontos de profissional (aula, receita, antes e depois, notícia, anúncio), vertical ou horizontal. Os estilos ficam na pasta `_estilos-video/` da pasta-mãe, que chega pela `/atualizar-kit`.
+**Por quê:** a `/editar-video` edita do jeito da pessoa; quem quer um formato pronto do nicho dela agora escolhe um estilo e recebe a edição completa.
+**Te afeta se:** o projeto tem `.claude/skills/editar-video/` e não tem `.claude/skills/aplicar-estilo/`.
+**Como aplicar:** copiar a pasta `_modelo/.claude/skills/aplicar-estilo/` da pasta-mãe pro projeto (sem os arquivos `.test.mjs`). Se a pasta-mãe ainda não tem `_estilos-video/`, rodar a `/atualizar-kit` lá antes (uns 150 MB, com o sim da pessoa). Depois, o passo 5 da `/configurar-video` (skills do Remotion), se ainda não foi feito.
+**Como testar:** `node .claude/skills/aplicar-estilo/scripts/estilos.mjs conferir` sai com tudo `ok`, e `estilos.mjs listar` mostra os estilos.

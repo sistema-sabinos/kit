@@ -520,9 +520,10 @@ formato de 4 partes:
 
 > "Tenho também um pacote de vídeo: faz o vídeo do produto sem você filmar nada,
 > a partir das dúvidas que os compradores deixam nos concorrentes, e edita o
-> vídeo que você grava no celular, com corte, legenda e música. Editar o que você
-> gravou é grátis; gerar vídeo por IA custa alguns dólares por vídeo, sempre
-> mostrado antes de gastar. Quer que eu instale?
+> vídeo que você grava no celular, com corte, legenda e música, do seu jeito ou num
+> dos mais de 70 estilos prontos de profissional (aula, receita, antes e depois,
+> notícia, anúncio). Editar o que você gravou é grátis; gerar vídeo por IA custa
+> alguns dólares por vídeo, sempre mostrado antes de gastar. Quer que eu instale?
 >
 > Pergunto porque ele pede uns 4 GB livres no computador na instalação (uns 3 GB
 > depois), então só entra se fizer sentido. Música e efeito sonoro você baixa
@@ -530,8 +531,8 @@ formato de 4 partes:
 >
 > Tipo: 'quero', 'quero, mas configuro outro dia', ou 'agora não'."
 
-Resposta positiva: copiar pro projeto as três pastas inteiras de
-`_modelo/.claude/skills/` (`configurar-video`, `video-produto`, `editar-video`)
+Resposta positiva: copiar pro projeto as quatro pastas inteiras de
+`_modelo/.claude/skills/` (`configurar-video`, `video-produto`, `editar-video`, `aplicar-estilo`)
 e, se ainda não estiver no projeto, a `assistir-video` (o vídeo usa ela na
 conferência final). Nunca copiar arquivo terminado em `.test.mjs` nem pasta
 `node_modules/`. Depois:
