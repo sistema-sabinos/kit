@@ -18,7 +18,7 @@ Explicar em uma frase antes de começar:
 
 > "Vou criar um cofre na nuvem pro seu trabalho (chama GitHub, é grátis). Se o computador quebrar, nada se perde. Preciso que você crie uma conta, eu te guio."
 
-1. Verificar se `git` está instalado; se não, orientar a instalação do Git for Windows/Mac com o link oficial
+1. Verificar se `git` está instalado; se não, a IA instala com o ok da pessoa, como no `/setup` (Conferir os programas): no Windows pelo `winget install --id Git.Git -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity` e a pessoa só clica em **Sim** na janela do Windows; no Mac a IA roda `xcode-select --install` e diz que abriu uma janela da Apple, pra clicar em **Instalar** e depois em **Concordo**. Nunca passar comando pra pessoa digitar no terminal
 2. Configurar `user.name` e `user.email` se estiverem vazios (perguntar nome e email)
 3. `git init` se a pasta não for repositório ou for pedaço de um repositório de fora (`git rev-parse --show-prefix` não vazio)
 4. Se a pasta ainda não tiver `.gitignore`, criar com pelo menos: `.env`, `.env.*`,
@@ -33,9 +33,14 @@ Explicar em uma frase antes de começar:
      `git push` abre o navegador sozinho e a pessoa só clica em autorizar. Não pedir
      senha nem token.
    - **Mac:** o git que vem com o macOS **não** traz gerenciador de credencial. Antes
-     do push, instalar o GitHub CLI (`brew install gh`, ou o instalador de
-     cli.github.com pra quem não tem Homebrew) e rodar `gh auth login`, escolhendo
-     GitHub.com, HTTPS e login pelo navegador. Sem esse passo o push pede senha,
+     do push, a IA instala o GitHub CLI com o ok da pessoa (`brew install gh` se já
+     houver Homebrew; sem ele, baixar o instalador `.pkg` de cli.github.com e abrir com
+     `open`, dizendo pra clicar em **Continuar** e **Instalar** e que a senha, se pedir,
+     é a de ligar o Mac). Depois, último caso mastigado, porque o login é da pessoa: a
+     IA roda `gh auth login --web --hostname github.com --git-protocol https` em segundo
+     plano e `gh auth setup-git` quando ele terminar, lê na saída o código (8 letras e números, tipo ABCD-1234)
+     e diz no chat: "Abre a página **github.com/login/device**, cola este código:
+     **XXXX-XXXX** e clica em **Authorize**." Sem esse passo o push pede senha,
      recusa a senha certa e a pessoa acha que errou a conta.
 7. `git add -A` (com a conferência do passo 1 de "Vezes seguintes"), primeiro commit, `git branch -M main` (o Git de algumas máquinas nasce com o branch `master`, e aí o push pra `main` falha com "src refspec main does not match any"), `git push -u origin main`
 

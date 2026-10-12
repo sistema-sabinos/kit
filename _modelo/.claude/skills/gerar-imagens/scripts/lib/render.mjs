@@ -11,7 +11,7 @@ export const INSTALAR = 'npm install --prefix .claude/skills/mercado-livre'
 
 export function acharPlaywright(raiz = RAIZ) {
   const pacote = join(raiz, '.claude', 'skills', 'mercado-livre', 'package.json')
-  const erro = new Error(`nao achei o Playwright, que desenha as imagens.\nRode uma vez, na pasta do projeto: ${INSTALAR}`)
+  const erro = new Error(`nao achei o Playwright, que desenha as imagens.\nQuem le esta mensagem e a IA: peca o sim da pessoa e rode uma vez, na pasta do projeto: ${INSTALAR}`)
   if (!existsSync(pacote)) throw erro
   try { return createRequire(pathToFileURL(pacote)).resolve('playwright') } catch { throw erro }
 }

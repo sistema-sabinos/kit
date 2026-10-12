@@ -35,7 +35,8 @@ Roda sem IA paga, so com ferramentas do computador:
      node .claude/skills/assistir-video/ver-video.mjs "<url>" --so-baixar --manter
      ```
      Ele usa o yt-dlp e imprime o caminho do arquivo; se o yt-dlp faltar, o proprio script mostra o
-     comando de instalacao.
+     comando de instalacao, que e pra IA: dizer em uma frase o que falta, pedir o sim e instalar,
+     nunca repassar o comando a pessoa.
 2. **Folha de contato** (uma imagem por segundo) pra ver o video inteiro:
    ```
    ffmpeg -i <video> -vf "fps=1,scale=360:-1,tile=6x5" contato-%02d.png

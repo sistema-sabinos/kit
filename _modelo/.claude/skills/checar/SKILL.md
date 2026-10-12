@@ -11,7 +11,7 @@ description: >
 
 # /checar, Check-up do sistema
 
-Só leitura: esta skill não muda nada sozinha. Cada item vermelho vem com o comando ou o passo que resolve, e o conserto só roda com o usuário aprovando.
+Só leitura: esta skill não muda nada sozinha. Cada item vermelho vem com o conserto em uma frase, sem comando pro usuário digitar: quem roda é a IA, só depois do sim dele.
 
 ## O que conferir, nesta ordem
 
@@ -54,8 +54,8 @@ Rodar os comandos de leitura e classificar cada item em verde, amarelo ou vermel
 
 - `.agents/skills` existe? É link/junction, link quebrado ou pasta comum (cópia)? Um comando só responde nos dois sistemas (Git Bash, PowerShell, Terminal do Mac): `node -e "const fs=require('fs');const l=fs.lstatSync('.agents/skills').isSymbolicLink();let ok=true;try{fs.readdirSync('.agents/skills')}catch{ok=false};console.log(l?(ok?'link':'link quebrado'):'copia')"`. Link quebrado é o que sobra quando a pasta do projeto muda de lugar ou de nome: o link continua lá, apontando pro caminho velho, e o Codex não acha nenhuma skill, calado.
 - Se for cópia: o conteúdo bate com `.claude/skills` (mesma lista de pastas)?
-- **Vermelho:** link quebrado. Conserto: tirar só o link, que não apaga nada dele (`node -e "require('fs').rmSync('.agents/skills')"`), e criar a ponte de novo (comando no `docs/roadmap-avancado.md` da pasta-mãe, seção Rota Codex).
-- **Amarelo:** ponte ausente (só importa pra quem usa Codex) ou cópia desatualizada. Conserto: criar a ponte (comando no `docs/roadmap-avancado.md` da pasta-mãe, seção Rota Codex) ou copiar `.claude/skills` por cima de `.agents/skills`.
+- **Vermelho:** link quebrado. Conserto, dito em uma frase ("a ponte do Codex quebrou, posso refazer?") e rodado pela IA com o sim: tirar só o link, que não apaga nada dele (`node -e "require('fs').rmSync('.agents/skills')"`), e criar a ponte de novo com o comando de criar abaixo.
+- **Amarelo:** ponte ausente (só importa pra quem usa Codex) ou cópia desatualizada. Conserto, rodado pela IA com o sim: criar a ponte ou copiar `.claude/skills` por cima de `.agents/skills`. Comando de criar: no Windows `node -e "const fs=require('fs'),p=require('path');fs.mkdirSync('.agents',{recursive:true});if(!fs.existsSync('.agents/skills'))fs.symlinkSync(p.resolve('.claude/skills'),'.agents/skills','junction')"`; no Mac `mkdir -p .agents && ln -sfn ../.claude/skills .agents/skills`. O usuário que pedir no chat "refaz a ponte do Codex" cai aqui.
 
 ### 6. Ferramentas
 
@@ -97,6 +97,17 @@ Um hook que não roda (Node não instalado, script apagado) vira erro não bloqu
 - **Amarelo:** algum robô atrasado (parado). Mostrar quais e desde quando. `(testado agora)`.
 - Sem a skill `agendar` no projeto, o item não entra no semáforo.
 
+### 11. Conselheiros
+
+- Se `.claude/skills/clonar-especialista/` existir no projeto e a pasta-mãe tiver `agentes/`:
+  rodar `node .claude/skills/clonar-especialista/scripts/instalar.mjs --faltando <pasta-mãe>/agentes`.
+- **Verde:** `--faltando` responde `nenhum`.
+- **Amarelo:** algum apelido listado (cópia-mestra sem instalação neste computador, caso típico
+  de computador novo). Conserto: `node .claude/skills/clonar-especialista/scripts/instalar.mjs
+  <pasta-mãe>/agentes/<apelido>` pra cada um, com o sim, e conversa nova. Se o script recusar,
+  repassar a recusa ao aluno como veio. `(testado agora)`.
+- Sem a skill ou sem `agentes/`, o item não entra no semáforo.
+
 ## Como apresentar
 
 Um semáforo, uma linha por item, sem jargão, cabendo numa tela. Cada linha
@@ -122,6 +133,7 @@ Padrão         verde    CLAUDE.md e AGENTS.md no formato certo (testado agora)
 Mesa           amarelo  AGENTS.md com 3.100 tokens, 400 acima do molde do kit, e empresa.md com 950 (total 5.900 antes da sua primeira palavra) (testado agora, medir-mesa.mjs rodou). O tamanho do AGENTS.md vem do molde do kit, nada a cortar aqui; /atualizar consolida o _contexto/
 Travas         verde    barrar-perigoso responde ao comando de teste, .env em ask e secrets em deny (testado agora)
 Agendador      verde    nenhum robô atrasado (testado agora)
+Conselheiros   verde    2 conselheiros instalados neste computador (testado agora)
 
 Quer que eu resolva os vermelhos agora?
 ```

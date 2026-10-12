@@ -2,7 +2,7 @@
 
 Quatro peças pra qualquer robô agendado (um script Node que roda sozinho, sem ninguém olhando) não travar em silêncio. A lição que gerou isso: travar não é falhar. Um robô que quebra manda erro e alguém vê. Um robô que trava fica pendurado pra sempre, não manda nada, e o silêncio parece "tudo certo" até alguém notar dias depois que ele parou de funcionar.
 
-**O jeito montado:** dentro de um projeto, o `/agendar` já usa estas peças (cópias em `.claude/skills/agendar/scripts/lib/`, como a `mercado-livre` tem as dela), escreve o robô com você e cadastra no agendador. O passo a passo abaixo fica como referência pra quem monta na mão. Mudou uma peça aqui: copiar pras duas skills e rodar os testes delas.
+**O jeito montado:** dentro de um projeto, o `/agendar` já usa estas peças (cópias em `.claude/skills/agendar/scripts/lib/`, como a `mercado-livre` tem as dela), escreve o robô com você e cadastra no agendador. O passo a passo abaixo fica como referência pra IA que monta o robô; você não digita nada no terminal. Mudou uma peça aqui: copiar pras duas skills e rodar os testes delas.
 
 ## O que cada peça faz
 
@@ -26,6 +26,8 @@ O cão de guarda tem que estourar ANTES do agendador achar que a tarefa travou e
 **Os prazos são medidos, nunca chutados.** Antes de decidir "esse robô tem 10 minutos de cão de guarda", rode o robô algumas vezes em condição normal e veja quanto ele leva de verdade (log de início e fim já ajuda). Um prazo "generoso" chutado no escuro pode matar uma rodada legítima que só demorou um pouco mais porque a fila estava cheia naquele dia.
 
 ## Agendando o robô
+
+Quem cadastra é o `/agendar`. Os passos abaixo são a referência que a IA segue.
 
 ### Windows (Task Scheduler)
 

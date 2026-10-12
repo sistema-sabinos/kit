@@ -63,7 +63,7 @@ Fecham a mensagem do resumo. As outras perguntas de depois do resumo (recados tr
 
 ## Se não está configurado
 
-> "Essa pasta ainda não é um projeto configurado. O lugar de começar é a pasta-mãe (um nível acima), dizendo `primeiro projeto` por lá, leva uns 25 a 40 minutos. Depois disso o /iniciar te mostra onde parou toda vez."
+> "Essa pasta ainda não é um projeto configurado. O lugar de começar é a pasta-mãe (um nível acima), dizendo `primeiro projeto` por lá, leva uns 40 minutos. Depois disso o /iniciar te mostra onde parou toda vez."
 
 ## Comportamento
 

@@ -6,42 +6,18 @@ Usa o yt-dlp pra baixar o áudio e o faster-whisper (o Whisper rodando na tua m�
 
 ## Instalação
 
-Esta skill já vem dentro do SabinOS: entra no projeto quando o negócio lida com vídeo ou redes sociais, ou a pedido. Só precisa instalar as dependências abaixo.
+Esta skill já vem dentro do SabinOS: entra no projeto quando o negócio lida com vídeo ou redes sociais, ou a pedido. Na primeira vez, ela precisa de alguns programas grátis no computador.
 
 ### Dependências
 
-**Python e pacotes:**
-
-Windows:
-```bash
-python -m pip install yt-dlp faster-whisper
-```
-
-Mac e Linux:
-```bash
-pip3 install yt-dlp faster-whisper
-```
-
-No Windows o comando do Python é `python` (e `python -m pip` pra instalar pacote). Lá o `python3` não existe ou abre a Microsoft Store. No Mac e no Linux é `python3` e `pip3`.
-
-**ffmpeg:**
-```bash
-brew install ffmpeg  # macOS
-sudo apt install ffmpeg  # Ubuntu/Debian
-```
-
-No Windows: `winget install --id Gyan.FFmpeg -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity`, depois feche todas as janelas do VS Code e abra de novo.
-
-> Na primeira transcrição, o Whisper baixa o modelo (uns 1,5 GB). Isso acontece uma vez só e demora alguns minutos, dependendo da internet.
-
-### Conferir a instalação
-
-Cole no chat do Claude Code:
+Você não instala nada na mão. Diga no chat do Claude Code:
 ```
 /transcribe install
 ```
 
-O Claude confere cada dependência e avisa se falta alguma coisa.
+O Claude confere o que já tem, conta o que falta, pede o seu sim e instala sozinho. Se aparecer uma janela pedindo permissão, clique em Sim.
+
+> Na primeira transcrição, o Whisper baixa o modelo (uns 1,5 GB). Isso acontece uma vez só e demora alguns minutos, dependendo da internet.
 
 ## Como usar
 

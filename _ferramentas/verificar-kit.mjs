@@ -47,6 +47,55 @@ export const CATALOGO_ESTILOS = '_estilos-video/'
 // Gate 6: dependencia de Windows chumbada (exportado pro teste dos guias na bancada)
 export const RE_WIN = /(?:\b[A-Z]:[\\/]{1,2}[\w\\/]|schtasks|\.bat\b|\\\\Users\\\\)/i
 
+// Gate 14: terminal e da IA. Texto que vai pro aluno nunca manda ele digitar, rodar ou colar
+// comando no terminal; quem roda e o Claude, o Codex ou outra IA. Exportado pro teste dos guias
+// na bancada, como o vazamentosNoTexto. A frase so conta com verbo de ordem (digite, rode, cole,
+// execute, escreva) junto de um terminal: "digite / no chat" e "o script escreve no terminal" passam.
+const TERMINAL = '(?:terminal|power ?shell|prompt de comando|cmd|linha de comando|git bash|bash)'
+const VERBO_TERMINAL = '(?:digit(?:e|ar)|rod(?:e|ar)|col(?:e|a|ar)|execut(?:e|ar)|escrev(?:a|er))'
+const ARTIGO_TERMINAL = '(?:um |uma |outro |outra |o |a |seu |sua )?'
+export const RES_TERMINAL = [
+  // "digite no terminal", "cole no PowerShell", "rode isto num terminal novo"
+  new RegExp(`\\b${VERBO_TERMINAL}\\b[^.!?\\n]{0,60}?\\b(?:n[oa]|numa?|pel[oa]|dentro d[oa]|em) ${ARTIGO_TERMINAL}${TERMINAL}\\b`, 'i'),
+  // "abra o terminal e rode", "abra o Terminal (ou PowerShell) e digite"
+  new RegExp(`\\babr(?:a|e|ir)\\b ${ARTIGO_TERMINAL}${TERMINAL}\\b[^.!?\\n]{0,80}?\\b${VERBO_TERMINAL}\\b`, 'i'),
+  // "no Prompt de Comando digite", "no terminal, rode"
+  new RegExp(`\\b(?:n[oa]|pel[oa]) ${ARTIGO_TERMINAL}${TERMINAL}\\b[ ,:]{1,3}${VERBO_TERMINAL}\\b`, 'i'),
+]
+// ultimo caso legitimo: a marca fica na propria linha e exige o motivo escrito. Mora no texto, e
+// nao na bancada como as excecoes do Gate 1, porque o /atualizar-kit roda este gate na pasta-mae
+// do aluno, onde a bancada nao existe: excecao fora do kit deixaria o gate vermelho la.
+const MARCA_ULTIMO_CASO = /<!--\s*ultimo-caso:\s*[^\s>-][^>]*-->/i
+// aspas retas e curvas (U+201C e U+201D, montadas por codigo pra nao sumirem numa gravacao)
+const ABRE = String.fromCharCode(0x201c), FECHA = String.fromCharCode(0x201d)
+const RE_ASPAS = new RegExp(`"([^"]+)"|${ABRE}([^${FECHA}]+)${FECHA}`, 'g')
+// arquivos que falam direto com o aluno: a linha inteira conta. O resto dos .md (SKILL.md,
+// agentes, AGENTS.md, templates de skill) e lido pela IA, e ali so conta a fala que ela
+// repassa: linha de citacao (> ...) e trecho entre aspas, fora de bloco de codigo.
+export const RE_FALA_DIRETA = /^(?:README\.md|COMECE-AQUI\.md|RESPONDA-AQUI\.txt|_modelo\/README\.md|_modelo\/dados\/README\.md|docs\/.+\.md|_modelo\/templates\/[^/]+\.html)$/
+
+export function terminalProAluno(txt, soFala = false) {
+  const achados = []
+  let cerca = false
+  txt.split(/\r?\n/).forEach((l, i) => {
+    if (/^\s*(```|~~~)/.test(l)) { cerca = !cerca; return }
+    if (cerca && soFala) return
+    if (MARCA_ULTIMO_CASO.test(l)) return
+    // tag de html vira espaco, e o acento sai como no termoEspacado do Gate 1
+    const limpa = l.replace(/<[^>]+>/g, ' ').normalize('NFD').replace(/\p{M}/gu, '').replace(/\s+/g, ' ')
+    let trechos = [limpa]
+    if (soFala) {
+      const semCodigo = limpa.replace(/`[^`]*`/g, '')
+      trechos = [...semCodigo.matchAll(RE_ASPAS)].map(m => m[1] ?? m[2])
+      const citacao = semCodigo.match(/^\s*>\s?(.*)$/)
+      if (citacao) trechos.push(citacao[1])
+    }
+    const t = trechos.find(t => RES_TERMINAL.some(re => re.test(t)))
+    if (t) achados.push({ linha: i + 1, trecho: t.trim().slice(0, 100) })
+  })
+  return achados
+}
+
 // Detectores de conteudo do Gate 1 sobre um texto: devolve o detalhe de cada achado.
 // Exportado pro teste dos guias na bancada, que moram fora do kit e o gate nunca olha.
 export function vazamentosNoTexto(txt, proibidos) {
@@ -644,6 +693,16 @@ export function rodarGates(dirKit, opcoes = {}) {
     })
   }
 
+  // Gate 14: terminal e da IA. Frase que manda o aluno digitar, rodar ou colar comando no
+  // terminal, no texto que vai pra ele (detalhe e escopo no terminalProAluno, la em cima).
+  // O catalogo de estilos e conteudo de video, nao fala com o aluno.
+  for (const rel of arquivos) {
+    const direto = RE_FALA_DIRETA.test(rel)
+    if (!direto && (!rel.endsWith('.md') || rel.startsWith(CATALOGO_ESTILOS))) continue
+    for (const { linha, trecho } of terminalProAluno(readFileSync(join(dirKit, rel), 'utf8'), !direto))
+      falhas.push({ gate: 14, arquivo: rel, detalhe: `linha ${linha}: manda o aluno usar o terminal ("${trecho}"); trocar por "a IA roda" ou por clique, ou marcar <!-- ultimo-caso: motivo --> na linha` })
+  }
+
   // Gate 13: gavetas da memoria. Todo caminho de memoria que o Mapa do _modelo/AGENTS.md
   // promete tem que existir no _modelo e ter quem escreva ou leia (Tabela de destinos ou Gatilhos)
   if (set.has('_modelo/AGENTS.md')) {
@@ -713,6 +772,7 @@ const NOMES = {
   6: 'Portabilidade Windows/Mac', 7: 'Empacotamento do zip',
   8: 'Regua do /trafego', 9: 'Travas de seguranca', 10: 'Atualizador',
   11: 'Backup do aluno (.gitignore)', 12: 'Travessao', 13: 'Gavetas da memoria',
+  14: 'Terminal e da IA',
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -720,7 +780,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const { falhas, avisos, total, naoRodou = [] } = rodarGates(dir)
   console.log(`Kit: ${dir} (${total} arquivos)\n`)
   for (const a of avisos) console.log(`aviso: ${a}\n`)
-  for (const g of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]) {
+  for (const g of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]) {
     const desse = falhas.filter(f => f.gate === g)
     const nr = naoRodou.find(n => n.gate === g)
     const estado = desse.length ? 'FALHOU' : !nr ? 'ok    ' : nr.parcial ? 'parcial' : 'n/a   '
@@ -730,6 +790,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   }
   const vermelhos = new Set(falhas.map(f => f.gate)).size
   const fora = naoRodou.filter(n => !falhas.some(f => f.gate === n.gate)).length
-  console.log(`\nResultado: ${13 - vermelhos - fora} verdes, ${vermelhos} com falha, ${fora} sem rodar inteiro${vermelhos ? '' : ' (nenhuma conferencia falhou)'}`)
+  console.log(`\nResultado: ${14 - vermelhos - fora} verdes, ${vermelhos} com falha, ${fora} sem rodar inteiro${vermelhos ? '' : ' (nenhuma conferencia falhou)'}`)
   process.exit(falhas.length ? 1 : 0)
 }

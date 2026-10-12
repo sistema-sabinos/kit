@@ -67,7 +67,18 @@ deep-filter**: diga em uma frase o que é, mostre o tamanho (`mb`) e o comando
 - **brew** (só no Mac): o Homebrew, o instalador de programas do Mac, que os outros
   itens usam. O comando é o oficial do site brew.sh. Avise antes: ele pede a senha do
   Mac e, se faltar, baixa as ferramentas de compilar da Apple (uns 2 GB), que o whisper
-  usa. Pode abrir uma janela pedindo pra instalar essas ferramentas: é pra aceitar.
+  usa. Como a senha só a pessoa digita, abra uma janela do Terminal já rodando o comando
+  (`osascript -e 'tell application "Terminal" to do script "<comando>"'`, com as aspas duplas de dentro do
+  comando escapadas pro AppleScript) e diga, passo a
+  passo: <!-- ultimo-caso: senha do Mac que o instalador do Homebrew pede -->
+  > "Abriu uma janela preta do Terminal. 1) Clique dentro dela. 2) Quando aparecer
+  > **Password**, digite a senha que você usa pra entrar no Mac. As letras não aparecem
+  > enquanto você digita, é normal. 3) Aperte **Enter**. 4) Se ela pedir pra apertar
+  > **Enter** de novo pra continuar, aperte. 5) Se abrir uma janela da Apple pedindo pra
+  > instalar ferramentas, clique em **Instalar** e depois em **Concordo**. Quando a janela
+  > preta parar de escrever, me avise aqui no chat. Não precisa digitar mais nada nela."
+
+  Depois rode o conferir de novo.
 - **node, python, ffmpeg**: são programas do computador, instalados pelo `winget` no Windows
   e pelo `brew` no Mac. Se o instalador pedir permissão do computador, avise o aluno. No
   Windows, rode cada um pela PowerShell com timeout de 600000. Quem decide se deu certo é o

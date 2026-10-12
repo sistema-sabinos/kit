@@ -17,7 +17,7 @@ export function candidatos(env = process.env) {
 }
 export const CANDIDATOS = candidatos()
 
-const SEM_PDFTOTEXT = 'Nao achei o pdftotext, o programa que tira o texto do PDF. No Windows: instale o Git completo de git-scm.com (o pdftotext vem junto). No Mac: brew install poppler.'
+const SEM_PDFTOTEXT = 'Nao achei o pdftotext, o programa que tira o texto do PDF. Quem le esta mensagem e a IA: diga a pessoa em uma frase o que falta, peca o sim e instale voce mesma, nunca passe o comando pra ela. No Windows ele vem no Git completo (git-scm.com): winget install --id Git.Git -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity. No Mac: brew install poppler. Depois rode de novo.'
 const SEM_COPIA = 'O PDF esta sem permissao de copia: o dono travou a extracao do texto. Peca ao autor uma versao liberada.'
 const COM_SENHA = 'O PDF tem senha. Abra no leitor de PDF, salve uma copia sem senha e mande essa copia.'
 const ESCANEADO = 'O PDF e escaneado (so imagem, sem texto pra ler). Peca a versao digital ao autor; OCR fica de fora.'

@@ -1354,3 +1354,65 @@ test('gate 5 cobra o auto-sync.mjs com guarda no _modelo', () => {
     assert.deepEqual(g5(), ['Stop do _modelo sem o auto-sync.mjs'])
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
+
+// Gate 14: terminal e da IA
+const gate14 = dir => rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 14)
+const linhas14 = g => g.map(f => `${f.arquivo} ${f.detalhe.split(':')[0]}`).sort()
+
+test('gate 14 acusa frase que manda o aluno usar o terminal no texto que vai pra ele', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo/templates'), { recursive: true })
+    mkdirSync(join(dir, 'docs'))
+    writeFileSync(join(dir, 'README.md'), '# Kit\n\nabra o Terminal (ou PowerShell) e digite `git --version`.\nlinha limpa\n')
+    writeFileSync(join(dir, 'COMECE-AQUI.md'), 'Depois, no Prompt de Comando digite isto.\n')
+    writeFileSync(join(dir, 'docs/x.md'), 'Cole no PowerShell o que vem abaixo.\n')
+    writeFileSync(join(dir, '_modelo/templates/bem-vindo.template.html'), '<p>Se travar, <b>rode</b>\tno   terminal: <code>node -v</code></p>\n')
+    writeFileSync(join(dir, 'RESPONDA-AQUI.txt'), 'linha\nAgora ' + String.fromCharCode(0xe9) + ' s' + String.fromCharCode(0xf3) + ' executar num terminal novo.\n')
+    assert.deepEqual(linhas14(gate14(dir)), ['COMECE-AQUI.md linha 1', 'README.md linha 3',
+      'RESPONDA-AQUI.txt linha 2', '_modelo/templates/bem-vindo.template.html linha 1', 'docs/x.md linha 1'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 14 nao acusa barra no chat nem terminal citado sem ordem ao aluno', () => {
+  const dir = kitFalso()
+  try {
+    writeFileSync(join(dir, 'COMECE-AQUI.md'), 'Digite no terminal o comando abaixo.\n')
+    writeFileSync(join(dir, 'README.md'), ['Digite / no chat pra ver os comandos.',
+      'O script escreve o resultado no terminal.', 'A IA roda tudo no terminal, voce so aprova.',
+      'Abra o Terminal so se a IA pedir.'].join('\n') + '\n')
+    const g = gate14(dir)
+    assert.ok(g.length > 0, 'canario: o gate rodou e achou alguma coisa')
+    assert.deepEqual(linhas14(g), ['COMECE-AQUI.md linha 1'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// aspas curvas montadas por codigo, como o travessao do Gate 12
+test('gate 14 em SKILL.md le so a fala repassada ao aluno (citacao e aspas)', () => {
+  const dir = kitFalso()
+  const A = String.fromCharCode(0x201c), F = String.fromCharCode(0x201d)
+  try {
+    writeFileSync(join(dir, '.claude/skills/iniciar/SKILL.md'), [
+      '---', 'name: iniciar', 'description: Inicia.', '---', '',
+      'Rode no terminal o teste antes de responder.',
+      '> Abra o terminal e cole a linha abaixo.',
+      `Diga: ${A}agora cole no PowerShell e aperte Enter${F}.`,
+      'Diga: "pronto, eu rodo no terminal pra voce".',
+      'O matcher `"rode no Bash"` e codigo, nao fala.',
+      '```powershell', '"digite no terminal"', '```',
+    ].join('\n') + '\n')
+    assert.deepEqual(linhas14(gate14(dir)), ['.claude/skills/iniciar/SKILL.md linha 7', '.claude/skills/iniciar/SKILL.md linha 8'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 14 aceita a marca de ultimo caso com motivo, e so na linha dela', () => {
+  const dir = kitFalso()
+  try {
+    writeFileSync(join(dir, 'README.md'), [
+      'Abra o Terminal e digite `git --version`. <!-- ultimo-caso: o git vem antes da IA existir -->',
+      'Abra o Terminal e digite `node -v`.',
+      'Abra o Terminal e digite `npm -v`. <!-- ultimo-caso: -->',
+    ].join('\n') + '\n')
+    assert.deepEqual(linhas14(gate14(dir)), ['README.md linha 2', 'README.md linha 3'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})

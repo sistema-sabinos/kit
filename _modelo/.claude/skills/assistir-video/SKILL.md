@@ -50,7 +50,7 @@ O texto sai no stdout. O stderr mostra a rota usada, o modelo, os tokens e o cus
 
 O arquivo baixado é apagado no fim, e a cópia que fica no servidor do Gemini também (sem `--manter`).
 
-Dependência dessas rotas: `yt-dlp` e `ffmpeg` no PATH. Se o download por `yt-dlp` falhar por exigir login (caso comum do Instagram), avisar o usuário que essa rota precisa de um navegador dedicado (recurso avançado, ver `../docs/roadmap-avancado.md`, na pasta-mãe do SabinOS); enquanto isso não estiver montado, o caminho é o usuário baixar o vídeo manualmente e passar o arquivo local.
+Dependência dessas rotas: `yt-dlp` e `ffmpeg` no PATH. Se o script avisar que falta o `yt-dlp`, a mensagem é pra IA: dizer ao usuário em uma frase o que falta, pedir o sim e instalar com o comando dela, nunca repassar o comando. Se o download por `yt-dlp` falhar por exigir login (caso comum do Instagram), avisar o usuário que essa rota precisa de um navegador dedicado (recurso avançado, ver `../docs/roadmap-avancado.md`, na pasta-mãe do SabinOS); enquanto isso não estiver montado, o caminho é o usuário baixar o vídeo manualmente e passar o arquivo local.
 
 ## Modelo: escolhido na hora, nunca chumbado
 

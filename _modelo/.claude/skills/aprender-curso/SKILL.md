@@ -98,9 +98,11 @@ Uma aula por vez, gravando em `inteligencia/cursos/<nome>/fontes/`:
    `curso.md` que o original segue no backup.
 2. Rodar `node .claude/skills/aprender-curso/scripts/ler-pdf.mjs "inteligencia/cursos/<nome>/fontes/<arquivo>.pdf"`.
    Ele grava, ao lado do PDF, `inteligencia/cursos/<nome>/fontes/<arquivo>.txt` com a marca `[p. N]` no comeco de cada pagina.
-3. Saida 1 (escaneado, com senha, sem permissao de copia, nao abriu, sem `pdftotext`): passar a
+3. Saida 1 (escaneado, com senha, sem permissao de copia, nao abriu): passar a
    mensagem do script pra pessoa e parar. Escaneado, senha e permissao nunca se contornam, nada de
-   OCR. Sem `pdftotext`, nunca cair no Read do PDF acima de 10 paginas.
+   OCR. Saida 1 sem `pdftotext`: a mensagem e pra IA, nunca pra pessoa. Dizer em uma frase que falta
+   o programa que le o PDF, pedir o sim, instalar com o comando da mensagem e rodar de novo. Sem
+   `pdftotext`, nunca cair no Read do PDF acima de 10 paginas.
 4. `AVISO` de PDF misto: mostrar as paginas sem texto e perguntar (formato de 4 partes da casa):
    > "As paginas <lista> sao imagem, sem texto, e ficam de fora do estudo. Sigo sem elas ou paro?
    > Pergunto porque pode ser um capitulo inteiro escaneado, e o mentor nao vai saber o que tem

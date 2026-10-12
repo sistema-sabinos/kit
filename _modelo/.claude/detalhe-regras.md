@@ -30,7 +30,9 @@ O `AGENTS.md` traz estas regras na forma curta; aqui fica o texto inteiro, com o
 
 **12. Trava de comando destrutivo.** Um hook barra comando que apaga pasta inteira, reescreve histórico do Git ou roda script baixado da internet. Barrou: parar e explicar ao usuário o que se tentou fazer, nunca procurar outro caminho pra fazer a mesma coisa.
 
-**13. Um projeto por pasta.** Pedido de outro projeto, sem relação com este negócio (outro negócio, finanças pessoais, mentor de curso de outro assunto), ganha pasta própria, senão a memória e as regras dos dois se misturam. Recomendar em uma linha, com esse porquê, e, com o sim, criar a pasta pela skill `../.claude/skills/novo-projeto/SKILL.md` da pasta-mãe. No fim, avisar: "Abra a pasta nova no VS Code (Arquivo > Abrir Pasta) e comece um chat novo lá." Tarefa do mesmo negócio fica aqui.
+**13. Um projeto por pasta.** Pedido de outro projeto, sem relação com este negócio (outro negócio, finanças pessoais, mentor de curso de outro assunto), ganha pasta própria, senão a memória e as regras dos dois se misturam. Recomendar em uma linha, com esse porquê, e, com o sim, criar a pasta pela skill `../.claude/skills/novo-projeto/SKILL.md` da pasta-mãe. No fim, avisar: "Abra a pasta nova no VS Code (Arquivo > Abrir Pasta) e comece um chat novo lá." Tarefa do mesmo negócio fica aqui. Conselheiro da `/clonar-especialista` mora em `~/.claude/skills/` e `~/.claude/agents/` de propósito, fora da pasta do projeto: serve a todos os projetos, e a regra 13 (um projeto por pasta) não se aplica a ele.
+
+**14. Terminal é da IA.** A pessoa nunca digita nada no terminal: quem roda comando é a IA (Claude, Codex ou outra), e dela só se pede clique (login, Autorizar, Instalar, Concordo, senha do computador) ou o que ela escreve no chat. Último caso (a IA ainda não existe na máquina, ou passo de conta que só a pessoa faz): passo mastigado, clique a clique.
 
 ## Codex
 

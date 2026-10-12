@@ -119,31 +119,14 @@ Com a classificação em mãos, seguir pelo ramo que cabe:
 > uma de cada vez, e quando der é só clicar numa opção. Vou guardando tudo no arquivo
 > RESPONDA-AQUI.txt: se a conversa cair, a gente continua de onde parou."
 
-Em seguida, o botão de ritmo, cabeçalho `Ritmo`, com três opções:
-
-- **Completo, uns 40 min:** as 17 perguntas, uns 20 minutos só nelas, e a memória fica
-  bem melhor. Depois vêm umas confirmações rápidas e a montagem.
-- **Rápido, uns 25 min:** as 11 que não dá pra trabalhar sem, mais duas curtas de botão
-  (o seu ramo e, se ainda não ficou claro, os seus canais), uns 12 minutos; as outras 4
-  ficam anotadas pra me contar depois, quando quiser.
-- **Prefiro escrever no arquivo:** responder com calma no RESPONDA-AQUI.txt e chamar
-  depois.
-
-Com "Prefiro escrever no arquivo", responder: "Clica duas vezes no RESPONDA-AQUI.txt na
-lateral, responde embaixo de cada 'Sua resposta:', salva (Ctrl+S; no Mac, Cmd+S) e me manda
-qualquer mensagem aqui." E parar.
-
-Com o completo ou o rápido, fazer as perguntas na ordem dos blocos (A a F), uma por vez,
-no formato da regra acima. No completo, são as 17, pulando as marcadas como (opcional) se
-a pessoa começar a cansar. No rápido, só as essenciais, mais a 7 e a 6 pelas ressalvas
-abaixo; as quatro restantes (2, 5, 10 e 13) entram no `tarefas.md` do projeto (Passo 5),
-uma linha por pergunta adiada, com a pergunta resumida: "me contar aqui no projeto quando
-der: <pergunta>". A resposta entra pela Tabela de destinos, como qualquer fato novo.
+Em seguida, sem perguntar ritmo nem oferecer atalho, fazer as 17 perguntas na ordem dos
+blocos (A a F), uma por vez, no formato da regra acima, pulando as marcadas como
+(opcional) se a pessoa começar a cansar.
 
 **Alguma respondida:** (a conversa caiu no meio, ou a pessoa escreveu no arquivo) dizer
 "Já tenho X das 17 respostas guardadas, sigo de onde parou.", com o X contado no arquivo, e
-seguir sem o botão de ritmo. Perguntar primeiro as essenciais vagas ou em branco e a 7 (e a
-6, pela ressalva abaixo), na ordem dos blocos, sem repetir o que já foi respondido bem.
+seguir. Perguntar primeiro as essenciais vagas ou em branco e a 7 (e a 6, pela ressalva
+abaixo), na ordem dos blocos, sem repetir o que já foi respondido bem.
 Depois, se faltar alguma não essencial, botão com [Responder agora] [Deixar pra depois]; o
 "depois" vai pro `tarefas.md` do projeto (Passo 5), uma linha por pergunta: "me contar aqui
 no projeto quando der: <pergunta>". Com 10 ou mais respondidas, sem essencial faltando, com
@@ -157,7 +140,7 @@ gravação imediata é o que faz a conversa sobreviver a uma queda no meio das 1
 ela, a pessoa perde tudo e recomeça do zero.
 
 Essenciais: 1, 3, 4, 8, 9, 11, 12, 14, 15, 16 e 17. As outras seis (2, 5, 6, 7, 10 e 13)
-podem ficar pra depois, com duas ressalvas que valem mesmo no rápido, as duas de botão. A 7
+podem ficar pra depois, com duas ressalvas, as duas de botão. A 7
 (ramo regulado) é perguntada em uma linha, porque restrição de conselho ou órgão muda o que
 toda skill pode escrever. A 6 (canais) decide quais pacotes se oferecem no Passo 4: quando a
 resposta da 4 não citou canal nenhum, ela vira um botão direto com as opções dela; quando a
@@ -188,7 +171,7 @@ não sabe se foi ouvido, e passa o resto do onboarding na dúvida.
 ## Passo 2, perguntas que só funcionam em conversa
 
 Seis interações que não têm como vir prontas de um arquivo, sempre em chat,
-independente da rota escolhida no Passo 0:
+mesmo quando as 17 respostas vieram escritas no `RESPONDA-AQUI.txt`:
 
 ### Tom (reação ao padrão, não pergunta aberta)
 
@@ -737,11 +720,11 @@ Windows no git, e o backup passa a ver o mesmo arquivo como dois.
   de propósito, porque cada computador tem o seu.
 - As skills base do dia a dia: `iniciar`, `conectar`, `mapear`, `atualizar`,
   `syncar`, `bastao`, `checar`, `agendar`, `atualizar-sabinos`, `faxina`,
-  `compartilhar`, `segunda-opiniao`, `find-skills` e `aprender-curso` (o `AGENTS.md` do projeto e o `/mapear`
+  `compartilhar`, `segunda-opiniao`, `find-skills` (o `AGENTS.md` do projeto e o `/mapear`
   mandam rodar a `find-skills` lá dentro, então ela vai junto, senão a instrução
-  aponta pra uma skill que não existe na pasta), mais a `assistir-video` e a
+  aponta pra uma skill que não existe na pasta), `aprender-curso` e `clonar-especialista`, mais a `assistir-video` e a
   `transcribe`, que a `aprender-curso` usa pra estudar um curso em vídeo e virar
-  mentor, e a `ler-avaliacoes`, que ranqueia o que os clientes do concorrente reclamam, e a `humanizar`, que tira a cara de IA do texto sem mexer no que ele afirma, e a `pedir`, que responde o "dá pra?" e ajuda a pessoa a pedir. Das skills copiadas, nunca copiar arquivo terminado em `.test.mjs` (várias trazem testes que só servem no kit: `trafego`, `agendar`, `faxina`, `compartilhar` e outras; conferir no fim com uma busca por `.test.mjs` dentro do projeto, que tem que voltar vazia). Além dessas, copiar
+  mentor (a `clonar-especialista` usa as duas e os scripts da `aprender-curso` pra montar um conselheiro a partir de uma pessoa pública), e a `ler-avaliacoes`, que ranqueia o que os clientes do concorrente reclamam, e a `humanizar`, que tira a cara de IA do texto sem mexer no que ele afirma, e a `pedir`, que responde o "dá pra?" e ajuda a pessoa a pedir. Das skills copiadas, nunca copiar arquivo terminado em `.test.mjs` (várias trazem testes que só servem no kit: `trafego`, `agendar`, `faxina`, `compartilhar` e outras; conferir no fim com uma busca por `.test.mjs` dentro do projeto, que tem que voltar vazia). Além dessas, copiar
   `otimizar-pc` só se o computador da pessoa for Windows, e a
   pasta `trafego` inteira só se a pergunta de anúncio pago acima teve resposta
   positiva ou "pretendo".

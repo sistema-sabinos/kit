@@ -77,7 +77,9 @@ perfil inteiro, sem transcrever nem assistir (o Gemini cobra de novo a cada cham
 antes de despachar, aqui na sessao principal (o `pauta-leitor` nao roda comando):
 1. Transcrever os Reels de cada perfil, de graca, no computador, com o mesmo motor da `/transcribe`:
    `python .claude/skills/pauta/scripts/transcrever.py <perfil>` (no Windows, `py` se `python` nao
-   responder). Grava em `inteligencia/base-ideias/<perfil>/transcricoes/<codigo>.txt`.
+   responder). Grava em `inteligencia/base-ideias/<perfil>/transcricoes/<codigo>.txt`. Se ele parar
+   dizendo que falta o faster-whisper, a mensagem e pra IA: dizer em uma frase o que falta, pedir o
+   sim e instalar com o comando dela, nunca repassar o comando a pessoa.
 2. So na rota com Gemini, depois do "pode ir" da secao Custo: cada Reel com
    `node .claude/skills/assistir-video/ver-video.mjs "<mp4>" --pergunta "<conteudo inteiro de .claude/skills/pauta/prompt-conteudo.md>"`,
    em primeiro plano, um por vez, colhendo o resultado na propria chamada (lote em segundo plano ja foi

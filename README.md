@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 5.10 (2026-10-12)
+Versão 5.11 (2026-10-12)
 
 Um sistema de trabalho com IA pro seu negócio, rodando dentro do VS Code com o Claude Code.
 
@@ -10,11 +10,11 @@ A ideia é simples: em vez de conversar com uma IA que esquece tudo a cada conve
 
 **1. Instale o VS Code**, em [code.visualstudio.com](https://code.visualstudio.com/).
 
-**2. Garanta o Git**, de um jeito ou de outro:
-- **Windows:** abra o Terminal (ou PowerShell) e rode `winget install --id Git.Git -e --source winget`. Se preferir sem linha de comando, baixe em [git-scm.com/downloads](https://git-scm.com/downloads) e siga as opções padrão.
-- **Mac:** abra o Terminal e digite `git --version`. Se não tiver instalado, o próprio macOS oferece a instalação (`xcode-select --install`), aceite. Quem já usa Homebrew também pode rodar `brew install git`.
+**2. Garanta o Git:**
+- **Windows:** baixe em [git-scm.com/downloads](https://git-scm.com/downloads) e siga as opções padrão (Avançar até o fim). Se pular, o Claude confere na primeira conversa e instala com o seu ok.
+- **Mac:** não precisa fazer nada agora. Na primeira conversa, o Claude abre uma janela da Apple pra instalar: você clica em **Instalar** e depois em **Concordo**.
 
-**3. Instale o Node.js** em [nodejs.org](https://nodejs.org/) (botão verde, versão LTS, opções padrão). É o motor das ferramentas internas do kit, como a de assistir vídeo; sem ele essas partes travam na primeira vez que você for usar.
+**3. Instale o Node.js** em [nodejs.org](https://nodejs.org/) (botão verde, versão LTS, opções padrão). É o motor das ferramentas internas do kit, como a de assistir vídeo; sem ele essas partes travam na primeira vez que você for usar. Se pular, o Claude confere na primeira conversa e instala com o seu ok.
 
 **4. Assine o Claude** em [claude.com](https://claude.com/). Depois, no VS Code, abra a aba de extensões (ícone de blocos na lateral), busque "Claude Code", instale e faça login.
 

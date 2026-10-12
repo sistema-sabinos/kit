@@ -21,8 +21,9 @@ API (o caminho que o SabinOS usa pra falar com ele) liberada, com 3.000 pedidos 
    menu tiver mudado de nome).
 4. Abrir o arquivo `.env` na raiz do projeto e colar numa linha nova: `BUFFER_API_KEY=sua-chave`
    (trocando `sua-chave` pela chave copiada).
-5. Rodar `node .claude/skills/midia-social/scripts/canais.mjs`. Ele mostra as redes que achou.
-6. Se estiver certo, rodar de novo com `--gravar`. Pronto: os ids das redes ficam no
+5. Salvar o `.env` e avisar no chat. O Claude roda `node .claude/skills/midia-social/scripts/canais.mjs`
+   e mostra as redes que achou.
+6. Se estiver certo, o Claude roda de novo com `--gravar`. Pronto: os ids das redes ficam no
    `_contexto/midia-social.md`.
 
 ## Deposito do video
@@ -104,9 +105,10 @@ E gratis: o Google da 10.000 "unidades" por dia, e uma consulta comum gasta 1 (u
 4. Criar uma credencial do tipo "ID do cliente OAuth", aplicativo de computador (desktop), depois de
    publicar o app (credencial criada ainda em teste continua caindo a cada 7 dias).
 5. Baixar o arquivo JSON (fica na pasta Downloads; nao precisa trazer pro projeto).
-6. Rodar uma vez `node .claude/skills/gerenciar-youtube/scripts/yt.mjs auth --cliente <caminho do arquivo baixado>`:
-   ele grava a credencial no `.env`, abre o login no navegador, voce autoriza, e o login tambem fica no
-   `.env`. Depois disso, o arquivo baixado pode ser apagado.
+6. Avisar no chat que baixou. O Claude acha o arquivo e roda uma vez
+   `node .claude/skills/gerenciar-youtube/scripts/yt.mjs auth --cliente <caminho do arquivo baixado>`:
+   ele grava a credencial no `.env` e abre o login no navegador. Voce so escolhe a conta do canal e
+   clica em Permitir, e o login tambem fica no `.env`. Depois disso, o arquivo baixado pode ser apagado.
 
 ## Gemini (opcional)
 

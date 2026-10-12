@@ -115,8 +115,9 @@ Depois:
 - dado de mentira suficiente pra cada tela mostrar algo.
 
 Rodar o servidor de desenvolvimento (de dentro de `app/codigo/`, o comando que a
-ferramenta escolhida usa, como `npm run dev`) e pedir pro aluno abrir o endereço
-`localhost` que aparece no terminal e clicar entre as telas. Casca de pé, `/syncar`.
+ferramenta escolhida usa, como `npm run dev`), mandar no chat o endereço `localhost`
+que ele mostrar como link clicável (ex.: `http://localhost:3000`) e pedir pro aluno
+clicar nele e andar entre as telas. Casca de pé, `/syncar`.
 
 ### 2. A fatia inteira
 

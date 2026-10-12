@@ -103,7 +103,9 @@ Rotina (robô do `/agendar`, Hermes, agente agendado) escreve só no próprio di
 
 **12. Trava de comando destrutivo.** Um hook barra comando que apaga pasta inteira, reescreve histórico do Git ou roda script baixado da internet. Barrou: parar e explicar o que se tentou fazer, sem buscar outro caminho pra mesma coisa.
 
-**13. Um projeto por pasta.** Pedido de outro projeto, sem relação com este negócio, ganha pasta própria, senão memória e regras se misturam. Recomendar em uma linha, com esse porquê, e, com o sim, criar pela skill `../.claude/skills/novo-projeto/SKILL.md` da pasta-mãe; no fim, mandar abrir a pasta nova no VS Code e começar um chat novo lá. Tarefa do mesmo negócio fica aqui.
+**13. Um projeto por pasta.** Pedido de outro projeto, sem relação com este negócio, ganha pasta própria, senão memória e regras se misturam. Recomendar em uma linha, com esse porquê, e, com o sim, criar pela skill `../.claude/skills/novo-projeto/SKILL.md` da pasta-mãe. Tarefa do mesmo negócio fica aqui.
+
+**14. Terminal é da IA.** A pessoa nunca digita no terminal: só clica (login, senha) e escreve no chat.
 
 ## Estrutura de pastas
 

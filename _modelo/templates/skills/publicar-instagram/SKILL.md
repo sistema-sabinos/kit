@@ -91,7 +91,8 @@ Se escolheu Graph API:
    Troca o token curto pelo longo, acha a Página e a conta do Instagram ligada a ela, grava
    `INSTAGRAM_ACCESS_TOKEN` e `INSTAGRAM_USER_ID` no `.env`, apaga o `INSTAGRAM_TOKEN_CURTO` e só
    imprime "ok, conta @x ligada". Se o login tiver mais de uma conta ligada, ele lista as contas e não
-   grava nada: a pessoa escreve `INSTAGRAM_CONTA=<a conta que publica>` no `.env` e roda de novo.
+   grava nada: a pessoa escreve `INSTAGRAM_CONTA=<a conta que publica>` no `.env`, salva e avisa no
+   chat, e a IA roda de novo.
    Nenhum segredo vai pra tela nem pra linha de comando. A versão da
    Graph API é a v25.0; outra versão vai no `.env` como `META_GRAPH_VERSAO=v26.0`.
 

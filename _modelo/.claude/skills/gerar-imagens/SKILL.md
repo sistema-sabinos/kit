@@ -42,7 +42,8 @@ autoral e dá ao dono o botão de derrubar o seu anúncio.
 3. Rodar `node .claude/skills/gerar-imagens/scripts/motor.mjs`. Ele diz o
    degrau: `codex`, `gemini` ou `zero-ia`. O primeiro script que desenha
    (`recortar-fundo`, `compor-cena`, `montar-peca`) avisa se falta o
-   Playwright e mostra o comando; rodar e repetir o passo.
+   Playwright e mostra o comando; dizer em uma frase o que falta, pedir o sim,
+   rodar o comando e repetir o passo (o comando é pra IA, nunca pra pessoa).
 4. Degrau `gemini` custa dinheiro por imagem. O preço, a estimativa e o "pode
    ir" acontecem na conversa principal: na `/mercado-livre`, ou nesta mesma
    conversa quando a pessoa chamou a `/gerar-imagens` direto. Ali: conferir na

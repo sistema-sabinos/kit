@@ -17,6 +17,7 @@
     "assistir-video": { "depende": [], "caminhos": [".claude/skills/assistir-video/"] },
     "transcribe": { "depende": [], "caminhos": [".claude/skills/transcribe/"] },
     "aprender-curso": { "depende": ["assistir-video", "transcribe"], "caminhos": [".claude/skills/aprender-curso/"] },
+    "clonar-especialista": { "depende": ["aprender-curso", "assistir-video", "transcribe"], "caminhos": [".claude/skills/clonar-especialista/"] },
     "find-skills": { "depende": [], "caminhos": [".claude/skills/find-skills/"] },
     "otimizar-pc": { "depende": [], "caminhos": [".claude/skills/otimizar-pc/"] },
     "trafego": { "depende": ["nucleo"], "caminhos": [".claude/skills/trafego/"] },

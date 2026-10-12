@@ -42,8 +42,9 @@ node .claude/skills/mercado-ads/scripts/rodar.mjs --anunciante
 Grava o id de anunciante no `.env`. Se disser que não há anunciante, o Mercado
 Ads não está ativo na conta ou a autorização não tem permissão de publicidade:
 ativar o Mercado Ads no painel, marcar a permissão de publicidade no aplicativo
-(passo 1 do Mercado Livre na `/conectar`) e autorizar de novo com
-`autorizar.mjs --ml --url`.
+(passo 1 do Mercado Livre na `/conectar`) e autorizar de novo: a IA roda
+`autorizar.mjs --ml --url` e manda o link no chat, a pessoa clica em Autorizar
+e cola no chat o endereço da barra do navegador, como nos passos 3 e 4 da `/conectar`.
 
 ### O freio (antes do primeiro raio-X que for virar ação)
 

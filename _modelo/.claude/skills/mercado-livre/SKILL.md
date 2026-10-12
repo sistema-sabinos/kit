@@ -122,8 +122,9 @@ Mostrar o bloco gravado e perguntar se ficou certo.
 Conferir nesta ordem, e resolver na hora o que faltar, explicando em uma frase
 cada passo:
 
-1. **Node instalado** (`node --version`). Sem ele, os scripts não rodam; o
-   README da pasta-mãe ensina a instalar.
+1. **Node instalado** (`node --version`). Sem ele, os scripts não rodam;
+   instalar como no `/setup` da pasta-mãe, com o sim da pessoa (ela só clica
+   no instalador).
 2. **Dependências da skill:** rodar da raiz do projeto
    `npm install --prefix .claude/skills/mercado-livre` (uma vez; baixa o
    Playwright, uns minutos).
@@ -139,10 +140,11 @@ cada passo:
    que o portal pede se confere na tela, nunca de memória), cola
    `ML_CLIENT_ID`, `ML_CLIENT_SECRET` e `ML_REDIRECT_URI` (com `https`: o
    portal recusa `http`, conferido por busca em 2026-09-24, não com o portal
-   aberto) no `.env`, e roda
-   `node .claude/skills/mercado-livre/scripts/autorizar.mjs --ml --url`. Abre o
-   link, autoriza, a página de retorno dá erro (esperado), e cola de volta a
-   URL inteira que aparecer na barra:
+   aberto) no `.env`. A IA roda
+   `node .claude/skills/mercado-livre/scripts/autorizar.mjs --ml --url` e manda o
+   link no chat. A pessoa abre, clica em Autorizar, a página de retorno dá erro
+   (esperado), e ela copia o endereço inteiro da barra do navegador e cola no
+   chat. A IA roda com ele:
    `node .claude/skills/mercado-livre/scripts/autorizar.mjs --ml "<url colada>"`.
    Os tokens vão pro `.env` e se renovam sozinhos dali em diante.
 5. **Bling, só se `erp: bling`:** o `/conectar`, seção "Mercado Livre e Bling",

@@ -82,7 +82,7 @@ Quem só quer receber aviso de um robô no Telegram não precisa de nada deste i
 
 - **O que te deixa fazer:** é outro programa de agente, alternativo a este aqui, que lê a mesma pasta e os mesmos comandos que já montamos. Ele traz duas coisas que este não tem: agendar tarefa pra rodar sozinha no horário marcado (o relatório da semana toda segunda, a checagem dos anúncios todo dia) e te encontrar por app de mensagem, como Telegram, Discord, Slack ou WhatsApp. Na prática: o resultado chega no seu celular sem você abrir o computador.
 - **Grátis ou pago:** o programa é grátis e de código aberto (licença MIT), mas **o uso é pago, por token**. Preste atenção nesta parte, porque ela surpreende: ele **não usa a sua assinatura do Claude**. Mesmo quem assina o Pro ou o Max precisa criar e bancar uma chave de API à parte. A assinatura tem valor fixo no mês; aqui a conta sobe conforme o uso, e um robô que dispara sozinho todo dia usa mais do que parece.
-- **Precisa de quê:** instalar o programa (um comando só, pelo site oficial hermes-agent.nousresearch.com), criar uma chave de API num provedor de modelo e colar no `.env` dele, e autorizar o canal de mensagem escolhido. No Telegram é criar um bot, uns 5 minutos. No WhatsApp é a mesma burocracia do item 6.
+- **Precisa de quê:** instalar o programa (eu confiro no site oficial hermes-agent.nousresearch.com o comando do dia e rodo com o seu sim; você não digita nada), criar uma chave de API num provedor de modelo e colar no `.env` dele, e autorizar o canal de mensagem escolhido. No Telegram é criar um bot, uns 5 minutos. No WhatsApp é a mesma burocracia do item 6.
 - **Hoje ou depois:** **depois, e a ordem importa.** O caminho barato vem primeiro: um robô agendado pelo próprio Windows ou Mac, montado pelo `/agendar` e avisando no Telegram, custa zero e resolve a maior parte. Quando ele já estiver rodando há semanas e o incômodo virar "preciso estar no computador pra ver o resultado", aí o canal de mensagem compensa o custo. O desenho completo está em `docs/roadmap-avancado.md` na pasta-mãe, seção "Rota Hermes Agent".
 
 Duas coisas a dizer ao usuário quando este item entrar na conversa:
@@ -103,21 +103,21 @@ Só aparece se o projeto tem `.claude/skills/mercado-livre/`. Sem o pacote, pula
 
 1. No portal de desenvolvedor do Mercado Livre, criar um aplicativo. A URL de retorno precisa começar com `https` (o portal recusa `http`, conferido por busca em 2026-09-24; fonte secundária, não conferido com o portal aberto). Cadastrar `https://127.0.0.1:8765/callback`; se o portal recusar, `https://localhost:8765/callback`; e se recusar as duas, qualquer endereço `https` que o portal aceitar serve, porque a página de retorno nunca precisa abrir de verdade (a pessoa cola a URL inteira da barra do navegador de qualquer jeito, no passo 4). O que importa é ser exatamente a mesma URL no portal e no `ML_REDIRECT_URI`. Se o portal perguntar a permissão do aplicativo, escolher leitura e escrita: só leitura audita, mas não cria anúncio. O nome e o lugar dessa opção mudam; conferir na tela com a pessoa. Quem vai usar a `/mercado-ads`: conferir na tela, com a pessoa, que o aplicativo pede a permissão de publicidade (em 2026-10-08 o portal a chamava de **Publicidade**, a que libera as campanhas do Product Ads; o nome muda; anotar a data da conferência em `ferramentas.md`).
 2. Colar no `.env` do projeto: `ML_CLIENT_ID`, `ML_CLIENT_SECRET` e `ML_REDIRECT_URI` (a mesma URL do passo 1, letra por letra).
-3. Rodar `node .claude/skills/mercado-livre/scripts/autorizar.mjs --ml --url`, abrir o link e autorizar.
-4. Depois de autorizar, o navegador tenta abrir a URL de retorno e mostra erro de página. Isso é esperado: nada roda ali. Copiar a URL inteira da barra do navegador e rodar `node .claude/skills/mercado-livre/scripts/autorizar.mjs --ml "<url colada>"`. Os tokens vão pro `.env` e se renovam sozinhos.
-5. Testar: `node .claude/skills/auditar-conta/scripts/rodar.mjs --dias 7 --sem-keywords` gera um relatório em `relatorios/`.
+3. Eu rodo `node .claude/skills/mercado-livre/scripts/autorizar.mjs --ml --url` e mando o link no chat. A pessoa abre e clica em Autorizar.
+4. Depois de autorizar, o navegador tenta abrir a URL de retorno e mostra erro de página. Isso é esperado: nada roda ali. A pessoa copia o endereço inteiro da barra do navegador e cola no chat, e eu rodo `node .claude/skills/mercado-livre/scripts/autorizar.mjs --ml "<url colada>"`. Os tokens vão pro `.env` e se renovam sozinhos.
+5. Eu testo: `node .claude/skills/auditar-conta/scripts/rodar.mjs --dias 7 --sem-keywords` gera um relatório em `relatorios/`.
 
 **Bling, passo a passo:**
 
 1. No Bling, criar o aplicativo (em 2026-09-24: Configurações, Central de extensões, Área do integrador, Criar aplicativo, tipo API, uso Privado). Link de redirecionamento: `http://127.0.0.1:8765/callback`.
 2. Colar no `.env`: `BLING_CLIENT_ID` e `BLING_CLIENT_SECRET`.
-3. Primeiro ligar o receptor: `node .claude/skills/mercado-livre/scripts/autorizar.mjs --bling --ouvir`. Ele fica esperando.
-4. Em outro terminal, `node .claude/skills/mercado-livre/scripts/autorizar.mjs --bling --url`, abrir o link e autorizar. O código do Bling vale 1 minuto, e o receptor troca na hora. Se o receptor não pegar (porta ocupada, antivírus), copiar a URL da barra e rodar `--bling "<url colada>"` em menos de 1 minuto.
-5. Testar: `node .claude/skills/cadastrar-bling/scripts/cadastrar.mjs --categorias` lista as categorias da conta.
+3. Primeiro eu ligo o receptor em segundo plano: `node .claude/skills/mercado-livre/scripts/autorizar.mjs --bling --ouvir`. Ele fica esperando.
+4. Depois eu rodo `node .claude/skills/mercado-livre/scripts/autorizar.mjs --bling --url` e mando o link no chat. A pessoa abre e clica em Autorizar. O código do Bling vale 1 minuto, e o receptor troca na hora. Se o receptor não pegar (porta ocupada, antivírus), a pessoa copia o endereço inteiro da barra do navegador e cola no chat, e eu rodo `--bling "<url colada>"` em menos de 1 minuto.
+5. Eu testo: `node .claude/skills/cadastrar-bling/scripts/cadastrar.mjs --categorias` lista as categorias da conta.
 
 **MCP do Bling (uma ponte que deixa o Claude consultar o seu Bling direto na conversa, só leitura):**
 
-1. Instalar as dependências dele, da raiz do projeto: `npm install --prefix .claude/skills/cadastrar-bling/mcp`.
+1. Eu instalo as dependências dele, da raiz do projeto: `npm install --prefix .claude/skills/cadastrar-bling/mcp`.
 2. No `.mcp.json` da raiz do projeto (criar se não existir; se existir, juntar sem apagar o que já tem), acrescentar dentro de `mcpServers`: `"bling": { "command": "node", "args": [".claude/skills/cadastrar-bling/mcp/servidor.mjs"] }`. Conferir que o arquivo continua JSON válido.
 3. Fechar e abrir a conversa; aprovar o servidor `bling` quando o Claude Code perguntar. Testar com `/mcp` (deve aparecer `bling` conectado) e pedindo "quantos produtos tenho no Bling?".
 

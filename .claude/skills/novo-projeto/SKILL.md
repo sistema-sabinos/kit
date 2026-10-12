@@ -567,14 +567,14 @@ perguntar outro nome antes de seguir.
 - `.origem`: se um projeto irmão tem `.origem` (olhar na pasta dele), criar igual,
   porque é o nome desta máquina; sem irmão com `.origem`, gravar `dono`.
 - As skills base do dia a dia: `iniciar`, `conectar`, `mapear`, `atualizar`,
-  `syncar`, `bastao`, `checar`, `agendar`, `atualizar-sabinos`, `find-skills`,
-  `faxina`, `compartilhar`, `segunda-opiniao` (o `AGENTS.md` do projeto manda
-  passar todo pedido de ok por ela) e `aprender-curso` (o `AGENTS.md` do
-  projeto e o `/mapear`
-  mandam rodar a `find-skills` lá dentro, então ela vai junto, senão a
-  instrução aponta pra uma skill que não existe na pasta), mais a `assistir-video`
+  `syncar`, `bastao`, `checar`, `agendar`, `atualizar-sabinos`, `find-skills` (o
+  `AGENTS.md` do projeto e o `/mapear` mandam rodar a `find-skills` lá dentro,
+  então ela vai junto, senão a instrução aponta pra uma skill que não existe na
+  pasta), `faxina`, `compartilhar`, `segunda-opiniao` (o `AGENTS.md` do projeto
+  manda passar todo pedido de ok por ela), `aprender-curso` e
+  `clonar-especialista`, mais a `assistir-video`
   e a `transcribe`, que a `aprender-curso` usa pra estudar um curso em vídeo e
-  virar mentor, e a `ler-avaliacoes`, que ranqueia o que os clientes do concorrente
+  virar mentor (a `clonar-especialista` usa as duas e os scripts da `aprender-curso` pra montar um conselheiro a partir de uma pessoa pública), e a `ler-avaliacoes`, que ranqueia o que os clientes do concorrente
   reclamam, e a `humanizar`, que tira a cara de IA do texto sem mexer no que ele afirma, e a `pedir`, que responde o "dá pra?" e ajuda a pessoa a pedir. Das skills copiadas, nunca copiar arquivo terminado em `.test.mjs` (várias trazem testes que só servem no kit: `trafego`, `agendar`, `faxina`, `compartilhar` e outras; conferir no fim com uma busca por `.test.mjs` dentro do projeto, que tem que voltar vazia). Além dessas, copiar
   `otimizar-pc` só se o computador da pessoa for Windows (já sabido do
   Passo 0, ou perguntar se não ficou claro), e a pasta `trafego` inteira só se a

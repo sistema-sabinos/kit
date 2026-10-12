@@ -42,8 +42,9 @@ pasta preenchido.
   vai acontecer e quanto custa, e esperar a resposta naquele momento, mesmo que
   um passo parecido já tenha sido aprovado antes.
 - **Quem compra e faz login é o aluno.** O Claude nunca compra domínio, nunca
-  digita cartão, senha ou chave real. Ele escreve os registros, os nomes das
-  chaves e os comandos; o aluno faz os passos de conta.
+  digita cartão, senha ou chave real. Ele escreve os registros e os nomes das
+  chaves e roda os comandos; o aluno só faz os passos de conta no navegador
+  (login, cartão, chave) e nunca digita nada no terminal.
 - **Sem marca própria, nada sai.** A varredura de restos da referência tem que
   sair limpa. Sem exceção.
 - **Valor que muda se confere antes.** Antes de dizer qualquer preço, taxa,
@@ -200,8 +201,9 @@ Vercel Pro é **(gasta)**: gate com o valor mensal. Criar a conta na hospedagem
 
 **Publicar o site** **(publica)**. O código vai pra hospedagem pela linha de
 comando dela, de dentro de `app/codigo/`, sem ligar o repositório do negócio à
-hospedagem (ele guarda o resto da empresa). O aluno faz o login da linha de
-comando no navegador; o comando de publicar é o que a documentação da
+hospedagem (ele guarda o resto da empresa). O Claude roda o login da linha de
+comando e avisa antes: "vai abrir o navegador; entre na sua conta e clique em
+**Autorizar** (ou **Allow**)". O aluno só faz isso. O comando de publicar é o que a documentação da
 hospedagem manda hoje (Cloudflare: `wrangler`; Vercel: `vercel --prod`),
 conferido lá antes de rodar. Next.js na Cloudflare segue o caminho de
 `app-cloudflare-nextjs`, o mesmo que o `app/arquitetura.md` registrou. A primeira publicação sai num endereço provisório
@@ -262,7 +264,9 @@ iPhone).
   Apple (`app-apple-conta`, cobrada em reais na inscrição, com o valor que
   aparecer na tela) e Google Play (`app-google-conta`).
 - **Montar e enviar** **(publica)**: o comando de montar do Expo (`eas build`)
-  e o de enviar (`eas submit`), conferidos na documentação do Expo. O plano
+  e o de enviar (`eas submit`), conferidos na documentação do Expo. O Claude
+  roda os dois; o login do Expo (`eas login`, que abre o navegador) segue o
+  mesmo aviso do login da hospedagem, e o aluno só entra na conta. O plano
   grátis tem limite de montagens por mês (`app-expo-free`). Primeiro pro teste
   fechado: TestFlight na Apple e teste interno no Google Play.
 - **Revisão da loja** **(publica)**: com a ficha da `/app-lancar` aprovada pelo

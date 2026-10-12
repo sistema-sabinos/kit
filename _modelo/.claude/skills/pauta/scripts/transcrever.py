@@ -36,7 +36,7 @@ def main():
     try:
         from faster_whisper import WhisperModel
     except ImportError:
-        sys.exit("faster-whisper nao instalado: seguir a instalacao da /transcribe (pip install faster-whisper)")
+        sys.exit("faster-whisper nao instalado. Quem le esta mensagem e a IA: peca o sim e instale voce mesma, nunca passe o comando pra pessoa (Windows: python -m pip install faster-whisper; Mac: pip3 install faster-whisper).")
     whisper = None
     for video, alvo in lista:
         if alvo.exists():

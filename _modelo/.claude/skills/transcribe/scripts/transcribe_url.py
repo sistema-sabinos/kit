@@ -36,6 +36,7 @@ def check_dependencies():
 
     if missing:
         print("ERROR: Missing dependencies:", ", ".join(missing), file=sys.stderr)
+        print("Quem le esta mensagem e a IA: diga ao usuario em uma frase o que falta, peca o sim e instale voce mesma; nunca passe o comando pra ele.", file=sys.stderr)
         print("", file=sys.stderr)
         if "yt-dlp" in missing or "faster-whisper" in missing:
             pip_pkgs = [p for p in missing if p != "ffmpeg"]

@@ -22,6 +22,7 @@ O kit instalado é uma foto do dia em que foi baixado. Toda melhoria nova (skill
 - `RESPONDA-AQUI.txt` preenchido
 - `.git/`, `.env`, `.agents/`
 - `~/.claude/CLAUDE.md` (identidade global)
+- `agentes/` (cópia-mestra dos conselheiros da `/clonar-especialista`) e, em `~/.claude/skills/` e `~/.claude/agents/`, tudo que tem `origem: clonar-especialista` no frontmatter
 
 ## O que é do kit e pode ser atualizado
 

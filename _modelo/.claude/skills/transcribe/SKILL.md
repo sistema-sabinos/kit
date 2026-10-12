@@ -30,10 +30,10 @@ Mac e Linux:
 python3 --version
 ```
 
-Precisa do Python 3.8 ou mais novo. Se não tiver, ou se for mais antigo, orientar:
+Precisa do Python 3.8 ou mais novo. Se não tiver, ou se for mais antigo, dizer ao usuário em uma frase o que falta, pedir o sim e instalar (quem roda o comando é a IA, nunca o usuário):
 - **Mac:** `brew install python3`
 - **Linux:** `sudo apt install python3 python3-pip`
-- **Windows:** `winget install --id Python.Python.3.12 -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity`, depois feche todas as janelas do VS Code e abra de novo
+- **Windows:** `winget install --id Python.Python.3.12 -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity`, depois pedir pra pessoa fechar todas as janelas do VS Code e abrir de novo
 
 ### Passo 2: conferir os pacotes do Python
 
@@ -69,10 +69,10 @@ pip3 install faster-whisper yt-dlp
 which ffmpeg && ffmpeg -version | head -1 || echo "MISSING: ffmpeg"
 ```
 
-Se não tiver:
+Se não tiver, o mesmo jeito: dizer o que falta, pedir o sim e instalar:
 - **Mac:** `brew install ffmpeg`
 - **Linux:** `sudo apt install ffmpeg`
-- **Windows:** `winget install --id Gyan.FFmpeg -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity`, depois feche todas as janelas do VS Code e abra de novo
+- **Windows:** `winget install --id Gyan.FFmpeg -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity`, depois pedir pra pessoa fechar todas as janelas do VS Code e abrir de novo
 
 ### Passo 4: conferir o script
 
@@ -144,7 +144,7 @@ No lugar de `"<url>"` pode ir o caminho do arquivo no computador, também entre 
 
 ## Erro de dependência faltando
 
-Se o script parar dizendo que falta alguma dependência, passar pro usuário as instruções de instalação que ele mostra. O script sempre escreve o jeito do Mac e Linux; no Windows, trocar `pip3 install` por `python -m pip install`.
+Se o script parar dizendo que falta alguma dependência, dizer ao usuário em uma frase o que falta, pedir o sim e instalar; nunca passar o comando pra ele rodar. O script sempre escreve o jeito do Mac e Linux; no Windows, trocar `pip3 install` por `python -m pip install`, e o ffmpeg vai pelo winget do Passo 3.
 
 Windows:
 ```bash

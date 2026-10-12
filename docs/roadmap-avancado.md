@@ -51,7 +51,7 @@ Existe uma checagem ou relatório que você já faz manualmente há semanas, do 
 
 1. Escolher UMA checagem que você já faz na mão
 2. Pedir o robô pelo `/agendar`: ele escreve a receita e testa na sua frente
-3. Rodar o teste na mão (`--teste`) por alguns dias pra ver se o aviso faz sentido
+3. Pedir ao `/agendar` pra rodar o teste por alguns dias e ver se o aviso faz sentido
 4. Só então deixar o `/agendar` cadastrar no agendador do computador
 
 ## Automação agendada, onde estão as instruções técnicas
@@ -154,20 +154,24 @@ separado), ou o projeto virando, na prática, um negócio à parte.
 
 ## Rota Codex
 
-O kit segue o padrão AGENTS.md, então funciona também com o Codex (a CLI de
-agente da OpenAI), não só com o Claude Code. Passo a passo pra quem prefere
+O kit segue o padrão AGENTS.md, então funciona também com o Codex (o agente
+da OpenAI), não só com o Claude Code. Passo a passo pra quem prefere
 o Codex ou quer os dois disponíveis:
 
-1. **Instalar o Codex CLI**, seguindo as instruções oficiais da OpenAI pro
-   seu sistema.
-2. **Fazer login pela conta ChatGPT** (não precisa de chave de API separada
-   pra isso).
+1. **Instalar a extensão do Codex no VS Code**, em 3 cliques: ícone de
+   Extensões na barra da esquerda, buscar **Codex** e escolher a da OpenAI
+   chamada **Codex - OpenAI's coding agent**, clicar em **Instalar**.
+2. **Fazer login pela conta ChatGPT**: no painel do Codex, clicar em
+   **Sign in with ChatGPT**, que abre o navegador pra entrar na conta. Vem
+   incluído a partir do ChatGPT Plus (não precisa de chave de API separada).
 3. **Abrir a mesma pasta** do projeto ou da pasta-mãe que já existe. O Codex
    lê o `AGENTS.md` nativamente, sem configuração extra: é o mesmo arquivo
    que o Claude Code usa através do ponteiro `CLAUDE.md`.
 4. **Conferir a ponte `.agents/skills`.** O `/setup` e o `/novo-projeto` já
    criam essa junction (apontando pra `.claude/skills`) na hora de montar o
-   projeto. Se ela não existir por algum motivo, criar na mão:
+   projeto. Se ela não existir por algum motivo, pedir no chat: "refaz a
+   ponte do Codex", ou rodar o `/checar`, que confere e conserta com o seu ok.
+   Quem roda é a IA, com o sim da pessoa, nunca a pessoa no terminal:
    - **Windows:** `node -e "const fs=require('fs'),p=require('path');fs.mkdirSync('.agents',{recursive:true});if(!fs.existsSync('.agents/skills'))fs.symlinkSync(p.resolve('.claude/skills'),'.agents/skills','junction')"`.
    - **Mac/Linux:** `mkdir -p .agents && ln -sfn ../.claude/skills .agents/skills`.
    - Se o link não puder ser criado (permissão, pendrive, pasta de rede), a
@@ -203,8 +207,8 @@ ponta aqui. Quem testar primeiro registra o resultado no `_contexto/licoes.md`.
 
 ### O caro: robô agendado e bot de mensagem já montados
 
-O Padrão 2 desta página descreve o robô agendado pra montar na mão, com o
-Agendador de Tarefas do Windows ou o cron do Mac. O Hermes já vem com isso de
+O Padrão 2 desta página descreve o robô agendado que o `/agendar` cadastra no
+Agendador de Tarefas do Windows ou no cron do Mac. O Hermes já vem com isso de
 fábrica: agendador próprio mais um gateway que liga o agente a mais de 30 canais
 de mensagem, entre eles Telegram, Discord, Slack, Signal e a API do WhatsApp. É o
 caminho mais curto pra "todo domingo à noite chega no meu Telegram o resumo da

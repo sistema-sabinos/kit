@@ -51,7 +51,7 @@ npx playwright screenshot --viewport-size=1080,1350 --full-page "file:///caminho
 ### Vercel CLI
 **O que faz:** Publica apps Next.js, Vite, React em segundos com CDN global
 **Precisa de conta:** Sim, Vercel (gratis pra projetos pessoais)
-**Configurar:** `npm i -g vercel` e depois `vercel login`
+**Configurar:** a IA roda `npm i -g vercel` e depois `vercel login`, que mostra um link de confirmacao; a IA manda o link no chat e a pessoa so entra na conta e aprova o acesso
 **Como usar numa skill:** `vercel --yes --prod` dentro da pasta do projeto
 **Quando usar:** Skills que constroem ou fazem deploy de apps Next.js, dashboards, plataformas
 
@@ -190,8 +190,10 @@ sheet = gc.open('Nome da Planilha').sheet1
 ```bash
 brew install gh             # Mac
 winget install GitHub.cli   # Windows
-gh auth login
+gh auth login --web
 ```
+Quem roda e a IA, nunca a pessoa. No login, a IA manda no chat o codigo que aparecer (8 caracteres, tipo ABCD-1234)
+e o link github.com/login/device; a pessoa abre o link, cola o codigo e clica em Authorize.
 **Como usar numa skill:**
 ```bash
 gh pr create --title "..." --body "..."

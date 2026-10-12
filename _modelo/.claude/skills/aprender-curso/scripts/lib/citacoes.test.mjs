@@ -2,7 +2,7 @@
 // Rodar: node --test lib/citacoes.test.mjs
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { acharCitacoes, acharForaDoFormato, conferir } from './citacoes.mjs'
+import { acharCitacoes, acharForaDoFormato, conferir, citacoesDe } from './citacoes.mjs'
 
 test('acha citacao de minuto, de hora e de pagina com a linha certa', () => {
   const c = acharCitacoes('Intro\nO caixa manda (aula 2, 6:15).\nRevisao (aula 10, 1:02:03) e apostila (aula 1, p. 41).')
@@ -65,4 +65,38 @@ test('numero com zero a esquerda no arquivo casa com a aula', () => {
   const r = conferir([{ aula: 3, marca: '2:00', linha: 1 }, { aula: 12, marca: 'p. 1', linha: 1 }],
     [{ nome: '003-x.md', texto: '[2:00]' }, { nome: '12-y.md', texto: '[p. 1]' }, { nome: '30-z.md', texto: '' }])
   assert.deepEqual(r, { ok: true, problemas: [] })
+})
+
+const fonte = citacoesDe('fonte', 'fichas')
+
+test('fonte: acha minuto, pagina e trecho de pagina web', () => {
+  const c = fonte.acharCitacoes('Regra (fonte 2, 6:15) e (fonte 10, p. 41).\nPost (fonte 3, §4).')
+  assert.ok(c.length > 0, 'saida veio vazia')
+  assert.deepEqual(c, [
+    { fonte: 2, marca: '6:15', linha: 1 },
+    { fonte: 10, marca: 'p. 41', linha: 1 },
+    { fonte: 3, marca: '§4', linha: 2 },
+  ])
+})
+
+test('aula nao aceita trecho de pagina web: vira fora do formato', () => {
+  assert.deepEqual(acharCitacoes('(aula 3, §4)'), [])
+  assert.deepEqual(acharForaDoFormato('(aula 3, §4)').map(f => f.trecho), ['(aula 3, §4)'])
+})
+
+test('fonte quase no formato vira problema', () => {
+  const quase = ['(Fonte 3, 6:15)', '(fonte 3, § 4)', '(fontes 3 e 4, 6:15)', '(fonte 3, p.41)']
+  const fora = fonte.acharForaDoFormato(`Valida (fonte 1, §2).\n${quase.join(' x ')}`)
+  assert.ok(fora.length > 0, 'saida veio vazia')
+  assert.deepEqual(fora.map(f => f.trecho), quase)
+})
+
+test('fonte: conferir fala em fonte e em fichas/', () => {
+  const r = fonte.conferir([{ fonte: 7, marca: '1:00', linha: 1 }, { fonte: 1, marca: '§9', linha: 2 }],
+    [{ nome: '01-livro.md', texto: '[§2] x' }])
+  assert.deepEqual(r.problemas, ['fonte 7 nao existe em fichas/', 'fonte 1 sem a marca [§9]'])
+})
+
+test('rotulo desconhecido quebra na hora', () => {
+  assert.throws(() => citacoesDe('capitulo', 'x'), /rotulo desconhecido/)
 })

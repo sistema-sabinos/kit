@@ -12,6 +12,9 @@
 !/docs/**/
 !/_modelo/
 !/_modelo/**
+# copia-mestra dos conselheiros da /clonar-especialista (do aluno, nunca do kit)
+!/agentes/
+!/agentes/**/
 
 # texto e estrutura
 !*.md
@@ -40,4 +43,7 @@ node_modules/
 # chave de skill de fora, em qualquer profundidade (o * so segura a da raiz)
 .secrets/
 secrets/
+# material bruto dos conselheiros (livro, legenda, transcricao): fica so neste computador
+/agentes/*/fontes/
+/agentes/*/prova/fontes-prova/
 # pastas de projeto criadas pelo setup entram aqui, uma linha cada (o /setup adiciona)

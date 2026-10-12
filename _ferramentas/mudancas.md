@@ -551,3 +551,19 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto tem `.claude/skills/editar-video/` e não tem `.claude/skills/aplicar-estilo/`.
 **Como aplicar:** copiar a pasta `_modelo/.claude/skills/aplicar-estilo/` da pasta-mãe pro projeto (sem os arquivos `.test.mjs`). Se a pasta-mãe ainda não tem `_estilos-video/`, rodar a `/atualizar-kit` lá antes (uns 150 MB, com o sim da pessoa). Depois, o passo 5 da `/configurar-video` (skills do Remotion), se ainda não foi feito.
 **Como testar:** `node .claude/skills/aplicar-estilo/scripts/estilos.mjs conferir` sai com tudo `ok`, e `estilos.mjs listar` mostra os estilos.
+
+## clonar-especialista
+
+**O que é:** comando novo `/clonar-especialista`: você diz uma pessoa pública e o sistema estuda o que ela publicou (em qualquer idioma, mais o livro ou curso que você tiver) e monta um conselheiro que pensa do jeito dela, aplicado ao seu negócio, que aparece em todos os seus projetos.
+**Por quê:** conselho de quem você admira, com fonte citada, sem depender de lembrar o que leu.
+**Te afeta se:** o projeto não tem `.claude/skills/clonar-especialista/`.
+**Como aplicar:** a `clonar-especialista` precisa da `aprender-curso` desta versão (o conferidor de citação ganhou o modo `--persona`). Copiar do kit a pasta `clonar-especialista` pra `.claude/skills/` do projeto e SUBSTITUIR a pasta `scripts/` da `aprender-curso` do projeto pela do kit (a `aprender-curso` inteira, se o projeto não tem), as duas sem os arquivos `.test.mjs`; copiar também `assistir-video` e `transcribe`, se faltarem. Na pasta-mãe, o `/atualizar-kit` traz a linha nova do `.gitignore` pelo passo "Arquivos misturados da pasta-mãe".
+**Como testar:** `node .claude/skills/clonar-especialista/scripts/checar-apelido.mjs mentor-teste` responde `livre: mentor-teste`, sem gastar nada, e `node .claude/skills/aprender-curso/scripts/conferir-citacoes.mjs <qualquer pasta> --persona` responde `AVISO: sem SKILL.md em ...` (a versão velha responde `AVISO: sem mentor.md em ...`: a `scripts/` da `aprender-curso` não foi trocada).
+
+## terminal-da-ia
+
+**O que é:** regra nova no `AGENTS.md`, a **Terminal é da IA**: a pessoa nunca digita no terminal. Quem roda comando é a IA; da pessoa só se pede clique (login, Autorizar, Instalar, senha do computador) ou o que ela escreve no chat. O detalhe chega no `.claude/detalhe-regras.md`.
+**Por quê:** pessoa que não é da área trava na tela preta, e as skills às vezes mandavam ela colar comando lá.
+**Te afeta se:** o `AGENTS.md` do projeto não tem a regra **Terminal é da IA**.
+**Como aplicar:** o `.claude/detalhe-regras.md` chega pelo motor do `/atualizar-sabinos` junto do núcleo. No `AGENTS.md` do projeto, acrescentar depois da última regra numerada a regra **Terminal é da IA** com o texto do `_modelo/AGENTS.md` do kit, com o próximo número do projeto. Mostrar o antes e o depois.
+**Como testar:** o `AGENTS.md` do projeto contém `Terminal é da IA`.
