@@ -1,7 +1,7 @@
 // Testes do cadastro no Bling. Nada vai pra rede: o req falso grava cada chamada e responde por roteiro.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { lerCsv, textoParaHtml, prefixoDoSku, proximoNumero, dimensoesDe, montarPayload, separar, resumo, proximoSkuLivre, enviar, jaCadastrado, possiveisDuplicados, argumentos, montarLote, resumoLote, enviarLote, conferirNoBling, resumoEnvioLote, montarUm, payloadParaEnviar } from './cadastrar.mjs'
@@ -285,6 +285,32 @@ test('enviarLote pula quem ja esta cadastrado, envia o resto e para no primeiro 
   assert.equal(gravados[0].pasta, '/pipeline/ok1')
 })
 
+test('enviarLote grava o dia de Sao Paulo, nao o de UTC, as 22h', async () => {
+  const { payload } = montarPayload({ copy, decisao, linha, config, categoriaId: 123, modalidade: 'classico' })
+  const tzAntes = process.env.TZ
+  process.env.TZ = 'America/Sao_Paulo'
+  try {
+    // 22h de 09/03/2025 em Sao Paulo ja e 10/03 em UTC; dia longe de hoje, pra o relogio de
+    // verdade nunca dar a resposta certa por acaso
+    const agora = () => new Date('2025-03-10T01:00:00Z')
+    assert.equal(agora().getHours(), 22, 'o fuso de Sao Paulo nao pegou, o teste nao provaria nada')
+    const gravados = []
+    const req = async (m, c) => (m === 'POST' && c === '/produtos' ? { data: { id: 7 } } : { data: [] })
+    await enviarLote(['noite'], { carregar: () => ({ pasta: '/pipeline/noite', payload }), req, gravar: (slug, pasta, dados) => gravados.push(dados), agora })
+    assert.equal(gravados.length, 1)
+    assert.equal(gravados[0].em, '2025-03-09')
+  } finally {
+    if (tzAntes === undefined) delete process.env.TZ
+    else process.env.TZ = tzAntes
+  }
+})
+
+test('cadastrar.mjs nao grava data pelo relogio UTC', () => {
+  const fonte = readFileSync(new URL('./cadastrar.mjs', import.meta.url), 'utf8')
+  assert.ok(fonte.includes('dataLocal('), 'canario: a troca por dataLocal esta no arquivo lido')
+  assert.ok(!fonte.includes('toISOString') && !fonte.includes('toJSON'))
+})
+
 test('enviarLote: carregar que lanca (slug sem --montar) para o lote sem perder quem ja foi criado', async () => {
   const { payload } = montarPayload({ copy, decisao, linha, config, categoriaId: 123, modalidade: 'classico' })
   const gravados = []
@@ -400,11 +426,17 @@ test('montarUm com nome da decisao diferente do CSV vira pendencia', async () =>
   }
 })
 
-test('montarPayload: marca de fabricante sem marca_autorizada trava; Genérica e marca autorizada passam', () => {
-  const fabricante = { ...copy, ficha: { Marca: 'Acme' } }
+test('montarPayload: marca real da decisao passa, Genérica em produto com marca trava, produto sem marca so com Genérica', () => {
+  const fabricante = { ...copy, titulo: 'Suspiro Acme Tradicional 1 kg', ficha: { Marca: 'Acme' } }
   assert.throws(() => montarPayload({ copy: fabricante, decisao, linha, config, categoriaId: 1, modalidade: 'classico' }), /Marca "Acme" fora da regra/)
-  assert.ok(!montarPayload({ copy: fabricante, decisao: { ...decisao, marca_autorizada: 'Acme' }, linha, config, categoriaId: 1, modalidade: 'classico' }).pendencias.some(p => /Marca/.test(p)))
+  assert.ok(!montarPayload({ copy: fabricante, decisao: { ...decisao, marca: 'Acme' }, linha, config, categoriaId: 1, modalidade: 'classico' }).pendencias.some(p => /Marca/.test(p)))
+  assert.throws(() => montarPayload({ copy, decisao: { ...decisao, marca: 'Acme' }, linha, config, categoriaId: 1, modalidade: 'classico' }), /Marca "Genérica" fora da regra/)
   assert.ok(!montarPayload({ copy, decisao, linha, config, categoriaId: 1, modalidade: 'classico' }).pendencias.some(p => /Marca/.test(p)))
+})
+
+test('montarPayload: produto com marca e titulo sem ela trava', () => {
+  const semNoTitulo = { ...copy, ficha: { Marca: 'Acme' } }
+  assert.throws(() => montarPayload({ copy: semNoTitulo, decisao: { ...decisao, marca: 'Acme' }, linha, config, categoriaId: 1, modalidade: 'classico' }), /titulo do copy.json nao tem a marca "Acme"/)
 })
 
 test('payloadParaEnviar recusa payload antigo com marca fora da regra', () => {
@@ -416,6 +448,21 @@ test('payloadParaEnviar recusa payload antigo com marca fora da regra', () => {
     assert.equal(payloadParaEnviar('suspiro', p.raiz).marca, 'Genérica', 'canario: payload na regra sai')
     gravar('Acme')
     assert.throws(() => payloadParaEnviar('suspiro', p.raiz), /Marca "Acme" fora da regra/)
+  } finally {
+    rmSync(p.raiz, { recursive: true, force: true })
+  }
+})
+
+test('payloadParaEnviar recusa payload antigo com nome sem a marca da decisao', () => {
+  const p = projetoBling()
+  try {
+    mkdirSync(join(p.raiz, 'anuncios', 'suspiro'), { recursive: true })
+    writeFileSync(join(p.pasta, 'decisao.json'), JSON.stringify({ tipo: 'individual', marca: 'Acme' }))
+    const gravar = nome => writeFileSync(join(p.raiz, 'anuncios', 'suspiro', 'bling-payload.json'), JSON.stringify({ nome, marca: 'Acme' }))
+    gravar('Suspiro Acme Tradicional 1 kg')
+    assert.equal(payloadParaEnviar('suspiro', p.raiz).marca, 'Acme', 'canario: nome com a marca sai')
+    gravar('Suspiro Tradicional 1 kg')
+    assert.throws(() => payloadParaEnviar('suspiro', p.raiz), /titulo do copy.json nao tem a marca "Acme"/)
   } finally {
     rmSync(p.raiz, { recursive: true, force: true })
   }

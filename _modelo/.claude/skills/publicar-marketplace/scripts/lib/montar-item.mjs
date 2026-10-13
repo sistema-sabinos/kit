@@ -3,7 +3,7 @@
 // Formato conferido na conta real em 2026-09-30 com POST /items/validate: o titulo vai em
 // family_name (title junto e recusado), e medidas e peso da embalagem sao obrigatorios, em
 // numero inteiro, cm e g.
-import { marcaDaFicha } from '../../../mercado-livre/scripts/lib/pipeline.mjs'
+import { marcaDaFicha, marcaNoTitulo } from '../../../mercado-livre/scripts/lib/pipeline.mjs'
 
 const DIACRITICOS = new RegExp('[\\u0300-\\u036f]', 'g')
 
@@ -125,6 +125,8 @@ export function montarItem({ copy, decisao, auditoria, imagens, linha, categoria
   for (const f of ficha.foraDaLista) avisos.push(`"${f.nome}" vai como texto livre ("${f.valor}"); a categoria tem a lista ${f.opcoes.join(', ')}. Trocar na ficha por uma delas faz o anuncio aparecer no filtro`)
   const marca = marcaDaFicha({ copy, decisao })
   if (marca) pendencias.push(marca)
+  const marcaTitulo = marcaNoTitulo({ copy, decisao })
+  if (marcaTitulo) pendencias.push(marcaTitulo)
   if (ficha.semCasa.length) avisos.push(`campos da ficha que a categoria nao tem e ficaram de fora: ${ficha.semCasa.join(', ')}`)
 
   if (!String(copy?.descricao ?? '').trim()) pendencias.push('o copy.json nao tem descricao')

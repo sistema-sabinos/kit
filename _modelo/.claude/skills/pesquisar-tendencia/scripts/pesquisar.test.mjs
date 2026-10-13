@@ -128,6 +128,29 @@ test('processar grava md, csv e a etapa da categoria; sem coleta, explica o que 
   }
 })
 
+test('processar grava o dia de Sao Paulo, nao o de UTC, as 22h', () => {
+  const raiz = mkdtempSync(join(tmpdir(), 'pesq-'))
+  const tzAntes = process.env.TZ
+  process.env.TZ = 'America/Sao_Paulo'
+  try {
+    // 22h de 09/03/2025 em Sao Paulo ja e 10/03 em UTC; dia longe de hoje, pra o relogio de
+    // verdade nunca dar a resposta certa por acaso
+    const agora = () => new Date('2025-03-10T01:00:00Z')
+    assert.equal(agora().getHours(), 22, 'o fuso de Sao Paulo nao pegou, o teste nao provaria nada')
+    const pasta = join(raiz, 'fornecedores', 'fornecedor-exemplo')
+    mkdirSync(pasta, { recursive: true })
+    writeFileSync(join(pasta, '_raw-pesquisa-doces.json'), JSON.stringify([A, B, C, D]))
+    processar({ fornecedor: 'fornecedor-exemplo', categoria: 'doces', raiz, agora })
+    const cat = JSON.parse(readFileSync(join(raiz, 'dados', 'pipeline', '_categorias', 'fornecedor-exemplo-doces.json'), 'utf8'))
+    assert.equal(cat.etapas.pesquisa.em, '2025-03-09')
+    assert.match(readFileSync(join(pasta, 'pesquisa-tendencia-doces.md'), 'utf8'), /em 2025-03-09\./)
+  } finally {
+    if (tzAntes === undefined) delete process.env.TZ
+    else process.env.TZ = tzAntes
+    rmSync(raiz, { recursive: true, force: true })
+  }
+})
+
 test('argumentos exige fornecedor e categoria', () => {
   assert.deepEqual(argumentos(['--fornecedor', 'f', '--categoria', 'c']), { fornecedor: 'f', categoria: 'c' })
   assert.throws(() => argumentos(['--fornecedor', 'f']), /--categoria/)

@@ -36,6 +36,12 @@ Toda pergunta feita ao usuário sai em 4 partes:
 
 ## Passo 0, se situar
 
+Antes de tudo, conferir os programas em silêncio, igual ao `/setup`: rodar a
+conferência de `.claude/skills/setup/SKILL.md` (seção "Conferir os programas",
+itens 1 a 4), com os mesmos comandos e textos. Ela pede Node 22 ou mais, e quem
+fez o `/setup` numa versão antiga do kit pode estar com um Node velho. `OK`
+segue sem falar nada.
+
 Antes de perguntar qualquer coisa, ler o que o sistema já sabe sobre a pessoa
 e sobre os projetos que já existem:
 

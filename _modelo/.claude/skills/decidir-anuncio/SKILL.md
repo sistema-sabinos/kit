@@ -95,8 +95,11 @@ catálogo tomado por Full ou loja oficial pesa contra entrar nele.
 
 **C. Palavras-chave do título.** As que aparecem em 3 ou mais títulos do topo
 (`vocabulario.txt`), garantindo nome do produto, característica-chave e
-diferencial. Até 60 caracteres. Sem marca de terceiro (o título trava depois
-da primeira venda e a marca não sai mais) e sem termo que o Mercado Livre
+diferencial. Até 60 caracteres. Marca no título: com `marca` na
+`decisao.json`, o título segue a ordem produto + marca + modelo; sem `marca`
+(produto sem marca ou kit que mistura marcas), o título fica sem marca. Produto
+compatível com outra marca usa "para" ou "compatível com", nunca "tipo",
+"semelhante" ou "igual a" (Mercado Livre, conferido em 2026-10-12). Sem termo que o Mercado Livre
 proíbe ("promoção", "grátis", "oferta", "brinde", "melhor", "original",
 porcentagem de desconto; lista conferida em
 2026-09-23, conferir ao vivo).
@@ -173,9 +176,13 @@ Ao aprovar, pra cada anúncio aprovado:
    "decidido"`, etapa `decisao` com `aprovado`), copiando o nome do produto
    letra por letra do `catalogo-analisado.csv` e as variações da coluna
    `variacoes`. Slug: minúsculas, sem acento, hífen no lugar de espaço.
-   `marca_autorizada` fica `null`; só quando a pessoa disser que é a dona da
-   marca ou revendedora autorizada por escrito, perguntar o nome e gravar ali
-   (sem isso, a ficha leva `Genérica`).
+   Perguntar a marca que está na embalagem e gravar em `marca`, também em
+   revenda e dropshipping de produto original: o Mercado Livre pede "Informe
+   sempre a marca real" (conferido em 2026-10-12). Produto sem marca, como o
+   artesanal ou o kit de itens sem marca, fica com `marca` `null` e a ficha
+   leva `Genérica`. Kit com itens de uma marca só leva essa marca; kit que
+   mistura marcas fica `null`, porque não há uma marca real única. Nunca o nome
+   da loja.
 2. Ressalva do veredito legal entra em `pendencias` do `status.json`.
 3. Atualizar a etapa `decisao` de `dados/pipeline/_categorias/<f>-<categoria>.json`
    (contrato 1) com o caminho do plano e os slugs gerados.

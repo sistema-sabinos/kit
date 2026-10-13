@@ -126,7 +126,7 @@ agente para e avisa.
   "tipo": "kit",
   "composicao": [{ "produto": "Suspiro 100g", "custo": 4.5, "qtd": 5 }],
   "variacoes": [],
-  "marca_autorizada": null,
+  "marca": null,
   "custo_total": 22.5,
   "posicionamento": "premium",
   "preco": { "tabela": 56.7, "alvo_pos_desconto": 49.9, "margem_projetada_rs": 10 },
@@ -142,9 +142,9 @@ agente para e avisa.
 `composicao[].produto` é o texto exato da coluna `produto` do
 `catalogo-analisado.csv`, copiado, nunca reescrito (nome que não casa vira
 pendência na publicação e no cadastro); `variacoes` lista cor, tamanho ou sabor
-quando o anúncio tem, vazio quando não. `marca_autorizada` fica `null`, e só
-leva o nome do fabricante quando a pessoa é a dona da marca ou revendedora
-autorizada por escrito.
+quando o anúncio tem, vazio quando não. `marca` é a marca real do produto (a da
+embalagem), e fica `null` quando ele não tem uma marca só; decisão de antes da 5.12
+traz o nome em `marca_autorizada`, e as ferramentas leem os dois.
 
 ## 4. `<slug>/copy.json` (copywriter escreve; designer, auditor e publicador leem)
 
@@ -167,10 +167,11 @@ autorizada por escrito.
 }
 ```
 
-Um título só e uma capa só: é um anúncio por produto. Marca na ficha:
-`Genérica` em kit, revenda e dropshipping. O nome do fabricante só quando você
-é a dona da marca ou revendedora autorizada por escrito, e aí ele vem de
-`decisao.json` em `marca_autorizada`. Nunca o nome da loja. `precos.ml_classico`
+Um título só e uma capa só: é um anúncio por produto. Marca na ficha: a marca
+real do produto (a da embalagem), gravada em `marca` na `decisao.json`, também
+em revenda e dropshipping de produto original; `Genérica` (o valor que o Mercado
+Livre pede, conferido em 2026-10-12) só quando o produto não tem uma marca só,
+como o artesanal, o kit de itens sem marca ou o kit que mistura marcas; nunca o nome da loja. `precos.ml_classico`
 fica no `alvo_pos_desconto` da decisão e `precos.ml_premium` pode ser maior; a
 publicação usa o preço da modalidade escolhida como alvo do desconto sobre
 `preco.tabela`. `gtin` fica `null` quando não há

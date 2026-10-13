@@ -176,7 +176,7 @@ depois de publicar, senão o anúncio fica no preço cheio.
 2. anuncios/<slug>/imagens/02-<papel>.jpg
 
 ## Atributos da categoria
-- Marca: <"Genérica", ou a marca_autorizada da decisão>
+- Marca: <a marca da decisão, ou "Genérica" quando o produto não tem uma marca só>
 - <cada atributo da ficha, com o valor>
 - Registro no órgão: <número, ou em branco; nunca "não se aplica">
 
@@ -208,11 +208,13 @@ entra mudança de foco, se a pessoa decidir uma. Conferir por API que o anúncio
 - Na rota Bling, a descrição vai no campo de descrição principal (curta), que
   é o que o Mercado Livre puxa; texto puro com quebra de linha colapsa no
   editor, por isso `<p>` e `<br>`; negrito não renderiza.
-- Marca na ficha: `Genérica` em kit, revenda e dropshipping. O nome do
-  fabricante só quando você é a dona da marca ou revendedora autorizada por
-  escrito, e aí ele vem de `decisao.json` em `marca_autorizada`. Nunca o nome
-  da loja. Nome do fabricante sem autorização pode virar denúncia, e o nome da
-  loja conflita com catálogo; o `--montar` barra marca fora da regra.
+- Marca na ficha: a marca real do produto (a da embalagem), gravada em `marca`
+  na `decisao.json`, também em revenda e dropshipping de produto original;
+  `Genérica` (o valor que o Mercado Livre pede, conferido em 2026-10-12) só
+  quando o produto não tem uma marca só, como o artesanal, o kit de itens sem marca ou o kit que mistura marcas;
+  nunca o nome da loja. O Mercado Livre trata marca errada na ficha como
+  infração ("Informe sempre a marca real"), e o nome da loja conflita com
+  catálogo; o `--montar` barra marca fora da regra.
 - Anúncio duplicado (Clássico e Premium do mesmo produto) divide esforço e faz
   as campanhas de anúncio darem lance uma contra a outra. Um por produto.
 - Chamada da API com 401: token vencido; renove o token com

@@ -46,6 +46,16 @@ test('status de erro vira mensagem clara', async () => {
   } finally { rmSync(d, { recursive: true, force: true }) }
 })
 
+test('status de erro cancela o corpo da resposta, senao a conexao segura o processo vivo', async () => {
+  const d = mkdtempSync(join(tmpdir(), 'dfn-'))
+  try {
+    let cancelado = false
+    const body = new ReadableStream({ cancel() { cancelado = true } })
+    await assert.rejects(baixarDeepFilter({ base: d, plat: 'win32', arch: 'x64', buscar: async () => ({ ok: false, status: 503, body }) }), /download/)
+    assert.equal(cancelado, true)
+  } finally { rmSync(d, { recursive: true, force: true }) }
+})
+
 test('plataforma sem binario avisa do afftdn e nao baixa', async () => {
   const d = mkdtempSync(join(tmpdir(), 'dfn-'))
   try {

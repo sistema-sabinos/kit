@@ -80,17 +80,39 @@ export function conferirAuditoria(pasta, auditoria) {
   throw new Error(`o ${mudou.join(', ')} mudou depois da auditoria: rode o ml-auditor de novo antes de montar`)
 }
 
-// Marca na ficha (decisao 1 da 5.7): `Genérica` (o valor que o Mercado Livre pede pra produto sem
-// marca, conferido em 2026-10-08) em kit, revenda e dropshipping; o nome do fabricante so quando
-// a pessoa e dona da marca ou revendedora autorizada por escrito (decisao.marca_autorizada).
+// Marca na ficha (decisao de 2026-10-12): a marca real do produto, gravada em decisao.marca, e
+// `Genérica` so quando o produto nao tem marca. O Mercado Livre pede "Informe sempre a marca real"
+// e "Se não tiver marca, digite Genérica" (ajuda/como-preencher-caracteristicas_3147, lida em
+// 2026-10-12). Decisao de antes da 5.12 traz a marca em marca_autorizada e segue valendo.
 export const SEM_MARCA = 'Genérica'
+// `marca` presente manda, mesmo null (produto sem marca); marca_autorizada so em decisao sem ela
+function marcaDaDecisao(decisao) {
+  return String((decisao && Object.hasOwn(decisao, 'marca') ? decisao.marca : decisao?.marca_autorizada) ?? '').trim()
+}
 export function marcaDaFicha({ copy, decisao }) {
   const marca = String(copy?.ficha?.Marca ?? '').trim()
-  const autorizada = String(decisao?.marca_autorizada ?? '').trim()
+  const real = marcaDaDecisao(decisao)
+  const esperada = real || SEM_MARCA
   const igual = (a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }) === 0
-  if (!marca) return `a ficha do copy.json nao tem Marca: use "${SEM_MARCA}"${autorizada ? ` ou "${autorizada}" (marca_autorizada da decisao)` : ''}`
-  if (igual(marca, SEM_MARCA) || (autorizada && igual(marca, autorizada))) return null
-  return `Marca "${marca}" fora da regra: use "${SEM_MARCA}" em kit, revenda e dropshipping; o nome do fabricante so entra quando voce e a dona da marca ou revendedora autorizada por escrito, gravado em marca_autorizada na decisao.json. Corrija no copy.json, rode o ml-auditor de novo e monte outra vez`
+  const corrigir = 'Corrija no copy.json, rode o ml-auditor de novo e monte outra vez'
+  if (!marca) return `a ficha do copy.json nao tem Marca: use "${esperada}"${real ? ' (a marca da decisao.json)' : ''}`
+  if (igual(marca, esperada)) return null
+  if (real) return `Marca "${marca}" fora da regra: a decisao.json diz que o produto e da marca "${real}", e o Mercado Livre pede a marca real na ficha (${SEM_MARCA} so em produto sem marca). ${corrigir}`
+  return `Marca "${marca}" fora da regra: a decisao.json diz que o produto nao tem marca, entao a ficha leva "${SEM_MARCA}". Se o produto tem marca na embalagem, grave o nome em "marca" na decisao.json; nunca o nome da loja. ${corrigir}`
+}
+
+// Marca no titulo (decisao de 2026-10-12): produto com marca leva ela no titulo, na ordem
+// produto + marca + modelo. O ML pede "No título: Informe a marca real do produto que você
+// oferece" (Central de Vendedores, propriedade intelectual, lida em 2026-10-12). Sem marca na
+// decisao (sem marca ou kit que mistura marcas) nao confere: marca de outro fabricante no
+// titulo nao tem lista pra conferir, isso fica com o ml-auditor.
+export function marcaNoTitulo({ copy, decisao }) {
+  const real = marcaDaDecisao(decisao)
+  if (!real) return null
+  // palavra inteira, sem caixa, acento nem pontuacao: "Elo" nao casa dentro de "Modelo"
+  const solto = t => ` ${String(t ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()} `
+  if (solto(copy?.titulo).includes(solto(real))) return null
+  return `o titulo do copy.json nao tem a marca "${real}" da decisao.json: produto com marca leva ela no titulo, na ordem produto + marca + modelo. Corrija no copy.json, rode o ml-auditor de novo e monte outra vez`
 }
 
 export function caminhoDaCategoria(fornecedor, categoria, raiz = RAIZ) {

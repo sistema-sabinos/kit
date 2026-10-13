@@ -4,7 +4,7 @@ description: >
   Instala e testa tudo que o vídeo precisa neste computador (Node, Python, ffmpeg, o
   motor de edição, o programa que escuta a voz e escreve a legenda e o limpador de
   ruído), pergunta antes de baixar cada coisa e fecha com um
-  teste curtinho de uns 8 segundos. Use quando o usuário chamar /configurar-video, disser "configurar
+  teste curtinho de uns 5 segundos. Use quando o usuário chamar /configurar-video, disser "configurar
   video", "instalar o video", "preparar o computador pra editar video", ou quando outra
   skill de vídeo (editar-video, video-produto) mandar rodar a configuração porque o motor
   não está pronto ou foi atualizado.
@@ -127,10 +127,10 @@ Esta é a exceção escrita à regra de nunca instalar skill de terceiro do jeit
 pacote é o oficial dos próprios autores do Remotion e ensina a biblioteca deles, então entra
 sem adaptar (decisão de 2026-10-05). Qualquer outra skill de fora segue a regra.
 
-### 6. Teste curtinho de uns 8 segundos
+### 6. Teste curtinho de uns 5 segundos
 
 Antes, rode `sincronizar-motor.mjs` de novo (e `instalar-motor.mjs` se ele pedir). O teste se recusa a carimbar se o motor de `_video` estiver diferente do kit. Rode `node .claude/skills/configurar-video/scripts/teste-rapido.mjs`. Ele monta um vídeo de
-uns 8 segundos com uma fala do kit, limpa a voz, escreve a legenda, renderiza e confere se a
+uns 5 segundos com uma fala do kit, limpa a voz, escreve a legenda, renderiza e confere se a
 legenda acertou e se o vídeo tem a duração certa. Passando, grava o `pronto.json` em
 `_video` e mostra onde ficou o mp4: abra o arquivo pro aluno ver e ouvir.
 

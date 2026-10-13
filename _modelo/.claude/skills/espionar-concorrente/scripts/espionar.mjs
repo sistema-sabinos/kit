@@ -13,6 +13,8 @@
 //   anuncio.avaliacoes = { fonte: 'pagina', media, total, niveis: null,
 //                          avaliacoes: [{ nota, titulo: '', texto, data, curtidas }] }
 //   nota de 1 a 5 ou null; data AAAA-MM-DD ou null; anuncio que falhou leva { erro }.
+//   Data que a pagina so da em tempo relativo ("Há 2 semanas") vem aproximada pelo dia da
+//   leitura e leva data_texto (o original) e data_aproximada: true; serve so pro peso por idade.
 //
 // Uso, da raiz do projeto (Chrome dedicado aberto e logado):
 //   node .claude/skills/espionar-concorrente/scripts/espionar.mjs --fornecedor <f> --categoria <c> --produto "<nome como no pesquisa-input>" [--n 5] [--perguntas 3]
@@ -29,7 +31,9 @@
 // Opinioes medidas em 2026-10-08: o link a.ui-pdp-review__label leva a /noindex/catalog/reviews/<codigo>
 // (todas as opinioes), com o texto escondido "Avaliação 4.7 de 5. 3859 opiniões."; cada opiniao mora em
 // .ui-review-capability-comments__comment, com __rating (estrelas __rating__star e __rating__star-empty),
-// __date e __content. O texto de cada opiniao ainda nao foi conferido com sessao (o site pediu login).
+// __date e __content. Conferido sem login no ensaio da 5.12 (2026-10-12): a pagina de todas as
+// opinioes abriu sem pedir conta; abre com 15 e carrega mais 15 a cada chegada no fim; ha dois
+// __date (pais e tempo relativo, "Há 1 ano", que vira data aproximada). Recorte em fixtures/.
 // Se o Mercado Livre mudar a pagina de novo, os seletores de lerPagina e lerAvaliacoesDaPagina sao o
 // que precisa de ajuste.
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'node:fs'
@@ -210,15 +214,32 @@ export function lerAvaliacoesDaPagina() {
     rotulo: txt(resumo),
     comentarios: [...document.querySelectorAll('.ui-review-capability-comments__comment')].map(c => {
       const nota = c.querySelector('.ui-review-capability-comments__comment__rating')
+      // dois __date desde 2026-10 (ensaio da 5.12): o pais e depois o tempo ("Há 1 ano")
+      const datas = c.querySelectorAll('.ui-review-capability-comments__comment__date')
       return {
         estrelas_rotulo: nota ? (nota.getAttribute('aria-label') || nota.innerText || '').trim() : null,
         estrelas_cheias: c.querySelectorAll('.ui-review-capability-comments__comment__rating__star').length,
-        data: txt(c.querySelector('.ui-review-capability-comments__comment__date')),
+        data: txt(datas[datas.length - 1]),
         texto: txt(c.querySelector('.ui-review-capability-comments__comment__content')),
         curtidas: txt(c.querySelector('.ui-review-capability-valorizations__button-like__count')),
       }
     }),
   }
+}
+
+// Todas as opinioes: a pagina abre com 15 e so carrega mais 15 quando a rolagem chega no fim
+// (medido no ensaio da 5.12; rolar 3000 px parava nas 15). Desce ate o fim, uma vez por pausa,
+// ate juntar `maximo` ou a lista parar de crescer. `parou` diz o motivo.
+export async function lerTodasAsOpinioes(page, { maximo = 100, rolagens = 8, espera = () => page.waitForTimeout(2000 + Math.floor(Math.random() * 2000)) } = {}) {
+  let lido = await page.evaluate(lerAvaliacoesDaPagina)
+  for (let i = 0; i < rolagens && lido.comentarios.length < maximo; i++) {
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+    await espera()
+    const antes = lido.comentarios.length
+    lido = await page.evaluate(lerAvaliacoesDaPagina)
+    if (lido.comentarios.length === antes) return { ...lido, parou: 'acabou' }
+  }
+  return { ...lido, parou: lido.comentarios.length >= maximo ? 'cem' : 'rolagens' }
 }
 
 const MESES = { jan: 1, fev: 2, mar: 3, abr: 4, mai: 5, jun: 6, jul: 7, ago: 8, set: 9, out: 10, nov: 11, dez: 12 }
@@ -236,12 +257,39 @@ export function dataDaPagina(texto) {
   return `${a}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
 }
 
+// A pagina de opinioes so mostra tempo relativo ("Há 2 semanas", "Ontem", "Há mais de 1 ano").
+// Vira data aproximada a partir do dia da leitura (`hoje`, AAAA-MM-DD), so pro peso por idade
+// da /ler-avaliacoes; "mais de" fica no minimo e mes curto prende no ultimo dia. O resto -> null.
+const UNIDADE = { dia: 'd', dias: 'd', semana: 's', semanas: 's', mês: 'm', mes: 'm', meses: 'm', ano: 'a', anos: 'a' }
+export function dataRelativa(texto, hoje) {
+  const h = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(hoje ?? ''))
+  if (!h) return null
+  const s = String(texto ?? '').trim().toLowerCase()
+  let n, u
+  if (s === 'hoje') [n, u] = [0, 'd']
+  else if (s === 'ontem') [n, u] = [1, 'd']
+  else {
+    const m = /^h[aá]\s+(?:mais de\s+)?(\d{1,3})\s+([a-zê]+)$/.exec(s)
+    if (!m || !UNIDADE[m[2]]) return null
+    ;[n, u] = [Number(m[1]), UNIDADE[m[2]]]
+  }
+  const [a, mes, d] = [Number(h[1]), Number(h[2]), Number(h[3])]
+  let dt
+  if (u === 'd' || u === 's') dt = new Date(Date.UTC(a, mes - 1, d - n * (u === 's' ? 7 : 1)))
+  else {
+    const meses = n * (u === 'a' ? 12 : 1)
+    const ultimo = new Date(Date.UTC(a, mes - 1 - meses + 1, 0)).getUTCDate()
+    dt = new Date(Date.UTC(a, mes - 1 - meses, Math.min(d, ultimo)))
+  }
+  return dt.toISOString().slice(0, 10)
+}
+
 const numeroDe = s => { const m = String(s ?? '').match(/\d+(?:[.,]\d+)?/); return m ? Number(m[0].replace(',', '.')) : null }
 
 // Converte o que lerAvaliacoesDaPagina devolveu no formato do bruto (contrato no topo).
 // Nota sai do rotulo ("Avaliação 4 de 5") ou, sem ele, da contagem de estrelas cheias;
 // opiniao sem texto fica de fora (a /ler-avaliacoes descartaria e o relatorio contaria errado).
-export function avaliacoesDaPagina(bruto, { maximo = 100 } = {}) {
+export function avaliacoesDaPagina(bruto, { maximo = 100, hoje = null } = {}) {
   const rotulo = String(bruto?.rotulo ?? '')
   const media = rotulo.match(/(\d+(?:[.,]\d+)?)\s+de\s+5/)
   const total = rotulo.match(/(\d[\d.]*)\s+opini/i)
@@ -252,7 +300,9 @@ export function avaliacoesDaPagina(bruto, { maximo = 100 } = {}) {
     const r = String(c.estrelas_rotulo ?? '').match(/(\d)(?:[.,]\d+)?\s+de\s+5/)
     const cheias = Number(c.estrelas_cheias)
     const nota = r ? Number(r[1]) : cheias >= 1 && cheias <= 5 ? cheias : null
-    avaliacoes.push({ nota, titulo: '', texto, data: dataDaPagina(c.data), curtidas: Math.round(numeroDe(c.curtidas) ?? 0) })
+    const exata = dataDaPagina(c.data)
+    const aprox = exata ? null : dataRelativa(c.data, hoje)
+    avaliacoes.push({ nota, titulo: '', texto, data: exata || aprox, ...(aprox ? { data_texto: String(c.data).trim(), data_aproximada: true } : {}), curtidas: Math.round(numeroDe(c.curtidas) ?? 0) })
   }
   return {
     fonte: 'pagina',
@@ -320,7 +370,7 @@ export async function espionar({ itens, jaColetados = [], lerAnuncio, lerPergunt
       a.loja_oficial = vendedor.loja_oficial
       a.vendidos = vendidosDe(a.subtitulo)
       a.fotos = fotosUnicas(a.fotos)
-      a.avaliacoes = avaliacoesDaPagina(limparFundo(visiveis, conta))
+      a.avaliacoes = avaliacoesDaPagina(limparFundo(visiveis, conta), { hoje })
     } catch (e) { a.erro = `pagina: ${e.message}`.slice(0, 200); a.avaliacoes = { erro: 'a pagina do anuncio nao abriu' } }
     anotarAlertas(a, conta)
     log(`${item.id}: ${a.erro || `${a.titulo?.slice(0, 50)}, ${a.fotos?.length ?? 0} fotos, ${a.avaliacoes.total ?? 0} avaliacoes`}`)
@@ -333,15 +383,23 @@ export async function espionar({ itens, jaColetados = [], lerAnuncio, lerPergunt
   for (const a of topo.filter(x => x.link_avaliacoes && x.avaliacoes_em !== hoje)) {
     const conta = { tag: 0, bidi: 0 }
     try {
-      const lidas = avaliacoesDaPagina(limparFundo(await lerAvaliacoes(a.link_avaliacoes), conta))
+      const cru = await lerAvaliacoes(a.link_avaliacoes)
+      const lidas = avaliacoesDaPagina(limparFundo(cru, conta), { hoje })
       // pagina de opinioes sem nenhuma (login, seletor que mudou) nao apaga as que a do anuncio
       // mostrou nem carimba o dia; o rotulo dizendo que existem opinioes tambem conta como falha
       // (revisao final 5.7), senao o --retomar do dia nunca tenta de novo
       if (!lidas.avaliacoes.length && (a.avaliacoes?.avaliacoes?.length || lidas.total > 0 || a.avaliacoes?.total > 0)) {
         throw new Error('a pagina de todas as opinioes veio sem nenhuma, mas o anuncio tem opinioes: ficaram as da pagina do anuncio')
       }
+      // sem o rotulo na pagina de opinioes o total seria o que foi lido: vale o que o anuncio ja mostrou
+      lidas.total = Math.max(lidas.total, Number(a.avaliacoes?.total) || 0)
       a.avaliacoes = lidas
+      // a lista parou antes do esperado (ensaio da 5.12: 15 de 1391): guarda o que leu e avisa
+      const esperadas = Math.min(lidas.total, 100)
+      const vieram = cru?.comentarios?.length ?? 0
+      if (vieram < esperadas) throw new Error(`leu ${vieram} de ${esperadas} opinioes esperadas: a lista parou de carregar; ficaram as lidas e o --retomar tenta de novo`)
       a.avaliacoes_em = hoje
+      delete a.avaliacoes_erro
     } catch (e) { a.avaliacoes_erro = e.message.slice(0, 200) }
     anotarAlertas(a, conta)
     await dormir(2000 + Math.floor(Math.random() * 2000))
@@ -454,19 +512,8 @@ if (ehCli) {
         await page.waitForTimeout(1500)
         return { ...(await page.evaluate(lerPagina)), avaliacoes_pagina: await page.evaluate(lerAvaliacoesDaPagina) }
       },
-      // todas as opinioes: rola devagar (2 a 4 s por vez) ate juntar 100 ou parar de crescer
-      lerAvaliacoes: async url => {
-        await abrir(url)
-        let lido = await page.evaluate(lerAvaliacoesDaPagina)
-        for (let i = 0; i < 8 && lido.comentarios.length < 100; i++) {
-          await page.mouse.wheel(0, 3000)
-          await page.waitForTimeout(2000 + Math.floor(Math.random() * 2000))
-          const antes = lido.comentarios.length
-          lido = await page.evaluate(lerAvaliacoesDaPagina)
-          if (lido.comentarios.length === antes) break
-        }
-        return lido
-      },
+      // todas as opinioes: desce devagar (2 a 4 s por vez) ate juntar 100 ou parar de crescer
+      lerAvaliacoes: async url => { await abrir(url); return lerTodasAsOpinioes(page) },
       lerPerguntas: async url => { await abrir(url); return page.evaluate(() => document.body.innerText) },
       log: m => console.error(m),
       salvar: anuncio => { atual = mesclarAnuncios(atual, [anuncio]); salvarBruto() },

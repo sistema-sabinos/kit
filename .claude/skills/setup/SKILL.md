@@ -47,17 +47,17 @@ que a resposta deixou faltando.
    Windows (roda no PowerShell 5.1):
 
    ```powershell
-   $s=$env:Path; $r=[Environment]::GetEnvironmentVariable('Path','Machine')+';'+[Environment]::GetEnvironmentVariable('Path','User'); function Tem($nome,$p){ $env:Path=$p; $c=Get-Command $nome -ErrorAction SilentlyContinue; if (-not $c) { return $false }; if ($nome -eq 'node') { return [int] (((& node -v) -replace 'v','').Split('.')[0]) -ge 20 }; return $true }; $falta=@(); $reiniciar=@(); foreach ($p in 'git','node') { if (-not (Tem $p $s)) { if (Tem $p $r) { $reiniciar+=$p } else { $falta+=$p } } }; $env:Path=$s; if ($falta -and -not (Get-Command winget -ErrorAction SilentlyContinue)) { $falta+='sem-winget' }; if ($falta) { 'FALTA ' + ($falta -join ' ') } elseif ($reiniciar) { 'REINICIAR ' + ($reiniciar -join ' ') } else { 'OK' }
+   $s=$env:Path; $r=[Environment]::GetEnvironmentVariable('Path','Machine')+';'+[Environment]::GetEnvironmentVariable('Path','User'); function Tem($nome,$p){ $env:Path=$p; $c=Get-Command $nome -ErrorAction SilentlyContinue; if (-not $c) { return $false }; if ($nome -eq 'node') { return [int] (((& node -v) -replace 'v','').Split('.')[0]) -ge 22 }; return $true }; $falta=@(); $reiniciar=@(); foreach ($p in 'git','node') { if (-not (Tem $p $s)) { if (Tem $p $r) { $reiniciar+=$p } else { $falta+=$p } } }; $env:Path=$s; if ($falta -and -not (Get-Command winget -ErrorAction SilentlyContinue)) { $falta+='sem-winget' }; if ($falta) { 'FALTA ' + ($falta -join ' ') } elseif ($reiniciar) { 'REINICIAR ' + ($reiniciar -join ' ') } else { 'OK' }
    ```
 
    Sem a ferramenta PowerShell (o Git já está, então a Bash existe): `node -v` pela Bash;
-   versão 20 ou mais é `OK`, sem node ou menor é `FALTA node`, e a instalação vai por
+   versão 22 ou mais é `OK`, sem node ou menor é `FALTA node`, e a instalação vai por
    `winget.exe` na Bash com as mesmas flags.
 
    Mac (o Git só conta com as ferramentas da Apple no disco):
 
    ```sh
-   f=""; d=$(xcode-select -p 2>/dev/null) && [ -x "$d/usr/bin/git" ] || f="$f git"; v=$(node -v 2>/dev/null | cut -c2- | cut -d. -f1); [ "${v:-0}" -ge 20 ] 2>/dev/null || f="$f node"; if [ -n "$f" ]; then echo "FALTA$f"; else echo OK; fi
+   f=""; d=$(xcode-select -p 2>/dev/null) && [ -x "$d/usr/bin/git" ] || f="$f git"; v=$(node -v 2>/dev/null | cut -c2- | cut -d. -f1); [ "${v:-0}" -ge 22 ] 2>/dev/null || f="$f node"; if [ -n "$f" ]; then echo "FALTA$f"; else echo OK; fi
    ```
 
 2. O que fazer com a resposta:
@@ -74,7 +74,8 @@ que a resposta deixou faltando.
 
      Faltando um só, a frase cita só ele. Se o Claude for pedir licença pra rodar o comando,
      junta: "Se eu pedir licença pra rodar o comando, clica em permitir também." No Mac, a
-     última frase vira o aviso da janela da Apple.
+     última frase vira o aviso da janela da Apple. Node instalado abaixo da versão 22 também
+     sai `FALTA node`: aí a frase diz que o Node daqui está velho e precisa da versão nova.
 3. Com o sim, no Windows, um comando por programa, pela PowerShell com `timeout` de 600000:
 
    ```

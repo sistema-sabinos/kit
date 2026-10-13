@@ -3,10 +3,18 @@
 import { spawnSync } from 'node:child_process'
 import { conectar } from '../../../midia-social/scripts/lib/chrome.mjs'
 
-export async function abrirPagina() {
-  const browser = await conectar()
-  const ctx = browser.contexts()[0] || (await browser.newContext())
-  const page = await ctx.newPage()
+// Se a aba falha depois de conectar, a conexao fecha aqui: aberta, ela segura o processo e o script
+// mostra o erro e fica pendurado (as cascas saem por exitCode, que espera tudo fechar).
+export async function abrirPagina(abrir = conectar) {
+  const browser = await abrir()
+  let page
+  try {
+    const ctx = browser.contexts()[0] || (await browser.newContext())
+    page = await ctx.newPage()
+  } catch (e) {
+    await browser.close().catch(() => {})
+    throw e
+  }
   await page.bringToFront().catch(() => {})
   return { page, fechar: async () => { await page.close().catch(() => {}); await browser.close().catch(() => {}) } }
 }

@@ -32,6 +32,8 @@ export async function baixarDeepFilter({ base, plat = process.platform, arch = p
   const parcial = alvo + '.parte'
   try {
     const r = await buscar(url)
+    // corpo do erro sem ler segura a conexao aberta e, sem o process.exit, o processo nao termina
+    if (r && !r.ok) await r.body?.cancel()
     if (!r || !r.ok) throw new Error(`o download de ${url} falhou (status ${r ? r.status : 'sem resposta'}). Confira a internet e rode de novo.`)
     if (r.body) await pipeline(Readable.fromWeb(r.body), createWriteStream(parcial))
     else writeFileSync(parcial, Buffer.from(await r.arrayBuffer()))
@@ -53,6 +55,6 @@ if (ehCli) {
     else if (r.suportado) console.log(`O limpador de voz ja esta instalado em ${r.caminho}.`)
   } catch (e) {
     console.error(e.message)
-    process.exit(1)
+    process.exitCode = 1
   }
 }

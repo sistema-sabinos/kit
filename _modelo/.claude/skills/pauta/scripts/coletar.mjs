@@ -22,11 +22,21 @@ export function tagDeEncode(u) {
   } catch { return '' }
 }
 
+// Desde 2026-10 a etiqueta vem como _q20 a _q90 em vez de 1080p/720p (medido no ensaio da 5.12:
+// so o q90 era 1080x1920); sem nenhuma das duas, fica o primeiro que a rede entregou.
+const nivelQ = u => Number((/_q(\d+)(?!.*_q\d)/.exec(tagDeEncode(u)) || [])[1] || -1)
 export function escolherFaixas(urls) {
   const audio = urls.find(u => /audio/i.test(tagDeEncode(u)))
   const videos = urls.filter(u => u !== audio)
-  const melhor = ['1080p', '720p', '540p', '360p'].map(q => videos.find(u => tagDeEncode(u).includes(q))).find(Boolean) || videos[0]
+  const porQ = [...videos].sort((a, b) => nivelQ(b) - nivelQ(a)).find(u => nivelQ(u) >= 0)
+  const melhor = ['1080p', '720p', '540p', '360p'].map(q => videos.find(u => tagDeEncode(u).includes(q))).find(Boolean) || porQ || videos[0]
   return { video: melhor || null, audio: audio || null }
+}
+
+// O og:description do HTML do post, com content antes ou depois de property.
+export function ogDoHtml(html) {
+  const tag = (String(html ?? '').match(/<meta\b[^>]*property="og:description"[^>]*>/) || [])[0] || ''
+  return (/\bcontent="([^"]*)"/.exec(tag) || [])[1] || ''
 }
 
 // Post ja baixado numa coleta anterior: atualiza os numeros e limpa a legenda guardada, que
@@ -122,7 +132,8 @@ async function main(argv) {
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 })
       await page.waitForTimeout(5000)
       if (await esperarSeBloqueado()) { await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 }); await page.waitForTimeout(5000) }
-      if (!(await page.evaluate(() => !!document.querySelector('video')).catch(() => false))) return { temVideo: false, todos: [] }
+      // O <video> pode entrar depois dos 5 s (ensaio da 5.12: o 3o reel seguido falhava e, 1 s depois, tinha video).
+      if (!(await page.waitForSelector('video', { state: 'attached', timeout: 15000 }).then(() => true, () => false))) return { temVideo: false, todos: [] }
       await page.evaluate(() => { const v = document.querySelector('video'); if (v) { v.muted = true; v.play() } }).catch(() => {})
       await page.waitForTimeout(9000)
       const noHtml = await page.evaluate(() => {
@@ -184,13 +195,13 @@ async function main(argv) {
         try {
           const r = await fetch(u, { credentials: 'include' })
           const h = await r.text()
-          const g = p => (h.match(new RegExp(`<meta property="${p}" content="([^"]*)"`)) || [])[1] || ''
-          out[u] = { status: r.status, desc: g('og:description'), login: /accounts\/login/.test(r.url) }
+          out[u] = { status: r.status, metas: (h.match(/<meta\b[^>]*>/g) || []).filter(t => t.includes('og:description')).join(''), login: /accounts\/login/.test(r.url) }
         } catch (e) { out[u] = { erro: e.message } }
         await new Promise(r => setTimeout(r, 1200))
       }
       return out
     }, itens.map(i => i.url))
+    for (const og of Object.values(ogs)) og.desc = ogDoHtml(og.metas)
     log('og coletado:', Object.values(ogs).filter(x => x.desc).length, 'de', itens.length)
 
     for (const it of itens) {
@@ -238,4 +249,4 @@ async function main(argv) {
 }
 
 const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
-if (ehCli) main(process.argv.slice(2)).catch(e => { console.error('ERRO:', e.message); process.exit(1) })
+if (ehCli) main(process.argv.slice(2)).catch(e => { console.error('ERRO:', e.message); process.exitCode = 1 })

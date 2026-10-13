@@ -1,4 +1,4 @@
-// Teste curtinho (a duracao da fala do kit, uns 8 segundos): faz de verdade o caminho curto do video (bruto, limpeza da voz, legenda pelo whisper,
+// Teste curtinho (a duracao da fala do kit, uns 5 segundos): faz de verdade o caminho curto do video (bruto, limpeza da voz, legenda pelo whisper,
 // render do Remotion) com uma fala do proprio kit. Se o mp4 sai com a duracao da fala e a legenda acerta o que foi
 // dito, grava o pronto.json, que e o "carimbo" que o resto do video confere antes de rodar.
 // Uso: node .claude/skills/configurar-video/scripts/teste-rapido.mjs
@@ -102,11 +102,12 @@ if (ehCli) {
     const r = await testeRapido({ base })
     if (!r.ok) {
       console.error(`O teste NAO passou: ${r.motivos.join('; ')}.`)
-      process.exit(1)
+      process.exitCode = 1
+    } else {
+      console.log(`Passou: video de ${r.duracaoSeg.toFixed(1)} s em ${r.saida}, palavras achadas: ${r.achadas.join(', ')}. O video esta pronto pra usar.`)
     }
-    console.log(`Passou: video de ${r.duracaoSeg.toFixed(1)} s em ${r.saida}, palavras achadas: ${r.achadas.join(', ')}. O video esta pronto pra usar.`)
   } catch (e) {
     console.error(e.message)
-    process.exit(1)
+    process.exitCode = 1
   }
 }

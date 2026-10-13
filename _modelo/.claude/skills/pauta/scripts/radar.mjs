@@ -43,7 +43,8 @@ export function lerTrends24(html, conta) {
 
 async function texto(fetchFn, url) {
   const r = await fetchFn(url, { headers: UA })
-  if (!r.ok) throw new Error(`HTTP ${r.status}`)
+  // corpo do erro sem ler segura a conexao aberta e, sem o process.exit, o processo nao termina
+  if (!r.ok) { await r.body?.cancel(); throw new Error(`HTTP ${r.status}`) }
   return r.text()
 }
 
@@ -81,4 +82,4 @@ async function main(argv) {
 }
 
 const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
-if (ehCli) main(process.argv.slice(2)).catch(e => { console.error('ERRO:', e.message); process.exit(1) })
+if (ehCli) main(process.argv.slice(2)).catch(e => { console.error('ERRO:', e.message); process.exitCode = 1 })

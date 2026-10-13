@@ -10,7 +10,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
-import { gravarEtapaDaCategoria } from '../../mercado-livre/scripts/lib/pipeline.mjs'
+import { gravarEtapaDaCategoria, dataLocal } from '../../mercado-livre/scripts/lib/pipeline.mjs'
 
 export const CLASSES = ['oportunidade forte', 'vale considerar', 'desafiador', 'fora', 'sem dado']
 export const COLUNAS = 'produto,custo,preco_min,preco_med,preco_max,margem_bruta_med,margem_pct,anuncios_livres,tem_catalogo,buybox_concorrentes,loja_oficial,nota,classificacao'
@@ -134,7 +134,7 @@ export function gerarMd(lista, { fornecedor, categoria, hoje }) {
   return L.join('\n')
 }
 
-export function processar({ fornecedor, categoria, raiz = RAIZ, hoje = new Date().toISOString().slice(0, 10) }) {
+export function processar({ fornecedor, categoria, raiz = RAIZ, agora = () => new Date(), hoje = dataLocal(agora()) }) {
   const pasta = join(raiz, 'fornecedores', fornecedor)
   const bruto = join(pasta, `_raw-pesquisa-${categoria}.json`)
   if (!existsSync(bruto)) throw new Error(`nao existe ${bruto}. Rode antes a coleta: node .claude/skills/pesquisar-tendencia/scripts/coletar-cdp.mjs --fornecedor ${fornecedor} --categoria ${categoria}`)

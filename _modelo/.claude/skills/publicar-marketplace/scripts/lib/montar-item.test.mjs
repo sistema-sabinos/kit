@@ -15,13 +15,13 @@ const ATRIBUTOS = [
 ]
 const CATEGORIA = { id: 'MLB1', nome: 'Moedores', max_title_length: 60, max_pictures_per_item: 3 }
 const copy = {
-  titulo: 'Moedor Eletrico Inox 200w',
+  titulo: 'Moedor Eletrico Acme Inox 200w',
   descricao: 'Texto da descricao',
   ficha: { Marca: 'Acme', Modelo: 'M-1', 'Tipo de alimentacao': 'Corrente domestica', Cor: 'Preto', Voltagem: '127V', Largura: '' },
   precos: { ml_classico: 84.9, ml_premium: 89.9 },
   gtin: null,
 }
-const decisao = { tipo: 'individual', preco: { tabela: 96.5, alvo_pos_desconto: 84.9 }, marca_autorizada: 'Acme' }
+const decisao = { tipo: 'individual', preco: { tabela: 96.5, alvo_pos_desconto: 84.9 }, marca: 'Acme' }
 const auditoria = { veredito: 'aprovado', modalidade_escolhida: 'classico' }
 const imagens = { aprovado_pelo_usuario: true, imagens: [
   { n: 2, arquivo: 'anuncios/x/imagens/02-uso.jpg' },
@@ -62,14 +62,22 @@ test('precoDeLista com o preco da modalidade acima da tabela entra no preco da m
   assert.match(r.aviso, /nao fica acima do preco da modalidade/)
 })
 
-test('marca de fabricante sem marca_autorizada vira pendencia; Genérica e marca autorizada passam', () => {
-  const semAutorizacao = montarItem({ ...base, decisao: { ...decisao, marca_autorizada: null } })
-  assert.ok(semAutorizacao.pendencias.some(p => /Marca "Acme" fora da regra/.test(p)), semAutorizacao.pendencias.join(' | '))
-  const generica = montarItem({ ...base, copy: { ...copy, ficha: { ...copy.ficha, Marca: 'Genérica' } }, decisao: { ...decisao, marca_autorizada: null } })
+test('marca real da decisao passa; Genérica so em produto sem marca', () => {
+  assert.ok(!montarItem(base).pendencias.some(p => /Marca/.test(p)), 'marca real passa')
+  const genericaComMarca = montarItem({ ...base, copy: { ...copy, ficha: { ...copy.ficha, Marca: 'Genérica' } } })
+  assert.ok(genericaComMarca.pendencias.some(p => /Marca "Genérica" fora da regra/.test(p)), genericaComMarca.pendencias.join(' | '))
+  const semMarcaNaDecisao = montarItem({ ...base, decisao: { ...decisao, marca: null } })
+  assert.ok(semMarcaNaDecisao.pendencias.some(p => /Marca "Acme" fora da regra/.test(p)), semMarcaNaDecisao.pendencias.join(' | '))
+  const generica = montarItem({ ...base, copy: { ...copy, ficha: { ...copy.ficha, Marca: 'Genérica' } }, decisao: { ...decisao, marca: null } })
   assert.ok(!generica.pendencias.some(p => /Marca/.test(p)), generica.pendencias.join(' | '))
-  assert.ok(!montarItem(base).pendencias.some(p => /Marca/.test(p)), 'marca autorizada passa')
-  const semMarca = montarItem({ ...base, copy: { ...copy, ficha: { ...copy.ficha, Marca: 'Sem marca' } }, decisao: { ...decisao, marca_autorizada: null } })
-  assert.ok(semMarca.pendencias.some(p => /use "Genérica"/.test(p)), 'Sem marca nao e o valor do Mercado Livre')
+  const semMarca = montarItem({ ...base, copy: { ...copy, ficha: { ...copy.ficha, Marca: 'Sem marca' } }, decisao: { ...decisao, marca: null } })
+  assert.ok(semMarca.pendencias.some(p => /leva "Genérica"/.test(p)), 'Sem marca nao e o valor do Mercado Livre')
+})
+
+test('produto com marca e titulo sem ela vira pendencia', () => {
+  const semNoTitulo = montarItem({ ...base, copy: { ...copy, titulo: 'Moedor Eletrico Inox 200w' } })
+  assert.ok(semNoTitulo.pendencias.some(p => /titulo do copy.json nao tem a marca "Acme"/.test(p)), semNoTitulo.pendencias.join(' | '))
+  assert.ok(!montarItem(base).pendencias.some(p => /titulo do copy.json/.test(p)), 'titulo com a marca passa')
 })
 
 test('modalidadeDoML traduz e recusa o que nao conhece', () => {
@@ -127,7 +135,7 @@ test('montarItem monta o corpo inteiro na forma que a validacao aceitou', () => 
   assert.equal(r.planoB, null)
   assert.deepEqual(r.pendencias, [])
   assert.deepEqual(r.corpo, {
-    family_name: 'Moedor Eletrico Inox 200w',
+    family_name: 'Moedor Eletrico Acme Inox 200w',
     category_id: 'MLB1',
     price: 96.5,
     currency_id: 'BRL',

@@ -51,9 +51,15 @@ gate da pessoa.
 
 - Até 60 caracteres, contando espaço. Estrutura: produto principal,
   característica-chave, diferencial, uso ou público se couber.
+- Marca no título: com `marca` na `decisao.json`, o título segue a ordem
+  produto + marca + modelo; sem `marca` (produto sem marca ou kit que mistura
+  marcas), o título fica sem marca. Produto compatível com outra marca usa
+  "para" ou "compatível com", nunca "tipo", "semelhante" ou "igual a"
+  (Mercado Livre, conferido em 2026-10-12). O `--montar` barra título sem a
+  marca da decisão.
 - Vocabulário do `vocabulario.txt`: a palavra mais buscada do nicho entra,
   porque o título trava depois da primeira venda e é a única chance.
-- Sem marca de terceiro (não sai mais depois que trava) e sem termo proibido
+- Sem termo proibido
   ("promoção", "grátis", "oferta", "brinde", "melhor", "original", porcentagem
   de desconto; conferido em 2026-09-23, conferir ao
   vivo).
@@ -83,11 +89,11 @@ modelo:
 ### 4. A ficha técnica
 
 Os atributos consensuais do nicho (`atributos.json`), preenchidos com o que o
-catálogo e o briefing dizem. Marca na ficha: `Genérica` (o valor que o Mercado
-Livre pede pra produto sem marca, conferido em 2026-10-08) em kit, revenda e
-dropshipping. O nome do fabricante só quando você é a dona da marca ou
-revendedora autorizada por escrito, e aí ele vem de `decisao.json` em
-`marca_autorizada`. Nunca o nome da loja. Peso e dimensões
+catálogo e o briefing dizem. Marca na ficha: a marca real do produto (a da
+embalagem), gravada em `marca` na `decisao.json`, também em revenda e
+dropshipping de produto original; `Genérica` (o valor que o Mercado Livre pede,
+conferido em 2026-10-12) só quando o produto não tem uma marca só, como o artesanal, o
+kit de itens sem marca ou o kit que mistura marcas; nunca o nome da loja. Peso e dimensões
 com o dado real do catálogo; sem dado, `[PREENCHER]` e pendência, porque peso
 errado custa dinheiro em toda venda. GTIN: o EAN do catálogo quando confiável;
 kit montado por você nunca tem, e código inventado derruba o anúncio. NCM: o

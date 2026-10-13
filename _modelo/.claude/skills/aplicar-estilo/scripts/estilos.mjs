@@ -61,7 +61,7 @@ export function conferir({ raiz = RAIZ, env, home = homedir(), versaoNode = proc
   const temCatalogo = existsSync(join(catalogo, 'catalogo.md'))
   itens.push({ item: 'catalogo de estilos', ok: temCatalogo, fazer: `a pasta ${catalogo} nao tem os estilos: rode a /atualizar-kit na pasta-mae` })
   const maior = Number(versaoNode.split('.')[0])
-  itens.push({ item: `Node ${versaoNode}`, ok: maior >= 18, fazer: 'os estilos pedem Node 18 ou mais novo: rode a /configurar-video' })
+  itens.push({ item: `Node ${versaoNode}`, ok: maior >= 22, fazer: 'os estilos pedem Node 22 ou mais novo: rode a /configurar-video' })
   const remotion = ['.claude/skills/remotion-best-practices/SKILL.md'].flatMap((p) => [join(raiz, p), join(home, p)]).some(existsSync)
   itens.push({ item: 'skill do Remotion (remotion-best-practices)', ok: remotion, fazer: 'faca o passo 5 da /configurar-video (Skills do Remotion)' })
   const edicoes = pastaEdicoes({ raiz, env })

@@ -116,10 +116,11 @@ seguir.
 ## Regras
 
 - Nunca enviar sem o "pode ir" daquele momento. O `--montar` existe pra isso.
-- Marca na ficha: `Genérica` em kit, revenda e dropshipping. O nome do
-  fabricante só quando você é a dona da marca ou revendedora autorizada por
-  escrito, e aí ele vem de `decisao.json` em `marca_autorizada`. Nunca o nome
-  da loja. Marca fora da regra trava o `--montar` (o payload não nasce); marca própria em
+- Marca na ficha: a marca real do produto (a da embalagem), gravada em `marca`
+  na `decisao.json`, também em revenda e dropshipping de produto original;
+  `Genérica` (o valor que o Mercado Livre pede, conferido em 2026-10-12) só
+  quando o produto não tem uma marca só, como o artesanal, o kit de itens sem marca ou o kit que mistura marcas;
+  nunca o nome da loja. Marca fora da regra trava o `--montar` (o payload não nasce); marca própria em
   produto de terceiro derruba o anúncio por denúncia de propriedade intelectual.
 - Copy, imagens ou decisão mexidos depois da auditoria: o `--montar` recusa até
   o `ml-auditor` rodar de novo (ele carimba a auditoria no fim).

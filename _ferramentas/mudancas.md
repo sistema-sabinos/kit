@@ -530,10 +530,10 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## marca-generica-na-ficha
 
-**O que é:** a Marca da ficha do anúncio passa a seguir uma regra só em todas as skills do Mercado Livre: `Genérica` (o valor que o Mercado Livre pede pra produto sem marca) em kit, revenda e dropshipping, e o nome do fabricante só quando a pessoa é a dona da marca ou revendedora autorizada por escrito, gravado em `marca_autorizada` na `decisao.json`. O `--montar` vira pendência com marca fora da regra.
-**Por quê:** a `/montar-anuncio`, a `/publicar-marketplace` e a `/cadastrar-bling` davam três regras diferentes, e marca de fabricante sem autorização pode derrubar o anúncio por denúncia.
-**Te afeta se:** algum `dados/pipeline/<slug>/copy.json` de anúncio ainda não publicado tem na ficha uma `Marca` diferente de `Genérica`.
-**Como aplicar:** as skills chegam pelo motor do `/atualizar-sabinos`. Pra cada copy afetado, mostrar a marca e perguntar se a pessoa é a dona da marca ou revendedora autorizada por escrito: com o sim, gravar o nome em `marca_autorizada` na `decisao.json`; sem, trocar a `Marca` do `copy.json` e do `copy.md` por `Genérica`. Nos dois casos o anúncio passa de novo pelo `ml-auditor`.
+**O que é:** a Marca da ficha do anúncio passa a seguir uma regra só em todas as skills do Mercado Livre: a marca real do produto (a da embalagem), gravada em `marca` na `decisao.json`, também em revenda e dropshipping de produto original; `Genérica` só quando o produto não tem uma marca só, como o artesanal, o kit de itens sem marca ou o kit que mistura marcas; nunca o nome da loja. O `--montar` vira pendência com marca fora da regra.
+**Por quê:** a `/montar-anuncio`, a `/publicar-marketplace` e a `/cadastrar-bling` davam três regras diferentes, e o Mercado Livre pede "Informe sempre a marca real" e `Genérica` só pra produto sem marca (ajuda "Como preencher as características do produto", conferida em 2026-10-12).
+**Te afeta se:** algum anúncio ainda não publicado tem `dados/pipeline/<slug>/copy.json` e uma `decisao.json` sem a chave `marca` (decisão feita antes da 5.12), e a `Marca` da ficha não é o nome gravado em `marca_autorizada` (ou ali não tem nome).
+**Como aplicar:** as skills chegam pelo motor do `/atualizar-sabinos`. Pra cada anúncio afetado, mostrar a `Marca` da ficha e perguntar qual marca está na embalagem do produto. Com uma marca só: gravar o nome em `marca` na `decisao.json` e pôr o mesmo nome na `Marca` do `copy.json` e do `copy.md`. Sem marca, ou kit que mistura marcas: gravar `marca` como `null` e a `Marca` vira `Genérica`. Nos dois casos o anúncio passa de novo pelo `ml-auditor`, porque a `decisao.json` entra no carimbo da auditoria e o `--montar` recusa decisão mexida depois dela.
 **Como testar:** o `--montar` daquele anúncio não lista pendência de Marca.
 
 ## mei-venda-de-fora
@@ -567,3 +567,27 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o `AGENTS.md` do projeto não tem a regra **Terminal é da IA**.
 **Como aplicar:** o `.claude/detalhe-regras.md` chega pelo motor do `/atualizar-sabinos` junto do núcleo. No `AGENTS.md` do projeto, acrescentar depois da última regra numerada a regra **Terminal é da IA** com o texto do `_modelo/AGENTS.md` do kit, com o próximo número do projeto. Mostrar o antes e o depois.
 **Como testar:** o `AGENTS.md` do projeto contém `Terminal é da IA`.
+
+## marca-real-na-ficha
+
+**O que é:** a regra da Marca da ficha mudou na 5.12. Antes: `Genérica` em kit, revenda e dropshipping. Agora: a marca real do produto (a da embalagem), gravada em `marca` na `decisao.json`, também em revenda e dropshipping de produto original; `Genérica` só quando o produto não tem uma marca só, como o artesanal, o kit de itens sem marca ou o kit que mistura marcas. O `--montar` passa a barrar `Genérica` em produto que tem marca na decisão.
+**Por quê:** o Mercado Livre pede "Informe sempre a marca real" e `Genérica` só pra produto sem marca (ajuda "Como preencher as características do produto", conferida em 2026-10-12); produto original anunciado como `Genérica` contraria a ficha.
+**Te afeta se:** o recibo `.sabinos/instalado.json` tem `marca-generica-na-ficha` no campo `mudancas` e algum anúncio ainda não publicado tem `Marca` `Genérica` no `dados/pipeline/<slug>/copy.json` e uma `decisao.json` sem a chave `marca`.
+**Como aplicar:** as skills chegam pelo motor do `/atualizar-sabinos`. Pra cada anúncio afetado, perguntar qual marca está na embalagem do produto. Com uma marca só: gravar o nome em `marca` na `decisao.json` e trocar a `Marca` do `copy.json` e do `copy.md` por ele. Sem marca, ou kit que mistura marcas: só gravar `marca` como `null` na `decisao.json`. Nos dois casos o anúncio passa de novo pelo `ml-auditor`, porque a `decisao.json` entra no carimbo da auditoria e o `--montar` recusa decisão mexida depois dela.
+**Como testar:** o `--montar` daquele anúncio não lista pendência de Marca.
+
+## marca-no-titulo
+
+**O que é:** produto com marca passa a levar a marca também no título do anúncio, na ordem produto + marca + modelo. Produto sem marca e kit que mistura marcas seguem sem marca no título. Produto compatível com outra marca usa "para" ou "compatível com", nunca "tipo" ou "igual a". O `--montar` e o `--enviar` passam a barrar título sem a marca da decisão. Anúncio já publicado não muda.
+**Por quê:** o Mercado Livre pede "No título: Informe a marca real do produto que você oferece", na estrutura "produto + marca + modelo" (Central de Vendedores, notas sobre título e propriedade intelectual, conferidas em 2026-10-12). A regra antiga do kit tirava a marca de todo título.
+**Te afeta se:** algum anúncio ainda não publicado tem nome em `marca` na `dados/pipeline/<slug>/decisao.json` (ou, em decisão sem a chave `marca`, nome em `marca_autorizada`) e o `titulo` do `copy.json` não contém esse nome. Rodar depois das entradas `marca-generica-na-ficha` e `marca-real-na-ficha`, que gravam a `marca`.
+**Como aplicar:** as skills chegam pelo motor do `/atualizar-sabinos`. Pra cada anúncio afetado, mostrar o título atual e propor um novo na ordem produto + marca + modelo, até 60 caracteres, com a palavra mais buscada do nicho; o que sair do título vai pra descrição. Com o sim, trocar o `titulo` do `copy.json` e do `copy.md`. O anúncio passa de novo pelo `ml-auditor` (o copy entra no carimbo) e pelo `--montar`, que refaz o `ml-payload.json`.
+**Como testar:** o `--montar` daquele anúncio não lista pendência de título.
+
+## node-22
+
+**O que é:** o SabinOS passa a pedir o Node 22 ou mais (antes aceitava o 20). O `/setup` e o `/novo-projeto` conferem a versão e oferecem a instalação, e as conferências do `/configurar-video` e da `/aplicar-estilo` (que chegam pelo atualizador) passam a marcar Node abaixo de 22 como faltando.
+**Por quê:** o Node 20 parou de receber correção de segurança em 2026-04-30, e partes do sistema (Mercado Livre, vídeo de produto) quebram nas primeiras versões dele.
+**Te afeta se:** `node -v` mostra versão abaixo de 22.
+**Como aplicar:** nada muda nos arquivos do projeto. Rodar a conferência dos programas do `/setup` (`../.claude/skills/setup/SKILL.md`, seção "Conferir os programas", itens 1 a 4) e seguir o que ela mandar, com os mesmos textos e o ok da pessoa antes de instalar. Sem a pasta-mãe neste computador: mandar a pessoa pro nodejs.org, versão LTS, opções padrão.
+**Como testar:** `node -v` mostra 22 ou mais (no Windows, depois de fechar e abrir o VS Code).

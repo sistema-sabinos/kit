@@ -58,7 +58,7 @@ export function conferir({ plat = process.platform, base, executar = spawnSync, 
 
   const estado = {
     brew: [brewR?.status === 0, 'Homebrew, o instalador de programas do Mac. Ele pede a senha do Mac e baixa as ferramentas de compilar da Apple, que o whisper usa'],
-    node: [major >= 20, nodeR.status === 0 ? `versao ${saida(nodeR).trim()}` : 'node nao respondeu'],
+    node: [major >= 22, nodeR.status === 0 ? `versao ${saida(nodeR).trim()}` : 'node nao respondeu'],
     python: [pyR.status === 0 && saida(pyR).trim().startsWith('Python 3.12'), saida(pyR).trim() || 'python 3.12 nao respondeu'],
     'python-libs': [libsR.status === 0, libsR.status === 0 ? 'numpy, cv2, PIL e scipy importam' : 'faltam bibliotecas do Python'],
     ffmpeg: [ffR.status === 0 && saida(ffR).includes(' subtitles '), ffR.status === 0 ? 'precisa do filtro subtitles (libass) pra legenda' : 'ffmpeg nao respondeu'],

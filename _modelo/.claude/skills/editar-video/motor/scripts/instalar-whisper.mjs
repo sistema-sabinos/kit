@@ -59,6 +59,6 @@ if (ehCli) {
     console.log(`Pronto: whisper ${VERSAO} e modelo ${modelo} em ${arq}`)
   } catch (e) {
     console.error(e.message)
-    process.exit(1)
+    process.exitCode = 1
   }
 }

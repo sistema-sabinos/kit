@@ -23,8 +23,8 @@ function projeto({ erp = 'nenhum', auditoria = { veredito: 'aprovado', modalidad
   mkdirSync(join(raiz, '_contexto'), { recursive: true })
   const j = (n, v) => writeFileSync(join(pasta, `${n}.json`), JSON.stringify(v))
   j('status', { slug: SLUG, fornecedor: 'forn-teste', categoria: 'casa', etapa_atual: 'auditado', etapas: {} })
-  j('copy', { titulo: 'Moedor Eletrico Inox', descricao: 'Descricao do moedor', ficha: { Marca: 'Acme' }, precos: { ml_classico: 84.9 }, gtin: null })
-  j('decisao', { tipo: 'individual', composicao: [{ produto: nomeNaDecisao, qtd: 1 }], preco: { tabela: 96.5, alvo_pos_desconto: 84.9 }, marca_autorizada: 'Acme' })
+  j('copy', { titulo: 'Moedor Eletrico Acme Inox', descricao: 'Descricao do moedor', ficha: { Marca: 'Acme' }, precos: { ml_classico: 84.9 }, gtin: null })
+  j('decisao', { tipo: 'individual', composicao: [{ produto: nomeNaDecisao, qtd: 1 }], preco: { tabela: 96.5, alvo_pos_desconto: 84.9 }, marca: 'Acme' })
   j('imagens', { aprovado_pelo_usuario: imagensAprovadas, imagens: [{ n: 2, arquivo: `anuncios/${SLUG}/imagens/02-uso.jpg` }, { n: 1, arquivo: `anuncios/${SLUG}/imagens/01-capa.jpg` }] })
   for (const f of ['01-capa.jpg', '02-uso.jpg']) writeFileSync(join(raiz, 'anuncios', SLUG, 'imagens', f), Buffer.from([0xff, 0xd8]))
   // o ml-auditor carimba no fim (5.7, E.1): o projeto de teste nasce auditado em dia
@@ -62,7 +62,7 @@ const LEITURAS = {
 }
 const OK_VALIDA = { ok: false, status: 400, dado: { cause: [{ type: 'warning', code: 'shipping.lost_me1_by_user', message: 'x' }] } }
 const OPCOES = { estoque: 5, garantiaDias: 90 }
-const ITEM = { id: 'MLB123', status: 'paused', family_name: 'Moedor Eletrico Inox', price: 96.5, pictures: [{}, {}], permalink: 'https://produto.mercadolivre.com.br/MLB-123' }
+const ITEM = { id: 'MLB123', status: 'paused', family_name: 'Moedor Eletrico Acme Inox', price: 96.5, pictures: [{}, {}], permalink: 'https://produto.mercadolivre.com.br/MLB-123' }
 
 test('argumentos: uma acao so, slug obrigatorio, numero inteiro e flag desconhecida barrada', () => {
   assert.deepEqual(argumentos(['--montar', 'x', '--estoque', '5', '--garantia-dias', '90']), { acao: 'montar', slug: 'x', estoque: 5, garantiaDias: 90, categoria: null, embalagem: null, pesoG: null })
@@ -81,14 +81,14 @@ test('montar valida sem criar nada, grava o payload e o resumo diz que nasce pau
     assert.equal(r.gravado, true)
     assert.ok(!api.chamadas.includes('POST /items'), 'o --montar criou anuncio')
     const salvo = JSON.parse(readFileSync(p.payload, 'utf8'))
-    assert.equal(salvo.corpo.family_name, 'Moedor Eletrico Inox')
+    assert.equal(salvo.corpo.family_name, 'Moedor Eletrico Acme Inox')
     assert.equal(salvo.corpo.price, 96.5)
     assert.deepEqual(salvo.imagens, [`anuncios/${SLUG}/imagens/01-capa.jpg`, `anuncios/${SLUG}/imagens/02-uso.jpg`])
     assert.ok(salvo.corpo.attributes.some(a => a.id === 'SELLER_PACKAGE_WEIGHT' && a.value_name === '400 g'), 'a embalagem veio do catalogo do fornecedor')
     const texto = textoDoResumo(r)
     assert.ok(texto.length > 0)
     assert.match(texto, /PAUSADO/)
-    assert.match(texto, /20 de 60|Moedor Eletrico Inox/)
+    assert.match(texto, /20 de 60|Moedor Eletrico Acme Inox/)
   } finally {
     rmSync(p.raiz, { recursive: true, force: true })
   }
@@ -116,7 +116,7 @@ test('montar recusa copy mudado depois da auditoria e auditoria sem carimbo', as
   try {
     const ok = await montar(SLUG, OPCOES, { api: apiFalsa({ ...LEITURAS, 'POST /items/validate': OK_VALIDA }), raiz: p.raiz })
     assert.equal(ok.gravado, true, 'canario: auditado em dia monta')
-    writeFileSync(join(p.pasta, 'copy.json'), JSON.stringify({ ...p.ler('copy'), titulo: 'Moedor Eletrico Inox Novo' }))
+    writeFileSync(join(p.pasta, 'copy.json'), JSON.stringify({ ...p.ler('copy'), titulo: 'Moedor Eletrico Acme Inox Novo' }))
     await assert.rejects(montar(SLUG, OPCOES, { api: apiFalsa(LEITURAS), raiz: p.raiz }), /copy\.json mudou depois da auditoria/)
   } finally {
     rmSync(p.raiz, { recursive: true, force: true })
@@ -132,7 +132,7 @@ test('montar recusa copy mudado depois da auditoria e auditoria sem carimbo', as
     const r = await montar(SLUG, OPCOES, { api: apiFalsa({ ...LEITURAS, 'POST /items/validate': OK_VALIDA }), raiz: antiga.raiz })
     assert.equal(r.gravado, true, 'auditoria de antes do carimbo passa')
     assert.match(r.avisos[0], /antes do carimbo/)
-    writeFileSync(join(antiga.pasta, 'copy.json'), JSON.stringify({ ...antiga.ler('copy'), titulo: 'Moedor Eletrico Inox Novo' }))
+    writeFileSync(join(antiga.pasta, 'copy.json'), JSON.stringify({ ...antiga.ler('copy'), titulo: 'Moedor Eletrico Acme Inox Novo' }))
     await assert.rejects(montar(SLUG, OPCOES, { api: apiFalsa(LEITURAS), raiz: antiga.raiz }), /copy\.json mudou depois da auditoria/, 'a passagem da auditoria antiga vale uma vez so')
   } finally {
     rmSync(antiga.raiz, { recursive: true, force: true })
@@ -259,6 +259,44 @@ test('enviar recusa sem payload, com copy mudado depois do resumo e com anuncio 
   }
 })
 
+test('enviar recusa payload montado com titulo sem a marca da decisao, sem chamar a API', async () => {
+  const p = projeto()
+  try {
+    await montado(p)
+    // o titulo perde a marca e a auditoria e refeita, mas o ml-payload.json e o de antes
+    writeFileSync(join(p.pasta, 'copy.json'), JSON.stringify({ ...p.ler('copy'), titulo: 'Moedor Eletrico Inox' }))
+    writeFileSync(join(p.pasta, 'auditoria.json'), JSON.stringify({ ...p.ler('auditoria'), carimbos: carimbosDoAnuncio(p.pasta) }))
+    const chamadas = []
+    const api = { get: async c => { chamadas.push(c); return {} }, escrever: async (m, c) => { chamadas.push(c); return { ok: true, dado: {} } }, subirImagem: async () => { chamadas.push('imagem'); return {} } }
+    await assert.rejects(enviar(SLUG, { api, raiz: p.raiz }), /nao tem a marca "Acme".*nada foi enviado/s)
+    assert.deepEqual(chamadas, [])
+  } finally {
+    rmSync(p.raiz, { recursive: true, force: true })
+  }
+})
+
+test('payload de antes da regra da marca com envio anterior que chegou: aproveita o anuncio, nao cria outro', async () => {
+  const p = projeto()
+  try {
+    await montado(p)
+    writeFileSync(join(p.pasta, 'copy.json'), JSON.stringify({ ...p.ler('copy'), titulo: 'Moedor Eletrico Inox' }))
+    writeFileSync(join(p.pasta, 'auditoria.json'), JSON.stringify({ ...p.ler('auditoria'), carimbos: carimbosDoAnuncio(p.pasta) }))
+    writeFileSync(join(p.raiz, 'anuncios', SLUG, 'ml-tentativa.json'), JSON.stringify({ tentativa_em: '2026-10-01T12:00:00.000Z', titulo: 'Moedor Eletrico Acme Inox' }))
+    const api = apiFalsa({
+      'GET /users/me': { id: 42 },
+      'GET /users/42/items/search': { results: ['MLB123'] },
+      'GET /items/MLB123': { ...ITEM, date_created: '2026-10-01T12:00:05.000Z' },
+      'POST /items/MLB123/description': { ok: true, status: 201, dado: {} },
+    })
+    const r = await enviar(SLUG, { api, raiz: p.raiz })
+    assert.equal(r.anuncio_id, 'MLB123')
+    assert.ok(r.avisos.some(a => /ja existia e foi aproveitado/.test(a)))
+    assert.ok(!api.chamadas.includes('POST /items'))
+  } finally {
+    rmSync(p.raiz, { recursive: true, force: true })
+  }
+})
+
 test('enviar com validacao recusada nao cria nada', async () => {
   const p = projeto()
   try {
@@ -304,7 +342,7 @@ test('queda de rede sem anuncio achado: cria de novo, uma vez', async () => {
   const p = projeto()
   try {
     await montado(p)
-    writeFileSync(join(p.raiz, 'anuncios', SLUG, 'ml-tentativa.json'), JSON.stringify({ tentativa_em: '2026-10-01T12:00:00.000Z', titulo: 'Moedor Eletrico Inox' }))
+    writeFileSync(join(p.raiz, 'anuncios', SLUG, 'ml-tentativa.json'), JSON.stringify({ tentativa_em: '2026-10-01T12:00:00.000Z', titulo: 'Moedor Eletrico Acme Inox' }))
     const api = apiFalsa({
       'GET /users/me': { id: 42 },
       'GET /users/42/items/search': { results: ['MLB7'] },
@@ -451,7 +489,7 @@ test('busca de duplicado com resultado que lanca e outro que casa: aproveita o q
   const p = projeto()
   try {
     await montado(p)
-    writeFileSync(join(p.raiz, 'anuncios', SLUG, 'ml-tentativa.json'), JSON.stringify({ tentativa_em: '2026-10-01T12:00:00.000Z', titulo: 'Moedor Eletrico Inox' }))
+    writeFileSync(join(p.raiz, 'anuncios', SLUG, 'ml-tentativa.json'), JSON.stringify({ tentativa_em: '2026-10-01T12:00:00.000Z', titulo: 'Moedor Eletrico Acme Inox' }))
     const achado = { ...ITEM, date_created: '2026-10-01T12:00:05.000Z' }
     const api = apiFalsa({
       'GET /users/me': { id: 42 },
@@ -471,8 +509,8 @@ test('titulo que volta com caixa ou acento diferente: busca aproveita', async ()
   const p = projeto()
   try {
     await montado(p)
-    writeFileSync(join(p.raiz, 'anuncios', SLUG, 'ml-tentativa.json'), JSON.stringify({ tentativa_em: '2026-10-01T12:00:00.000Z', titulo: 'Moedor Eletrico Inox' }))
-    const caixa = { ...ITEM, family_name: 'MOEDOR ELETRICO INOX', date_created: '2026-10-01T12:00:05.000Z' }
+    writeFileSync(join(p.raiz, 'anuncios', SLUG, 'ml-tentativa.json'), JSON.stringify({ tentativa_em: '2026-10-01T12:00:00.000Z', titulo: 'Moedor Eletrico Acme Inox' }))
+    const caixa = { ...ITEM, family_name: 'MOEDOR ELETRICO ACME INOX', date_created: '2026-10-01T12:00:05.000Z' }
     const api = apiFalsa({
       'GET /users/me': { id: 42 },
       'GET /users/42/items/search': { results: ['MLB123'] },
@@ -637,7 +675,7 @@ test('marca recente e busca vazia: nao cria, manda esperar; marca velha: cria um
   const p = projeto()
   try {
     await montado(p)
-    writeFileSync(join(p.raiz, 'anuncios', SLUG, 'ml-tentativa.json'), JSON.stringify({ tentativa_em: '2026-10-01T12:00:00.000Z', titulo: 'Moedor Eletrico Inox' }))
+    writeFileSync(join(p.raiz, 'anuncios', SLUG, 'ml-tentativa.json'), JSON.stringify({ tentativa_em: '2026-10-01T12:00:00.000Z', titulo: 'Moedor Eletrico Acme Inox' }))
     const rotas = { 'GET /users/me': { id: 42 }, 'GET /users/42/items/search': { results: [] }, ...LEITURA_PAUSA, 'POST /items': { ok: true, status: 201, dado: ITEM }, 'GET /items/MLB123': ITEM }
     const api = apiFalsa(rotas)
     await assert.rejects(enviar(SLUG, { api, raiz: p.raiz, agora: () => new Date('2026-10-01T12:02:00.000Z') }), /depois das/)

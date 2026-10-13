@@ -423,3 +423,25 @@ for (const nome of ['marketplace', 'app']) {
     assert.deepEqual(falhas, [])
   })
 }
+
+// Ensaio da 5.12: a pagina de opinioes do Mercado Livre so mostra "Há 2 semanas"; a espionagem grava
+// a data aproximada com data_texto e data_aproximada. Ela pesa a idade e nunca aparece no relatorio.
+test('data aproximada da espionagem pesa a idade e nao aparece no relatorio nem no --json', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'aprox-'))
+  try {
+    const caminho = join(dir, '_raw-concorrentes-garrafa.json')
+    const velha = { nota: 1, titulo: '', texto: 'A tampa quebrou na primeira semana.', data: '2024-10-12', data_texto: 'Há 2 anos', data_aproximada: true, curtidas: 0 }
+    const nova = { nota: 1, titulo: '', texto: 'A tampa quebrou no segundo dia.', data: '2026-09-28', data_texto: 'Há 2 semanas', data_aproximada: true, curtidas: 0 }
+    writeFileSync(caminho, JSON.stringify({ produto: 'garrafa', anuncios: [{ id: 'MLB111', url: 'https://www.mercadolivre.com.br/a/MLB111', avaliacoes: { avaliacoes: [velha, nova] } }] }))
+    const lidas = deEspionagem(caminho)
+    const [v, n] = ['primeira semana', 'segundo dia'].map(t => lidas.avaliacoes.find(a => a.texto.includes(t)))
+    assert.ok(v && n, 'canario: as duas lidas')
+    assert.equal(peso(v, '2026-10-12', 18), peso(n, '2026-10-12', 18) / 2, 'a de 2 anos pesa metade')
+    for (const extra of [[], ['--json']]) {
+      const r = spawnSync(process.execPath, [join(AQUI, 'avaliacoes.mjs'), '--de-espionagem', caminho, '--hoje', '2026-10-12', ...extra], { encoding: 'utf8' })
+      assert.equal(r.status, 0, r.stderr)
+      assert.match(r.stdout, /tampa/i, 'canario: o relatorio saiu')
+      for (const proibido of ['2024-10-12', '2026-09-28', 'Há 2 anos', 'Há 2 semanas', 'aproximad']) assert.ok(!r.stdout.includes(proibido), `${extra.join('') || 'relatorio'} mostrou "${proibido}"`)
+    }
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})

@@ -22,6 +22,14 @@ test('ffmpeg sem libass conta como faltando', () => {
   assert.equal(r.itens.find(i => i.id === 'ffmpeg').ok, false)
 })
 
+// piso do Node 22 (5.12), igual ao /setup: o video-produto quebra no comeco do 20
+test('node abaixo de 22 conta como faltando, 22.0.0 passa', () => {
+  const base = join(tmpdir(), 'v')
+  const com = (v) => conferir({ plat: 'win32', base, executar: (c, a) => c === 'node' ? { status: 0, stdout: v } : tudoOk(c, a), existe: () => true })
+  assert.equal(com('v20.20.2').itens.find(i => i.id === 'node').ok, false)
+  assert.equal(com('v22.0.0').itens.find(i => i.id === 'node').ok, true)
+})
+
 test('pasta com espaco e sinalizada com sugestao sem espaco', () => {
   const base = join(tmpdir(), 'Joao Silva', '_video')
   const r = conferir({ plat: 'win32', base, executar: tudoOk, existe: () => true, env: { SystemDrive: 'X:' } })

@@ -12,10 +12,19 @@
 - **A descrição ranqueia (desde 2026-04-05)**, com o mesmo peso do título e da
   ficha. O título trava depois da primeira venda; a descrição segue editável.
   É nela que entram as palavras-chave que não couberam no título.
-- **Título não se edita depois da primeira venda**, e marca de terceiro que
-  entrar no título ou em atributo não sai mais: o Mercado Livre transforma o
-  texto em produto de catálogo e passa a defender esse texto. Nunca pôr marca
-  de terceiro em título nem em atributo de anúncio novo.
+- **Título não se edita depois da primeira venda**: a ordem e as palavras
+  certas entram de primeira.
+- **Marca no título e na ficha** (conferido em 2026-10-12 na ajuda "Como criar
+  um bom título" e nas notas da Central de Vendedores sobre título e
+  propriedade intelectual). "No título: Informe a marca real do produto que você
+  oferece", na estrutura "produto + marca + modelo", e na ficha a marca real ou
+  `Genérica` quando não há marca. Marca no título: com `marca` na
+  `decisao.json`, o título segue a ordem produto + marca + modelo; sem `marca`
+  (produto sem marca ou kit que mistura marcas), o título fica sem marca.
+  Produto compatível com outra marca usa "para" ou "compatível com", nunca
+  "tipo", "semelhante" ou "igual a" (Mercado Livre, conferido em 2026-10-12).
+  Nunca dar a entender que é distribuidor ou loja oficial sem autorização da
+  marca.
 - **Título com até 60 caracteres** (conferido em 2026-09-24). O que não
   coube vai pra descrição, que também ranqueia.
 - **Campos do Bling que chegam no anúncio** (conferido em 2026-09-24). A

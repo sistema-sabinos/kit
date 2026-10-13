@@ -119,7 +119,9 @@ node .claude/skills/ler-avaliacoes/scripts/avaliacoes.mjs --de-espionagem fornec
 
 Nesse caso o link de cada frase leva ao anúncio (o Mercado Livre não dá link por
 avaliação), a fonte é o código do anúncio e a data vem da página quando ela mostra
-(bruto de antes da versão 5.7 vem sem data).
+(bruto de antes da versão 5.7 vem sem data). Quando a página só diz "Há 2 semanas", a
+data é uma conta aproximada a partir do dia da leitura: serve só pra avaliação antiga
+pesar menos, e nunca aparece no relatório como data certa.
 
 Com a planilha juntada à mão:
 

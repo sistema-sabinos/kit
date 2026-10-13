@@ -1,0 +1,76 @@
+{
+  "origem": "Reel publico real lido pelo coletar.mjs no ensaio da rodada 5.12 (2026-10-12), Chrome dedicado sem login no Instagram. Anonimizado: host, caminho, ids e assinatura das faixas, perfil e texto da legenda. Real e intacto: etiqueta de qualidade e bitrate de cada faixa, ordem em que a rede entregou, resolucao medida por ffprobe, e o formato do og (cabecalho com milhar em virgula, entidades e o separador invisivel U+2063).",
+  "metaOg": "<meta property=\"og:description\" content=\"1,251 likes, 144 comments - perfil_exemplo no October 10, 2026: &quot;Chegou a promo&#xe7;&#xe3;o da loja com a &#064;convidada! &#x1f525;&#x2728;&#x2063;\n&#x2063;\nAquele produto parado no carrinho? A hora &#xe9; agora! &#x2063;\n&#x2063;\nAt&#xe9; 70% OFF e frete gr&#xe1;tis a partir de R$19 neste m&#xea;s, s&#xf3; hoje. &#x1f4e6;&#x1f49b;&#x2063;\n&#x2063;\n#LojaExemplo #PromoExemplo&quot;. \" />",
+  "faixas": [
+    {
+      "url": "https://cdn.exemplo.invalid/o1/v/t2/f2/m367/faixa-01.mp4?_nc_cat=0&efg=eyJ2ZW5jb2RlX3RhZyI6ImlnLXhwdmRzLmNsaXBzLmlnd3d3LUMzLmRhc2hfcjJldmV2cDktcjFnZW4ydnA5X3EyMCIsInZpZGVvX2lkIjpudWxsLCJvaWxfdXJsZ2VuX2FwcF9pZCI6MCwiY2xpZW50X25hbWUiOiJpZyIsInhwdl9hc3NldF9pZCI6MCwiYXNzZXRfYWdlX2RheXMiOjIsInZpX3VzZWNhc2VfaWQiOjEwMDk5LCJkdXJhdGlvbl9zIjoxOCwiYml0cmF0ZSI6MTI2OTQ0LCJ1cmxnZW5fc291cmNlIjoid3d3In0%3D&_nc_ht=cdn.exemplo.invalid&oh=00_anonimo&oe=00000000",
+      "medida": {
+        "tipo": "video",
+        "largura": 720,
+        "altura": 1280
+      }
+    },
+    {
+      "url": "https://cdn.exemplo.invalid/o1/v/t2/f2/m367/faixa-02.mp4?_nc_cat=0&efg=eyJ2ZW5jb2RlX3RhZyI6ImlnLXhwdmRzLmNsaXBzLmlnd3d3LUMzLmRhc2hfcjJldmV2cDktcjFnZW4ydnA5X3EzMCIsInZpZGVvX2lkIjpudWxsLCJvaWxfdXJsZ2VuX2FwcF9pZCI6MCwiY2xpZW50X25hbWUiOiJpZyIsInhwdl9hc3NldF9pZCI6MCwiYXNzZXRfYWdlX2RheXMiOjIsInZpX3VzZWNhc2VfaWQiOjEwMDk5LCJkdXJhdGlvbl9zIjoxOCwiYml0cmF0ZSI6MjAzNTAwLCJ1cmxnZW5fc291cmNlIjoid3d3In0%3D&_nc_ht=cdn.exemplo.invalid&oh=00_anonimo&oe=00000000",
+      "medida": {
+        "tipo": "video",
+        "largura": 720,
+        "altura": 1280
+      }
+    },
+    {
+      "url": "https://cdn.exemplo.invalid/o1/v/t2/f2/m367/faixa-03.mp4?_nc_cat=0&efg=eyJ2ZW5jb2RlX3RhZyI6ImlnLXhwdmRzLmNsaXBzLmlnd3d3LUMzLmRhc2hfcjJldmV2cDktcjFnZW4ydnA5X3E0MCIsInZpZGVvX2lkIjpudWxsLCJvaWxfdXJsZ2VuX2FwcF9pZCI6MCwiY2xpZW50X25hbWUiOiJpZyIsInhwdl9hc3NldF9pZCI6MCwiYXNzZXRfYWdlX2RheXMiOjIsInZpX3VzZWNhc2VfaWQiOjEwMDk5LCJkdXJhdGlvbl9zIjoxOCwiYml0cmF0ZSI6Mjg0MzI4LCJ1cmxnZW5fc291cmNlIjoid3d3In0%3D&_nc_ht=cdn.exemplo.invalid&oh=00_anonimo&oe=00000000",
+      "medida": {
+        "tipo": "video",
+        "largura": 720,
+        "altura": 1280
+      }
+    },
+    {
+      "url": "https://cdn.exemplo.invalid/o1/v/t2/f2/m367/faixa-04.mp4?_nc_cat=0&efg=eyJ2ZW5jb2RlX3RhZyI6ImlnLXhwdmRzLmNsaXBzLmlnd3d3LUMzLmRhc2hfcjJldmV2cDktcjFnZW4ydnA5X3E1MCIsInZpZGVvX2lkIjpudWxsLCJvaWxfdXJsZ2VuX2FwcF9pZCI6MCwiY2xpZW50X25hbWUiOiJpZyIsInhwdl9hc3NldF9pZCI6MCwiYXNzZXRfYWdlX2RheXMiOjIsInZpX3VzZWNhc2VfaWQiOjEwMDk5LCJkdXJhdGlvbl9zIjoxOCwiYml0cmF0ZSI6MzczNzk4LCJ1cmxnZW5fc291cmNlIjoid3d3In0%3D&_nc_ht=cdn.exemplo.invalid&oh=00_anonimo&oe=00000000",
+      "medida": {
+        "tipo": "video",
+        "largura": 720,
+        "altura": 1280
+      }
+    },
+    {
+      "url": "https://cdn.exemplo.invalid/o1/v/t2/f2/m367/faixa-05.mp4?_nc_cat=0&efg=eyJ2ZW5jb2RlX3RhZyI6ImlnLXhwdmRzLmNsaXBzLmlnd3d3LUMzLmRhc2hfcjJldmV2cDktcjFnZW4ydnA5X3E2MCIsInZpZGVvX2lkIjpudWxsLCJvaWxfdXJsZ2VuX2FwcF9pZCI6MCwiY2xpZW50X25hbWUiOiJpZyIsInhwdl9hc3NldF9pZCI6MCwiYXNzZXRfYWdlX2RheXMiOjIsInZpX3VzZWNhc2VfaWQiOjEwMDk5LCJkdXJhdGlvbl9zIjoxOCwiYml0cmF0ZSI6NDg1NTU0LCJ1cmxnZW5fc291cmNlIjoid3d3In0%3D&_nc_ht=cdn.exemplo.invalid&oh=00_anonimo&oe=00000000",
+      "medida": {
+        "tipo": "video",
+        "largura": 720,
+        "altura": 1280
+      }
+    },
+    {
+      "url": "https://cdn.exemplo.invalid/o1/v/t2/f2/m367/faixa-06.mp4?_nc_cat=0&efg=eyJ2ZW5jb2RlX3RhZyI6ImlnLXhwdmRzLmNsaXBzLmlnd3d3LUMzLmRhc2hfcjJldmV2cDktcjFnZW4ydnA5X3E3MCIsInZpZGVvX2lkIjpudWxsLCJvaWxfdXJsZ2VuX2FwcF9pZCI6MCwiY2xpZW50X25hbWUiOiJpZyIsInhwdl9hc3NldF9pZCI6MCwiYXNzZXRfYWdlX2RheXMiOjIsInZpX3VzZWNhc2VfaWQiOjEwMDk5LCJkdXJhdGlvbl9zIjoxOCwiYml0cmF0ZSI6NjM1NzUxLCJ1cmxnZW5fc291cmNlIjoid3d3In0%3D&_nc_ht=cdn.exemplo.invalid&oh=00_anonimo&oe=00000000",
+      "medida": {
+        "tipo": "video",
+        "largura": 720,
+        "altura": 1280
+      }
+    },
+    {
+      "url": "https://cdn.exemplo.invalid/o1/v/t2/f2/m367/faixa-07.mp4?_nc_cat=0&efg=eyJ2ZW5jb2RlX3RhZyI6ImlnLXhwdmRzLmNsaXBzLmlnd3d3LUMzLmRhc2hfcjJldmV2cDktcjFnZW4ydnA5X3E4MCIsInZpZGVvX2lkIjpudWxsLCJvaWxfdXJsZ2VuX2FwcF9pZCI6MCwiY2xpZW50X25hbWUiOiJpZyIsInhwdl9hc3NldF9pZCI6MCwiYXNzZXRfYWdlX2RheXMiOjIsInZpX3VzZWNhc2VfaWQiOjEwMDk5LCJkdXJhdGlvbl9zIjoxOCwiYml0cmF0ZSI6ODAxNTgwLCJ1cmxnZW5fc291cmNlIjoid3d3In0%3D&_nc_ht=cdn.exemplo.invalid&oh=00_anonimo&oe=00000000",
+      "medida": {
+        "tipo": "video",
+        "largura": 720,
+        "altura": 1280
+      }
+    },
+    {
+      "url": "https://cdn.exemplo.invalid/o1/v/t2/f2/m367/faixa-08.mp4?_nc_cat=0&efg=eyJ2ZW5jb2RlX3RhZyI6ImlnLXhwdmRzLmNsaXBzLmlnd3d3LUMzLmRhc2hfcjJldmV2cDktcjFnZW4ydnA5X3E5MCIsInZpZGVvX2lkIjpudWxsLCJvaWxfdXJsZ2VuX2FwcF9pZCI6MCwiY2xpZW50X25hbWUiOiJpZyIsInhwdl9hc3NldF9pZCI6MCwiYXNzZXRfYWdlX2RheXMiOjIsInZpX3VzZWNhc2VfaWQiOjEwMDk5LCJkdXJhdGlvbl9zIjoxOCwiYml0cmF0ZSI6MTEyMDM0NCwidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&_nc_ht=cdn.exemplo.invalid&oh=00_anonimo&oe=00000000",
+      "medida": {
+        "tipo": "video",
+        "largura": 1080,
+        "altura": 1920
+      }
+    },
+    {
+      "url": "https://cdn.exemplo.invalid/o1/v/t2/f2/m367/faixa-09.mp4?_nc_cat=0&efg=eyJ2ZW5jb2RlX3RhZyI6ImlnLXhwdmRzLmNsaXBzLmlnd3d3LUMzLmRhc2hfbG5faGVhYWNfdmJyM19hdWRpbyIsInZpZGVvX2lkIjpudWxsLCJvaWxfdXJsZ2VuX2FwcF9pZCI6MCwiY2xpZW50X25hbWUiOiJpZyIsInhwdl9hc3NldF9pZCI6MCwiYXNzZXRfYWdlX2RheXMiOjIsInZpX3VzZWNhc2VfaWQiOjEwMDk5LCJkdXJhdGlvbl9zIjoxOCwiYml0cmF0ZSI6NjgxNDAsInVybGdlbl9zb3VyY2UiOiJ3d3cifQ%3D%3D&_nc_ht=cdn.exemplo.invalid&oh=00_anonimo&oe=00000000",
+      "medida": {
+        "tipo": "audio"
+      }
+    }
+  ]
+}

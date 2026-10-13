@@ -32,10 +32,11 @@ objeções reais dos clientes, na língua deles.
 3. **Apresentação do produto** (1 linha), direta, com as palavras essenciais.
 4. **Benefícios** (até 2 linhas, texto corrido, sem bullet): como o produto
    resolve o que o cliente veio resolver.
-5. **Especificações técnicas**, em itens: marca (`Genérica` em kit, revenda e
-   dropshipping; o nome do fabricante só quando você é a dona da marca ou
-   revendedora autorizada por escrito, gravado em `marca_autorizada` na
-   `decisao.json`; nunca o nome da loja), modelo, material, dimensões, peso, conteúdo da embalagem. Dado que
+5. **Especificações técnicas**, em itens: marca (a marca real do produto, a da
+   embalagem, gravada em `marca` na `decisao.json`, também em revenda e
+   dropshipping de produto original; `Genérica` (o valor que o Mercado Livre pede,
+   conferido em 2026-10-12) só quando o produto não tem uma marca só, como o artesanal, o
+   kit de itens sem marca ou o kit que mistura marcas; nunca o nome da loja), modelo, material, dimensões, peso, conteúdo da embalagem. Dado que
    não existe fica `[PREENCHER]`, nunca inventado; o `ml-auditor` reprova
    placeholder esquecido.
 6. **Funções e características**, em itens: o que o produto faz e tem.

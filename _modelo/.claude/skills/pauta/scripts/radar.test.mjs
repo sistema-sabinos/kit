@@ -52,3 +52,11 @@ test('radar com fonte fora do ar segue com as outras e avisa', async () => {
   assert.match(md, /fora do ar/)
   assert.match(md, /Titulo A & B/)
 })
+
+test('radar com fonte fora do ar cancela o corpo da resposta, senao a conexao segura o processo vivo', async () => {
+  let cancelado = false
+  const body = new ReadableStream({ cancel() { cancelado = true } })
+  const fetchFn = async url => String(url).includes('trends24') ? { ok: false, status: 503, body } : { ok: true, text: async () => RSS }
+  await radar({ fetchFn, agora: new Date('2026-10-04T12:00:00Z'), termos: ['x'] })
+  assert.equal(cancelado, true)
+})

@@ -4,8 +4,9 @@ import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { opcoes, lista, exigirFfmpeg } from './lib/pagina.mjs'
-import { tagDeEncode, escolherFaixas, atualizarPronto, limparLegendaTxt, juntarComAnteriores } from './coletar.mjs'
+import { opcoes, lista, exigirFfmpeg, abrirPagina } from './lib/pagina.mjs'
+import { tagDeEncode, escolherFaixas, atualizarPronto, limparLegendaTxt, juntarComAnteriores, ogDoHtml } from './coletar.mjs'
+import { parseOg } from './lib/instagram-publico.mjs'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { juntarLevas } from './refiltrar.mjs'
@@ -25,6 +26,17 @@ test('lista tira espaco e arroba', () => {
 test('exigirFfmpeg acusa quando o programa nao existe', () => {
   assert.throws(() => exigirFfmpeg(() => ({ error: new Error('ENOENT') })), /ffmpeg nao encontrado/)
   assert.doesNotThrow(() => exigirFfmpeg(() => ({ status: 0 })))
+})
+
+// Rodada 5.12: com a saida por exitCode, conexao aberta depois de aba que falhou pendurava o processo.
+test('abrirPagina fecha a conexao com o Chrome quando a aba nao abre', async () => {
+  let fechou = 0
+  const browser = {
+    contexts: () => [{ newPage: async () => { throw new Error('aba recusada') } }],
+    close: async () => { fechou++ },
+  }
+  await assert.rejects(abrirPagina(async () => browser), /aba recusada/)
+  assert.equal(fechou, 1)
 })
 
 test('escolherFaixas pega a melhor resolucao e separa o audio', () => {
@@ -83,4 +95,33 @@ test('limparLegendaTxt limpa o arquivo do carrossel mesmo sem alerta (largura ze
     assert.equal(limparLegendaTxt(arq), false, 'arquivo ja limpo nao se regrava')
     assert.equal(limparLegendaTxt(join(dir, 'nao-existe.txt')), false)
   } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// Rodada 5.12: bruto de um reel real (fixtures/reel-real-2026-10-12.json, anonimizado). O
+// Instagram deixou de mandar 1080p/720p na etiqueta e passou a mandar _q20 a _q90; so o q90 era
+// 1080x1920 (medido por ffprobe), e a coleta pegava o primeiro da rede, o q20.
+const REAL = JSON.parse(readFileSync(join(AQUI, 'fixtures', 'reel-real-2026-10-12.json'), 'utf8'))
+
+test('escolherFaixas no bruto real pega a faixa de maior resolucao e o audio', () => {
+  assert.ok(REAL.faixas.length > 2, 'canario: fixture com faixas')
+  const medida = u => REAL.faixas.find(f => f.url === u).medida
+  const maior = Math.max(...REAL.faixas.filter(f => f.medida.tipo === 'video').map(f => f.medida.altura))
+  const r = escolherFaixas(REAL.faixas.map(f => f.url))
+  assert.equal(medida(r.video).altura, maior)
+  assert.equal(medida(r.audio).tipo, 'audio')
+  assert.equal(escolherFaixas([...REAL.faixas].reverse().map(f => f.url)).video, r.video, 'nao depende da ordem da rede')
+})
+
+test('ogDoHtml le o og do HTML real em qualquer ordem de atributo e o parseOg tira numero e legenda', () => {
+  const desc = ogDoHtml(REAL.metaOg)
+  assert.ok(desc.length > 50, 'canario: og lido')
+  const og = parseOg(desc)
+  assert.equal(og.curtidas, 1251)
+  assert.equal(og.comentarios, 144)
+  assert.match(og.legenda, /^"Chegou a promoção da loja com a @convidada! /)
+  assert.equal([...og.legenda].filter(c => c.codePointAt(0) === 0x2063).length, 0, 'separador invisivel sai')
+  const invertida = REAL.metaOg.replace(/<meta (property="og:description") (content="[^"]*")/, '<meta $2 $1')
+  assert.notEqual(invertida, REAL.metaOg, 'canario: a ordem foi trocada')
+  assert.equal(ogDoHtml('<html><meta name="description" content="x">' + invertida), desc)
+  assert.equal(ogDoHtml('<html>sem og</html>'), '')
 })

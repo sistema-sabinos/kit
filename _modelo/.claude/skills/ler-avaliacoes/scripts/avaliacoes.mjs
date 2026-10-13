@@ -144,6 +144,8 @@ export function lerAvaliacoes(caminho) {
 // da pagina do anuncio; data AAAA-MM-DD ou null (bruto de antes da 5.7 nao tem data). O Mercado
 // Livre nao da link por avaliacao, entao link = anuncio e fonte = codigo do anuncio: "pouca prova"
 // passa a querer dizer "so um concorrente reclama". Sem data, a avaliacao nao perde peso por idade.
+// Desde a 5.12 a data pode vir aproximada ("Há 2 semanas" contado do dia da leitura, com
+// data_aproximada): ela so entra no peso e nunca sai no relatorio nem no --json.
 export function deEspionagem(caminho) {
   if (!existsSync(caminho)) throw new Error(`nao achei o arquivo ${caminho}; confira o nome e a pasta`)
   let bruto

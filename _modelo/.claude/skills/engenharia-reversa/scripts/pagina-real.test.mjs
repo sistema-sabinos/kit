@@ -40,6 +40,10 @@ before(async () => {
   if (pular) return
   navegador = await (pw.chromium || pw.default.chromium).launch({ channel: 'chrome' })
   pagina = await navegador.newPage()
+  // As paginas gravadas ainda apontam fotos do mlstatic, e o goto espera o "load", que espera
+  // essas fotos: com a internet lenta estourava os 30 s do Playwright (pendencia da 4.9).
+  // Nenhum seletor testado precisa delas, entao a pagina nao sai pra internet.
+  await pagina.route(/^https?:/, rota => rota.abort())
 })
 after(async () => { if (navegador) await navegador.close() })
 

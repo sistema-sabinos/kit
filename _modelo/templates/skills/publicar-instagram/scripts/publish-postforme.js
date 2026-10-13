@@ -69,16 +69,16 @@ async function main() {
   // `node --env-file=.env`, sem ninguem ler o .env pelo terminal.
   if (opts.testar) {
     const contas = await listAccounts(opts.platform);
-    if (!contas.length) { console.error(`Chave ok, mas nenhuma conta ${opts.platform} conectada no Post for Me`); process.exit(1); }
+    if (!contas.length) { console.error(`Chave ok, mas nenhuma conta ${opts.platform} conectada no Post for Me`); process.exitCode = 1; return; }
     console.log(`Chave ok: ${contas.length} conta(s) ${opts.platform} conectada(s): ${contas.map(a => a.username || a.id).join(", ")}`);
     return;
   }
 
-  if (!opts.images.length && opts.platform !== "linkedin") { console.error("--images obrigatorio"); process.exit(1); }
+  if (!opts.images.length && opts.platform !== "linkedin") { console.error("--images obrigatorio"); process.exitCode = 1; return; }
 
   // Buscar conta
   const accounts = await listAccounts(opts.platform);
-  if (!accounts.length) { console.error(`Nenhuma conta ${opts.platform} conectada no Post for Me`); process.exit(1); }
+  if (!accounts.length) { console.error(`Nenhuma conta ${opts.platform} conectada no Post for Me`); process.exitCode = 1; return; }
   const accountId = opts.accountId || accounts[0].id;
   console.log(`Conta: ${accounts[0].username || accountId} (${opts.platform})`);
 
@@ -106,4 +106,4 @@ async function main() {
   console.log(`Publicado! ID: ${result.id || JSON.stringify(result)}`);
 }
 
-main().catch(e => { console.error(e.message); process.exit(1); });
+main().catch(e => { console.error(e.message); process.exitCode = 1; });

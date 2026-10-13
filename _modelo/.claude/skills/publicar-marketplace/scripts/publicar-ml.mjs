@@ -15,7 +15,7 @@ import { existsSync, readFileSync, statSync, rmSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
-import { lerJson, gravarJson, dataLocal, conferirAuditoria } from '../../mercado-livre/scripts/lib/pipeline.mjs'
+import { lerJson, gravarJson, dataLocal, conferirAuditoria, marcaDaFicha, marcaNoTitulo } from '../../mercado-livre/scripts/lib/pipeline.mjs'
 import { lerConfiguracao } from '../../mercado-livre/scripts/lib/config.mjs'
 import { mlGet, mlEscrever, mlSubirImagem } from '../../mercado-livre/scripts/lib/ml-api.mjs'
 import { tokenMl } from '../../mercado-livre/scripts/lib/tokens.mjs'
@@ -269,7 +269,11 @@ export async function enviar(slug, { api, raiz = RAIZ, agora = () => new Date() 
   }
 
   if (!item) {
-    const agoraCarimbos = { copy: carimbo(join(d.pasta, 'copy.json')), imagens: carimbo(join(d.pasta, 'imagens.json')) }
+    // payload montado antes da regra da marca (5.12) chega aqui sem passar pelo montarItem. Fica
+    // depois da busca da tentativa: anuncio que ja chegou se aproveita, a trava so barra criar outro
+    const marca = marcaDaFicha({ copy: d.copy, decisao: d.decisao }) || marcaNoTitulo({ copy: d.copy, decisao: d.decisao })
+    if (marca) throw new Error(`${marca}. O ml-payload.json foi montado antes dessa regra: nada foi enviado`)
+    const agoraCarimbos ={ copy: carimbo(join(d.pasta, 'copy.json')), imagens: carimbo(join(d.pasta, 'imagens.json')) }
     if (agoraCarimbos.copy !== p.carimbos?.copy || agoraCarimbos.imagens !== p.carimbos?.imagens) {
       throw new Error('o copy ou as imagens mudaram depois do resumo que voce aprovou: rode --montar de novo e confira')
     }

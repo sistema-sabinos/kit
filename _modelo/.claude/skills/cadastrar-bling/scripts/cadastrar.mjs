@@ -30,7 +30,7 @@ import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
 import { carregarConfiguracao, exigir } from '../../mercado-livre/scripts/lib/config.mjs'
 import { clienteBling } from '../../mercado-livre/scripts/lib/bling-api.mjs'
-import { slugDe, lerJson, gravarJson, conferirAuditoria, marcaDaFicha } from '../../mercado-livre/scripts/lib/pipeline.mjs'
+import { slugDe, lerJson, gravarJson, conferirAuditoria, marcaDaFicha, marcaNoTitulo, dataLocal } from '../../mercado-livre/scripts/lib/pipeline.mjs'
 
 // CSV do contrato 0: virgula separa, aspas protegem, aspas dobradas viram uma.
 export function lerCsv(texto) {
@@ -98,7 +98,7 @@ export function montarPayload({ copy, decisao, linha, config, categoriaId, modal
   else pendencias.push(decisao?.tipo === 'kit' ? 'GTIN vazio (kit montado nao tem codigo de barras, e isso e o certo)' : 'GTIN vazio: sem codigo confiavel o anuncio perde visibilidade')
   if (copy.ficha?.Marca) p.marca = copy.ficha.Marca
   // marca fora da regra trava (igual a publicar-marketplace): o payload nao nasce, e o --enviar nao acha o que mandar
-  const marca = marcaDaFicha({ copy, decisao })
+  const marca = marcaDaFicha({ copy, decisao }) || marcaNoTitulo({ copy, decisao })
   if (marca) throw new Error(marca)
   const peso = Number(linha?.peso_g)
   if (decisao?.tipo !== 'kit' && peso > 0) { p.pesoLiquido = peso / 1000; p.pesoBruto = peso / 1000 } else pendencias.push('peso: pesar o produto embalado e preencher no Bling (peso errado custa frete em toda venda)')
@@ -312,7 +312,8 @@ export function resumoLote(linhas) {
 export function payloadParaEnviar(slug, raiz = RAIZ) {
   const payload = lerJson(join(raiz, 'anuncios', slug, 'bling-payload.json'))
   if (!payload) throw new Error(`nao existe anuncios/${slug}/bling-payload.json: rode --montar antes`)
-  const marca = marcaDaFicha({ copy: { ficha: { Marca: payload.marca } }, decisao: lerJson(join(raiz, 'dados', 'pipeline', slug, 'decisao.json')) })
+  const decisao = lerJson(join(raiz, 'dados', 'pipeline', slug, 'decisao.json'))
+  const marca = marcaDaFicha({ copy: { ficha: { Marca: payload.marca } }, decisao }) || marcaNoTitulo({ copy: { titulo: payload.nome }, decisao })
   if (marca) throw new Error(marca)
   return payload
 }
@@ -342,7 +343,7 @@ function gravarEnvio(slug, pasta, { id, sku, em }) {
 // pra quem chama sempre poder mostrar o resumo e conferir no Bling o que foi criado nesta rodada.
 // Pendencia que comeca com ATENCAO (o produto foi criado mas o id nao foi gravado, e reenviar
 // duplicaria) tambem para o lote: o slug entra em criados e em parouEm, com o aviso como motivo.
-export async function enviarLote(slugs, { carregar = carregarParaEnviar, req, log = () => {}, gravar = gravarEnvio }) {
+export async function enviarLote(slugs, { carregar = carregarParaEnviar, req, log = () => {}, gravar = gravarEnvio, agora = () => new Date() }) {
   const resultado = { planejados: slugs.length, criados: [], jaEstavam: [], parouEm: null, erro: null }
   for (const slug of slugs) {
     let c
@@ -354,7 +355,7 @@ export async function enviarLote(slugs, { carregar = carregarParaEnviar, req, lo
       break
     }
     if (c.recusa) { resultado.jaEstavam.push(slug); continue }
-    const hoje = new Date().toISOString().slice(0, 10)
+    const hoje = dataLocal(agora())
     const aoCriar = ({ id, sku }) => gravar(slug, c.pasta, { id, sku, em: hoje })
     try {
       const r = await enviar(c.payload, { req, log, aoCriar })
@@ -434,7 +435,7 @@ if (ehCli) {
       const recusa = jaCadastrado(a.slug, lerJson(join(pasta, 'publicacao.json')), status)
       if (recusa) throw new Error(recusa)
       const payload = payloadParaEnviar(a.slug)
-      const hoje = new Date().toISOString().slice(0, 10)
+      const hoje = dataLocal()
       const aoCriar = ({ id, sku }) => {
         const pub = lerJson(join(pasta, 'publicacao.json'), { slug: a.slug, canais: [] })
         gravarJson(join(pasta, 'publicacao.json'), { ...pub, erp: { sistema: 'bling', id, sku, em: hoje } })

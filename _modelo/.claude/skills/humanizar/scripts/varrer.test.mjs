@@ -682,16 +682,15 @@ test('V5-17 antes e depois em UTF-16 com BOM: 10 dias contra 10 meses e R$ contr
   assert.equal(igual.codigo, 0)
 }))
 
-test('V5-18 uma linha com 200 mil numeros contra a mesma deslocada sai 2 com mensagem em menos de 10 s', () => comPasta(r => {
+// Sem relogio: o que prova que nao montou a tabela da subsequencia (a parte que cresce ao
+// quadrado) e a mensagem do teto de fatos, que sai antes de comparar. Suite cheia so deixa lento.
+test('V5-18 uma linha com 200 mil numeros contra a mesma deslocada sai 2 pelo teto de fatos, antes de comparar', () => comPasta(r => {
   const linha = d => Array.from({ length: 200000 }, (_, k) => String(k + d)).join(' ')
   writeFileSync(join(r, 'a.txt'), linha(0))
   writeFileSync(join(r, 'b.txt'), linha(1))
-  const t0 = Date.now()
-  const p = spawnSync(process.execPath, [join(AQUI, 'varrer.mjs'), '--antes', 'a.txt', '--depois', 'b.txt'], { cwd: r, encoding: 'utf8', timeout: 60000 })
-  const ms = Date.now() - t0
-  assert.equal(p.status, 2, `saiu ${p.status} em ${ms} ms: ${String(p.stderr).slice(0, 200)}`)
-  assert.match(p.stderr, /texto grande demais pra trava/)
-  assert.ok(ms < 10000, `levou ${ms} ms`)
+  const p = spawnSync(process.execPath, [join(AQUI, 'varrer.mjs'), '--antes', 'a.txt', '--depois', 'b.txt'], { cwd: r, encoding: 'utf8' })
+  assert.equal(p.status, 2, `saiu ${p.status}: ${String(p.stderr).slice(0, 200)}`)
+  assert.match(p.stderr, /texto grande demais pra trava: 200000 fatos antes e 200000 depois, teto de 5000 somados/)
 }))
 
 // ---------- revisao Codex do bloco B ----------

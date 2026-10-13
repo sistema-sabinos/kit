@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { argumentos, idDoAnuncio, escolherTopo, urlParaAbrir, vendidosDe, vendedorDe, perguntasDoTexto, palavrasDoTitulo, vocabulario, textoDoVocabulario, atributosConsensuais, fotosUnicas, avaliacoesDaPagina, dataDaPagina, espionar, recalcularArquivos, acharProduto, mesclarAnuncios, oQueFaltaEspionar, pontoDePartida, limparFundo, somaAlertas } from './espionar.mjs'
+import { argumentos, idDoAnuncio, escolherTopo, urlParaAbrir, vendidosDe, vendedorDe, perguntasDoTexto, palavrasDoTitulo, vocabulario, textoDoVocabulario, atributosConsensuais, fotosUnicas, avaliacoesDaPagina, dataDaPagina, dataRelativa, espionar, recalcularArquivos, acharProduto, mesclarAnuncios, oQueFaltaEspionar, pontoDePartida, limparFundo, somaAlertas } from './espionar.mjs'
 
 const L = 'MLB'
 const id = n => L + n
@@ -159,6 +159,38 @@ test('avaliacoesDaPagina para em 100 e sem pagina devolve lista vazia', () => {
   assert.deepEqual(avaliacoesDaPagina(undefined).avaliacoes, [])
 })
 
+// Formas que apareceram na pagina real de opinioes (ensaio da 5.12, leitura em 2026-10-12); o
+// esperado saiu do `date -u -d "2026-10-12 -<n> <unidade>"`. "mais de 1 ano" fica no minimo.
+test('dataRelativa aproxima as formas reais da pagina a partir do dia da leitura', () => {
+  const FORMAS = {
+    'Ontem': '2026-10-11', 'Há 2 dias': '2026-10-10', 'Há 3 dias': '2026-10-09', 'Há 4 dias': '2026-10-08', 'Há 6 dias': '2026-10-06',
+    'Há 1 semana': '2026-10-05', 'Há 2 semanas': '2026-09-28', 'Há 3 semanas': '2026-09-21', 'Há 4 semanas': '2026-09-14',
+    'Há 1 mês': '2026-09-12', 'Há 2 meses': '2026-08-12', 'Há 3 meses': '2026-07-12', 'Há 4 meses': '2026-06-12', 'Há 5 meses': '2026-05-12',
+    'Há 6 meses': '2026-04-12', 'Há 7 meses': '2026-03-12', 'Há 8 meses': '2026-02-12', 'Há 9 meses': '2026-01-12', 'Há 10 meses': '2025-12-12',
+    'Há 11 meses': '2025-11-12', 'Há 1 ano': '2025-10-12', 'Há mais de 1 ano': '2025-10-12',
+  }
+  assert.equal(Object.keys(FORMAS).length, 22, 'canario: as 22 formas do bruto real')
+  for (const [texto, esperado] of Object.entries(FORMAS)) assert.equal(dataRelativa(texto, '2026-10-12'), esperado, texto)
+  assert.equal(dataRelativa('Há 1 mês', '2026-03-31'), '2026-02-28', 'mes curto prende no ultimo dia')
+  assert.equal(dataRelativa('Hoje', '2026-10-12'), '2026-10-12')
+  assert.equal(dataRelativa('Brasil', '2026-10-12'), null)
+  assert.equal(dataRelativa('Há 2 dias', null), null)
+})
+
+test('avaliacoesDaPagina grava a data aproximada com o texto original e a marca', () => {
+  const bruto = { rotulo: 'Avaliação 4.8 de 5. 1391 opiniões.', comentarios: [
+    { estrelas_cheias: 5, data: 'Há 2 semanas', texto: 'boa' },
+    { estrelas_cheias: 4, data: '15 out. 2025', texto: 'ok' },
+    { estrelas_cheias: 3, data: 'Brasil', texto: 'sem data' },
+  ] }
+  const [rel, abs, nada] = avaliacoesDaPagina(bruto, { hoje: '2026-10-12' }).avaliacoes
+  assert.deepEqual([rel.data, rel.data_texto, rel.data_aproximada], ['2026-09-28', 'Há 2 semanas', true])
+  assert.equal(abs.data, '2025-10-15')
+  assert.equal('data_aproximada' in abs, false, 'data exata da pagina nao leva a marca')
+  assert.equal(nada.data, null)
+  assert.equal(avaliacoesDaPagina(bruto).avaliacoes[0].data, null, 'sem o dia da leitura nao aproxima')
+})
+
 test('dataDaPagina entende o mes abreviado, por extenso e a data com barra, e recusa o resto', () => {
   assert.equal(dataDaPagina('15 out. 2025'), '2025-10-15')
   assert.equal(dataDaPagina('1 de março de 2026'), '2026-03-01')
@@ -272,10 +304,43 @@ test('espionar le avaliacoes pela pagina so nos mais vendidos; os outros ficam c
   assert.deepEqual(abertas, ['r2', 'r3'], 'so os 2 que mais vendem, um de cada vez')
   assert.equal(r[1].avaliacoes.total, 3859)
   assert.equal(r[1].avaliacoes.avaliacoes.length, 3)
-  assert.equal(r[1].avaliacoes_em, HOJE)
   assert.deepEqual(r[0].avaliacoes.avaliacoes.map(a => a.texto), ['so a visivel de A'])
   assert.equal(r[0].avaliacoes_em, undefined)
   assert.equal(r[0].avaliacoes_pagina, undefined, 'o cru da pagina nao vai pro bruto')
+})
+
+// Ensaio da 5.12: a pagina de opinioes parou nas 15 da primeira leva (de 1391) e a saida dizia
+// "todas as avaliacoes lidas hoje". Leitura abaixo do esperado guarda o que leu, avisa e nao
+// carimba o dia, pra o --retomar tentar de novo.
+test('espionar: opinioes lidas abaixo do esperado ficam com aviso e sem o carimbo do dia', async () => {
+  const itens = [{ id: id('8300001'), url: 'https://exemplo.com/1', preco: 10 }, { id: id('8300002'), url: 'https://exemplo.com/2', preco: 10 }]
+  const com = (n, total) => ({ rotulo: `Avaliação 4.8 de 5. ${total} opiniões.`, comentarios: Array.from({ length: n }, (_, i) => ({ estrelas_cheias: 5, texto: 'opiniao ' + i })) })
+  const paginas = {
+    'https://exemplo.com/1': { titulo: 'A', subtitulo: '+1000 vendidos', fotos: [], atributos: {}, link_avaliacoes: 'r1', avaliacoes_pagina: com(3, 1391) },
+    'https://exemplo.com/2': { titulo: 'B', subtitulo: '+50 vendidos', fotos: [], atributos: {}, link_avaliacoes: 'r2', avaliacoes_pagina: com(3, 3) },
+  }
+  const lidas = { r1: com(15, 1391), r2: com(3, 3) }
+  const r = await espionar({ ...semRede, itens, lerAnuncio: async url => paginas[url], lerPerguntas: async () => '', lerAvaliacoes: async l => lidas[l], perguntas: 2 })
+  assert.equal(r[0].avaliacoes.avaliacoes.length, 15, 'guarda as 15 lidas')
+  assert.equal(r[0].avaliacoes_em, undefined)
+  assert.match(r[0].avaliacoes_erro, /leu 15 de 100/)
+  assert.equal(r[1].avaliacoes_em, HOJE, '3 de 3 e leitura completa')
+  assert.equal(r[1].avaliacoes_erro, undefined)
+})
+
+// Revisao comum do Chat D: sem o rotulo na pagina de opinioes o total virava o que foi lido, e a
+// retomada que da certo deixava o aviso velho.
+test('espionar: sem rotulo na pagina de opinioes vale o total do anuncio, e a retomada boa limpa o aviso', async () => {
+  const com = (n, total) => ({ rotulo: total ? `Avaliação 4.8 de 5. ${total} opiniões.` : null, comentarios: Array.from({ length: n }, (_, i) => ({ estrelas_cheias: 5, texto: 'opiniao ' + i })) })
+  const pagina = { titulo: 'A', subtitulo: '+1000 vendidos', fotos: [], atributos: {}, link_avaliacoes: 'r1', avaliacoes_pagina: com(3, 1391) }
+  const [a] = await espionar({ ...semRede, itens: [{ id: id('8400001'), url: 'https://exemplo.com/1', preco: 10 }], lerAnuncio: async () => pagina, lerPerguntas: async () => '', lerAvaliacoes: async () => com(15, null), perguntas: 1 })
+  assert.match(a.avaliacoes_erro, /leu 15 de 100/)
+  assert.equal(a.avaliacoes_em, undefined)
+  // a retomada mexe no proprio objeto de jaColetados (o CLI grava pela mesma referencia)
+  await espionar({ ...semRede, itens: [], jaColetados: [a], lerAnuncio: async () => pagina, lerPerguntas: async () => '', lerAvaliacoes: async () => com(100, 1391), perguntas: 1 })
+  assert.equal(a.avaliacoes.avaliacoes.length, 100, 'canario: a retomada leu as 100')
+  assert.equal(a.avaliacoes_em, HOJE)
+  assert.equal(a.avaliacoes_erro, undefined, 'aviso velho sai')
 })
 
 test('espionar: pagina de opinioes vazia nao apaga as avaliacoes visiveis nem carimba o dia', async () => {
