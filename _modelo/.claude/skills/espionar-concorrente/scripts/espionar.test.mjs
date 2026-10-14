@@ -17,6 +17,15 @@ test('argumentos: produto obrigatorio, padroes 5 e 3', () => {
   assert.throws(() => argumentos(['--fornecedor', 'f', '--categoria', 'c']), /--produto/)
 })
 
+test('argumentos: --n passa de 10 ou --perguntas passa de 3 recusa (clausula 12)', () => {
+  const base = ['--fornecedor', 'f', '--categoria', 'c', '--produto', 'x']
+  const ok = argumentos([...base, '--n', '10', '--perguntas', '3'])
+  assert.equal(ok.n, 10)
+  assert.equal(ok.perguntas, 3)
+  assert.throws(() => argumentos([...base, '--n', '11']), /--n .* 1 a 10/)
+  assert.throws(() => argumentos([...base, '--perguntas', '4']), /--perguntas .* 0 a 3/)
+})
+
 test('idDoAnuncio le o codigo no caminho, na query do patrocinado, e devolve null sem codigo', () => {
   assert.equal(idDoAnuncio(`https://produto.mercadolivre.com.br/${L}-1234567-bala`), id('1234567'))
   assert.equal(idDoAnuncio(`https://www.mercadolivre.com.br/bala/up/${L}U9876543210`), `${L}U9876543210`)

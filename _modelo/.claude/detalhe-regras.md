@@ -1,6 +1,6 @@
 # Detalhe das regras
 
-> Arquivo do kit: o `/atualizar-sabinos` traz a versão nova. A regra mora no `AGENTS.md`; aqui fica o formato e o detalhe que ela não precisa carregar em toda conversa. O `AGENTS.md` manda ler este arquivo antes de escrever diário, decisão, recado, rotina ou skill.
+> Arquivo do kit: o `/atualizar-sabinos` traz a versão nova. A regra mora no `AGENTS.md`; aqui fica o formato e o detalhe que ela não precisa carregar em toda conversa. O `AGENTS.md` manda ler este arquivo antes de escrever recado, rotina ou skill.
 
 ## Diário e decisão
 

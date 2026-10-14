@@ -50,9 +50,12 @@ Faltou o plano: rodar a `/app-planejar` primeiro. Faltou o código: `/app-constr
   se cadastra, digita senha, põe cartão e copia chave é a pessoa. A IA escreve o
   `app/codigo/.env.example` com o nome de cada variável e nenhum valor; o aluno cola
   os valores no `app/codigo/.env.local`, o arquivo de chaves que fica só neste
-  computador (o backup barra todo arquivo `.env`, menos o `.env.example`). Chave
-  colada no chat: avisar que ela vazou pro histórico e pedir pra gerar outra no
-  painel do serviço.
+  computador (o backup barra todo arquivo `.env`, menos o `.env.example`). O
+  `app/codigo/.gitignore` que a ferramenta do projeto cria (o do Next.js tem a
+  linha `.env*`) derruba o `.env.example` também: acrescentar `!.env.example` no
+  fim dele e conferir, na raiz do projeto, que `git status --short app/codigo`
+  mostra o `.env.example`. Chave colada no chat: avisar que ela vazou pro
+  histórico e pedir pra gerar outra no painel do serviço.
 - **Modo de teste primeiro.** Modo de teste é o ambiente do provedor de pagamento em
   que nada é cobrado de verdade: cartão de mentira, dinheiro de mentira. Tudo desta
   etapa roda nele. Cobrança real só na `/app-publicar`.

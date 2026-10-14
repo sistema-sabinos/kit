@@ -15,8 +15,10 @@
   lugar de `1fr` (CSS `grid-template-columns`). O `1fr` sozinho cresce até caber a palavra
   ou a imagem mais comprida e empurra a tela pro lado. As classes prontas do Tailwind
   (`grid-cols-2`, `grid-cols-3`) já vêm assim; coluna escrita à mão troca o `1fr` por
-  `minmax(0,1fr)`, e a coluna de largura fixa ao lado (a barra lateral, por exemplo) sai dos
-  tokens de disposição da `/app-visual`, pelo nome, sem medida solta.
+  `minmax(0,1fr)`, e a coluna de largura fixa ao lado (a barra lateral, por exemplo) sai do
+  token `layout.barra-lateral` do `app/visual/tokens.json`, pelo nome, sem medida solta
+  (tokens copiados antes de ele existir: acrescentar o bloco `layout` com a medida da
+  referência).
 - **Animação só em posição e transparência.** Mexer só em `transform` e `opacity`
   (`transition-transform`, `transition-opacity`; CSS `transition-property`), que o
   navegador anima sem refazer o desenho da página, e o movimento não engasga no celular

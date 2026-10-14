@@ -128,6 +128,16 @@ export async function publicar({ plano, textoPub, quando, substituir, slug, conf
   return { texto, feitos, falha: null }
 }
 
+// o que a saida diz quando o --confirmar para no meio; separado pra o teste conferir o recado
+export function recadoFalha(falha, feitos) {
+  const l = [`\n${falha.rede}: FALHOU ${falha.etapa === 'apagar' ? 'ao apagar o antigo' : 'ao agendar'}, ${falha.erro}`]
+  if (falha.incerto && falha.etapa === 'criar') l.push(`O ${falha.rede} pode ter entrado: o registro marcou "incerto", e o proximo --confirmar confere no Buffer sozinho.`)
+  if (falha.incerto && falha.etapa === 'apagar') l.push(`O post antigo do ${falha.rede} pode ter sido apagado ou nao. O registro ficou como estava: repetir com --confirmar --substituir (se ele ja sumiu do Buffer, conta como apagado).`)
+  if (falha.etapa === 'apagar') l.push('Nenhum post novo foi criado. O que ja saiu esta no Historico do publicacao.md.')
+  if (feitos.length) l.push(`Pra nao deixar post sozinho numa rede: corrigir a causa e rodar de novo so com as redes que faltam (--redes), ou desfazer: ${SCRIPT} --apagar ${feitos.map(f => f.id).join(',')}`)
+  return l
+}
+
 function mostrar(plano, quando) {
   for (const arq of plano.arquivos) console.log(`Arquivo: ${relative(RAIZ, arq)} (${(statSync(arq).size / 1e6).toFixed(1)} MB)`)
   console.log(`Quando:  ${quando} Brasilia (${plano.dueAt} UTC)`)
@@ -187,13 +197,7 @@ async function main(v) {
   })
   for (const f of r.feitos) console.log(`${f.rede}: agendado, id ${f.id}`)
   console.log(`Registro em producao/${a.pasta}/publicacao.md`)
-  if (r.falha) {
-    console.error(`\n${r.falha.rede}: FALHOU ${r.falha.etapa === 'apagar' ? 'ao apagar o antigo' : 'ao agendar'}, ${r.falha.erro}`)
-    if (r.falha.incerto) console.error(`O ${r.falha.rede} pode ter ${r.falha.etapa === 'apagar' ? 'sido apagado' : 'entrado'}: o registro marcou "incerto", e o proximo --confirmar confere no Buffer sozinho.`)
-    if (r.falha.etapa === 'apagar') console.error('Nenhum post novo foi criado. O que ja saiu esta no Historico do publicacao.md.')
-    if (r.feitos.length) console.error(`Pra nao deixar post sozinho numa rede: corrigir a causa e rodar de novo so com as redes que faltam (--redes), ou desfazer: ${SCRIPT} --apagar ${r.feitos.map(f => f.id).join(',')}`)
-    process.exitCode = 1
-  }
+  if (r.falha) { for (const l of recadoFalha(r.falha, r.feitos)) console.error(l); process.exitCode = 1 }
 }
 
 const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])

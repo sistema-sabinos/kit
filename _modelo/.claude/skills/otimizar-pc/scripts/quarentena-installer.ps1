@@ -19,9 +19,8 @@ try {
     }
 
     if (-not $Destino) {
-        $disco = DiscoDeSobra
-        if (-not $disco) { Diga 'ERRO: nenhum disco alem do de sistema pra usar de quarentena.'; exit 1 }
-        $Destino = Join-Path $disco '_quarentena-instaladores'
+        $Destino = DestinoDaQuarentena
+        if (-not $Destino) { Diga 'ERRO: nenhum disco alem do de sistema pra usar de quarentena.'; exit 1 }
     }
     $manifesto = Join-Path $Destino 'manifesto.csv'
 
@@ -68,7 +67,8 @@ try {
             $falhou++
         }
     }
-    $reg | Export-Csv -LiteralPath $manifesto -NoTypeInformation -Encoding UTF8
+    SomarAoManifesto $reg $manifesto
+    GuardarDestinoDaQuarentena $Destino
 
     $depois = LivreNoSistema
     Diga ''

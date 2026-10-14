@@ -94,6 +94,7 @@ export function textoDoQuadro(resultado, regua) {
     linhas.push('Nenhuma ação proposta nesta rodada: confira o ticket primeiro.');
   } else if (cortes.length) {
     linhas.push(`Proposta: pausar ${cortes.length} anúncio(s) acima. Nada acontece na conta sem o seu "pode ir".`);
+    if (['leads', 'local'].includes(regua.perfil)) linhas.push(`Origem da régua: os limites do perfil ${regua.perfil} são dedução do método, ainda sem medição própria nem de terceiro por trás (referencias/metodo.md). Pese isso antes do "pode ir".`);
   } else if (resultado.cego_por_orcamento) {
     // A frase de tranquilidade some quando a regra que corta está desligada:
     // ela passaria uma segurança que o dado não sustenta.

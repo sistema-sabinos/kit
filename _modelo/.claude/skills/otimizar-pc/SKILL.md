@@ -7,7 +7,7 @@ description: Raio-X e faxina do PC Windows pra recuperar espaço em disco e velo
 
 **Sistema:** esta skill cobre Windows. No Mac, responder: "essa faxina automática por enquanto é só pra Windows. No Mac, os caminhos nativos são: Ajustes > Geral > Armazenamento (o próprio sistema recomenda limpezas), e apagar caches pesados em ~/Library/Caches com cuidado. Se quiser, te guio manualmente por esses passos." E se oferecer pra guiar.
 
-Faz o diagnóstico completo da máquina, aponta onde o espaço está indo, e executa a faxina **por blocos aprovados**. Skill global, funciona em qualquer pasta.
+Faz o diagnóstico completo da máquina, aponta onde o espaço está indo, e executa a faxina **por blocos aprovados**. Roda com a pasta do projeto aberta, porque os comandos abaixo partem da raiz dele.
 
 A regra que rege tudo aqui: **medir e mostrar antes de apagar**. O usuário decide bloco por bloco. Nunca sair apagando porque "parece lixo".
 
@@ -82,7 +82,7 @@ Bloco 6 (inicialização) é registro puro, roda inline. Desativar pelo `Startup
 & "...\scripts\verificar.ps1"
 ```
 
-Confere que a operação do usuário continua de pé: `.env` com as chaves, sessões salvas dos robôs, perfis e senhas do navegador, tarefas agendadas em Ready, git do workspace. **Relatar o resultado, não só dizer "deu certo".**
+Confere que a operação do usuário continua de pé: `.env` com as chaves, o Chrome dedicado dos robôs (`dados/chrome-perfil`) e o Playwright de cada pacote, perfis e senhas do navegador, tarefas agendadas em Ready, git do workspace. **Relatar o resultado, não só dizer "deu certo".**
 
 ### 5. Fechar com o número
 
@@ -105,8 +105,8 @@ Tabela de antes e depois do disco, o que foi atualizado, e as pontas soltas (o E
 ## O que NUNCA tocar
 
 - Perfil de navegador (só o cache de dentro dele). Apagar perfil desloga de tudo.
-- `.env`, `.session/state.json`, `chrome-profile` dedicado, `node_modules` de robô em produção.
-- Navegador do Playwright que algum robô fixa. Conferir o `browsers.json` de cada `node_modules/playwright-core` antes de podar versão.
+- `.env`, `dados/chrome-perfil` (o Chrome dedicado com o login dos robôs), `node_modules` das skills.
+- Navegador do Playwright (pasta `ms-playwright`) que algum app seu usa, como o que o `/app-testar` baixa. Os robôs do kit usam o Chrome instalado, não esses.
 - `pagefile.sys` para outro disco. Libera pouco e joga a paginação num disco mecânico, deixando tudo mais lento.
 - Pasta de trabalho, documento, foto, nada do usuário.
 

@@ -2,7 +2,7 @@
 
 Três passos. Não precisa entender nada antes de começar.
 
-Ainda não instalou o VS Code, o Claude, o Node e o Git? Faça antes a seção
+Ainda não instalou o Claude, o Git, o Node e o VS Code? Faça antes a seção
 "Como instalar" do `README.md`, nesta mesma pasta, e volte aqui. Se esquecer
 o Git ou o Node, o Claude confere na primeira conversa e instala com o seu ok.
 

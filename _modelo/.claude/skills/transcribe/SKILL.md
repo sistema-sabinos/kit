@@ -30,7 +30,7 @@ Mac e Linux:
 python3 --version
 ```
 
-Precisa do Python 3.8 ou mais novo. Se não tiver, ou se for mais antigo, dizer ao usuário em uma frase o que falta, pedir o sim e instalar (quem roda o comando é a IA, nunca o usuário):
+Precisa do Python 3.10 ou mais novo (o yt-dlp de hoje não roda no 3.9). Se não tiver, ou se for mais antigo, dizer ao usuário em uma frase o que falta, pedir o sim e instalar (quem roda o comando é a IA, nunca o usuário):
 - **Mac:** `brew install python3`
 - **Linux:** `sudo apt install python3 python3-pip`
 - **Windows:** `winget install --id Python.Python.3.12 -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity`, depois pedir pra pessoa fechar todas as janelas do VS Code e abrir de novo
@@ -141,6 +141,16 @@ python3 <skill_path>/scripts/transcribe_url.py "<url>" [--timestamps]
 No lugar de `"<url>"` pode ir o caminho do arquivo no computador, também entre aspas. Acrescentar `--timestamps` se o usuário disse sim.
 
 4. Mostrar a transcrição pro usuário. O script escreve o texto direto na saída do terminal.
+
+## Quando o download falha
+
+O Instagram costuma recusar o download sem login (o erro fala em "empty media response" ou em login). Não insistir no mesmo link. Com o pacote de mídia social no projeto (existe `.claude/skills/pauta/scripts/coletar.mjs`), baixar o Reel ou post público pelo Chrome dedicado, do mesmo jeito da `/decupar-referencia`:
+
+```bash
+node .claude/skills/pauta/scripts/coletar.mjs --perfil <@ do criador> --reels <codigo do link>
+```
+
+O mp4 sai em `inteligencia/base-ideias/<perfil>/videos/<codigo>.mp4`: transcrever esse arquivo. Sem o pacote, ou se a página pedir login, pedir pro usuário baixar o vídeo e passar o caminho do arquivo.
 
 ## Erro de dependência faltando
 

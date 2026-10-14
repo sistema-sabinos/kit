@@ -53,12 +53,13 @@ export function argumentos(argv) {
   const categoria = pega('categoria', '')
   const produto = pega('produto', '')
   if (!fornecedor || !categoria || !produto) throw new Error('uso: --fornecedor <f> --categoria <c> --produto "<nome como no pesquisa-input>" [--n 5] [--perguntas 3]')
-  const inteiro = (nome, padrao, min) => {
+  // teto da clausula 12 do Mercado Livre (SKILL, Regras): topo ate 10, perguntas nos 3 que mais vendem
+  const inteiro = (nome, padrao, min, max) => {
     const n = Number(pega(nome, padrao))
-    if (!Number.isInteger(n) || n < min) throw new Error(`--${nome} precisa ser um numero inteiro de ${min} pra cima`)
+    if (!Number.isInteger(n) || n < min || n > max) throw new Error(`--${nome} precisa ser um numero inteiro de ${min} a ${max}`)
     return n
   }
-  return { fornecedor, categoria, produto, n: inteiro('n', 5, 1), perguntas: inteiro('perguntas', 3, 0), retomar: argv.includes('--retomar') }
+  return { fornecedor, categoria, produto, n: inteiro('n', 5, 1, 10), perguntas: inteiro('perguntas', 3, 0, 3), retomar: argv.includes('--retomar') }
 }
 
 // Codigo do anuncio numa URL do Mercado Livre (com ou sem hifen, na query do patrocinado ou no caminho).

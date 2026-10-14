@@ -303,9 +303,18 @@ test('blocos: sem WHISPER_DIR recusa dizendo o que falta', () => comTemp((d) => 
   assert.match(semTraco(r.stderr), /WHISPER_DIR/)
 }))
 
-test('blocos acha os blocos de fala com o whisper', { skip: process.env.WHISPER_DIR ? false : 'precisa do whisper instalado; prova no ensaio' }, () => {
-  assert.ok(existsSync(script('blocos.py')))
-})
+test('blocos acha os blocos de fala com o whisper', { skip: process.env.WHISPER_DIR ? false : 'precisa do whisper instalado; prova no ensaio' }, (t) => comTemp((d) => {
+  // dois trechos de som de 1 s com 2 s de silencio no meio: o envelope tem de achar 2 blocos
+  const bruto = join(d, 'bruto.wav'), sai = join(d, 'cortes.md')
+  ff('-f', 'lavfi', '-i', 'sine=f=440:d=1:sample_rate=16000', '-f', 'lavfi', '-i', 'anullsrc=r=16000:cl=mono:d=2', '-f', 'lavfi', '-i', 'sine=f=440:d=1:sample_rate=16000', '-filter_complex', '[0][1][2]concat=n=3:v=0:a=1', '-ac', '1', bruto)
+  // lista ordenada: o disco nao garante ordem, e com mais de um modelo o escolhido fica escrito no log
+  const modelos = readdirSync(process.env.WHISPER_DIR).map((n) => n.match(/^ggml-(.+)[.]bin$/)).filter(Boolean).map((m) => m[1]).sort()
+  assert.ok(modelos.length, 'nenhum ggml-*.bin na WHISPER_DIR')
+  if (modelos.length > 1) t.diagnostic(`${modelos.length} modelos na WHISPER_DIR (${modelos.join(', ')}); usando ${modelos[0]}`)
+  const r = py('blocos.py', [bruto, sai, '--modelo', modelos[0]])
+  assert.equal(r.status, 0, semTraco(r.stderr))
+  assert.equal(readFileSync(sai, 'utf8').split(/\r?\n/).filter((l) => /^[|] [0-9]+ [|]/.test(l)).length, 2)
+}))
 
 test('profundidade: sem o modelo recusa dizendo o que falta', () => comTemp((d) => {
   const env = { ...ENV }

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Carimba a auditoria aprovada com o sha256 do copy.json, imagens.json e decisao.json que o
 // ml-auditor leu. O --montar da /publicar-marketplace e o da /cadastrar-bling recusam quando
-// algum deles mudou depois do carimbo.
+// algum deles mudou depois do carimbo. Tambem poe etapa_atual auditado no status.json (sem
+// rebaixar anuncio ja cadastrado, publicado ou pausado).
 // Uso, da raiz do projeto: node .claude/skills/mercado-livre/scripts/carimbar-auditoria.mjs <slug>
 // Saida: 0 carimbado; 1 sem auditoria aprovada ou slug faltando.
 import { join, resolve } from 'node:path'
@@ -18,6 +19,12 @@ export function carimbar(slug, raiz = RAIZ) {
   if (auditoria.veredito !== 'aprovado') throw new Error('so se carimba auditoria aprovada')
   auditoria.carimbos = carimbosDoAnuncio(pasta)
   gravarJson(arquivo, auditoria)
+  // a /cadastrar-bling e o /mercado-livre status acham o anuncio auditado por aqui
+  const st = lerJson(join(pasta, 'status.json'))
+  if (st && !['cadastrado', 'publicado', 'pausado'].includes(st.etapa_atual)) {
+    st.etapa_atual = 'auditado'
+    gravarJson(join(pasta, 'status.json'), st)
+  }
   return auditoria.carimbos
 }
 

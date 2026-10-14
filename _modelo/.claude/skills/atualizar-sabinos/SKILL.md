@@ -24,6 +24,11 @@ pergunta antes.
 
 ## Passo 1, tem versão nova?
 
+Os comandos de baixar e descompactar (Passo 1 e Passo 2) rodam pela ferramenta
+Bash; no Windows ela é o Git Bash, que vem com o Git. Pela ferramenta PowerShell
+eles quebram: o `curl` do PowerShell 5.1 é outro comando e a linha do `tar.exe`
+entre aspas não roda.
+
 1. Versão deste projeto: campo `versao` do `.sabinos/instalado.json`. Sem esse
    arquivo, dizer "ainda sem registro de versão".
 2. Última versão publicada:

@@ -73,6 +73,25 @@ test('com o teto batido, o texto não entrega lista de corte nenhuma', () => {
   const txt = textoDoQuadro(quadroDe(entrada, regua), regua);
   assert.match(txt, /confira o ticket/i);
   assert.doesNotMatch(txt, /Proposta: pausar/);
+  assert.doesNotMatch(txt, /CRITICO \(/);
+});
+
+test('proposta de corte com régua de leads ou local avisa que a régua é dedução', () => {
+  const entrada = { conta: '1', ate: '2026-09-18', hoje: '2026-09-18', resultado_ate: '2026-09-18',
+    anuncios: [{ id: 'a', nome: 'queimando', gasto: 70, resultados: 0 }] };
+  const local = lerRegua(REGUA_MD);
+  const leads = lerRegua(REGUA_MD.replace('perfil: local', 'perfil: leads'));
+  const low = lerRegua(REGUA_MD.replace('perfil: local', 'perfil: low_ticket'));
+  assert.equal(leads.perfil, 'leads');
+  assert.equal(low.perfil, 'low_ticket');
+  for (const regua of [local, leads]) {
+    const txt = textoDoQuadro(quadroDe(entrada, regua), regua);
+    assert.match(txt, /Proposta: pausar/);
+    assert.match(txt, /dedução do método/);
+  }
+  const txtLow = textoDoQuadro(quadroDe(entrada, low), low);
+  assert.match(txtLow, /Proposta: pausar/);
+  assert.doesNotMatch(txtLow, /dedução/);
 });
 
 test('sem nada a cortar, o texto diz isso e não inventa proposta', () => {

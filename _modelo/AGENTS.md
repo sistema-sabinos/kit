@@ -99,13 +99,15 @@ Rotina (robô do `/agendar`, Hermes, agente agendado) escreve só no próprio di
 
 **10. Pesquisa mundial.** Pesquisa na internet busca em qualquer idioma, principalmente inglês. A entrega sai em português (ou no idioma do preferencias.md).
 
-**11. Camadas de regra.** Cada regra mora na camada mais alta em que é verdade (global, pasta-mãe, projeto); as regras 1, 2, 4 e 10 se repetem aqui de propósito, porque o projeto roda sem o global no Codex e em outra máquina: não cortar. Formato e detalhe vão pro `.claude/detalhe-regras.md`; história e nota de ferramenta, pro `_contexto/`. O `/checar` mede.
+**11. Camadas de regra.** Cada regra mora na camada mais alta em que é verdade (global, pasta-mãe, projeto); as regras 1, 2, 4, 10 e 15 se repetem aqui de propósito, porque o projeto roda sem o global no Codex e em outra máquina: não cortar. Formato e detalhe vão pro `.claude/detalhe-regras.md`; história e nota de ferramenta, pro `_contexto/`. O `/checar` mede.
 
 **12. Trava de comando destrutivo.** Um hook barra comando que apaga pasta inteira, reescreve histórico do Git ou roda script baixado da internet. Barrou: parar e explicar o que se tentou fazer, sem buscar outro caminho pra mesma coisa.
 
 **13. Um projeto por pasta.** Pedido de outro projeto, sem relação com este negócio, ganha pasta própria, senão memória e regras se misturam. Recomendar em uma linha, com esse porquê, e, com o sim, criar pela skill `../.claude/skills/novo-projeto/SKILL.md` da pasta-mãe. Tarefa do mesmo negócio fica aqui.
 
 **14. Terminal é da IA.** A pessoa nunca digita no terminal: só clica (login, senha) e escreve no chat.
+
+**15. Chave no `.env`.** Chave e senha só em arquivo `.env`, nunca no chat nem em outro arquivo.
 
 ## Estrutura de pastas
 

@@ -11,7 +11,7 @@ Ler `.claude/skills/pauta/modelo-copia.md` inteiro e obedecer: o assunto e a tes
 ficam, e a camada do perfil cabe em uma ou duas frases.
 
 ## Le
-- todas as `inteligencia/base-ideias/<perfil>.md` e os `aberto-*.md` da janela, se houver
+- todas as `inteligencia/base-ideias/<perfil-seguido>.md` e os `aberto-*.md` da janela, se houver
 - `inteligencia/base-ideias/README.md` (o que a pessoa gosta em cada perfil)
 - `perfis/<perfil>/estrategia.md`
 - a voz da marca (linha 'a marca' do Mapa no `AGENTS.md`, em geral `marca/tom-de-voz.md`) e, por cima

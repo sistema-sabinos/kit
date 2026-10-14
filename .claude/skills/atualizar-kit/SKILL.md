@@ -32,6 +32,10 @@ O `.gitignore` e o `.claude/settings.json` da pasta-mãe são metade do kit e me
 
 ## Passo 1, onde está o zip novo
 
+Os comandos de baixar e descompactar desta skill (aqui e na seção "Catálogo de
+estilos de vídeo") rodam pela ferramenta Bash; no Windows ela é o Git Bash, que
+vem com o Git. Pela ferramenta PowerShell eles quebram.
+
 Oferecer os dois caminhos, nessa ordem:
 
 1. **Baixar a última do GitHub** (o normal): seguir o Passo 1 da skill

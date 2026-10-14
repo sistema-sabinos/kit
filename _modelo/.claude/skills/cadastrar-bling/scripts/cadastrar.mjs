@@ -4,7 +4,8 @@
 //
 // Uso, da raiz do projeto:
 //   node .claude/skills/cadastrar-bling/scripts/cadastrar.mjs --categorias
-//        lista as categorias de produto do Bling (id e nome), pra pessoa escolher
+//        lista as categorias de produto do Bling (id e nome), pra pessoa escolher; roda sem o
+//        _contexto/mercado-livre.md: e o teste da ligacao no /conectar
 //   node .claude/skills/cadastrar-bling/scripts/cadastrar.mjs --montar <slug> [--estoque N]
 //        grava anuncios/<slug>/bling-payload.json e mostra o resumo, as pendencias e o possivel duplicado
 //   node .claude/skills/cadastrar-bling/scripts/cadastrar.mjs --enviar <slug>
@@ -409,8 +410,8 @@ const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(proc
 if (ehCli) {
   try {
     const a = argumentos(process.argv.slice(2))
-    const config = carregarConfiguracao()
-    if (config.erp !== 'bling') throw new Error('a configuracao diz erp: nenhum. Sem Bling, a /publicar-marketplace cria o anuncio direto no Mercado Livre pela API, ja pausado.')
+    const config = a.acao === 'categorias' ? null : carregarConfiguracao()
+    if (config && config.erp !== 'bling') throw new Error('a configuracao diz erp: nenhum. Sem Bling, a /publicar-marketplace cria o anuncio direto no Mercado Livre pela API, ja pausado.')
     if (a.acao === 'categorias') {
       const r = await clienteBling()('GET', '/categorias/produtos', { query: { limite: 100 } })
       for (const c of r?.data || []) console.log(`${c.id}\t${c.descricao}`)

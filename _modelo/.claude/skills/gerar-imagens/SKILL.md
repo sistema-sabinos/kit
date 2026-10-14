@@ -94,7 +94,9 @@ as imagens finais em `anuncios/<slug>/imagens/NN-papel.jpg`, na ordem do mapa.
 4. **Foto de clima**: `compor-cena.mjs --cena <cenario.png>` (ou `--fundo` com a
    cor do estilo no `zero-ia`), produto em `--escala 0.55` e `--linha 0.85` como
    ponto de partida. Cenario escuro e borda clara em volta do produto: refazer o
-   recorte com `--feather 0` e `--limiar 248`.
+   recorte com `--limiar 235` (limiar mais baixo tira o anel claro do contorno),
+   mantendo o feather, e abrir o recorte pra conferir que nada do produto sumiu.
+   Limiar alto vale so pra embalagem branca que o recorte comeu.
 5. **Peça com texto** (infográfico, medidas, modo de uso): escrever
    `anuncios/<slug>/pecas/NN-papel.html` com as cores e as letras do estilo
    (a letra só pelo nome e pelo peso, sem caminho; nenhum logo da loja), com a foto

@@ -23,6 +23,9 @@ Antes de qualquer coisa, listar as pastas desta raiz. Projeto é pasta com
 - Versão nova do kit, zip novo ou atualizar pelo GitHub: skill `atualizar-kit`.
 - "Baixa o projeto <pasta> do GitHub" (segundo computador ou sócio): seção "Outro
   computador no mesmo projeto" de `_modelo/.claude/skills/syncar/SKILL.md`.
+- Existe `.backup-falhou` nesta raiz: avisar na primeira resposta, em uma linha,
+  "Seu último backup no GitHub falhou, o trabalho está só neste computador. Rode
+  `/syncar` pra resolver." e seguir com o pedido.
 
 As skills são o roteiro: nunca improvisar o fluxo.
 

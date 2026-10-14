@@ -251,3 +251,17 @@ test('mix sai 1 depois de gravar arquivo: o final pela metade e apagado', () => 
     assert.equal(existsSync(join(c.peca, 'final', 'peca-teste.mp4')), false)
   } finally { c.limpar() }
 })
+
+test('lerArgumentos aceita volume negativo separado por espaco (--musica-db -6)', async () => {
+  const m = await import('./render.mjs')
+  assert.equal(typeof m.lerArgumentos, 'function')
+  // canario: a forma com = passa, prova que o parser roda
+  assert.equal(m.lerArgumentos(['--slug', 'x', '--tipo', 'videov2', '--musica-db=-6']).musicaDb, -6)
+  const a = m.lerArgumentos(['--slug', 'x', '--tipo', 'videov2', '--musica-db', '-6', '--duck-ratio', '2'])
+  assert.equal(a.musicaDb, -6)
+  assert.equal(a.duckRatio, 2)
+  assert.equal(a.slug, 'x')
+  assert.equal(a.tipo, 'videov2')
+  assert.equal(m.lerArgumentos(['--slug', 'x', '--tipo', 'videov2', '--duck-ratio', '-1.5']).duckRatio, -1.5)
+  assert.equal(m.lerArgumentos(['--slug', 'x', '--tipo', 'videov2']).musicaDb, -3)
+})

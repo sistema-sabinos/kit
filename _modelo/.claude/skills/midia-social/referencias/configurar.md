@@ -107,8 +107,8 @@ E gratis: o Google da 10.000 "unidades" por dia, e uma consulta comum gasta 1 (u
 5. Baixar o arquivo JSON (fica na pasta Downloads; nao precisa trazer pro projeto).
 6. Avisar no chat que baixou. O Claude acha o arquivo e roda uma vez
    `node .claude/skills/gerenciar-youtube/scripts/yt.mjs auth --cliente <caminho do arquivo baixado>`:
-   ele grava a credencial no `.env` e abre o login no navegador. Voce so escolhe a conta do canal e
-   clica em Permitir, e o login tambem fica no `.env`. Depois disso, o arquivo baixado pode ser apagado.
+   ele grava a credencial no `.env` e mostra um endereco de login, que o Claude te passa pra abrir no
+   navegador. Voce so escolhe a conta do canal e clica em Permitir, e o login tambem fica no `.env`. Depois disso, o arquivo baixado pode ser apagado.
 
 ## Gemini (opcional)
 

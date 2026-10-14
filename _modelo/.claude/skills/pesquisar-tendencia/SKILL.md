@@ -101,10 +101,13 @@ no resumo e sugerir termo mais preciso.
 ### 7. Recomendação de imagens
 
 Pros produtos com nota 50 ou mais, acrescentar no `.md`, dentro da seção do
-produto, um bloco "Recomendação de imagens (dado de mercado)", lido dos
-títulos e dos cinco primeiros anúncios: o que a maioria mostra na capa, se usa
-texto, se mostra o produto em uso, e o que quase ninguém faz (a lacuna). O
-`ml-designer` parte daqui, e o plano de fotos final sai com a pessoa.
+produto, um bloco "Recomendação de imagens (dado de mercado)", lido só dos
+títulos dos cinco primeiros anúncios, porque a coleta não guarda foto: o que os
+títulos prometem (kit, uso, medida, cor) e o que quase ninguém diz (a lacuna).
+O que a capa mostra, se usa texto e se mostra o produto em uso vem da
+`/espionar-concorrente`, que abre as fotos; sem ela, escrever "capa: sem dado
+(a coleta não olha foto)". Quem lê este bloco é a `/decidir-anuncio`, junto com
+os briefings da espionagem, e o plano de fotos final sai com a pessoa.
 Escrever esse bloco só depois do último processamento, porque reprocessar
 refaz o `.md` e apaga o que foi acrescentado.
 

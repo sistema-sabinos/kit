@@ -480,7 +480,8 @@ export function explicarFalhaDoVeo(erro) {
       '',
       'Escreva o caminho da imagem limpa em "foto" no roteiro.json, mostre ela pra pessoa, aprove de novo e rode:',
       `  node ${CAMINHO_CLI} --mlb=<MLB> --fase=1 --aprovar`,
-      `  node ${CAMINHO_CLI} --mlb=<MLB> --fase=2 --preco-usd=<US$/s> --autorizado`,
+      // a musica so sai depois do ultimo bloco: quando um bloco cai, a fase 2 de novo cobra todos os precos
+      `  node ${CAMINHO_CLI} --mlb=<MLB> --fase=2 --preco-usd=<US$/s> --preco-musica-usd=<US$> --preco-tts-entrada=<US$/Mtok> --preco-tts-saida=<US$/Mtok> --preco-transcricao-entrada=<US$/Mtok> --preco-transcricao-saida=<US$/Mtok> --autorizado`,
       '',
       `Detalhe cru da API: ${msg.slice(0, 300)}`,
     ].join('\n')
@@ -997,6 +998,7 @@ async function fase2({ mlb, base, slug, a, d, precos }) {
     console.error('[fase 2] musica.mp3 ja esta na pasta, nao vou gerar de novo.')
   }
 
+  if (dryRun) { console.error('[fase 2] DRY-RUN concluido: nada foi gerado. A fase 2 de verdade (com os precos e o --autorizado, depois do pode ir) vem antes da fase 3.'); return 0 }
   console.error(`[fase 2] pronto. Clipes e musica desta rodada: ${usd(total)} (voz e transcricao ficam em dados/custos.jsonl).`)
   console.error('[fase 2] proximo passo: --fase=3 pra emendar, legendar e rodar os gates.')
   return 0
@@ -1007,6 +1009,19 @@ async function fase3({ mlb, base, slug, a, d, precos }) {
   if (!aberto) return 1
   const { pasta, roteiro } = aberto
   const nome = path.basename(pasta)
+
+  // final/ so guarda video liberado: rodar a fase 3 de verdade de novo (pedido de ajuste
+  // no gate 2) tira de la o video anterior antes de qualquer recusa, e so um video que
+  // passar nos dois gates volta pra final/. O dry-run nao mexe em final/.
+  const trabalho = path.join(pasta, '_tmp')
+  const pastaFinal = path.join(pasta, 'final')
+  const final = path.join(pastaFinal, `${nome}.mp4`)
+  if (!a.tem('dry-run') && fs.existsSync(final)) {
+    const anterior = path.join(trabalho, 'final-anterior.mp4')
+    fs.mkdirSync(trabalho, { recursive: true })
+    fs.renameSync(final, anterior)
+    console.error(`[fase 3] o video anterior saiu de final/ e ficou em ${anterior}: so um video que passar nos dois gates volta pra final/.`)
+  }
 
   const erros = conferirRoteiro(roteiro)
   if (erros.length) { console.error(`[gate de conteudo] roteiro reprovado (${erros.length}):\n- ${erros.join('\n- ')}`); return 1 }
@@ -1059,10 +1074,7 @@ async function fase3({ mlb, base, slug, a, d, precos }) {
   // A montagem sai em _tmp/ e so vai pra final/ depois do gate tecnico E do gate
   // de voz. Assim final/ so tem video liberado pra publicar: dry-run e reprovacao
   // deixam o arquivo em _tmp/, pra inspecionar.
-  const trabalho = path.join(pasta, '_tmp')
   const saida = path.join(trabalho, `${nome}.mp4`)
-  const pastaFinal = path.join(pasta, 'final')
-  const final = path.join(pastaFinal, `${nome}.mp4`)
   // Cama de musica: tem que existir `musica.mp3` na pasta. Ela e GERADA POR NOS,
   // nunca de terceiro: o ML proibe musica de propriedade alheia e e o que mais
   // derruba quem poe trilha de rede social. Todo video leva cama.

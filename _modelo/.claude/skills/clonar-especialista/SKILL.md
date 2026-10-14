@@ -200,12 +200,12 @@ node .claude/skills/clonar-especialista/scripts/travar-nome.mjs <pasta>
 node .claude/skills/clonar-especialista/scripts/medir-persona.mjs <pasta>
 node .claude/skills/clonar-especialista/scripts/medir-coleta.mjs <pasta>
 ```
-Nome sem nenhuma parte de 4 letras faz o `travar-nome` sair 1: conferir o nome à mão e, se o
-aluno quiser, `nome-no-agente: sim`. Depois do verde das citações, reler 1 em cada 5 contra a
-ficha: o script só olha se a marca existe, e a frase da persona pode afirmar o que a ficha não
+Nome sem parte de 4 letras (Li Wu) se confere com as partes juntas; com menos de 4 letras ao todo o
+`travar-nome` sai 1: conferir à mão e, se o aluno quiser, `nome-no-agente: sim`. Depois do verde das citações, reler 1 em cada 5 contra
+a ficha: o script só olha se a marca existe, e a frase da persona pode afirmar o que a ficha não
 diz. Gravar o recibo em `prova/releitura.md` (quantas relidas, quantas erradas, quais). Frase de
-afirmação sem nenhuma citação, fora de Papel, Como respondo, Voz e Regras de saída, também conta
-como erro. Mais de 1 em 10 das relidas errada: reler TODAS as citações e gravar o recibo de novo.
+afirmação sem nenhuma citação, fora de Papel, Como respondo, Voz, Limites, Regras de saída e Mapa
+das fichas, também conta como erro. Mais de 1 em 10 das relidas errada: reler TODAS as citações e gravar o recibo de novo.
 
 ## Passo 9: teste de fidelidade (obrigatório)
 

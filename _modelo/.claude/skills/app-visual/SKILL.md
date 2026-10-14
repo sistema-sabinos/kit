@@ -19,7 +19,7 @@ Lê `app/mapa.md` e os prints em `app/prints/`, que a `/app-estudar` guardou, e 
 sistema visual do app em `app/visual/`:
 
 ```
-app/visual/tokens.json     os valores de cor, letra, espaço e canto, no molde do tokens.json desta pasta
+app/visual/tokens.json     os valores de cor, letra, espaço, canto e disposição, no molde do tokens.json desta pasta
 app/visual/tokens.css      os mesmos valores no formato que o navegador lê
 app/visual/tailwind.md     como ligar os tokens no Tailwind do app
 app/visual/componentes.md  cada componente com variações, tamanhos, estados e acesso
@@ -125,8 +125,10 @@ print quando a IA consegue abrir a imagem.
 ### Passo 2. Os tokens
 
 Copiar o `tokens.json` desta pasta pra `app/visual/tokens.json` e preencher com o que o
-Passo 1 mediu. Os nomes dos papéis ficam; só os valores mudam. A `/app-marca` também só
-troca valores, e por isso cada tela continua funcionando quando a marca nova entra.
+Passo 1 mediu. Os nomes dos papéis ficam; só os valores mudam. A disposição medida no
+Passo 1 vai no bloco `layout`: largura máxima do conteúdo, barra lateral e topo, em
+pixels. A `/app-marca` também só troca valores, e por isso cada tela continua funcionando
+quando a marca nova entra.
 
 Na cor de destaque, gravar um valor neutro (o azul do molde serve). A cor de marca da
 referência vai só pra uma nota no fim do `app/visual/componentes.md`, pra `/app-marca`

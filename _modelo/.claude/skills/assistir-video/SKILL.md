@@ -45,12 +45,12 @@ O texto sai no stdout. O stderr mostra a rota usada, o modelo, os tokens e o cus
 |---|---|
 | YouTube | link direto, o Gemini busca sozinho (não baixa nada aqui, é a rota mais barata) |
 | TikTok, Kwai, Facebook, X, Vimeo e afins | baixa com `yt-dlp` e sobe pela Files API |
-| Instagram | o `yt-dlp` costuma levar "empty media response" sem cookie de sessão logada |
+| Instagram | o `yt-dlp` costuma levar "empty media response" sem cookie de sessão logada; Reel e post público baixam pelo Chrome dedicado (veja abaixo) |
 | Arquivo local (.mp4/.mov/.webm/...) | sobe direto pela Files API |
 
 O arquivo baixado é apagado no fim, e a cópia que fica no servidor do Gemini também (sem `--manter`).
 
-Dependência dessas rotas: `yt-dlp` e `ffmpeg` no PATH. Se o script avisar que falta o `yt-dlp`, a mensagem é pra IA: dizer ao usuário em uma frase o que falta, pedir o sim e instalar com o comando dela, nunca repassar o comando. Se o download por `yt-dlp` falhar por exigir login (caso comum do Instagram), avisar o usuário que essa rota precisa de um navegador dedicado (recurso avançado, ver `../docs/roadmap-avancado.md`, na pasta-mãe do SabinOS); enquanto isso não estiver montado, o caminho é o usuário baixar o vídeo manualmente e passar o arquivo local.
+Dependência dessas rotas: `yt-dlp` e `ffmpeg` no PATH. Se o script avisar que falta o `yt-dlp`, a mensagem é pra IA: dizer ao usuário em uma frase o que falta, pedir o sim e instalar com o comando dela, nunca repassar o comando. Se o download por `yt-dlp` falhar por exigir login (caso comum do Instagram) e o pacote de mídia social estiver no projeto (existe `.claude/skills/pauta/scripts/coletar.mjs`), baixar o Reel ou post público pelo Chrome dedicado, como na `/decupar-referencia` (`node .claude/skills/pauta/scripts/coletar.mjs --perfil <@ do criador> --reels <codigo do link>`; o mp4 sai em `inteligencia/base-ideias/<perfil>/videos/<codigo>.mp4`), e passar esse arquivo. Sem o pacote, ou se a página pedir login, o caminho é o usuário baixar o vídeo manualmente e passar o arquivo local. Navegador logado é recurso avançado (`../docs/roadmap-avancado.md`, na pasta-mãe do SabinOS).
 
 ## Modelo: escolhido na hora, nunca chumbado
 

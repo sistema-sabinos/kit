@@ -32,6 +32,19 @@ test('lerTextoDoPost recusa post.md com o texto do molde ainda no lugar', () => 
   assert.equal(lerTextoDoPost('## Legenda\nPreco < R$ 50 no link').legenda, 'Preco < R$ 50 no link')
 })
 
+test('item 47: lerTextoDoPost recusa marcador no meio da frase da legenda e do YouTube', () => {
+  assert.throws(() => lerTextoDoPost('## Legenda\nLeve o <produto> hoje.'), /molde/)
+  assert.throws(() => lerTextoDoPost('## Legenda\nok\n\n## YouTube titulo\nTitulo <x> aqui'), /molde/)
+  assert.equal(lerTextoDoPost('## Legenda\nTe amo <3 e preco < 50').legenda, 'Te amo <3 e preco < 50')
+})
+
+// achado da revisao do grupo G: comparacao com espaco nos dois lados nao e marcador do molde
+test('item 47: lerTextoDoPost deixa passar comparacao com < e > na mesma linha', () => {
+  assert.throws(() => lerTextoDoPost('## Legenda\nLeve o <nome do produto> hoje.'), /molde/, 'canario: marcador com espaco dentro barra')
+  for (const t of ['Preco < 50 e estoque > 10', 'Te amo <3 e mais de 10 > nada'])
+    assert.equal(lerTextoDoPost('## Legenda\n' + t).legenda, t)
+})
+
 test('acharMidia pega o mp4 mais novo sem -preview', () => {
   const ls = () => ['a.mp4', 'b.mp4', 'b-preview.mp4']
   const mtime = f => ({ 'a.mp4': 2, 'b.mp4': 1, 'b-preview.mp4': 9 })[f.split(/[\\/]/).pop()]

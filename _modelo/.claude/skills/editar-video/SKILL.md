@@ -155,9 +155,9 @@ ffmpeg -y -f lavfi -i "gradients=s=1080x1920:c0=0x1b2a49:c1=0x4a6fa5:x0=540:y0=0
   Escreva `producao/<slug>/cenarios/cenas.json` com três cenas, cada uma com
   `out` e uma `descricao` do lugar, fotorrealista, sem pessoa e sem texto, com o
   assunto principal no centro. Depois do sim, rode:
-  - codex: `node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau codex --cenas producao/<slug>/cenarios/cenas.json`
+  - codex: `node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau codex --cenas producao/<slug>/cenarios/cenas.json --uso video`
   - gemini, com o preço do dia já na primeira chamada e o `--autorizado` só
-    depois do sim: `node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau gemini --cenas producao/<slug>/cenarios/cenas.json --preco-usd <preço do dia> --contexto "cenario <slug>" --autorizado`
+    depois do sim: `node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau gemini --cenas producao/<slug>/cenarios/cenas.json --preco-usd <preço do dia> --contexto "cenario <slug>" --autorizado --uso video`
 
   Abra as três (leitura de imagem), mostre ao aluno e pergunte qual.
 - Copie a escolhida para `producao/<slug>/public/cenario.png`.
@@ -413,8 +413,9 @@ legenda, e sem ele o vídeo não agenda.
   social, crie com as mesmas seções do molde: `# Post: <título>`, a linha `ia:`,
   `## Legenda`, `## YouTube titulo` e `## YouTube descricao`). A legenda tem de 3 a
   6 linhas e fecha com a chamada do vídeo; o título do Short é curto e diz o
-  assunto; a descrição do Short repete a promessa em duas ou três linhas. Nenhuma
-  linha com texto entre `<` e `>` pode sobrar, senão o agendador recusa.
+  assunto; a descrição do Short repete a promessa em duas ou três linhas. Nenhum
+  texto entre `<` e `>` pode sobrar na legenda nem nas seções do YouTube, senão o
+  agendador recusa.
 - A linha `ia:` fica `ia: sim` se o vídeo tiver imagem ou voz gerada por IA
   (o cenário gerado pelo Gemini ou pelo Codex conta), senão `ia: nao`.
 - No `final/` fica só o vídeo pronto: o agendador pega o `.mp4` mais novo que

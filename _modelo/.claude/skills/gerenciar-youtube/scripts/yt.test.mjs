@@ -1,6 +1,8 @@
 // Testes do cliente do YouTube. Sem rede.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { urlDeAutorizacao, trocarCodigo, tokenValido, pedidosDoComando, diffDoVideo, corpoDaAtualizacao, clienteDoArquivo, clienteDoEnv, tokenDoEnv, envDoToken } from './yt.mjs'
 
 test('urlDeAutorizacao pede offline, consentimento e os dois escopos', () => {
@@ -77,4 +79,14 @@ test('o login do YouTube vai e volta do .env', () => {
   const token = { access_token: 'a', refresh_token: 'r', vence_em: '2026-10-04T13:00:00.000Z' }
   assert.deepEqual(tokenDoEnv(Object.fromEntries(Object.entries(envDoToken(token)))), token)
   assert.throws(() => tokenDoEnv({}), /auth/)
+})
+
+test('comando vazio ou inexistente lista os comandos antes de pedir login', () => {
+  const script = fileURLToPath(new URL('./yt.mjs', import.meta.url))
+  for (const args of [[], ['ajuda']]) {
+    const r = spawnSync(process.execPath, [script, ...args], { encoding: 'utf8' })
+    assert.equal(r.status, 1, `canario: yt.mjs ${args.join(' ')} rodou e recusou (${r.stderr})`)
+    assert.match(r.stderr, /nao existe: auth, canal, videos, relatorio, comentarios, atualizar/)
+    assert.doesNotMatch(r.stderr, /sem login/)
+  }
 })

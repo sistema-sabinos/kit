@@ -62,8 +62,10 @@ export function pedidosDoComando(comando, args, { hoje = new Date().toLocaleDate
     if (!args[0]) throw new Error('faltou o video_id: comentarios <video_id> [n]')
     return [{ base: DATA, caminho: '/commentThreads', params: { part: 'snippet', videoId: args[0], maxResults: String(args[1] || 50), order: 'relevance', textFormat: 'plainText' } }]
   }
-  throw new Error(`comando "${comando}" nao existe: auth, canal, videos, relatorio, comentarios ou atualizar`)
+  throw new Error(`comando "${comando}" nao existe: ${COMANDOS.join(', ')}`)
 }
+
+export const COMANDOS = ['auth', 'canal', 'videos', 'relatorio', 'comentarios', 'atualizar']
 
 export function diffDoVideo(antes, novo) {
   return Object.keys(novo).filter(k => JSON.stringify(antes[k]) !== JSON.stringify(novo[k])).map(campo => ({ campo, antes: antes[campo], depois: novo[campo] }))
@@ -146,6 +148,8 @@ async function auth(args) {
 
 async function main(v) {
   const [comando, ...args] = v
+  // comando vazio ou errado se recusa antes do login: senao a resposta era "sem login no YouTube"
+  if (!COMANDOS.includes(comando)) throw new Error(`comando "${comando ?? ''}" nao existe: ${COMANDOS.join(', ')}`)
   if (comando === 'auth') return auth(args)
   const token = await tokenDoProjeto()
   if (comando === 'canal') {

@@ -262,6 +262,11 @@ export function quadroDe(entrada, regua) {
   const teto_batido = cortes > metodo.teto_de_acoes;
   if (teto_batido) {
     alertas.push(`${cortes} anúncios caíram em CRITICO nesta rodada, acima do teto de ${metodo.teto_de_acoes}. Antes de pausar qualquer coisa, confira o ticket: régua errada derruba a conta inteira.`);
+    // Teto batido não entrega lista de corte: nem no texto, nem no --json.
+    for (const x of quadro.filter((q) => q.faixa === 'CRITICO')) {
+      x.faixa = 'RONDA'; x.acao = 'conferir o ticket'; x.protegido_por = 'teto';
+      x.motivo = `${x.motivo}, e o teto de cortes bateu: nenhum corte proposto`;
+    }
   }
 
   return {

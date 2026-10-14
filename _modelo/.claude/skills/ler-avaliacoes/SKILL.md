@@ -135,8 +135,8 @@ O que o script faz:
 - separa as avaliações por tema. Os temas prontos moram em `temas-marketplace.json`
   (qualidade, defeito, diferente do anúncio, tamanho, entrega, embalagem, peça faltando,
   falsificado, vendedor, devolução, preço, durabilidade, manual, voltagem) e
-  `temas-app.json` (preço, cobrança, defeito, lentidão, dados, uso, suporte, conta,
-  avisos, propaganda, atualização, privacidade, ligação com outros sistemas,
+  `temas-app.json` (preço, cobrança, golpe, defeito, lentidão, dados, uso, suporte,
+  conta, avisos, propaganda, atualização, privacidade, ligação com outros sistemas,
   plataformas, personalizar, equipe). Acento e maiúscula não fazem diferença: "preço" e
   "preco" caem no mesmo tema;
 - dá **peso** a cada avaliação: nota 1 pesa mais, nota 5 quase nada, e a avaliação com

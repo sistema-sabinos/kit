@@ -3,7 +3,7 @@
 // separa carrossel de Reel.
 // Uso: node .claude/skills/pauta/scripts/refiltrar.mjs --dias 7 --piso 300 --tag 7dias aberto-2026-10-01 aberto-2026-10-02
 import { readFileSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { basename, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { opcoes } from './lib/pagina.mjs'
 import { ranquear } from './lib/instagram-publico.mjs'
@@ -17,12 +17,15 @@ export function juntarLevas(levas) {
   return perfis
 }
 
+// aceita o nome nu, o .json ou o caminho que o garimpo imprime (com .md)
+export const nomeDaLeva = f => basename(f).replace(/\.(json|md)$/, '')
+
 function main(argv) {
   const o = opcoes(argv)
   if (o.help) { console.log(USO); return }
   const dias = Number(o.dias || 7), piso = Number(o.piso || 300), tag = o.tag || `${dias}dias`
   if (!o._.length) throw new Error('faltou o nome dos arquivos de garimpo. ' + USO)
-  const perfis = juntarLevas(o._.map(f => JSON.parse(readFileSync(join(PASTA, f.replace(/\.json$/, '') + '.json'), 'utf8'))))
+  const perfis = juntarLevas(o._.map(f => JSON.parse(readFileSync(join(PASTA, nomeDaLeva(f) + '.json'), 'utf8'))))
   const { lista } = ranquear(perfis, { dias, piso })
   const hoje = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' })
   const nome = `aberto-${hoje}-${tag}.md`

@@ -1497,3 +1497,52 @@ test('o dry-run imprime os modelos que vai usar junto da estimativa', async () =
   assert.match(modelos, /Lyria/)
   assert.match(modelos, /tabela de precos/)
 })
+
+// O bloqueio cai no meio da fase 2, antes da musica: o comando do recado tem de
+// trazer todos os precos, senao a pessoa roda e ganha "faltam os precos do dia".
+test('o comando da fase 2 no recado do bloqueio do Veo passa da checagem de precos', () => {
+  preparar(carimbado(roteiroValido()), { comMusica: false })
+  const recado = explicarFalhaDoVeo(new Error('operacao terminou sem video (raiFilteredReason)'))
+  const linha = recado.split('\n').find((l) => l.includes('--fase=2'))
+  assert.ok(linha, 'o recado do bloqueio tem a linha da fase 2')
+  const args = linha.trim().split(/\s+/).slice(2)
+    .map((x) => x.replace('<MLB>', MLB).replace(/=<[^>]*>$/, '=1'))
+    .filter((x) => x !== '--autorizado')
+  const r = rodar(args)
+  assert.doesNotMatch(r.stderr, /faltam os precos do dia/)
+  assert.equal(r.status, 3, r.stderr.slice(0, 500))
+})
+
+// O dry-run nao gera clipe: fechar com "pronto" e mandar pra fase 3 leva direto
+// ao "faltam clipes".
+test('fase 2 em dry-run nao diz pronto nem manda pra fase 3', () => {
+  preparar(carimbado(roteiroValido()))
+  const r = rodar([`--mlb=${MLB}`, '--fase=2', '--dry-run'])
+  assert.equal(r.status, 0, r.stderr.slice(0, 500))
+  assert.match(r.stderr, /4 clipe/)
+  assert.doesNotMatch(r.stderr, /\[fase 2\] pronto/)
+  assert.doesNotMatch(r.stderr, /proximo passo: --fase=3/)
+  assert.match(r.stderr, /DRY-RUN concluido/)
+})
+
+// Depois de um ajuste no gate 2, o video recusado nao pode ficar em final/ com cara
+// de liberado: a fase 3 de verdade tira ele de la antes de qualquer recusa.
+test('fase 3 tira de final/ o video antigo antes de qualquer recusa, e o dry-run nao mexe nele', async () => {
+  preparar(carimbado(roteiroValido()))
+  copiarClipes()
+  fs.rmSync(path.join(pasta, 'bloco-4.mp4'))
+  const final = path.join(pasta, 'final', `${SLUG}.mp4`)
+  fs.mkdirSync(path.dirname(final), { recursive: true })
+  fs.writeFileSync(final, 'video da rodada anterior')
+
+  const seco = await chamar([`--mlb=${MLB}`, '--fase=3', '--dry-run'], depsDaFase3(''))
+  assert.equal(seco.status, 1, seco.stderr)
+  assert.match(seco.stderr, /faltam clipes.*bloco-4\.mp4/)
+  assert.ok(fs.existsSync(final), 'o dry-run nao mexe em final/')
+
+  const r = await chamar([`--mlb=${MLB}`, '--fase=3', ...PRECOS_AUTORIZADO], depsDaFase3(''))
+  assert.equal(r.status, 1, r.stderr)
+  assert.match(r.stderr, /faltam clipes.*bloco-4\.mp4/)
+  assert.equal(fs.existsSync(final), false, 'o video que a pessoa pediu pra ajustar continuou em final/')
+  assert.equal(fs.readFileSync(path.join(pasta, '_tmp', 'final-anterior.mp4'), 'utf8'), 'video da rodada anterior')
+})

@@ -110,14 +110,25 @@ export function render({
   return { saida: final, segundos: Math.round((agora() - inicio) / 1000) }
 }
 
+// parseArgs recusa valor negativo separado por espaco (--musica-db -6); aqui ele vira --musica-db=-6
+export function lerArgumentos(argv) {
+  const args = []
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]
+    if ((a === '--musica-db' || a === '--duck-ratio') && /^-[\d.]/.test(argv[i + 1] ?? '')) args.push(`${a}=${argv[++i]}`)
+    else args.push(a)
+  }
+  const { values: v } = parseArgs({ args, options: {
+    slug: { type: 'string' }, tipo: { type: 'string' }, musica: { type: 'string' },
+    'musica-db': { type: 'string', default: '-3' }, 'duck-ratio': { type: 'string', default: '2' },
+  } })
+  return { slug: v.slug, tipo: v.tipo, musica: v.musica, musicaDb: Number(v['musica-db']), duckRatio: Number(v['duck-ratio']) }
+}
+
 const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
 if (ehCli) {
   try {
-    const { values: v } = parseArgs({ options: {
-      slug: { type: 'string' }, tipo: { type: 'string' }, musica: { type: 'string' },
-      'musica-db': { type: 'string', default: '-3' }, 'duck-ratio': { type: 'string', default: '2' },
-    } })
-    const r = render({ slug: v.slug, tipo: v.tipo, musica: v.musica, musicaDb: Number(v['musica-db']), duckRatio: Number(v['duck-ratio']) })
+    const r = render(lerArgumentos(process.argv.slice(2)))
     console.log(`Pronto: ${r.saida} (${r.segundos} s de render e mix). Agora rode o conferir-final.mjs.`)
   } catch (e) {
     console.error(e.message)

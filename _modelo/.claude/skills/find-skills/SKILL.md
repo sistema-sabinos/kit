@@ -169,7 +169,7 @@ conteúdo sem instalar, de um destes jeitos:
 Depois, aplicar a política do topo desta skill: ler o conteúdo, aproveitar só
 o que serve e gerar uma skill própria adaptada ao negócio do usuário, dentro
 do projeto dele. A pasta temporária fica no computador, fora do projeto; não
-apagar daqui (a trava barra apagar pasta inteira). Se a pessoa quiser, ela apaga à
+apagar daqui, porque apagar pasta inteira é decisão da pessoa. Se ela quiser, apaga à
 mão depois, e dizer onde está.
 
 ## Categorias comuns de busca

@@ -1,9 +1,11 @@
 // Cenario VAZIO por IA: fundo de foto (bancada, cozinha, estudio) sem produto,
 // sem texto e sem pessoa. O produto real entra depois pelo compor-cena.mjs e o
 // texto pelo montar-peca.mjs, porque a IA erra letra e redesenha rotulo.
+// Com --uso video o cenario e fundo de video vertical (a /editar-video): o assunto do lugar
+// fica no centro, porque as laterais da imagem quadrada sao cortadas.
 // Uso:
-//   node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau codex --cenas <cenas.json>
-//   node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau gemini --cenas <cenas.json> --preco-usd 0.05 --contexto "designer <slug>" [--autorizado]
+//   node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau codex --cenas <cenas.json> [--uso video]
+//   node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau gemini --cenas <cenas.json> --preco-usd 0.05 --contexto "designer <slug>" [--autorizado] [--uso video]
 // cenas.json: [{ "out": "anuncios/<slug>/cenarios/cozinha.png", "descricao": "..." }]
 // --preco-usd e o preco por imagem conferido na pagina oficial do Gemini NO DIA.
 // Saida: 0 tudo gerado; 1 falhou alguma cena; 2 uso errado; 3 parou antes de gastar.
@@ -26,13 +28,23 @@ export const REGRAS = `REGRAS OBRIGATORIAS, valem para TODAS as imagens:
 - Luz natural suave, profundidade de campo rasa, sem saturacao exagerada
 - Formato quadrado 1:1, fotorrealista, qualidade de foto de produto profissional`
 
+export const REGRAS_VIDEO = `REGRAS OBRIGATORIAS, valem para TODAS as imagens:
+- NENHUM produto, pote, frasco, embalagem, caixa ou objeto a venda na imagem, nem ao fundo, nem desfocado
+- NENHUM texto, letra, numero, logo, placa ou rotulo
+- NENHUMA pessoa, mao ou parte de corpo
+- O assunto principal do lugar fica no CENTRO, numa faixa vertical: a imagem vira fundo de video vertical e as laterais sao cortadas
+- Luz natural suave, profundidade de campo rasa, sem saturacao exagerada
+- Formato quadrado 1:1, fotorrealista`
+
 const barra = (p) => p.split(String.fromCharCode(92)).join('/')
 
-export function montarPrompt(cenas) {
+export function montarPrompt(cenas, { uso = 'anuncio' } = {}) {
+  const regras = uso === 'video' ? REGRAS_VIDEO : REGRAS
+  const destino = uso === 'video' ? 'CENARIO DE FUNDO de video vertical, atras de uma pessoa gravada no fundo verde' : 'CENARIO DE FUNDO em foto de anuncio'
   const blocos = cenas.map((c, i) => `CENA ${i + 1}, arquivo: ${barra(resolve(c.out))}\n${c.descricao}`).join('\n\n')
-  return `Gere ${cenas.length === 1 ? 'UMA imagem' : `${cenas.length} imagens`} quadrada(s) 1:1, fotorrealista(s), para servir de CENARIO DE FUNDO em foto de anuncio.
+  return `Gere ${cenas.length === 1 ? 'UMA imagem' : `${cenas.length} imagens`} quadrada(s) 1:1, fotorrealista(s), para servir de ${destino}.
 
-${REGRAS}
+${regras}
 
 ${blocos}
 
@@ -59,14 +71,14 @@ export function estimar({ n, precoUsd, limiteUsd }) {
   return { total, cabe: total <= limiteUsd }
 }
 
-export async function viaCodex(cenas, { raiz = RAIZ, executar = spawnSync, carimbo = (p) => existsSync(p) ? statSync(p).mtimeMs : null } = {}) {
+export async function viaCodex(cenas, { raiz = RAIZ, uso, executar = spawnSync, carimbo = (p) => existsSync(p) ? statSync(p).mtimeMs : null } = {}) {
   for (const c of cenas) {
     const rel = relative(raiz, resolve(c.out))
     if (rel.startsWith('..') || isAbsolute(rel)) throw new Error(`o cenario tem que ser salvo dentro da pasta do projeto, e veio ${c.out}`)
   }
   const antes = cenas.map(c => carimbo(c.out))
   const r = executar('codex', ['exec', '--skip-git-repo-check', '--sandbox', 'workspace-write', '-'], {
-    input: montarPrompt(cenas), cwd: raiz, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 20 * 60 * 1000,
+    input: montarPrompt(cenas, { uso }), cwd: raiz, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 20 * 60 * 1000,
     shell: process.platform === 'win32',
   })
   // O texto da IA dizendo "salvei" nao vale: quem manda e o arquivo no disco. E so conta se o
@@ -83,7 +95,7 @@ export async function viaCodex(cenas, { raiz = RAIZ, executar = spawnSync, carim
 }
 
 export async function viaGemini(cenas, {
-  chave, precoUsd, contexto,
+  chave, precoUsd, contexto, uso,
   buscar = fetch,
   gravar = (p, b) => { mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, b) },
   registrarCusto = (linha) => { mkdirSync(join(RAIZ, 'dados'), { recursive: true }); appendFileSync(join(RAIZ, 'dados', 'custos.jsonl'), JSON.stringify(linha) + '\n') },
@@ -108,7 +120,7 @@ export async function viaGemini(cenas, {
   }
   for (const c of cenas) {
     try {
-      const corpo = { contents: [{ parts: [{ text: montarPrompt([c]) }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '1:1' } } }
+      const corpo = { contents: [{ parts: [{ text: montarPrompt([c], { uso }) }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '1:1' } } }
       let json = null
       for (let tentativa = 1; tentativa <= 3; tentativa++) {
         const r = await buscar(`${API}/models/${modelo}:generateContent?key=${chave}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
@@ -155,14 +167,14 @@ async function main() {
   const a = lerArgs(process.argv.slice(2))
   let cenas
   try {
-    if (!['codex', 'gemini'].includes(a.degrau) || !a.cenas) throw new Error('uso: --degrau codex|gemini --cenas <cenas.json> (veja o topo do arquivo)')
+    if (!['codex', 'gemini'].includes(a.degrau) || !a.cenas || ![undefined, 'video', 'anuncio'].includes(a.uso)) throw new Error('uso: --degrau codex|gemini --cenas <cenas.json> [--uso video|anuncio] (veja o topo do arquivo)')
     cenas = JSON.parse(readFileSync(a.cenas, 'utf8'))
     if (!Array.isArray(cenas) || !cenas.length || cenas.some(c => !c.out || !c.descricao)) throw new Error('cenas.json e uma lista de { "out", "descricao" }')
   } catch (e) { console.error(e.message); process.exitCode = 2; return }
   try {
     if (a.degrau === 'codex') {
       console.error(`[codex] gerando ${cenas.length} cenario(s); sem cobranca por imagem dentro da cota do plano; credito avulso do Codex, se voce comprou, e gasto ao passar dela`)
-      const r = await viaCodex(cenas)
+      const r = await viaCodex(cenas, { uso: a.uso })
       console.log(JSON.stringify(r, null, 2))
       process.exitCode = r.faltaram.length ? 1 : 0
       return
@@ -174,7 +186,7 @@ async function main() {
     if (!a.autorizado) { console.log(JSON.stringify({ parou: 'precisa do pode ir da pessoa', estimativa_usd: est.total, imagens: cenas.length })); process.exitCode = 3; return }
     const chave = lerEnv().GEMINI_API_KEY
     if (!chave) { console.error('falta GEMINI_API_KEY no .env (o /conectar ensina a pegar)'); process.exitCode = 2; return }
-    const r = await viaGemini(cenas, { chave, precoUsd, contexto: a.contexto || 'gerar-imagens' })
+    const r = await viaGemini(cenas, { chave, precoUsd, contexto: a.contexto || 'gerar-imagens', uso: a.uso })
     console.log(JSON.stringify(r, null, 2))
     process.exitCode = r.faltaram.length ? 1 : 0
   } catch (e) { console.error(e.message); process.exitCode = 1 }

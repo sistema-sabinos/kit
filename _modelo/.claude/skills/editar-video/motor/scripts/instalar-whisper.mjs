@@ -2,7 +2,7 @@
 // WHISPER_DIR (sem a variavel, <_video>/ferramentas/whisper.cpp, que e onde o py.mjs e o conferir procuram). Roda uma vez, no /configurar-video. O modelo vem da medicao da maquina: small (rapido) ou medium.
 //
 // uso: node instalar-whisper.mjs [--modelo small|medium]
-// O Remotion baixa o zip na pasta de onde o comando roda, entao ela tambem nao pode ter espaco.
+// O Remotion baixa o zip na pasta de onde o comando roda; o instalador troca pra pasta-mae do whisper antes, entao a pasta do projeto pode ter espaco.
 import { existsSync, mkdirSync, statSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -39,15 +39,22 @@ export function conferirModelo(pasta, modelo) {
   return arq
 }
 
-export async function instalar({ modelo, whisperDir }) {
-  const { installWhisperCpp, downloadWhisperModel } = await import('@remotion/install-whisper-cpp')
+export async function instalar({ modelo, whisperDir: dir, carregar = () => import('@remotion/install-whisper-cpp') }) {
+  const { installWhisperCpp, downloadWhisperModel } = await carregar()
+  // absoluto antes do chdir: um WHISPER_DIR relativo mudaria de lugar quando a pasta de trabalho troca
+  const whisperDir = resolve(dir)
   checarSemEspaco(whisperDir, 'o caminho')
-  checarSemEspaco(process.cwd(), 'a pasta de onde o comando roda')
   // so a pasta-mae: se a do whisper ja existir sem o programa, o Remotion acha que a instalacao ficou pela metade
   mkdirSync(dirname(whisperDir), { recursive: true })
-  await installWhisperCpp({ to: whisperDir, version: VERSAO })
-  await downloadWhisperModel({ model: modelo, folder: whisperDir })
-  return conferirModelo(whisperDir, modelo)
+  const antes = process.cwd()
+  process.chdir(dirname(whisperDir))
+  try {
+    await installWhisperCpp({ to: whisperDir, version: VERSAO })
+    await downloadWhisperModel({ model: modelo, folder: whisperDir })
+    return conferirModelo(whisperDir, modelo)
+  } finally {
+    process.chdir(antes)
+  }
 }
 
 const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])

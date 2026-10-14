@@ -139,3 +139,14 @@ test('todo comando winget dos itens leva as 4 flags do setup', () => {
   assert.ok(comWinget.length >= 3, `so ${comWinget.length} itens com winget`)
   for (const i of comWinget) for (const f of flags) assert.ok(i.win.includes(f), `${i.id} sem ${f}`)
 })
+
+// 5.14 item 4: Windows ARM e Linux nao tem o limpador pronto, e o item barrava o video pra sempre.
+test('deep-filter: computador sem versao pronta (Windows ARM) conta como ok e fala do afftdn', () => {
+  const base = join(tmpdir(), 'v')
+  const item = (arch) => conferir({ plat: 'win32', arch, base, executar: tudoOk, existe: p => !p.includes('deep-filter') }).itens.find(i => i.id === 'deep-filter')
+  // canario: onde ha versao pronta, o programa ausente ainda conta como faltando
+  assert.equal(item('x64').ok, false)
+  const arm = item('arm64')
+  assert.equal(arm.ok, true)
+  assert.match(arm.detalhe, /afftdn/)
+})

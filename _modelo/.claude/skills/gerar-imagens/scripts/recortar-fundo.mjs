@@ -45,7 +45,7 @@ export function recortar(d, W, H, { limiar = 242, feather = 2 } = {}) {
 
 export function avisoDoRecorte(pct) {
   if (pct < 5) return 'quase nada do fundo saiu: a foto nao parece ter fundo branco. Peca uma foto do produto em fundo branco ou bem claro.'
-  if (pct > 95) return 'quase a imagem inteira saiu: o recorte pode ter comido o produto. Tente de novo com --limiar mais alto (ex.: 250).'
+  if (pct > 95) return 'quase a imagem inteira saiu: o recorte pode ter comido o produto. Tente de novo com --limiar mais alto (ex.: 248).'
   return null
 }
 

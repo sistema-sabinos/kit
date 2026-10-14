@@ -8,7 +8,7 @@
 //   criar <estilo> <AAAA-MM-DD-assunto>        copia o template pra <_video>/estilos/<pasta>
 //   instalar <AAAA-MM-DD-assunto>              npm install dentro da pasta da edicao
 //   rodar <AAAA-MM-DD-assunto> <scripts/x.mjs> [argumentos]
-//   entregar <AAAA-MM-DD-assunto>              copia o MP4 pronto pra producao/<pasta>/
+//   entregar <AAAA-MM-DD-assunto>              copia o MP4 pronto pra producao/<pasta>/final/ e o molde do post.md
 import { spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, resolve, isAbsolute, basename } from 'node:path'
@@ -97,8 +97,8 @@ export function instalar({ raiz = RAIZ, env, pasta, plat = process.platform, exe
   return r.status ?? 1
 }
 
-// So script do proprio estilo, dentro da pasta da edicao: nada de caminho solto.
-const RE_SCRIPT = /^(?:scripts|ferramentas)\/[a-z0-9-]+\.mjs$/
+// So script do proprio estilo, nas pastas que o catalogo usa, dentro da pasta da edicao: nada de caminho solto.
+export const RE_SCRIPT = /^(?:scripts|ferramentas|scripts-modelo|utilitarios)\/[a-z0-9-]+\.mjs$/
 
 // a unica chave que os estilos leem: busca de fotos gratis, opcional
 const CHAVE_PEXELS = 'PEXELS_API_KEY'
@@ -111,7 +111,7 @@ export function ambienteDaEdicao({ raiz = RAIZ, env } = {}) {
 }
 
 export function rodar({ raiz = RAIZ, env, pasta, script, args = [], executar = spawnSync }) {
-  if (!RE_SCRIPT.test(script || '')) throw new Error(`script invalido: "${script}"; use scripts/<nome>.mjs ou ferramentas/<nome>.mjs da pasta da edicao`)
+  if (!RE_SCRIPT.test(script || '')) throw new Error(`script invalido: "${script}"; use scripts/, ferramentas/, scripts-modelo/ ou utilitarios/<nome>.mjs da pasta da edicao`)
   const destino = pastaDaEdicao({ raiz, env, pasta })
   if (!existsSync(join(destino, script))) throw new Error(`${script} nao existe em ${destino}`)
   const r = executar(process.execPath, [script, ...args], { cwd: destino, stdio: 'inherit', env: { ...process.env, ...ambienteDaEdicao({ raiz, env }) } })
@@ -120,18 +120,27 @@ export function rodar({ raiz = RAIZ, env, pasta, script, args = [], executar = s
 
 export const ordenarMp4 = (itens) => [...itens].sort((a, b) => b.t - a.t || a.n.localeCompare(b.n))
 
-// O MP4 mais novo de out/ vai pra producao/<pasta>/ do projeto. Mais de um MP4: o mais novo
-// ganha (empate de hora, o nome em ordem) e os outros voltam em "sobra", pra avisar o aluno.
+// O MP4 mais novo de out/ vai pra producao/<pasta>/final/ do projeto, onde a /publicar-social
+// procura, e o molde do post.md vem junto quando falta (a mesma ordem do passo 1 da
+// /editar-video). Mais de um MP4: o mais novo ganha (empate de hora, o nome em ordem) e os
+// outros voltam em "sobra", pra avisar o aluno.
 export function entregar({ raiz = RAIZ, env, pasta }) {
   const out = join(pastaDaEdicao({ raiz, env, pasta }), 'out')
   const mp4 = existsSync(out) ? readdirSync(out).filter((n) => n.toLowerCase().endsWith('.mp4')) : []
   if (!mp4.length) throw new Error(`nenhum MP4 em ${out}: o render ainda nao rodou`)
   const ordem = ordenarMp4(mp4.map((n) => ({ n, t: statSync(join(out, n)).mtimeMs })))
   const novo = ordem[0].n
-  const destino = join(raiz, 'producao', pasta)
+  const pastaPost = join(raiz, 'producao', pasta)
+  const destino = join(pastaPost, 'final')
   mkdirSync(destino, { recursive: true })
   cpSync(join(out, novo), join(destino, basename(novo)))
-  return { final: join(destino, basename(novo)), sobra: ordem.slice(1).map((x) => x.n) }
+  let post = join(pastaPost, 'post.md')
+  if (!existsSync(post)) {
+    const molde = [join(raiz, 'producao', '_molde', 'post.md'), join(raiz, '.claude', 'skills', 'midia-social', 'moldes', 'producao', '_molde', 'post.md')].find(existsSync)
+    if (molde) cpSync(molde, post)
+    else post = null
+  }
+  return { final: join(destino, basename(novo)), post, sobra: ordem.slice(1).map((x) => x.n) }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -159,6 +168,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     } else if (cmd === 'entregar') {
       const r = entregar({ pasta: resto[0] })
       console.log(`Video pronto: ${r.final}`)
+      console.log(r.post ? `post.md: ${r.post} (preencha antes de agendar)` : 'sem pacote de midia social: o post.md sai a mao')
       if (r.sobra.length) console.log(`Havia mais MP4 em out/ (${r.sobra.join(', ')}); entreguei o mais novo. Confira com o aluno se era esse.`)
     } else {
       console.error('uso: estilos.mjs conferir | listar [--formato 9:16|16:9] [--busca "..."] | criar <estilo> <pasta> | instalar <pasta> | rodar <pasta> <scripts/x.mjs> [args] | entregar <pasta>')

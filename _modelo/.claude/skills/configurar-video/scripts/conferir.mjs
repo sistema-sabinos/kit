@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url'
 import { python, exe } from './lib/plataforma.mjs'
 import { caminhos, pastaVideo, lerJsonSe } from './lib/pasta-video.mjs'
 import { marcaEmDia } from './instalar-motor.mjs'
+import { URLS as URLS_DEEP_FILTER } from './baixar-deep-filter.mjs'
 
 const LIBS = 'numpy opencv-python pillow scipy onnxruntime'
 
@@ -39,7 +40,7 @@ export const BYTES_MODELO = { small: 487601967, medium: 1533763059 }
 
 const tamanhoPadrao = (p) => { try { return statSync(p).size } catch { return 0 } }
 
-export function conferir({ plat = process.platform, base, executar = spawnSync, existe = existsSync, tamanho = tamanhoPadrao, env = process.env, modeloWhisper } = {}) {
+export function conferir({ plat = process.platform, arch = process.arch, base, executar = spawnSync, existe = existsSync, tamanho = tamanhoPadrao, env = process.env, modeloWhisper } = {}) {
   const c = caminhos(base)
   const py = python(plat, base)
   const rodar = (cmd, args) => { try { return executar(cmd, args, { encoding: 'utf8' }) } catch { return { status: null, stdout: '' } } }
@@ -68,7 +69,10 @@ export function conferir({ plat = process.platform, base, executar = spawnSync, 
         ? [false, `o modelo ${modelo} esta incompleto (download que caiu no meio): apague o ggml-${modelo}.bin e rode de novo`]
         : [existe(binWhisper) && tamanho(modeloBin) === BYTES_MODELO[modelo], `programa e modelo ${modelo}`])
       : [false, 'rode o medir-maquina antes: e ele que decide se o modelo e small ou medium'],
-    'deep-filter': [existe(join(c.ferramentas, 'deep-filter', exe('deep-filter', plat))), 'limpador de ruido'],
+    // Windows ARM e Linux nao tem o programa pronto: o baixar so avisa, e o item nao pode barrar o video
+    'deep-filter': URLS_DEEP_FILTER[`${plat}-${arch}`]
+      ? [existe(join(c.ferramentas, 'deep-filter', exe('deep-filter', plat))), 'limpador de ruido']
+      : [true, 'sem versao pronta pra este computador: a voz vai pelo filtro afftdn do ffmpeg, que limpa um pouco menos e funciona'],
   }
 
   const itens = ITENS.filter((i) => !i.soMac || plat === 'darwin').map((i) => {

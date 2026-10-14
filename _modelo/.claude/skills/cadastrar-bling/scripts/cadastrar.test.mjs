@@ -467,3 +467,22 @@ test('payloadParaEnviar recusa payload antigo com nome sem a marca da decisao', 
     rmSync(p.raiz, { recursive: true, force: true })
   }
 })
+
+test('--categorias testa a ligacao sem exigir a configuracao da /mercado-livre', async () => {
+  const { cpSync } = await import('node:fs')
+  const { spawnSync } = await import('node:child_process')
+  const { fileURLToPath } = await import('node:url')
+  const skills = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..')
+  // projeto sem .env e sem _contexto: o RAIZ dos scripts copiados e a pasta temporaria
+  const raiz = mkdtempSync(join(tmpdir(), 'cadastrar-categorias-'))
+  try {
+    for (const s of ['cadastrar-bling', 'mercado-livre']) cpSync(join(skills, s), join(raiz, '.claude', 'skills', s), { recursive: true })
+    const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('BLING_')))
+    const r = spawnSync(process.execPath, [join(raiz, '.claude', 'skills', 'cadastrar-bling', 'scripts', 'cadastrar.mjs'), '--categorias'], { cwd: raiz, env, encoding: 'utf8' })
+    assert.equal(r.status, 1, r.stderr)
+    assert.match(r.stderr, /falta BLING_CLIENT_ID/, 'canario: chegou no cliente do Bling')
+    assert.doesNotMatch(r.stderr, /mercado-livre\.md/)
+  } finally {
+    rmSync(raiz, { recursive: true, force: true })
+  }
+})

@@ -161,7 +161,8 @@ function limparVazias(projeto, rel) {
 
 const RECIBO = join('.sabinos', 'instalado.json')
 
-// copia de seguranca e plano nao sobem pro GitHub pelo auto-sync; recibo e motor sobem.
+// o .gitignore do molde (.sabinos/* com !.sabinos/instalado.json) ja deixa so o recibo subir; este,
+// de dentro da .sabinos, segura copia e plano no projeto antigo sem essa linha. Motor, copia e plano ficam neste computador; so o recibo sobe.
 // So acrescenta a linha que falta, no final de linha que o arquivo ja usa.
 const LINHAS_GITIGNORE = ['antes-*/', 'desfeito-*/', 'plano.json']
 export function garantirGitignore(projeto) {

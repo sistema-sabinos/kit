@@ -251,8 +251,8 @@ Escrever `app/plano-lancamento.md`:
   passo 1. Plano pago de qualquer um deles é **(gasta)**, com o preço da
   página oficial conferido no dia.
 - **Onde o cliente insatisfeito da referência conversa**: os lugares que a
-  `/ler-avaliacoes` achou, na coluna `fonte` do `app/avaliacoes.csv` (grupo de lojistas, comunidade de vendedor,
-  Instagram, YouTube). Post de lançamento que abre pelo conserto. Postar em
+  `/ler-avaliacoes` achou, na coluna `fonte` do `app/avaliacoes.csv` (Reddit e fóruns, Reclame Aqui,
+  G2 e Capterra). Post de lançamento que abre pelo conserto. Postar em
   rede social é **(publica)**: se o pacote de mídia social estiver instalado,
   sai pela `/publicar-social`; sem ele, o Claude entrega o texto e quem posta
   é o aluno. Em grupo e comunidade, quem posta é sempre o aluno, seguindo a

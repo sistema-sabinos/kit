@@ -86,17 +86,19 @@ antes de despachar, aqui na sessao principal (o `pauta-leitor` nao roda comando)
    morto no meio e gastou a toa), e gravar em `inteligencia/base-ideias/<perfil>/analises/<codigo>.md`.
    O script anota o custo de cada video sozinho em `dados/custos.jsonl`: nao registrar de novo.
 
-Depois despachar `cargos/analista.md` com o perfil, a linha do que a pessoa gosta e a rota (gratis ou
-Gemini). Saida: `inteligencia/base-ideias/<perfil>.md`.
+Depois despachar `cargos/analista.md` com o perfil seguido, a linha do que a pessoa gosta e a rota
+(gratis ou Gemini). Saida: `inteligencia/base-ideias/<perfil>.md`.
 
 ## Passo 2b, opcionais
 
 - **Garimpo aberto** (assunto quente fora da base):
   ```
-  node .claude/skills/pauta/scripts/garimpo.mjs --sementes <a,b> --dias 4 --posts 9 --teto 18 --piso 300
+  node .claude/skills/pauta/scripts/garimpo.mjs --sementes <a,b> --dias 4 --posts 9 --teto 18 --piso 300 --tag leva1
   ```
   Semente boa e perfil de pessoa ou loja do nicho; menos de 5 relacionados e sinal de semente ruim.
-  Pra juntar levas: `node .claude/skills/pauta/scripts/refiltrar.mjs --dias 4 --piso 300 --tag 4dias <arquivo1> <arquivo2>`.
+  Cada leva do mesmo dia leva um `--tag` proprio (leva1, leva2), senao a segunda grava por cima da
+  primeira. Pra juntar levas: `node .claude/skills/pauta/scripts/refiltrar.mjs --dias 4 --piso 300 --tag 4dias aberto-AAAA-MM-DD-leva1 aberto-AAAA-MM-DD-leva2`
+  (o nome do arquivo que o garimpo gravou, com ou sem pasta e extensao).
 - **Radar** (noticias e assuntos do dia):
   ```
   node .claude/skills/pauta/scripts/radar.mjs --termos "<termos do nicho>"

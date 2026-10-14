@@ -72,7 +72,9 @@ ver. Espere a escolha.
      `npm install`, rode `estilos.mjs instalar <pasta>`;
    - todo `node <caminho>.mjs ...` do estilo roda como `estilos.mjs rodar <pasta> <caminho>.mjs ...`,
      com o mesmo caminho (`scripts/preparar.mjs` fica `scripts/preparar.mjs`,
-     `ferramentas/justar.mjs` fica `ferramentas/justar.mjs`). O comando entra na pasta da
+     `ferramentas/justar.mjs` fica `ferramentas/justar.mjs`, `scripts-modelo/variantes.mjs`
+     fica `scripts-modelo/variantes.mjs`; vale pras pastas `scripts/`, `ferramentas/`,
+     `scripts-modelo/` e `utilitarios/`). O comando entra na pasta da
      edição e passa o cache e a chave opcional sozinho. Vale também pro "próximo passo" que os
      próprios scripts imprimem no fim, e o `npm install` que o estilo mandar repetir é o
      `estilos.mjs instalar <pasta>`;
@@ -102,8 +104,15 @@ ver. Espere a escolha.
 ## Passo 4, entregar
 
 Quando o render do estilo terminar, rode `estilos.mjs entregar <pasta>`. Ele copia o MP4
-pra `producao/<pasta>/` do projeto. Abra o vídeo pro aluno ver e ouvir e pergunte se quer
-algum ajuste; ajuste se faz na mesma pasta da edição, seguindo o `SKILL.md` do estilo.
+pra `producao/<pasta>/final/` do projeto e, se a pasta ainda não tem `post.md`, copia o
+molde. Abra o vídeo pro aluno ver e ouvir e pergunte se quer algum ajuste; ajuste se faz na
+mesma pasta da edição, seguindo o `SKILL.md` do estilo.
+
+Aprovado, preencha o `producao/<pasta>/post.md` do mesmo jeito do passo 8 da `/editar-video`
+(legenda de 3 a 6 linhas, título e descrição do Short, a linha `ia:`), sem sobrar linha com
+texto entre `<` e `>`. Feche dizendo: com o pacote de mídia social, "Pra agendar, chama a
+`/publicar-social` com a pasta `<pasta>` e o horário"; sem ele, o vídeo e a legenda estão
+prontos pra postar à mão.
 
 ## Regras
 

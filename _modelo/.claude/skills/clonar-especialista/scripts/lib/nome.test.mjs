@@ -6,7 +6,7 @@ import { acharNome, partesDoNome, normalizar, iniciaisDoNome } from './nome.mjs'
 
 test('partes com 4 letras ou mais, sem acento e sem particula curta', () => {
   assert.deepEqual(partesDoNome('José de Souza Araújo'), ['jose', 'souza', 'araujo'])
-  assert.deepEqual(partesDoNome('Ana Li'), [])
+  assert.deepEqual(partesDoNome('Ana Li'), ['anali'])
 })
 
 test('acha nome sem acento, maiusculo, espacado e pontuado, com a linha', () => {

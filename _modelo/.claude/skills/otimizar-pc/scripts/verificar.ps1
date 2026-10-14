@@ -1,5 +1,5 @@
 # Checagem de integridade DEPOIS da faxina. Nunca pular esta etapa.
-# Confere que a operacao continua de pe: credenciais, sessoes de robo, perfis de navegador,
+# Confere que a operacao continua de pe: credenciais, Chrome dedicado dos robos, perfis de navegador,
 # tarefas agendadas e o git do workspace.
 # Sem -Workspace, assume a raiz do projeto (4 niveis acima deste script: scripts -> otimizar-pc -> skills -> .claude).
 param([string]$Workspace = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path)
@@ -53,17 +53,25 @@ if (Test-Path -LiteralPath $Workspace) {
     $envFile = Join-Path $Workspace '.env'
     if (Test-Path -LiteralPath $envFile) {
         $n = (Get-Content -LiteralPath $envFile | Where-Object { $_ -match '^\s*[A-Z_0-9]+=' }).Count
-        if ($n -ge 5) { Diga ("OK  .env com {0} chaves" -f $n) }
-        else { Diga ("ALERTA: .env so tem {0} chaves, parece truncado" -f $n); $problemas++ }
+        # A faxina nao mexe no .env; so o arquivo sem nenhuma chave indica estrago
+        if ($n -ge 1) { Diga ("OK  .env com {0} chaves" -f $n) }
+        else { Diga 'ALERTA: .env existe mas nao tem nenhuma chave, parece truncado'; $problemas++ }
     } else {
         Diga 'AVISO: .env nao encontrado (pode ser normal se o workspace nao usa)'
     }
 
-    foreach ($sub in (Get-ChildItem (Join-Path $Workspace 'infra') -Directory -ErrorAction SilentlyContinue)) {
-        foreach ($crit in @('.session', 'chrome-profile', 'node_modules')) {
-            $x = Join-Path $sub.FullName $crit
-            if (Test-Path -LiteralPath $x) { Diga ('OK  infra\{0}\{1}' -f $sub.Name, $crit) }
+    # Robos do kit: o Chrome dedicado (login do Mercado Livre e das redes) e o Playwright de cada pacote
+    $perfil = Join-Path (Join-Path $Workspace 'dados') 'chrome-perfil'
+    if (Test-Path -LiteralPath (Join-Path $perfil 'Default')) {
+        foreach ($f in @('Default\Preferences', 'Default\Network\Cookies')) {
+            if (Test-Path -LiteralPath (Join-Path $perfil $f)) { Diga ('OK       dados\chrome-perfil\{0}' -f $f) }
+            else { Diga ('FALTANDO dados\chrome-perfil\{0}' -f $f); $problemas++ }
         }
+    } else { Diga 'info     sem Chrome dedicado ainda (normal antes do primeiro login do /mercado-livre ou do /midia-social)' }
+    foreach ($pkg in (Get-ChildItem (Join-Path $Workspace '.claude\skills\*\package.json') -ErrorAction SilentlyContinue)) {
+        if ((Get-Content -LiteralPath $pkg.FullName -Raw) -notmatch '"playwright"') { continue }
+        if (Test-Path -LiteralPath (Join-Path $pkg.DirectoryName 'node_modules\playwright')) { Diga ('OK       Playwright do {0}' -f $pkg.Directory.Name) }
+        else { Diga ('info     Playwright do {0} nao instalado (o npm install da skill traz)' -f $pkg.Directory.Name) }
     }
 
     Push-Location $Workspace
@@ -74,26 +82,12 @@ if (Test-Path -LiteralPath $Workspace) {
 
 Diga ''
 Diga '########## NAVEGADORES DO PLAYWRIGHT ##########'
-Diga '(conferir se algum robo fixa uma versao que sumiu)'
+Diga '(os robos do kit usam o Chrome instalado, nao estes)'
 $pw = Join-Path $env:LOCALAPPDATA 'ms-playwright'
 if (Test-Path -LiteralPath $pw) {
     foreach ($d in (Get-ChildItem -LiteralPath $pw -Directory)) {
         $b = Bytes $d.FullName
         if ($b -gt 1MB) { Diga ('{0,7:N0} MB  {1}' -f ($b / 1MB), $d.Name) }
-    }
-    if (Test-Path -LiteralPath $Workspace) {
-        Diga '--- versao exigida por cada robo ---'
-        foreach ($sub in (Get-ChildItem (Join-Path $Workspace 'infra') -Directory -ErrorAction SilentlyContinue)) {
-            $bj = Join-Path $sub.FullName 'node_modules\playwright-core\browsers.json'
-            if (Test-Path -LiteralPath $bj) {
-                $j = Get-Content -LiteralPath $bj -Raw | ConvertFrom-Json
-                $rev = ($j.browsers | Where-Object name -eq 'chromium').revision
-                $existe = Test-Path -LiteralPath (Join-Path $pw ('chromium-' + $rev))
-                $marca = 'OK '
-                if (-not $existe) { $marca = 'FALTA'; $problemas++ }
-                Diga ('{0}  {1,-20} chromium-{2}' -f $marca, $sub.Name, $rev)
-            }
-        }
     }
 }
 

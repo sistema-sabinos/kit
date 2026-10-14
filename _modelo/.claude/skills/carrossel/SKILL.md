@@ -230,7 +230,7 @@ Cada carrossel é uma pasta `producao/<slug>/`, com `<slug>` no formato `AAAA-MM
 
 10. Mostrar o texto completo de todos os slides + legenda no chat (não só salvar no arquivo)
 
-11. Salvar o texto dos slides em `producao/<slug>/roteiro.md` (numa pasta que veio da `/pauta`, atualizar a coluna "Texto (literal)" da tabela `## Carrossel`). A legenda vai no `post.md`: copiar o molde (seção "Onde o post mora") pra `producao/<slug>/post.md`, trocar o título, pôr a legenda inteira (gancho, desenvolvimento, CTA e hashtags) no lugar do texto entre `<` e `>` da seção `## Legenda`, e apagar as seções `## YouTube titulo` e `## YouTube descricao`, que carrossel não usa (o YouTube só recebe vídeo). A linha `ia:` fica `ia: sim` se algum slide usar imagem gerada por IA, senão `ia: nao`. Nenhuma linha com texto entre `<` e `>` pode sobrar: o agendador recusa o post enquanto houver.
+11. Salvar o texto dos slides em `producao/<slug>/roteiro.md` (numa pasta que veio da `/pauta`, atualizar a coluna "Texto (literal)" da tabela `## Carrossel`). A legenda vai no `post.md`: copiar o molde (seção "Onde o post mora") pra `producao/<slug>/post.md`, trocar o título, pôr a legenda inteira (gancho, desenvolvimento, CTA e hashtags) no lugar do texto entre `<` e `>` da seção `## Legenda`, e apagar as seções `## YouTube titulo` e `## YouTube descricao`, que carrossel não usa (o YouTube só recebe vídeo). A linha `ia:` fica `ia: sim` se algum slide usar imagem gerada por IA, senão `ia: nao`. Nenhum texto entre `<` e `>` pode sobrar na legenda: o agendador recusa o post enquanto houver.
 
 **CHECKPOINT 2:** Mostrar o texto completo + legenda. Esperar o usuário aprovar ou pedir ajustes antes de seguir pra Fase 2. Se pedir pra mudar um slide, ajustar só aquele.
 

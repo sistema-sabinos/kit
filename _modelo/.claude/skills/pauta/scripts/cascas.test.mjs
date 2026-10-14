@@ -55,6 +55,14 @@ test('juntarLevas deixa cada perfil uma vez so', () => {
   assert.deepEqual(r[0].posts, [])
 })
 
+test('nomeDaLeva aceita o nome nu, o .json e o caminho que o garimpo imprime', async () => {
+  const { nomeDaLeva } = await import('./refiltrar.mjs')
+  assert.equal(typeof nomeDaLeva, 'function', 'o refiltrar.mjs exporta o nomeDaLeva')
+  assert.equal(nomeDaLeva('aberto-2026-10-13'), 'aberto-2026-10-13', 'canario: o nome nu continua')
+  assert.equal(nomeDaLeva('aberto-2026-10-13.json'), 'aberto-2026-10-13')
+  assert.equal(nomeDaLeva('inteligencia/base-ideias/aberto-2026-10-13-leva1.md'), 'aberto-2026-10-13-leva1')
+})
+
 test('juntarComAnteriores troca so os codigos coletados agora e mantem o resto do posts.json', () => {
   const antes = [{ codigo: 'A1', curtidas: 10 }, { codigo: 'B2', curtidas: 20 }, { codigo: 'C3', curtidas: 30 }]
   const r = juntarComAnteriores(antes, [{ codigo: 'B2', curtidas: 99 }, { codigo: 'D4', curtidas: 5 }])

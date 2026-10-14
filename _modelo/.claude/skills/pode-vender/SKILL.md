@@ -123,17 +123,21 @@ Como ler o selo:
 - **PODE MENOS OS VETADOS**: a marca passa, mas os produtos listados têm
   medida da ANVISA e não entram.
 - **PODE NA MARCA**: a marca passou; o produto segue pelos passos 1 a 7.
-- **ATENÇÃO**: tem sinal pra conferir antes de investir. Três casos: a marca
+- **ATENÇÃO**: tem sinal pra conferir antes de investir. Quatro casos: a marca
   não aparece no Mercado Livre mas a busca veio cheia de outras coisas; a
   ANVISA tem medida que cita a marca inteira, mas a marca segue viva no
   Mercado Livre (a medida pode ser contra um revendedor: abrir o dossiê e ver
-  a empresa); ou, em suplemento, a busca não achou notificação ativa. Nesse
-  último, peça o número ao fornecedor e confira; sem número, só lote
-  fabricado antes de 01/09/2026 (fim do prazo de adequação da RDC 843/2024),
-  dentro da validade, com nota fiscal.
+  a empresa); a busca de dossiês da ANVISA trouxe mais do que o gate lê de uma
+  vez (abrir a consulta com o nome da marca e conferir a lista inteira); ou, em
+  suplemento, a busca não achou notificação ativa. Nesse último, peça o número
+  ao fornecedor e confira; sem número, só lote fabricado antes de 01/09/2026
+  (fim do prazo de adequação da RDC 843/2024), dentro da validade, com nota
+  fiscal.
 - **NÃO PODE**: com o motivo e a rota. Sai quando a marca sumiu do Mercado
-  Livre com a busca magra, ou quando a ANVISA tem medida contra a marca
-  inteira e a marca também sumiu ou está rara no Mercado Livre.
+  Livre com a busca magra, quando a marca sumiu do Mercado Livre e algum dossiê
+  da ANVISA cita a marca (mesmo que seja de um produto só), ou quando a ANVISA
+  tem medida contra a marca inteira e a marca também sumiu ou está rara no
+  Mercado Livre.
 - **INCONCLUSIVO**: vale como NÃO PODE até resolver.
 
 O resultado completo fica em `dados/gate-marca/<nome>-<categoria>-<data>.json`

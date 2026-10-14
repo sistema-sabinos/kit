@@ -87,9 +87,9 @@ function ehEscritorDeTexto(textoAntesDaAspa) {
   return PADROES_ESCRITOR_DE_TEXTO.some(re => re.test(textoAntesDaAspa))
 }
 
-// Dois limites conhecidos, fora do escopo desta trava de proposito: resolver os dois
+// Tres limites conhecidos, fora do escopo desta trava de proposito: resolver os tres
 // de verdade pede um analisador de shell (tokenizar variavel, aspas, escape), nao regex.
-// Confirmados contra o codigo de hoje (nao e so teoria, os dois passam batido agora):
+// Confirmados contra o codigo de hoje (nao e so teoria, os tres passam batido agora):
 // 1. Comando montado em duas variaveis separadas e rodado por expansao depois:
 //    `CMD=rm; ARGS=-rf; $CMD $ARGS pasta` (nenhum padrao ve "rm" e "-rf" juntos, porque
 //    nunca aparecem na mesma janela de texto).
@@ -97,6 +97,11 @@ function ehEscritorDeTexto(textoAntesDaAspa) {
 //    real mais adiante, e o comando perigoso caindo picotado entre o texto que sobra
 //    fora do par (onde falta uma das duas flags) e o texto suspeito extraido de dentro
 //    dele (onde falta a outra): `rm -r pasta's_backup -f && echo it's feito`.
+// 3. Baixar-e-executar fora das tres formas que a trava conhece (pipe pro sh,
+//    `sh -c "$(curl ...)"` e `bash <(curl ...)`, rodada 5.14): `eval "$(curl x)"`,
+//    `. <(curl x)` e baixar pra um arquivo e rodar depois (`curl -o a.sh x && sh a.sh`).
+//    E o contrario: `<(curl ...)` logo depois de um texto que termina em "sh" (tipo
+//    `diff <(curl x/a.sh) <(curl y)`) barra sem precisar.
 function classificarTrechosEntreAspas(comando) {
   const RE_ASPAS = /"([^"]*)"|'([^']*)'/g
   const suspeitos = []
@@ -216,6 +221,26 @@ const PERIGOS_POWERSHELL = [
   { teste: encodedPerigoso, motivo: 'roda um comando escondido em codigo que ninguem consegue ler' },
 ]
 
+// rodada 5.14: baixar-e-executar sem pipe. `sh -c "$(curl ...)"` (linha oficial do
+// Homebrew e do oh-my-zsh) e `bash <(curl ...)` rodam o script direto do download e
+// passavam, porque as regras do curl so olham o pipe. Le o desaspado, porque o curl mora
+// dentro das aspas. A linha oficial do Homebrew, endereco exato, fica liberada: a
+// /configurar-video manda rodar ela com o sim da pessoa (conferir.mjs, BREW).
+const BREW_OFICIAL = '$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)'
+// o shell so conta em posicao de comando (o .sh de um endereco nao e shell), a opcao pode
+// vir junta (-lc) e o curl pode vir por caminho (/usr/bin/curl): achados da revisao do grupo F
+// Revisao final: o c vale em qualquer ponto da opcao (-cx), e o shell so conta no comeco de um
+// comando (depois de ; | & ( ou de sudo/env/exec...), nunca como argumento (shellcheck -s bash)
+const RE_SH_C_DOWNLOAD = /(?:^|[;|&(])\s*(?:(?:sudo|env|exec|command|nohup|time)\s+)*(?:\S*\/)?(?:ba|z|da|k)?sh(?=\s)[^\n|;&]*\s-[a-z]*c[a-z]*\s+(?:\$\(|`)\s*(?:\S*\/)?(?:curl|wget)\b/i
+const RE_SH_PROCESSO_DOWNLOAD = /(?:^|[;|&(])\s*(?:(?:sudo|env|exec|command|nohup|time)\s+)*(?:(?:\S*\/)?(?:ba|z|da|k)?sh|source)(?=\s)[^\n|;&]*<\(\s*(?:\S*\/)?(?:curl|wget)\b/i
+function subshellPerigoso(comando) {
+  const semBrew = comando.split(BREW_OFICIAL).join('')
+  return RE_SH_C_DOWNLOAD.test(semBrew) || RE_SH_PROCESSO_DOWNLOAD.test(semBrew)
+}
+const PERIGOS_SUBSHELL = [
+  { teste: subshellPerigoso, motivo: 'roda um script baixado da internet sem ninguem ler' },
+]
+
 const PERIGOS = [
   { teste: rmPerigoso, motivo: 'apaga uma pasta inteira de uma vez' },
   // --force-with-lease e a variante segura (nao sobrescreve o que outra pessoa subiu);
@@ -299,7 +324,7 @@ export function ehPerigoso(comando) {
   const emUmaLinha = desaspado.replace(/`?\r?\n\s*/g, ' ')
   // e tambem linha a linha: juntar tudo deixava um `-Command` da primeira linha encerrar a
   // leitura das opcoes e esconder o `powershell "-e"` da segunda (achado do Codex na final)
-  const motivo = testarPadroes(limpo) || testarPadroes(desaspado, PERIGOS_POWERSHELL) || testarPadroes(emUmaLinha, PERIGOS_POWERSHELL)
+  const motivo = testarPadroes(limpo) || testarPadroes(desaspado, PERIGOS_POWERSHELL) || testarPadroes(emUmaLinha, PERIGOS_POWERSHELL) || testarPadroes(desaspado, PERIGOS_SUBSHELL)
   if (motivo) return motivo
   // correcao 5: todo trecho entre aspas que NAO veio de um escritor de texto conhecido
   // e comando de verdade em potencial, e testa nele mesmo, recursivo (o texto extraido

@@ -29,6 +29,17 @@ test('montarPrompt lista cada cena com o caminho de barra normal e as regras', (
   assert.ok(!p.includes(String.fromCharCode(92)))
 })
 
+test('montarPrompt de video pede o assunto no centro, sem centro vazio e sem anuncio', () => {
+  const anuncio = montarPrompt(cenas)
+  // o caminho das cenas do teste tem anuncios/, por isso a busca e pela frase, nao pela palavra solta
+  assert.ok(anuncio.includes('VAZIO') && anuncio.includes('foto de anuncio') && anuncio.includes('foto de produto'), 'canario: o caminho do anuncio segue com centro vazio')
+  const p = montarPrompt(cenas, { uso: 'video' })
+  assert.ok(!p.includes('VAZIO'), 'o prompt de video ainda pede o centro vazio')
+  assert.ok(!p.includes('foto de anuncio') && !p.includes('foto de produto'), 'o prompt de video ainda fala de anuncio')
+  assert.ok(p.includes('CENTRO') && p.includes('video vertical'))
+  assert.ok(p.includes('mesa de cozinha'))
+})
+
 test('cotaEstourou reconhece limite de uso e ignora erro comum', () => {
   assert.equal(cotaEstourou("You've hit your usage limit. Try again later."), true)
   assert.equal(cotaEstourou('error 429 Too Many Requests'), true)
@@ -125,6 +136,18 @@ test('viaGemini: 429 espera e tenta de novo; resposta sem imagem nao cobra', asy
   assert.deepEqual(r.geradas, [cenas[0].out])
   assert.deepEqual(r.faltaram, [cenas[1].out])
   assert.equal(custos.length, 1)
+})
+
+test('viaCodex e viaGemini levam o uso de video ate o prompt', async () => {
+  let entrada = ''
+  await viaCodex(cenas, { raiz: RAIZ_FALSA, uso: 'video', executar: (c, a, op) => { entrada = op.input; return { status: 0, stdout: '', stderr: '' } }, carimbo: () => null })
+  assert.ok(entrada.includes('fundo verde'), 'viaCodex')
+  const corpos = []
+  const { buscar } = geminiFalso({ respostas: [comImagem, comImagem] })
+  const espiao = async (url, op) => { if (op?.body) corpos.push(op.body); return buscar(url, op) }
+  await viaGemini(cenas, { chave: 'k', precoUsd: 0.05, contexto: 'x', uso: 'video', buscar: espiao, gravar: () => {}, registrarCusto: () => {}, esperar: async () => {} })
+  assert.equal(corpos.length, 2, 'canario: o Gemini falso recebeu as duas cenas')
+  assert.ok(corpos.every(c => c.includes('fundo verde')), 'viaGemini')
 })
 
 test('viaGemini: erro no meio do lote nao perde o que ja foi gerado e pago, e a funcao nao rejeita', async () => {
@@ -259,4 +282,10 @@ test('CLI gemini: dentro do limite e autorizado, sem chave, sai 2 sem chamar a r
   assert.equal(r.status, 2, r.stderr)
   assert.ok(r.stderr.includes('falta GEMINI_API_KEY'))
   assert.equal(r.stdout.trim(), '')
+})
+
+test('CLI: --uso com valor desconhecido sai 2 com a mensagem de uso', () => {
+  const r = rodarCli(['--uso', 'reels', '--preco-usd', '0.05'], 1)
+  assert.equal(r.status, 2, r.stderr)
+  assert.ok(r.stderr.includes('--uso video|anuncio'), r.stderr)
 })

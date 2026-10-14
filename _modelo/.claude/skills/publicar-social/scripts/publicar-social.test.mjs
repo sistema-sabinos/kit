@@ -80,7 +80,21 @@ test('I2: apagar que falha no meio grava o que ja foi apagado e para sem criar n
   const r = await publicar({ ...base({ substituir: true }), plano: planoVideo(), textoPub: registro([linha('instagram', 'velho-1'), linha('tiktok', 'velho-2')]), deps: f.deps })
   assert.equal(r.falha.etapa, 'apagar')
   assert.equal(f.log.filter(x => x[0] === 'criar').length, 0)
-  assert.deepEqual(linhasValidas(f.gravacoes.at(-1)).map(l => l.id), ['velho-2'])
+  assert.deepEqual(linhasValidas(f.gravacoes.at(-1)).map(l => `${l.id}:${l.status}`), ['velho-2:scheduled'])
+})
+
+test('apagar incerto: o recado nao promete incerto no registro e manda repetir com --substituir', async () => {
+  const { recadoFalha } = await import('./publicar-social.mjs')
+  assert.equal(typeof recadoFalha, 'function', 'publicar-social.mjs nao exporta recadoFalha')
+  // canario: no criar o registro marca incerto de verdade, e o recado diz isso
+  assert.match(recadoFalha({ etapa: 'criar', rede: 'tiktok', erro: 'x', incerto: true }, []).join('\n'), /marcou "incerto"/)
+  const f = falsos({ apagarFalha: { 'velho-2': new ErroIncerto('caiu') } })
+  const r = await publicar({ ...base({ substituir: true }), plano: planoVideo(), textoPub: registro([linha('instagram', 'velho-1'), linha('tiktok', 'velho-2')]), deps: f.deps })
+  assert.deepEqual(linhasValidas(r.texto).map(l => `${l.id}:${l.status}`), ['velho-2:scheduled'])
+  const recado = recadoFalha(r.falha, r.feitos).join('\n')
+  assert.ok(recado.length > 0)
+  assert.doesNotMatch(recado, /marcou "incerto"/)
+  assert.match(recado, /--confirmar --substituir/)
 })
 
 test('apagar post que nao existe mais no Buffer conta como apagado', async () => {

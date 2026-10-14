@@ -25,6 +25,9 @@ que cada foto mostra. Não cria imagem: quem faz é o `ml-designer`, pela
 - `fornecedores/<f>/concorrentes/<categoria>/<produto>.md`, com
   `vocabulario.txt` e `atributos.json` da mesma pasta: o briefing do
   `ml-espiao`, com as seções de perguntas e opiniões reais (a mina de ouro)
+- `dados/avaliacoes/<slug>.md`, quando existir (opcional): o ângulo recomendado
+  guia título e descrição, e cada item do plano de conserto vira resposta na
+  descrição ou slot de foto
 - `fornecedores/<f>/catalogo-analisado.csv` (contrato 0): EAN, custo, peso,
   dimensões
 - `_contexto/mercado-livre.md`: `imposto_pct`, piso de margem, `reputacao`

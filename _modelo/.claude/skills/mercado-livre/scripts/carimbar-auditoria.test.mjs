@@ -32,6 +32,24 @@ test('carimbar grava o hash dos tres arquivos e a auditoria fica em dia ate um d
   }
 })
 
+test('carimbar poe etapa_atual auditado no status.json, sem rebaixar quem ja foi cadastrado', () => {
+  const p = projeto()
+  const q = projeto()
+  const status = s => JSON.parse(readFileSync(join(s.pasta, 'status.json'), 'utf8'))
+  try {
+    writeFileSync(join(p.pasta, 'status.json'), JSON.stringify({ slug: 'x', etapa_atual: 'copy' }))
+    writeFileSync(join(q.pasta, 'status.json'), JSON.stringify({ slug: 'x', etapa_atual: 'cadastrado' }))
+    assert.match(carimbar('x', p.raiz).copy, /^[0-9a-f]{64}$/, 'canario: o carimbo rodou')
+    assert.equal(status(p).etapa_atual, 'auditado')
+    assert.equal(status(p).slug, 'x', 'o resto do status fica')
+    carimbar('x', q.raiz)
+    assert.equal(status(q).etapa_atual, 'cadastrado')
+  } finally {
+    rmSync(p.raiz, { recursive: true, force: true })
+    rmSync(q.raiz, { recursive: true, force: true })
+  }
+})
+
 test('carimbar recusa auditoria reprovada e slug sem auditoria', () => {
   const p = projeto('reprovado')
   try {

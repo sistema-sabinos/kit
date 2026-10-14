@@ -116,3 +116,23 @@ function DiscoDeSobra() {
     if ($cand) { return ($cand.DriveLetter + ':') }
     return $null
 }
+
+# Onde a quarentena ficou: gravado ao mover, lido no -Desfazer e na rodada seguinte.
+# Sem isso o disco sai do DiscoDeSobra na hora, e depois de mover GBs pode ser outro.
+$Global:OtimDestinoQuarentena = Join-Path $Global:OtimLogDir 'quarentena-destino.txt'
+function DestinoDaQuarentena() {
+    if (Test-Path -LiteralPath $Global:OtimDestinoQuarentena) {
+        $d = Get-Content -LiteralPath $Global:OtimDestinoQuarentena -TotalCount 1
+        if ($d) { return $d.Trim() }
+    }
+    $disco = DiscoDeSobra
+    if (-not $disco) { return $null }
+    return (Join-Path $disco '_quarentena-instaladores')
+}
+function GuardarDestinoDaQuarentena($destino) {
+    Set-Content -LiteralPath $Global:OtimDestinoQuarentena -Value $destino -Encoding UTF8
+}
+# Soma as linhas novas ao manifesto: a rodada seguinte nao apaga o caminho de volta da anterior
+function SomarAoManifesto($reg, $manifesto) {
+    if ($reg) { $reg | Export-Csv -LiteralPath $manifesto -NoTypeInformation -Encoding UTF8 -Append }
+}

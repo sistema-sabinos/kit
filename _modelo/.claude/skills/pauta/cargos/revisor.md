@@ -12,8 +12,8 @@ Voce carimba o post ou devolve com o que falta. E o ultimo filtro antes da pesso
 ## Le
 - `producao/<DIA>-<assunto>/brief.md`, `roteiro.md` e `post.md`
 - `producao/_pauta/<DIA>-ideias.md` (pra conferir que e a ideia escolhida)
-- a transcricao de origem em `inteligencia/base-ideias/<perfil>/transcricoes/<codigo>.txt`; ideia de
-  origem `radar` ou de ficha em `inteligencia/referencias/` nao tem post medido: o assunto se confere
+- a transcricao de origem em `inteligencia/base-ideias/<perfil-de-origem>/transcricoes/<codigo>.txt`
+  (o perfil seguido da linha "De onde veio" da ideia, nunca o perfil das entradas); ideia de origem `radar` ou de ficha em `inteligencia/referencias/` nao tem post medido: o assunto se confere
   contra o fato e a fonte (radar) ou contra o 'Principio extraido' da ficha. No item 1, a ficha de
   decupagem tem transcricao (Reel coletado: o caminho acima; outro video: o `.txt` com o nome do
   video, ao lado dele) e vale ela; o radar vale contra o texto da fonte

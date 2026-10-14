@@ -71,13 +71,13 @@ conferir com o fornecedor", "sem EAN no catálogo". Nunca inventar.
 - **OK**: sem bloqueio no catálogo; ainda passa pelo Gate 0 da `/mercado-livre` antes da pesquisa. É o padrão.
 - **CUIDADO**: pode, mas com regra obrigatória. Entram aqui: produto com
   veredito PODE COM RESSALVA em `_contexto/vereditos-legais.md` (a ressalva vai
-  na observação) e restrição própria do negócio anotada em
-  `_contexto/empresa.md`.
+  na observação), restrição própria do negócio anotada em
+  `_contexto/empresa.md`, e produto de categoria regulada ainda sem veredito
+  válido, com a observação "aguardando /pode-vender":
+  o Gate 0 da `/mercado-livre` roda a `/pode-vender` nele antes da pesquisa.
 - **BLOQUEADO**: fora. Veredito NÃO PODE ou INCONCLUSIVO válido, item que a
   pessoa marcou como bloqueado por experiência ruim (lista em
-  `_contexto/empresa.md`), item que ela sinalizar na revisão, e produto de
-  categoria regulada ainda sem veredito válido, com a observação "aguardando
-  /pode-vender": ele volta pra OK ou CUIDADO quando o veredito sair.
+  `_contexto/empresa.md`), e item que ela sinalizar na revisão.
 
 Categoria inteira nunca é bloqueada por padrão: a política é vender e
 bloquear caso a caso conforme aparecem problemas. Toda marca diferente de OK

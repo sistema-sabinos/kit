@@ -29,6 +29,9 @@ final é da pessoa. Nada aqui é limiar automático.
   `relatorios/engenharia-reversa-<termo>-<data>.md`, quando existirem (a
   `/engenharia-reversa` rodou no termo do produto; opcional). Rodada com
   `inconclusivo: true` não entra como evidência.
+- `dados/avaliacoes/<slug>.md`, quando existir (a `/ler-avaliacoes` rodou no
+  bruto da espionagem; opcional): o plano de conserto e o ângulo do fim do
+  relatório entram como diferencial do plano.
 - `_contexto/mercado-livre.md`: o piso de margem (`margem_minima_rs`,
   `margem_minima_pct`, `margem_minima_kit_rs`), `imposto_pct`, `reputacao` e
   `loja_oficial`

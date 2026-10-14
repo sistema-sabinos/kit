@@ -199,8 +199,9 @@ fornecedor ou da contadora; sem dado, `null` e pendência.
 (fundo liso). Peça com texto herda o motor da foto de base. A prancha de
 aprovação (`anuncios/<slug>/imagens/prancha.html`) sai deste arquivo.
 
-As imagens ficam no computador. O envio pro anúncio é pelo painel, e o
-checklist de publicação diz a ordem.
+As imagens ficam no computador. Na rota API (o padrão sem ERP), o `--enviar`
+da `/publicar-marketplace` sobe as imagens sozinho; no Bling e no plano B do
+painel, elas sobem à mão, na ordem do checklist de publicação.
 
 ## 6. `<slug>/auditoria.json` (auditor escreve, publicador exige)
 
@@ -249,8 +250,9 @@ anúncio: na rota API o script grava na hora; no checklist, a pessoa informa
 depois de publicar.
 
 Canal publicado pela API ganha quatro campos: `via: "api"`, `estado`
-(`pausado`, `ativo`, `fechado` ou `em revisao`, sempre o que a conta mostra),
-`link` e `descricao` (`ok`, ou `pendente` quando a descrição não gravou e o
+(`pausado`, `ativo`, `fechado`, `em revisao`, `ainda nao ativo`, `inativo` ou
+`pagamento pendente`; status que o script não conhece vai cru, do jeito que a
+conta mostra, e vazio vira `desconhecido`), `link` e `descricao` (`ok`, ou `pendente` quando a descrição não gravou e o
 próximo `--enviar` só grava ela). Na etapa `publicacao` do `status.json`, o
 status fica `pausado` até a pessoa ativar; o `--conferir` troca pra `ok` e
 põe `etapa_atual: "publicado"`.

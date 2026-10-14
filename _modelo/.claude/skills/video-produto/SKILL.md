@@ -235,7 +235,10 @@ custa centavos.
 
 A montagem sai em `producao/<slug>/_tmp/<slug>.mp4`. Só depois de passar no gate
 técnico e no gate de voz ela vai pra `producao/<slug>/final/<slug>.mp4`: o que
-está em `final/` está liberado pra publicar.
+está em `final/` está liberado pra publicar. Rodar a fase 3 de novo sem
+`--dry-run` (depois de um ajuste no gate 2, por exemplo) tira o vídeo anterior de
+`final/` logo no começo: ele fica em `_tmp/final-anterior.mp4` e só um vídeo que
+passar nos dois gates volta pra `final/`.
 
 Com `--dry-run`, ela monta o vídeo e pula o gate de voz, saindo com código 3: o
 arquivo fica em `_tmp/` e ainda não está liberado pra publicar.
@@ -270,7 +273,7 @@ por você (Claude); o script não guarda esse número.
 |---|---|---|
 | 0 | deu certo | seguir pro próximo passo |
 | 1 | reprovou ou falhou (roteiro reprovado nos gates, clipe faltando, montagem ou gate de voz falhou) | ler o recado, consertar e rodar de novo. Clipes pagos ficam salvos |
-| 2 | uso errado (flag que não existe, preço faltando ou inválido) | corrigir o comando. Nada foi gasto |
+| 2 | uso errado (flag que não existe, preço faltando ou inválido) ou foto do roteiro ausente ou diferente da aprovada | corrigir o comando. Nada foi gasto. Se for a foto, o conserto é no `roteiro.json`: escrever a imagem certa em `foto`, mostrar pra pessoa e carimbar de novo (gate 1) |
 | 3 | parou antes de gastar (roteiro sem carimbo de aprovação ou alterado depois dele, sem `--autorizado`, acima do teto) ou, na fase 3 com `--dry-run`, montou sem o gate de voz | mostrar o roteiro e carimbar com `--aprovar` depois do sim, ou pedir o "pode ir" e rodar com `--autorizado`, ou subir o teto, ou rodar a fase 3 sem `--dry-run` |
 
 Flag que o script não conhece aborta com código 2 e o recado diz quais existem.

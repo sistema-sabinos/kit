@@ -7,7 +7,7 @@ Antes de repetir uma tarefa que já deu errado, ler a seção dela aqui. Lição
 Formato de cada linha: `AAAA-MM-DD, o que deu errado e qual a regra nova.`
 
 Teto: 800 tokens. Este arquivo não entra em toda conversa, mas o `/atualizar` lê ele
-inteiro toda vez que fecha sessão. Cheio, ele arquiva em vez de crescer: lição já
+inteiro quando a sessão grava lição nova. Cheio, ele arquiva em vez de crescer: lição já
 marcada com ` → virou regra` sai daqui pro `_contexto/arquivo/licoes.md`, porque a
 regra já mora dentro da skill e a linha aqui virou histórico.
 

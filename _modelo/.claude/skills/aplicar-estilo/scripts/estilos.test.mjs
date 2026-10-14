@@ -143,13 +143,34 @@ test('rodar so aceita script do estilo e passa o cache e a chave do .env sem por
   } finally { rmSync(m.base, { recursive: true, force: true }) }
 })
 
+test('rodar aceita as pastas de script do catalogo (scripts-modelo e utilitarios)', () => {
+  const m = mae()
+  try {
+    const { destino } = criar({ raiz: m.raiz, env: {}, estilo: 'aula', pasta: '2026-10-11-aula', plat: 'win32' })
+    for (const p of ['scripts-modelo', 'utilitarios']) mkdirSync(join(destino, p))
+    writeFileSync(join(destino, 'scripts-modelo', 'variantes.mjs'), '// variantes\n')
+    writeFileSync(join(destino, 'utilitarios', 'ouvir.mjs'), '// ouvir\n')
+    const chamadas = []
+    const executar = (cmd, args, op) => { chamadas.push({ cmd, args, op }); return { status: 0 } }
+    // canario: a recusa ainda morde fora da lista
+    for (const script of ['../fora.mjs', 'outra/x.mjs']) {
+      assert.throws(() => rodar({ raiz: m.raiz, env: {}, pasta: '2026-10-11-aula', script, executar }), /script invalido/, script)
+    }
+    for (const script of ['scripts-modelo/variantes.mjs', 'utilitarios/ouvir.mjs']) {
+      assert.equal(rodar({ raiz: m.raiz, env: {}, pasta: '2026-10-11-aula', script, executar }), 0, script)
+      assert.equal(chamadas.at(-1).args[0], script)
+    }
+    assert.equal(chamadas.length, 2)
+  } finally { rmSync(m.base, { recursive: true, force: true }) }
+})
+
 test('ordenarMp4: o mais novo primeiro; empate de hora decide pelo nome, em qualquer ordem de leitura', () => {
   const itens = [{ n: 'teste.mp4', t: 5 }, { n: 'final.mp4', t: 5 }, { n: 'velho.mp4', t: 1 }]
   assert.deepEqual(ordenarMp4(itens).map((x) => x.n), ['final.mp4', 'teste.mp4', 'velho.mp4'])
   assert.deepEqual(ordenarMp4([...itens].reverse()).map((x) => x.n), ['final.mp4', 'teste.mp4', 'velho.mp4'])
 })
 
-test('entregar copia o MP4 mais novo de out/ pra producao/<pasta>/ do projeto', () => {
+test('entregar copia o MP4 mais novo de out/ pra producao/<pasta>/final/ do projeto', () => {
   const m = mae()
   try {
     const { destino } = criar({ raiz: m.raiz, env: {}, estilo: 'aula', pasta: '2026-10-11-aula', plat: 'win32' })
@@ -159,12 +180,38 @@ test('entregar copia o MP4 mais novo de out/ pra producao/<pasta>/ do projeto', 
     writeFileSync(join(destino, 'out', 'novo.mp4'), 'v2')
     utimesSync(join(destino, 'out', 'velho.mp4'), new Date(2026, 0, 1), new Date(2026, 0, 1))
     const r = entregar({ raiz: m.raiz, env: {}, pasta: '2026-10-11-aula' })
-    assert.equal(r.final, join(m.raiz, 'producao', '2026-10-11-aula', 'novo.mp4'))
+    assert.equal(r.final, join(m.raiz, 'producao', '2026-10-11-aula', 'final', 'novo.mp4'))
     assert.equal(readFileSync(r.final, 'utf8'), 'v2')
     assert.deepEqual(r.sobra, ['velho.mp4'], 'a sobra volta pra avisar')
     // empate de hora: o nome em ordem decide, nunca a ordem de leitura da pasta
     const hora = new Date(2026, 1, 1)
     for (const n of ['b.mp4', 'a.mp4', 'novo.mp4', 'velho.mp4']) { writeFileSync(join(destino, 'out', n), n); utimesSync(join(destino, 'out', n), hora, hora) }
-    assert.equal(entregar({ raiz: m.raiz, env: {}, pasta: '2026-10-11-aula' }).final, join(m.raiz, 'producao', '2026-10-11-aula', 'a.mp4'))
+    assert.equal(entregar({ raiz: m.raiz, env: {}, pasta: '2026-10-11-aula' }).final, join(m.raiz, 'producao', '2026-10-11-aula', 'final', 'a.mp4'))
+  } finally { rmSync(m.base, { recursive: true, force: true }) }
+})
+
+test('entregar grava em final/ e deixa o molde do post.md pra /publicar-social', () => {
+  const m = mae()
+  try {
+    const { destino } = criar({ raiz: m.raiz, env: {}, estilo: 'aula', pasta: '2026-10-11-aula', plat: 'win32' })
+    mkdirSync(join(destino, 'out'))
+    writeFileSync(join(destino, 'out', 'video.mp4'), 'v1')
+    // sem molde nenhum: o MP4 entra igual e o post.md fica a mao
+    let r = entregar({ raiz: m.raiz, env: {}, pasta: '2026-10-11-aula' })
+    assert.ok(existsSync(r.final), 'canario: o MP4 chegou')
+    assert.equal(r.final, join(m.raiz, 'producao', '2026-10-11-aula', 'final', 'video.mp4'))
+    assert.equal(r.post, null)
+    const molde = join(m.raiz, '.claude', 'skills', 'midia-social', 'moldes', 'producao', '_molde')
+    mkdirSync(molde, { recursive: true })
+    writeFileSync(join(molde, 'post.md'), '# Post: <titulo>\n')
+    r = entregar({ raiz: m.raiz, env: {}, pasta: '2026-10-11-aula' })
+    const post = join(m.raiz, 'producao', '2026-10-11-aula', 'post.md')
+    assert.equal(r.post, post)
+    assert.equal(readFileSync(post, 'utf8'), '# Post: <titulo>\n')
+    // post.md ja preenchido nao se sobrescreve
+    writeFileSync(post, '# Post: Aula pronta\n')
+    r = entregar({ raiz: m.raiz, env: {}, pasta: '2026-10-11-aula' })
+    assert.equal(r.post, post)
+    assert.equal(readFileSync(post, 'utf8'), '# Post: Aula pronta\n')
   } finally { rmSync(m.base, { recursive: true, force: true }) }
 })

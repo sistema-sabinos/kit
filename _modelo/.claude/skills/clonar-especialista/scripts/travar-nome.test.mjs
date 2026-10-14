@@ -59,7 +59,7 @@ test('sem inventario, sem pessoa ou sem arquivo da persona sai 1 com aviso', () 
     [{ inventario: null }, /sem a linha "pessoa:/],
     [{ inventario: '# Inventario' }, /sem a linha "pessoa:/],
     [{ inventario: INV, agente: null }, /falta agente\.md/],
-    [{ inventario: INV.replace('José de Souza', 'Li Wu') }, /nenhuma parte/],
+    [{ inventario: INV.replace('José de Souza', 'Li') }, /nome curto demais/],
   ]
   for (const [c, re] of casos) {
     const dir = conselheiro(c)
@@ -69,4 +69,37 @@ test('sem inventario, sem pessoa ou sem arquivo da persona sai 1 com aviso', () 
       assert.match(r.stdout, re)
     } finally { rmSync(dir, { recursive: true, force: true }) }
   }
+})
+
+test('nome curto com particula no meio acusa o nome escrito com a particula (Ana de Li)', () => {
+  const inv = INV.replace('José de Souza', 'Ana de Li')
+  const dirs = [
+    conselheiro({ inventario: inv, skill: ['# P', 'Aprenda com Ana de Li'].join(CRLF) }),
+    conselheiro({ inventario: inv, skill: ['# P', 'Aprenda com Ana Li'].join(CRLF) }),
+  ]
+  try {
+    const [comParticula, semParticula] = dirs.map(rodar)
+    assert.equal(semParticula.status, 1, 'canario: sem a particula o nome ja acusa ' + semParticula.stdout)
+    assert.equal(comParticula.status, 1, 'Ana de Li escrito no texto passou calado: ' + comParticula.stdout)
+    assert.match(comParticula.stdout, /SKILL\.md:2: "ana de li"/)
+  } finally { for (const d of dirs) rmSync(d, { recursive: true, force: true }) }
+})
+
+test('nome sem parte de 4 letras confere as partes juntas: Li Wu sai 0 sem o nome e 1 com ele', () => {
+  const inv = INV.replace('José de Souza', 'Li Wu')
+  const dirs = [
+    conselheiro({ inventario: inv }),
+    conselheiro({ inventario: inv, skill: ['# P', 'como Li Wu ensina'].join(CRLF) }),
+    conselheiro({ inventario: INV.replace('José de Souza', 'Ana Li'), skill: 'Faca a analise do caso.' }),
+  ]
+  try {
+    const [sem, com, comum] = dirs.map(rodar)
+    assert.ok(sem.stdout.length > 0, 'saida veio vazia')
+    assert.equal(sem.status, 0, sem.stdout + sem.stderr)
+    assert.match(sem.stdout, /^sem o nome/)
+    assert.equal(com.status, 1, com.stdout + com.stderr)
+    assert.match(com.stdout, /SKILL\.md:2: "li wu"/)
+    // canario: palavra comum que contem as letras juntas nao acusa
+    assert.equal(comum.status, 0, comum.stdout + comum.stderr)
+  } finally { for (const d of dirs) rmSync(d, { recursive: true, force: true }) }
 })

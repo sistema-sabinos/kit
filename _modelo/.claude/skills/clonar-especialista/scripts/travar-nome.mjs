@@ -19,7 +19,7 @@ export function travarNome(pasta) {
   if (!pessoa) return { codigo: 1, linhas: ['AVISO: inventario.md sem a linha "pessoa: <nome completo>"'] }
   if (/^nome-no-agente:[ \t]*sim[ \t]*$/m.test(inv)) return { codigo: 0, linhas: ['nome liberado pelo aluno'] }
   const partes = partesDoNome(pessoa)
-  if (!partes.length) return { codigo: 1, linhas: [`AVISO: nenhuma parte com 4 letras ou mais em "${pessoa}": confira o nome a mao`] }
+  if (!partes.length) return { codigo: 1, linhas: [`AVISO: nome curto demais pra conferir ("${pessoa}", menos de 4 letras juntando as partes): confira o nome a mao`] }
   const faltam = ARQUIVOS.filter(a => !existsSync(join(pasta, a)))
   if (faltam.length) return { codigo: 1, linhas: faltam.map(a => `AVISO: falta ${a}`) }
   const linhas = []

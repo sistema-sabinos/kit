@@ -100,9 +100,10 @@ local resolve sem esse peso a mais.
 ### Onde isso já aparece
 
 A skill `assistir-video` cai nessa rota quando a plataforma exige login pra
-baixar o vídeo (caso comum de rede social fechada): hoje ela avisa que esse
-recurso ainda não está montado no template e orienta baixar o vídeo
-manualmente enquanto isso não existir. Esta seção é o desenho de referência
+baixar o vídeo (caso comum de rede social fechada). Reel e post público do
+Instagram já baixam sem login pelo Chrome dedicado do pacote de mídia social
+(a coleta da `/pauta`); o que pede conta logada segue como recurso avançado, e
+aí ela orienta baixar o vídeo manualmente. Esta seção é o desenho de referência
 pra quando alguém decidir montar essa automação de verdade.
 
 ## Promover um projeto pra fora da pasta-mãe

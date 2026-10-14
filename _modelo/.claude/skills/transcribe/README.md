@@ -54,6 +54,8 @@ O Claude pergunta se quer a marcação de tempo de cada trecho e depois mostra a
 
 YouTube, Instagram (Reels e posts), TikTok, X/Twitter, Facebook, Vimeo, Twitch, Reddit e qualquer site que o yt-dlp aceite (mais de 1000).
 
+O Instagram costuma recusar o download sem login. Quando isso acontece, o Claude baixa o Reel pelo Chrome dedicado do pacote de redes sociais, se ele estiver no projeto, ou te pede o arquivo do vídeo.
+
 ## Licença
 
 MIT

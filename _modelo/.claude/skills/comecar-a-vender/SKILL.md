@@ -255,10 +255,14 @@ Decidir com ela:
 No dropshipping, marcar esta etapa como "não se aplica" e pular pra 8.
 
 1. Uma vez, da raiz do projeto: `npm install --prefix .claude/skills/mercado-livre`
-   (baixa o navegador de automação que o simulador usa; leva uns minutos).
+   (baixa o Playwright, que o simulador usa pra comandar o Chrome dedicado; leva uns minutos).
 2. Simular a margem de cada candidato:
    `node .claude/skills/montar-anuncio/scripts/simular.mjs --termo "<produto>" --preco <X,XX> --tipo classico --frete gratis --custo <C>`
    (precisa do Chrome dedicado do pacote: `node .claude/skills/mercado-livre/scripts/abrir-chrome.mjs`).
+   Com o `imposto_pct` ainda vazio (a etapa 6 deixou pro contador), o `--custo`
+   para com erro e manda pro `/mercado-livre`, que só entra na etapa 8. Nesse
+   caso, rodar sem ele e fazer a conta à mão, "Você recebe" menos o custo,
+   avisando que esse lucro ainda não desconta o imposto.
 3. Comprar o lote só com "pode ir", no tamanho que o dinheiro da etapa 0 aguenta
    mais os dias até o dinheiro cair (`ml-dinheiro`).
 4. Impressora, etiqueta, caixa, fita, balança: lista com preço de hoje.

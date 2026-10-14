@@ -157,6 +157,7 @@ async function subirArquivo(arquivo) {
   });
   const info = await up.json();
   if (!info.file) throw new Error(`falha no upload: ${JSON.stringify(info).slice(0, 300)}`);
+  nomeRemoto = info.file.name; // daqui em diante a copia existe no Gemini: a faxina apaga mesmo se o processamento cair
 
   // o vídeo precisa ficar ACTIVE antes de dar pra analisar
   for (let i = 0; i < 90; i++) {
@@ -177,6 +178,13 @@ let filePart;
 let temporario = null;
 let nomeRemoto = null;
 
+// faxina: arquivo temporário local e cópia no servidor do Gemini. Roda também quando
+// algo cai no meio (upload, processamento, chamada), porque o process.exit pula o resto.
+async function faxina() {
+  if (temporario) { try { fs.unlinkSync(temporario); } catch {} temporario = null; }
+  if (nomeRemoto) { const n = nomeRemoto; nomeRemoto = null; await fetch(`${API}/${n}?key=${key}`, { method: 'DELETE' }).catch(() => {}); }
+}
+
 if (usarLinkDireto) {
   console.error('[rota] link direto do YouTube (o Gemini busca sozinho)');
   filePart = { file_data: { file_uri: alvo } };
@@ -191,7 +199,8 @@ if (usarLinkDireto) {
     console.error('[rota] arquivo local');
   }
   if (has('so-baixar')) { console.log(arquivo); process.exit(0); }
-  const subido = await subirArquivo(arquivo);
+  let subido;
+  try { subido = await subirArquivo(arquivo); } catch (e) { await faxina(); throw e; }
   nomeRemoto = subido.name;
   filePart = { file_data: { file_uri: subido.uri, mime_type: subido.mime } };
 }
@@ -223,6 +232,7 @@ try {
   ({ status, json: j } = await postarJson(`${API}/models/${modelo}:generateContent?key=${key}`, corpo));
 } catch (e) {
   console.error(`ERRO: [${modelo}] a chamada caiu antes da resposta (${e.message}). Pode ter sido cobrada: confira o uso em aistudio.google.com antes de tentar de novo. Vídeo muito longo: tente com --pergunta focada num trecho.`);
+  await faxina(); // a chamada caiu
   process.exit(1);
 }
 
@@ -234,9 +244,7 @@ if (j.usageMetadata) {
   if (!has('sem-registro')) try { registrarCusto(custo); } catch (e) { console.error(`[custo] chamada cobrada mas nao anotada em dados/custos.jsonl (${e.message}); anote a mao: ${JSON.stringify(custo)}`); }
 }
 
-// faxina: arquivo temporário local e cópia no servidor do Gemini
-if (temporario) { try { fs.unlinkSync(temporario); } catch {} }
-if (nomeRemoto) { fetch(`${API}/${nomeRemoto}?key=${key}`, { method: 'DELETE' }).catch(() => {}); }
+await faxina();
 
 if (status !== 200) {
   console.error(`ERRO: [${modelo}] HTTP ${status}: ${(j.error && j.error.message) || JSON.stringify(j).slice(0, 300)}`);

@@ -695,7 +695,7 @@ Windows no git, e o backup passa a ver o mesmo arquivo como dois.
   ao mesmo tempo, em vez de travar o backup.
 - `_contexto/` inteira (os 8 arquivos: `empresa.md`, `preferencias.md`,
   `estrategia.md`, `agora.md`, `licoes.md`, `ferramentas.md`, `automacoes.md`,
-  `infra.md`, mais as pastas `arquivo/` e `pessoas/` com o `.gitkeep`), preenchidos com as respostas colhidas (o `automacoes.md` nasce quase
+  `infra.md`, mais a pasta `arquivo/` com o `README.md` e a `pessoas/` com o `.gitkeep`), preenchidos com as respostas colhidas (o `automacoes.md` nasce quase
   vazio quando a pessoa não citou rotina; o `infra.md` sai do "Onde as suas coisas
   moram" do Passo 2), nunca deixando o aviso `NOT CONFIGURED` no projeto final.
   No `ferramentas.md`, uma linha pra cada um dos sete assuntos do arquivo, tirada

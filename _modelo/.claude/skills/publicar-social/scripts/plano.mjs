@@ -37,10 +37,11 @@ export function lerTextoDoPost(texto) {
     if (h) { atual = semAcento(h[1]); secoes[atual] = []; continue }
     if (atual) secoes[atual].push(l)
   }
-  // texto que ainda e o do molde (uma linha inteira entre < e >) nunca vai pro ar
+  // texto do molde (qualquer trecho entre < e >) nunca vai pro ar; marcador encosta nos sinais,
+  // comparacao ("preco < 50 e estoque > 10") tem espaco e passa (achado da revisao do grupo G)
   const pega = nome => {
     const t = (secoes[nome] || []).join('\n').trim()
-    if (t.split('\n').some(l => /^<[^>]+>$/.test(l.trim()))) throw new Error(`post.md ainda tem o texto do molde em "## ${nome}": escrever o texto de verdade antes de publicar`)
+    if (t.split('\n').some(l => /<[^<>\s](?:[^<>]*[^<>\s])?>/.test(l))) throw new Error(`post.md ainda tem texto do molde (entre < e >) em "## ${nome}": escrever o texto de verdade antes de publicar`)
     return t
   }
   const legenda = pega('legenda')

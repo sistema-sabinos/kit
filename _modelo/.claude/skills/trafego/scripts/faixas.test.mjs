@@ -256,6 +256,10 @@ test('onze cortes numa rodada viram alerta de régua errada, e não lista', () =
   const r = quadroDe(extrato(muitos), reguaLocal);
   assert.equal(r.teto_batido, true);
   assert.match(r.alertas.join(' '), /régua/);
+  assert.match(r.alertas.join(' '), /11 anúncios/);
+  assert.equal(r.quadro.filter((x) => x.faixa === 'CRITICO').length, 0);
+  assert.equal(r.quadro.filter((x) => x.acao === 'pausar').length, 0);
+  assert.equal(r.quadro.filter((x) => x.protegido_por === 'teto').length, 11);
 });
 
 // O fixture precisa CHEGAR no bloco de frequência pra provar alguma coisa. Um

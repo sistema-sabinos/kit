@@ -115,7 +115,8 @@ onde ir. O servidor local precisa estar ligado enquanto os testes rodam.
 
 Versão e licença do `@axe-core/playwright` no id `app-axe-core` do `fatos.md`.
 
-Todo arquivo de teste ganha três travas, como no modelo:
+Todo teste de caminho (o que nasce do `e2e-exemplo.spec.ts`) ganha três travas, como nesse
+modelo:
 
 - reprova se aparecer erro no console (o painel escondido do navegador onde o app avisa
   que algo deu errado);
@@ -124,6 +125,9 @@ Todo arquivo de teste ganha três travas, como no modelo:
 - passa o axe em cada tela, uma checagem de acessibilidade (se pessoa com deficiência
   visual ou motora consegue usar), que acusa botão sem nome, contraste fraco e campo sem
   rótulo. A régua de contraste está no id `app-wcag`.
+
+O `larguras.spec.ts` e o `isolamento.spec.ts` ficam sem elas: cada um mede uma coisa só, e
+as mesmas telas já passam pelas três travas nos testes de caminho.
 
 ### 3. A passada à mão
 
@@ -171,7 +175,7 @@ inteira.
 
 ## Regras
 
-- Nada vai pro ar com defeito de nível 1 aberto.
+- Nada vai pro ar com defeito de nível 1 ou 2 aberto.
 - Teste automático roda só no seu app.
 - Pagamento só em modo de teste; cobrança real é na `/app-publicar`, com o "pode ir".
 - Nunca inventar resultado: caso que não rodou fica sem resultado no plano.

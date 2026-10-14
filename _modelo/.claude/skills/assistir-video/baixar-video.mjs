@@ -7,15 +7,31 @@
  *
  * Rota: yt-dlp (grátis, no PATH) resolve TikTok, Kwai, Facebook, X, Vimeo e afins
  * sozinho. Rede que exige sessão de navegador logada (ex: Instagram sem cookie,
- * que devolve "empty media response") não baixa por aqui: é um recurso avançado
- * (automação de navegador dedicado, ver docs/roadmap-avancado.md) e não está
- * incluído neste template. Enquanto isso não estiver montado, o caminho é o
- * usuário baixar o vídeo manualmente e passar o arquivo local pro ver-video.mjs.
+ * que devolve "empty media response") não baixa por aqui. Reel e post público do
+ * Instagram baixam pelo Chrome dedicado do pacote de mídia social (coletar.mjs da
+ * /pauta), quando o pacote está no projeto; sem ele, o caminho é o usuário baixar o
+ * vídeo manualmente e passar o arquivo local pro ver-video.mjs. Navegador logado é
+ * recurso avançado (../docs/roadmap-avancado.md, na pasta-mãe do SabinOS).
  *
  * Exporta: baixarVideo(url, destinoSemExtensao) -> caminho do .mp4
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, statSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+// a rota sem login pelo Chrome dedicado só existe com o pacote de mídia social (a /pauta) no projeto
+const COLETA = fileURLToPath(new URL('../pauta/scripts/coletar.mjs', import.meta.url));
+
+export function recadoSemDownload(temColeta) {
+  const comeco = '[baixar] o yt-dlp não conseguiu baixar esse vídeo. Se a rede exige login (comum no\nInstagram), ';
+  if (temColeta) return comeco +
+    'Reel ou post público baixa pelo Chrome dedicado do pacote de mídia social:\n' +
+    '  node .claude/skills/pauta/scripts/coletar.mjs --perfil <@ do criador> --reels <codigo do link>\n' +
+    'O mp4 sai em inteligencia/base-ideias/<perfil>/videos/<codigo>.mp4: passe esse arquivo pro ver-video.mjs.';
+  return comeco +
+    'baixe o vídeo manualmente e passe o caminho do arquivo pro ver-video.mjs.\n' +
+    'Navegador logado pra isso é recurso avançado: ver ../docs/roadmap-avancado.md, na pasta-mãe.';
+}
 
 function temNoPath(bin) {
   const r = spawnSync(process.platform === 'win32' ? 'where' : 'which', [bin], { encoding: 'utf8' });
@@ -80,11 +96,6 @@ export async function baixarVideo(url, destino) {
     console.error('[baixar] o site recusou o download por excesso de pedidos seguidos (erro 403 ou 429). Espere uns minutos e tente de novo.');
     throw new Error('download recusado pelo site, tentar de novo daqui a uns minutos');
   }
-  console.error(
-    '[baixar] o yt-dlp não conseguiu baixar esse vídeo. Se a rede exige login (comum no\n' +
-    'Instagram), essa rota precisa de um navegador dedicado, que é um recurso avançado\n' +
-    'ainda não incluído neste template (ver docs/roadmap-avancado.md). Enquanto isso,\n' +
-    'baixe o vídeo manualmente e passe o caminho do arquivo pro ver-video.mjs.'
-  );
-  throw new Error('não consegui baixar o vídeo (yt-dlp falhou e não há navegador dedicado configurado)');
+  console.error(recadoSemDownload(existsSync(COLETA)));
+  throw new Error('não consegui baixar o vídeo (o yt-dlp falhou)');
 }

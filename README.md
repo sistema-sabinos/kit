@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 5.13 (2026-10-13)
+Versão 5.14 (2026-10-14)
 
 Um sistema de trabalho com IA pro seu negócio, rodando dentro do VS Code com o Claude Code.
 
@@ -8,7 +8,7 @@ A ideia é simples: em vez de conversar com uma IA que esquece tudo a cada conve
 
 ## Como instalar
 
-**1. Instale o VS Code**, em [code.visualstudio.com](https://code.visualstudio.com/).
+**1. Assine o Claude** em [claude.com](https://claude.com/). A conta entra no passo 4, já no VS Code.
 
 **2. Garanta o Git:**
 - **Windows:** baixe em [git-scm.com/downloads](https://git-scm.com/downloads) e siga as opções padrão (Avançar até o fim). Se pular, o Claude confere na primeira conversa e instala com o seu ok.
@@ -16,7 +16,7 @@ A ideia é simples: em vez de conversar com uma IA que esquece tudo a cada conve
 
 **3. Instale o Node.js** em [nodejs.org](https://nodejs.org/) (botão verde, versão LTS, opções padrão). É o motor das ferramentas internas do kit, como a de assistir vídeo; sem ele essas partes travam na primeira vez que você for usar. Se pular, o Claude confere na primeira conversa e instala com o seu ok.
 
-**4. Assine o Claude** em [claude.com](https://claude.com/). Depois, no VS Code, abra a aba de extensões (ícone de blocos na lateral), busque "Claude Code", instale e faça login.
+**4. Instale o VS Code**, em [code.visualstudio.com](https://code.visualstudio.com/). Depois, no VS Code, abra a aba de extensões (ícone de blocos na lateral), busque "Claude Code", instale e faça login.
 
 **5. Descompacte este kit** e deixe a pasta `SabinOS-Sistema` dentro de `Documentos`. No Windows, no Extrair Tudo, não mude o caminho que ele sugere (já termina em `SabinOS-Sistema`); mudando pra terminar só em `Documentos`, os arquivos caem soltos lá. No Mac, o duplo clique no `SabinOS-Sistema.zip` cria a pasta. Nos dois, arraste a pasta `SabinOS-Sistema` pra `Documentos`. Não deixe em Downloads, nem dentro de uma pasta que já é repositório git. Abrindo a pasta, o `COMECE-AQUI.md` aparece logo de cara.
 
@@ -46,6 +46,7 @@ Todo o passo a passo de leigo está no [COMECE-AQUI.md](COMECE-AQUI.md): abrir a
 - `/find-skills`, descobre e adapta skills prontas pro seu ramo em vez de criar tudo do zero
 - `/syncar`, salva o estado da pasta-mãe no GitHub
 - `/atualizar-kit`, traz uma versão nova do SabinOS (do GitHub ou de um zip) sem tocar nos seus projetos
+- `/segunda-opiniao`, um revisor que não viu a conversa confere a proposta antes do seu ok; o `/setup` e o `/novo-projeto` chamam ele sozinhos
 
 Dentro de cada projeto criado, outro conjunto de comandos entra em ação (`/iniciar`, `/conectar`, `/mapear`, `/atualizar`, `/checar` e mais), explicados no PDF `Guia-SabinOS-Comandos`, que veio junto com este zip (ele fica fora da pasta); dentro do projeto, digite `/` pra ver a lista.
 
