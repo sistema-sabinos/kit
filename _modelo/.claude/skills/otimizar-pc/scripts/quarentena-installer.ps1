@@ -1,11 +1,11 @@
 # Bloco 2: move os instaladores ORFAOS de C:\Windows\Installer pra quarentena em outro disco.
 # NAO APAGA NADA. Grava manifesto CSV pra dar pra desfazer.
-# PRECISA DE ADMIN. Disparar assim:
-#   Start-Process powershell -ArgumentList "-NoProfile","-ExecutionPolicy","Bypass","-File","<este arquivo>" -Verb RunAs -Wait
-# Pra desfazer:  .\quarentena-installer.ps1 -Desfazer
+# PRECISA DE ADMIN. Disparar como a SKILL.md manda (caminho inteiro entre aspas e -LogDir).
+# Pra desfazer: o mesmo comando, com "-Desfazer" no fim da lista.
 param(
     [string]$Destino,
-    [switch]$Desfazer
+    [switch]$Desfazer,
+    [string]$LogDir
 )
 
 . (Join-Path $PSScriptRoot '_comum.ps1')

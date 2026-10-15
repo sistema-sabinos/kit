@@ -150,6 +150,22 @@ test('viaCodex e viaGemini levam o uso de video ate o prompt', async () => {
   assert.ok(corpos.every(c => c.includes('fundo verde')), 'viaGemini')
 })
 
+test('item 14: cenario de video pede imagem vertical 9:16 no Gemini e no prompt; o de anuncio segue 1:1', async () => {
+  const proporcao = async (uso) => {
+    const corpos = []
+    const { buscar } = geminiFalso({ respostas: [comImagem] })
+    const espiao = async (url, op) => { if (op?.body) corpos.push(JSON.parse(op.body)); return buscar(url, op) }
+    await viaGemini([cenas[0]], { chave: 'k', precoUsd: 0.05, contexto: 'x', uso, buscar: espiao, gravar: () => {}, registrarCusto: () => {}, esperar: async () => {} })
+    assert.equal(corpos.length, 1, 'canario: o Gemini falso recebeu a cena')
+    return corpos[0].generationConfig?.imageConfig?.aspectRatio
+  }
+  assert.equal(await proporcao(undefined), '1:1', 'o cenario de anuncio deixou de ser quadrado')
+  assert.equal(await proporcao('video'), '9:16', 'o Gemini recebe pedido quadrado pro fundo de video vertical')
+  const p = montarPrompt(cenas, { uso: 'video' })
+  assert.ok(p.includes('9:16') && !p.includes('1:1'), 'o prompt de video (o do Codex tambem) ainda pede imagem quadrada')
+  assert.ok(montarPrompt(cenas).includes('1:1'), 'canario: o prompt de anuncio segue pedindo 1:1')
+})
+
 test('viaGemini: erro no meio do lote nao perde o que ja foi gerado e pago, e a funcao nao rejeita', async () => {
   let chamadasGenerate = 0
   const buscar = async (url) => {

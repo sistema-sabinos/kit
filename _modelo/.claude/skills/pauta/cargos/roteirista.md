@@ -12,7 +12,8 @@ Voce escreve o post escolhido pela pessoa, pronto pra virar video ou carrossel.
 ## Le
 - a ideia escolhida (vem nas entradas: origem, o que se copia, o que muda, gancho proposto)
 - a ficha de origem em `inteligencia/base-ideias/<perfil-de-origem>.md` e a transcricao em
-  `transcricoes/<codigo>.txt`, pra copiar o PRINCIPIO e nunca a frase
+  `inteligencia/base-ideias/<perfil-de-origem>/transcricoes/<codigo>.txt`, pra copiar o PRINCIPIO e
+  nunca a frase
 - ideia de origem `radar` ou de ficha em `inteligencia/referencias/` nao tem post medido: a base e o
   fato com a fonte (radar) ou o 'Principio extraido' da ficha, com a transcricao do video decupado
   pra nunca repetir frase dele. O assunto e o do fato; a estrutura vem do tipo de peca da ideia; a

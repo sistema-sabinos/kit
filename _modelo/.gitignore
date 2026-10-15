@@ -23,6 +23,8 @@
 !*.js
 !*.ts
 !*.tsx
+!*.jsx
+!*.cjs
 !*.py
 !*.sh
 !*.ps1

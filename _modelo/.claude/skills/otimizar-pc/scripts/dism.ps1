@@ -2,7 +2,7 @@
 # Descarta as versoes obsoletas que sobraram de atualizacao antiga.
 # EFEITO COLATERAL: depois disso nao da mais pra desinstalar as atualizacoes ja instaladas.
 # PRECISA DE ADMIN. Leva de 10 a 20 min e trava a maquina em rajadas.
-param([switch]$SemResetBase)   # -SemResetBase limpa menos mas preserva a desinstalacao de update
+param([switch]$SemResetBase, [string]$LogDir)   # -SemResetBase limpa menos mas preserva a desinstalacao de update
 
 . (Join-Path $PSScriptRoot '_comum.ps1')
 $ErrorActionPreference = 'SilentlyContinue'

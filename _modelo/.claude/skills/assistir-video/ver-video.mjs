@@ -179,82 +179,87 @@ let temporario = null;
 let nomeRemoto = null;
 
 // faxina: arquivo temporário local e cópia no servidor do Gemini. Roda também quando
-// algo cai no meio (upload, processamento, chamada), porque o process.exit pula o resto.
+// algo cai no meio (upload, processamento, chamada), porque o return pula o resto.
 async function faxina() {
   if (temporario) { try { fs.unlinkSync(temporario); } catch {} temporario = null; }
   if (nomeRemoto) { const n = nomeRemoto; nomeRemoto = null; await fetch(`${API}/${n}?key=${key}`, { method: 'DELETE' }).catch(() => {}); }
 }
 
-if (usarLinkDireto) {
-  console.error('[rota] link direto do YouTube (o Gemini busca sozinho)');
-  filePart = { file_data: { file_uri: alvo } };
-} else {
-  let arquivo = alvo;
-  if (!ehArquivoLocal) {
-    console.error('[rota] baixando o vídeo (URL que o Gemini não busca sozinho)');
-    const base = path.join(os.tmpdir(), `assistir-video-${Date.now()}`);
-    arquivo = await baixarVideo(alvo, base);
-    if (!has('manter')) temporario = arquivo;
+async function main() {
+  if (usarLinkDireto) {
+    console.error('[rota] link direto do YouTube (o Gemini busca sozinho)');
+    filePart = { file_data: { file_uri: alvo } };
   } else {
-    console.error('[rota] arquivo local');
+    let arquivo = alvo;
+    if (!ehArquivoLocal) {
+      console.error('[rota] baixando o vídeo (URL que o Gemini não busca sozinho)');
+      const base = path.join(os.tmpdir(), `assistir-video-${Date.now()}`);
+      arquivo = await baixarVideo(alvo, base);
+      if (!has('manter')) temporario = arquivo;
+    } else {
+      console.error('[rota] arquivo local');
+    }
+    if (has('so-baixar')) { console.log(arquivo); return; }
+    let subido;
+    try { subido = await subirArquivo(arquivo); } catch (e) { await faxina(); throw e; }
+    nomeRemoto = subido.name;
+    filePart = { file_data: { file_uri: subido.uri, mime_type: subido.mime } };
   }
-  if (has('so-baixar')) { console.log(arquivo); process.exit(0); }
-  let subido;
-  try { subido = await subirArquivo(arquivo); } catch (e) { await faxina(); throw e; }
-  nomeRemoto = subido.name;
-  filePart = { file_data: { file_uri: subido.uri, mime_type: subido.mime } };
-}
 
-// resolução de mídia é config da REQUISIÇÃO (já foi campo do file_data e mudou de lugar)
-const corpo = { contents: [{ parts: [{ text: prompt }, filePart] }] };
-if (has('lowres')) corpo.generationConfig = { mediaResolution: 'MEDIA_RESOLUTION_LOW' };
+  // resolução de mídia é config da REQUISIÇÃO (já foi campo do file_data e mudou de lugar)
+  const corpo = { contents: [{ parts: [{ text: prompt }, filePart] }] };
+  if (has('lowres')) corpo.generationConfig = { mediaResolution: 'MEDIA_RESOLUTION_LOW' };
 
-// Aula longa (20 min ou mais) faz o Gemini pensar mais de 5 minutos antes de responder, e o fetch
-// do Node desiste nos 5 minutos (HeadersTimeoutError). Aqui vai https puro, com teto de 30 minutos.
-function postarJson(url, dados, tetoMs = 30 * 60 * 1000) {
-  return new Promise((ok, falha) => {
-    const corpoTxt = JSON.stringify(dados);
-    const req = https.request(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(corpoTxt) } }, (r) => {
-      let txt = '';
-      r.setEncoding('utf8');
-      r.on('data', (c) => { txt += c; });
-      r.on('end', () => { try { ok({ status: r.statusCode, json: JSON.parse(txt) }); } catch { ok({ status: r.statusCode, json: { error: { message: txt.slice(0, 300) } } }); } });
+  // Aula longa (20 min ou mais) faz o Gemini pensar mais de 5 minutos antes de responder, e o fetch
+  // do Node desiste nos 5 minutos (HeadersTimeoutError). Aqui vai https puro, com teto de 30 minutos.
+  function postarJson(url, dados, tetoMs = 30 * 60 * 1000) {
+    return new Promise((ok, falha) => {
+      const corpoTxt = JSON.stringify(dados);
+      const req = https.request(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(corpoTxt) } }, (r) => {
+        let txt = '';
+        r.setEncoding('utf8');
+        r.on('data', (c) => { txt += c; });
+        r.on('end', () => { try { ok({ status: r.statusCode, json: JSON.parse(txt) }); } catch { ok({ status: r.statusCode, json: { error: { message: txt.slice(0, 300) } } }); } });
+      });
+      req.setTimeout(tetoMs, () => req.destroy(new Error(`o Gemini passou de ${tetoMs / 60000} minutos sem responder`)));
+      req.on('error', falha);
+      req.end(corpoTxt);
     });
-    req.setTimeout(tetoMs, () => req.destroy(new Error(`o Gemini passou de ${tetoMs / 60000} minutos sem responder`)));
-    req.on('error', falha);
-    req.end(corpoTxt);
-  });
+  }
+
+  const modelo = await escolherModelo();
+  let status, j;
+  try {
+    ({ status, json: j } = await postarJson(`${API}/models/${modelo}:generateContent?key=${key}`, corpo));
+  } catch (e) {
+    console.error(`ERRO: [${modelo}] a chamada caiu antes da resposta (${e.message}). Pode ter sido cobrada: confira o uso em aistudio.google.com antes de tentar de novo. Vídeo muito longo: tente com --pergunta focada num trecho.`);
+    await faxina(); // a chamada caiu
+    process.exitCode = 1;
+    return;
+  }
+
+  // a cobranca ja aconteceu quando vem uso de tokens: anota antes de olhar se a resposta presta
+  // --sem-registro: quem chamou anota o custo ele mesmo (o fiscal do /editar-video), pra nao contar em dobro
+  let custo = null;
+  if (j.usageMetadata) {
+    custo = linhaDeCusto({ modelo, uso: j.usageMetadata, contexto: `assistir-video ${alvo}`, hoje: new Date().toISOString().slice(0, 10), agora: new Date().toISOString() });
+    if (!has('sem-registro')) try { registrarCusto(custo); } catch (e) { console.error(`[custo] chamada cobrada mas nao anotada em dados/custos.jsonl (${e.message}); anote a mao: ${JSON.stringify(custo)}`); }
+  }
+
+  await faxina();
+
+  if (status !== 200) {
+    console.error(`ERRO: [${modelo}] HTTP ${status}: ${(j.error && j.error.message) || JSON.stringify(j).slice(0, 300)}`);
+    process.exitCode = 1; return;
+  }
+  const txt = j.candidates?.[0]?.content?.parts?.map((p) => p.text).filter(Boolean).join('\n');
+  if (!txt) {
+    console.error(`ERRO: [${modelo}] resposta vazia: ${JSON.stringify(j).slice(0, 400)}`);
+    process.exitCode = 1; return;
+  }
+  const t = tokensDaResposta(j.usageMetadata);
+  console.error(`(modelo: ${modelo} | tokens entrada: ${t.entrada} | saída com raciocínio: ${t.saida} | custo: ${custo?.usd == null ? 'preço fora da tabela, conferir' : `US$ ${custo.usd}`})`);
+  console.log(txt);
 }
 
-const modelo = await escolherModelo();
-let status, j;
-try {
-  ({ status, json: j } = await postarJson(`${API}/models/${modelo}:generateContent?key=${key}`, corpo));
-} catch (e) {
-  console.error(`ERRO: [${modelo}] a chamada caiu antes da resposta (${e.message}). Pode ter sido cobrada: confira o uso em aistudio.google.com antes de tentar de novo. Vídeo muito longo: tente com --pergunta focada num trecho.`);
-  await faxina(); // a chamada caiu
-  process.exit(1);
-}
-
-// a cobranca ja aconteceu quando vem uso de tokens: anota antes de olhar se a resposta presta
-// --sem-registro: quem chamou anota o custo ele mesmo (o fiscal do /editar-video), pra nao contar em dobro
-let custo = null;
-if (j.usageMetadata) {
-  custo = linhaDeCusto({ modelo, uso: j.usageMetadata, contexto: `assistir-video ${alvo}`, hoje: new Date().toISOString().slice(0, 10), agora: new Date().toISOString() });
-  if (!has('sem-registro')) try { registrarCusto(custo); } catch (e) { console.error(`[custo] chamada cobrada mas nao anotada em dados/custos.jsonl (${e.message}); anote a mao: ${JSON.stringify(custo)}`); }
-}
-
-await faxina();
-
-if (status !== 200) {
-  console.error(`ERRO: [${modelo}] HTTP ${status}: ${(j.error && j.error.message) || JSON.stringify(j).slice(0, 300)}`);
-  process.exit(1);
-}
-const txt = j.candidates?.[0]?.content?.parts?.map((p) => p.text).filter(Boolean).join('\n');
-if (!txt) {
-  console.error(`ERRO: [${modelo}] resposta vazia: ${JSON.stringify(j).slice(0, 400)}`);
-  process.exit(1);
-}
-const t = tokensDaResposta(j.usageMetadata);
-console.error(`(modelo: ${modelo} | tokens entrada: ${t.entrada} | saída com raciocínio: ${t.saida} | custo: ${custo?.usd == null ? 'preço fora da tabela, conferir' : `US$ ${custo.usd}`})`);
-console.log(txt);
+await main();

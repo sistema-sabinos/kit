@@ -8,7 +8,8 @@
 //   pergunta: <texto da pergunta>
 //   <linhas livres de gabarito: trecho real, posicao esperada, o que passa>
 // O script copia so a linha "## P<n> <parte>" e o texto depois de "pergunta:"; nada mais.
-// Recusa (sai 1, nao grava): gabarito ausente, cabecalho "## " fora do formato, pergunta sem a
+// Recusa (sai 1, nao grava): gabarito ausente, linha antes do primeiro "## P" que nao seja o
+// titulo "# ..." (linha fora de bloco), cabecalho "## " fora do formato, pergunta sem a
 // linha "pergunta:", numero repetido, menos de 10 de prova, 5 iscas, 2 constancia, 1
 // constancia-b ou 3 de negocio. Depois de gravar, linha livre do gabarito com 20 caracteres ou
 // mais que aparece inteira nas perguntas, com o rotulo ("posicao esperada: ...") ou so o valor
@@ -34,7 +35,8 @@ export function lerGabarito(texto) {
     if (cab) { perguntas.push({ n: Number(cab[1]), parte: cab[2], cab: t, pergunta: null, gabarito: [] }); continue }
     if (t.startsWith('## ')) { problemas.push(`cabecalho fora do formato: ${t}`); continue }
     const q = perguntas.at(-1)
-    if (!q) continue
+    // antes do primeiro "## P" so cabe o titulo "# ...": outra linha ali sumiria calada
+    if (!q) { if (t && !t.startsWith('# ')) problemas.push(`linha fora de bloco, antes do primeiro ## P: ${t}`); continue }
     const p = PERGUNTA.exec(t)
     if (p && q.pergunta === null) q.pergunta = p[1]
     else if (t) q.gabarito.push(t)

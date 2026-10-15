@@ -2,7 +2,7 @@
 // Nao abre navegador e nao raspa nada. Junta varias levas num arquivo so (perfil repetido entra uma vez) e
 // separa carrossel de Reel.
 // Uso: node .claude/skills/pauta/scripts/refiltrar.mjs --dias 7 --piso 300 --tag 7dias aberto-2026-10-01 aberto-2026-10-02
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { opcoes } from './lib/pagina.mjs'
@@ -20,6 +20,13 @@ export function juntarLevas(levas) {
 // aceita o nome nu, o .json ou o caminho que o garimpo imprime (com .md)
 export const nomeDaLeva = f => basename(f).replace(/\.(json|md)$/, '')
 
+// o garimpo grava aberto-<dia>-<tag>.json e .md; o mesmo --tag aqui gravaria por cima do .md da leva
+export function nomeDoRefeito(pasta, hoje, tag) {
+  const base = `aberto-${hoje}-${tag}`
+  if (existsSync(join(pasta, base + '.json'))) throw new Error(`${base} e uma leva do garimpo: use outro --tag pra nao gravar por cima do .md dela`)
+  return base + '.md'
+}
+
 function main(argv) {
   const o = opcoes(argv)
   if (o.help) { console.log(USO); return }
@@ -28,7 +35,7 @@ function main(argv) {
   const perfis = juntarLevas(o._.map(f => JSON.parse(readFileSync(join(PASTA, nomeDaLeva(f) + '.json'), 'utf8'))))
   const { lista } = ranquear(perfis, { dias, piso })
   const hoje = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' })
-  const nome = `aberto-${hoje}-${tag}.md`
+  const nome = nomeDoRefeito(PASTA, hoje, tag)
   const carrossel = lista.filter(p => p.tipo === 'post'), reels = lista.filter(p => p.tipo === 'reel')
   writeFileSync(join(PASTA, nome), [
     `# Garimpo aberto, janela de ${dias} dias (refeito em ${hoje})`, '',

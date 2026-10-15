@@ -30,7 +30,7 @@ Você tem um processo de 4+ etapas que roda toda semana, já mapeado em skills q
 
 ### O que é
 
-Uma tarefa que executa no horário marcado sem ninguém pedir: toda segunda de manhã um relatório da semana, todo dia às 13h uma checagem dos anúncios, todo dia um backup. No Windows, via Task Scheduler; no Mac/Linux, via cron. O script roda, grava o resultado e avisa no Telegram. Dentro de um projeto, o `/agendar` monta tudo isso.
+Uma tarefa que executa no horário marcado sem ninguém pedir: toda segunda de manhã um relatório da semana, todo dia às 13h uma checagem dos anúncios, todo dia um backup. No Windows, via Task Scheduler; no Mac/Linux, via cron. O script roda, grava o resultado e avisa no Telegram ou, sem ele, deixa um recado que aparece quando você abre o projeto. Dentro de um projeto, o `/agendar` monta tudo isso.
 
 ### Por que existe
 
@@ -241,7 +241,7 @@ Você já tem um robô agendado de leitura rodando há semanas pelo agendador do
 sistema, ele funciona, e o incômodo virou "preciso estar no computador pra ver o
 resultado". Aí um canal de mensagem compensa. Antes disso, não.
 
-Ordem segura: primeiro o agendador do sistema operacional com aviso no Telegram,
+Ordem segura: primeiro o agendador do sistema operacional com aviso no Telegram (ou recado no projeto),
 pelo `/agendar` (custo zero, descrito acima), e só depois o Hermes, se o canal de mensagem virar
 necessidade de verdade. E nunca com o agente respondendo mensagem de terceiro
 sozinho: a regra do gate humano não muda de lugar porque o programa mudou.

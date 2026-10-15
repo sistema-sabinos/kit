@@ -133,3 +133,19 @@ test('ogDoHtml le o og do HTML real em qualquer ordem de atributo e o parseOg ti
   assert.equal(ogDoHtml('<html><meta name="description" content="x">' + invertida), desc)
   assert.equal(ogDoHtml('<html>sem og</html>'), '')
 })
+
+// Rodada 5.15: o mesmo --tag de uma leva do garimpo do mesmo dia gravava o ranking por cima do .md dela.
+test('item 11: refiltrar recusa o --tag de uma leva do garimpo do mesmo dia', async () => {
+  const { nomeDoRefeito } = await import('./refiltrar.mjs')
+  assert.equal(typeof nomeDoRefeito, 'function', 'o refiltrar.mjs exporta o nomeDoRefeito')
+  const dir = mkdtempSync(join(tmpdir(), 'refiltrar-'))
+  try {
+    writeFileSync(join(dir, 'aberto-2026-10-14-leva1.json'), '{"perfis":[]}')
+    writeFileSync(join(dir, 'aberto-2026-10-14-leva1.md'), 'leva do garimpo')
+    writeFileSync(join(dir, 'aberto-2026-10-14-4dias.md'), 'refeito antes')
+    assert.equal(nomeDoRefeito(dir, '2026-10-14', '4dias'), 'aberto-2026-10-14-4dias.md', 'canario: refazer o proprio ranking (sem .json) continua')
+    assert.throws(() => nomeDoRefeito(dir, '2026-10-14', 'leva1'), /aberto-2026-10-14-leva1.*outro --tag/)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})

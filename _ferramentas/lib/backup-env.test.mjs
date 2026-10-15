@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, existsSync, readFileSync, readdirSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, existsSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,13 +19,13 @@ function envComNChaves(n) {
 test('recusa fazer backup de .env truncado (menos que o mínimo de chaves)', () => {
   const dirProjeto = mkdtempSync(join(tmpdir(), 'projeto-'));
   const envPath = join(dirProjeto, '.env');
-  writeFileSync(envPath, envComNChaves(3)); // bem abaixo do padrão de 20
+  writeFileSync(envPath, '# só comentário, nenhuma chave\n'); // abaixo do mínimo de 1
 
   const dirBackup = join(dirProjeto, '..', 'backup-nao-deve-existir-' + Date.now());
   const resultado = backupEnv({ envPath, backupDir: dirBackup });
 
   assert.equal(resultado.ok, false);
-  assert.equal(resultado.chaves, 3);
+  assert.equal(resultado.chaves, 0);
   assert.match(resultado.motivo, /truncado/);
   assert.equal(existsSync(dirBackup), false, 'não deveria ter criado a pasta de backup');
 });
@@ -126,7 +126,7 @@ test('CLI sem argumento usa o ./.env do diretório onde roda (cwd)', () => {
 
 test('CLI recusa e sai com código 2 quando o .env do cwd está truncado', () => {
   const dirProjeto = mkdtempSync(join(tmpdir(), 'projeto-cli-trunc-'));
-  writeFileSync(join(dirProjeto, '.env'), envComNChaves(2));
+  writeFileSync(join(dirProjeto, '.env'), '# só comentário, nenhuma chave\n');
   const homeFalso = mkdtempSync(join(tmpdir(), 'home-cli-trunc-'));
 
   const r = spawnSync(process.execPath, [CLI], {
@@ -137,4 +137,35 @@ test('CLI recusa e sai com código 2 quando o .env do cwd está truncado', () =>
 
   assert.equal(r.status, 2);
   assert.match(r.stderr, /ABORTADO/);
+});
+
+// Rodada 5.15, item 21: o aluno comum tem poucas chaves; truncado se mede contra a última cópia.
+test('item 21: .env com 3 chaves de verdade faz backup', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'item21-'));
+  try {
+    const envPath = join(dir, '.env');
+    writeFileSync(envPath, envComNChaves(3));
+    const r = backupEnv({ envPath, backupDir: join(dir, 'backup') });
+    assert.equal(r.chaves, 3, 'canario: a contagem leu as 3 chaves');
+    assert.equal(r.ok, true, r.motivo);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('item 21: .env que caiu pra menos da metade das chaves da ultima copia recusa e guarda a copia boa', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'item21-'));
+  try {
+    const envPath = join(dir, '.env');
+    const backupDir = join(dir, 'backup');
+    writeFileSync(envPath, envComNChaves(10));
+    assert.equal(backupEnv({ envPath, backupDir }).ok, true, 'a primeira copia, com 10 chaves, tem de sair');
+    writeFileSync(envPath, envComNChaves(4));
+    const r = backupEnv({ envPath, backupDir });
+    assert.equal(r.ok, false);
+    assert.match(r.motivo, /truncado/);
+    assert.equal(readFileSync(join(backupDir, 'latest.env'), 'utf8'), envComNChaves(10));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

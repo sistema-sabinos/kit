@@ -313,7 +313,10 @@ test('blocos acha os blocos de fala com o whisper', { skip: process.env.WHISPER_
   if (modelos.length > 1) t.diagnostic(`${modelos.length} modelos na WHISPER_DIR (${modelos.join(', ')}); usando ${modelos[0]}`)
   const r = py('blocos.py', [bruto, sai, '--modelo', modelos[0]])
   assert.equal(r.status, 0, semTraco(r.stderr))
-  assert.equal(readFileSync(sai, 'utf8').split(/\r?\n/).filter((l) => /^[|] [0-9]+ [|]/.test(l)).length, 2)
+  const linhas = readFileSync(sai, 'utf8').split(/\r?\n/).filter((l) => /^[|] [0-9]+ [|]/.test(l))
+  assert.equal(linhas.length, 2)
+  // a 5a coluna e o texto que o whisper devolveu: vazia quer dizer que o whisper nao rodou ou a saida dele se perdeu
+  for (const l of linhas) assert.match(l.split('|')[5], /[^ ]/, 'o whisper nao devolveu texto no trecho: ' + l)
 }))
 
 test('profundidade: sem o modelo recusa dizendo o que falta', () => comTemp((d) => {
@@ -329,7 +332,12 @@ test('profundidade gera o mapa com o modelo', { skip: process.env.DEPTH_MODELO ?
   ff('-f', 'lavfi', '-i', 'testsrc2=s=320x180:d=1', '-frames:v', '1', img)
   const r = py('profundidade.py', [img, sai, '--largura', '160'])
   assert.equal(r.status, 0, semTraco(r.stderr))
-  assert.ok(existsSync(sai))
+  assert.equal(sonda(sai, { sel: 'v:0', campo: 'width,height' }), '160,90')
+  // mapa de verdade tem perto e longe: imagem de um tom so quer dizer que o modelo nao entrou
+  const st = spawnSync('ffprobe', ['-v', 'error', '-f', 'lavfi', '-i', 'movie=mapa.png,signalstats', '-show_entries', 'frame_tags=lavfi.signalstats.YMIN,lavfi.signalstats.YMAX', '-of', 'csv=p=0'], { cwd: d, encoding: 'utf8' })
+  assert.equal(st.status, 0, st.stderr)
+  const [ymin, ymax] = st.stdout.trim().split(',').map(Number)
+  assert.ok(ymax - ymin > 50, `mapa sem relevo (YMIN ${ymin}, YMAX ${ymax})`)
 }))
 
 test('o modelo YuNet e a licenca vieram junto', () => {

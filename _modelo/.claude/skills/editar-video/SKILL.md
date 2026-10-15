@@ -143,8 +143,8 @@ ffmpeg -y -f lavfi -i "gradients=s=1080x1920:c0=0x1b2a49:c1=0x4a6fa5:x0=540:y0=0
 - **Imagem por IA**: use a `/gerar-imagens` no mesmo padrão dela. Rode
   `node .claude/skills/gerar-imagens/scripts/motor.mjs` para ver o degrau
   disponível. No degrau `zero-ia` não há como gerar: peça uma foto.
-  **Avise antes de gerar:** "A imagem sai quadrada e o vídeo é vertical, então as
-  laterais vão ser cortadas. Eu peço o assunto principal no centro."
+  **Avise antes de gerar:** "A imagem sai em pé, no formato do vídeo, com o assunto
+  principal no centro; se vier um pouco mais larga, as beiradas dos lados são cortadas."
   - Degrau `gemini` custa dinheiro por imagem: confira na web, hoje, o preço por
     imagem na página oficial de preços do Google AI, conte 3 imagens, mostre a
     conta ("3 imagens a US$ X cada, total US$ Y") e espere o "pode ir".

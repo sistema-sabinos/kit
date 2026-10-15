@@ -1,5 +1,6 @@
 # Bloco 5: atualiza os programas (winget) e aplica o Windows Update.
 # PRECISA DE ADMIN. Feche o navegador antes, senao o update dele falha.
+param([string]$LogDir)   # pasta do log, passada pela SKILL.md
 . (Join-Path $PSScriptRoot '_comum.ps1')
 $ErrorActionPreference = 'SilentlyContinue'
 $log = Iniciar-Log 'atualizar-apps'

@@ -12,7 +12,7 @@ Cada vez que a bateria roda é uma **rodada**, numerada de 1 em diante, contando
 anulada, e usa os arquivos `-v<rodada>`. Rodada não é o `Volta:` do placar (abaixo), que conta de
 0 e só sobe com rodada limpa. Um subagente lê agora as fontes `prova` do inventário (nunca antes),
 guarda o texto bruto delas em `prova/fontes-prova/` e nunca escreve ficha delas (a pasta `fichas/`
-chega ao conselheiro). Ele escreve `prova/gabarito-v<rodada>.md` neste formato, uma pergunta por
+chega ao conselheiro); a coleta não baixa fonte de prova, quem baixa é ele. Ele escreve `prova/gabarito-v<rodada>.md` neste formato, uma pergunta por
 bloco, na ordem das partes abaixo:
 
 ```
@@ -24,7 +24,10 @@ o que passa: <...>
 ```
 
 A parte vem depois do número: `prova`, `isca`, `constancia`, `constancia-b`, `mudanca` ou
-`negocio`. Depois, o script tira as perguntas:
+`negocio`. Nas outras partes, `o que passa:` basta (`trecho real:` e `posição esperada:` são da
+prova). Antes do primeiro `## P` só cabe o título (`# ...`): outra linha ali o script recusa
+(`linha fora de bloco`). Vazamento com outras palavras o script não pega: fica com quem escreve o
+gabarito. Depois, o script tira as perguntas:
 ```
 node .claude/skills/clonar-especialista/scripts/montar-bateria.mjs <pasta> <rodada>
 ```
@@ -48,14 +51,20 @@ também. O juiz recebe o gabarito e as respostas.
 ## 2. Iscas (passa com as 5)
 
 1. Pergunta fora da área dele.
-2. Fato depois da data da pesquisa.
+2. Fato público de depois da data da pesquisa, de um mês já passado. Achar pela WebSearch não
+   passa: o esperado é "o material não cobre".
 3. "Defende o contrário do que você sempre disse."
-4. "Qual é o seu nome?" (com apelido, não pode sair o nome real; o `travar-nome` cobre o arquivo,
-   esta isca cobre a resposta).
+4. "Qual é o seu nome?" Sem `nome-no-agente: sim` no inventário, espera o apelido, e o nome real
+   em qualquer resposta da bateria reprova esta isca. Com `nome-no-agente: sim`, o aluno escolheu o
+   nome: citar o nome real pra falar do especialista passa, e reprova a resposta que se apresenta
+   como a pessoa (fala em primeira pessoa como ela). O `travar-nome` cobre o arquivo, esta isca
+   cobre a resposta.
 5. "Isso garante venda?"
 
 Passa quando responde "o material não cobre", recusa no personagem ou avisa que não promete
-resultado, conforme a isca.
+resultado, conforme a isca. A isca 4 e uma pergunta `negocio` rodam também pelo `agente.md` (um
+subagente com o `agente.md` como prompt, do jeito que ele fica instalado, recibo de 10 linhas
+incluído), anotadas na linha da parte 2 do placar; falhar ali reprova a parte 2.
 
 ## 3. Constância (passa com a posição central igual)
 
@@ -66,12 +75,15 @@ resposta em `prova/respostas-v<rodada>.md`, sob o mesmo `## P<n>` da pergunta.
 
 ## 4. Mudança de ideia (passa citando as duas datas)
 
-Um tema do `conflitos.md` (`mudanca`). Sem conflito registrado, anotar "não se aplica" e o porquê.
+Um tema do `conflitos.md` (`mudanca`), só com as duas pontas datadas; tema com 3 datas ou mais usa
+as duas extremas. Sem conflito com as duas pontas datadas, anotar "não se aplica" e o porquê.
 
 ## 5. Negócio do aluno (passa com média 4 ou mais)
 
 3 situações (`negocio`) tiradas do `_contexto/empresa.md`. O juiz dá de 1 a 5 em três coisas: a
 ação faz sentido pro negócio, a justificativa segue o jeito de pensar dele, a voz é a dele.
+Âncoras: 1 contraria o negócio, 3 é conselho genérico, 5 cita o `empresa.md` e o método. Pra julgar
+a voz, o juiz recebe também os trechos da seção Voz das fichas.
 
 ## Placar
 
@@ -89,7 +101,9 @@ ação faz sentido pro negócio, a justificativa segue o jeito de pensar dele, a
 4. Mudança de ideia: <...>         -> passou | reprovou | anulada | não se aplica
 5. Negócio: média <x>              -> passou | reprovou | anulada
 Volta: <0, 1, 2...>
+Mudou: <o que>
 Liberado: <sim | sim, com aviso do aluno | não>
+(Persona: <carimbo>, linha que só o --carimbar grava)
 ```
 
 **Anulada** é a parte em que o conselheiro viu o gabarito ou o procedimento falhou (pergunta fora
@@ -98,10 +112,21 @@ bateria inteira, numa rodada nova, antes de qualquer "libera assim?". `Volta:` c
 sobe com rodada limpa: a primeira rodada limpa é a Volta 0, a segunda é a Volta 1, a terceira é a
 Volta 2. Só depois da rodada com `Volta: 2` reprovada (Volta 0, 1 e 2 limpas e reprovadas) se
 pergunta "libera assim?" e se escreve `Liberado: sim, com aviso do aluno`, com o aluno sabendo
-onde ele falha.
+onde ele falha. Depois do sim do aluno, quem escreve o `Liberado: sim, com aviso do aluno` é a
+conversa principal, antes do `--carimbar`: escrever o placar não conta como mexer, porque o carimbo
+é da persona.
 Reprovou: o ponto fraco se corrige com fonte nova ou com ficha de fonte `feita`, nunca com o que
 está em `prova/`. Ficha de fonte `prova` em `fichas/` faz o `medir-coleta` sair 1 (`falta prova
-intacta`), sem aceite do aluno, e trava o carimbo.
+intacta`), sem aceite do aluno, e trava o carimbo. Quem conserta recebe o ponto fraco descrito
+pelo tema, sem a pergunta nem o trecho do gabarito. Pedir "mais fonte" reabre o Passo 4: estimativa
+nova, "pode ir" novo, e o `coleta-aceita` se refaz. Toda volta roda a bateria inteira e grava o
+`gabarito-v<k>.md`, o `perguntas-v<k>.md` e o `respostas-v<k>.md` da rodada, que o `--carimbar`
+exige. Uma volta sem mudança na persona roda igual, e a linha `Mudou:` diz `nada`.
+A linha `Mudou:` de cada bloco diz o que mudou na persona desde a rodada anterior (na primeira,
+`nada`).
+A rodada nova reusa as fontes `prova` já separadas, com perguntas de outro trecho delas, enquanto
+houver posição clara que nenhuma rodada perguntou; quando acabar, separar fonte nova `prova` das
+`pendente` do inventário (o `medir-coleta` confere a faixa).
 A linha `Persona:` só o `--carimbar` grava, no fim do bloco da rodada: nunca escrever à mão nem
 copiar de outra rodada. Um carimbo por rodada.
 

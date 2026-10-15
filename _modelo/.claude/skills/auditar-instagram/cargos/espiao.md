@@ -13,7 +13,8 @@ principio (gancho, estrutura, mecanismo), nunca na frase. Escrita direta, sem tr
 
 ## Faz
 1. **Transcrever os videos** pela `/transcribe` do kit (gratis, roda no computador). Se ja houver
-   `transcricoes/<codigo>.txt`, reaproveitar. Gemini (que ve a imagem) nao roda aqui sem o "pode ir".
+   `inteligencia/base-ideias/<perfil>/transcricoes/<codigo>.txt`, reaproveitar. Gemini (que ve a
+   imagem) nao roda aqui sem o "pode ir".
 2. **Ranquear** pelo multiplo contra a mediana do proprio perfil (visualizacoes se houver, senao
    curtidas + 10 x comentarios). Acima de 1,5x estourou; abaixo de 0,6x nao foi.
 3. **Por post:** data, formato, duracao, tema, gancho literal (primeira frase), estrutura em blocos,

@@ -114,9 +114,10 @@ anúncios do topo.
 }
 ```
 
-`etapa_atual`: `decidido`, `copy`, `imagens`, `auditado`, `cadastrado`,
-`publicado` ou `pausado`. `pendencias` não travam; `bloqueios` travam, e o
-agente para e avisa.
+`etapa_atual`: `decidido`, `copy`, `imagens`, `auditado`, `cadastrado` ou
+`publicado`. O anúncio que a API cria pausado não muda o `etapa_atual` até a
+pessoa ativar: o `pausado` fica em `etapas.publicacao.status` (contrato 7).
+`pendencias` não travam; `bloqueios` travam, e o agente para e avisa.
 
 ## 3. `<slug>/decisao.json` (a etapa 4, escrita no chat com a pessoa)
 

@@ -63,6 +63,26 @@ test('gabarito completo gera so perguntas, na mesma numeracao, sem nenhum trecho
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
+test('linha antes do primeiro ## P recusa e nao grava; o titulo # passa', () => {
+  const g = gabarito()
+  assert.ok(g[0].startsWith('# ') && g[2].startsWith('## P1 '), 'canario: o gabarito comeca pelo titulo e o ## P1')
+  const solta = [g[0], 'pergunta: O que fazer antes de tudo?', ...g.slice(1)]
+  const dirOk = pasta(g)
+  const dir = pasta(solta)
+  try {
+    const ok = montarBateria(dirOk, 1)
+    assert.equal(ok.codigo, 0, 'canario: o mesmo gabarito sem a linha solta grava: ' + ok.linhas.join(' | '))
+    assert.ok(existsSync(perguntas(dirOk)), 'canario: o gabarito sem a linha solta gravou as perguntas')
+    const r = montarBateria(dir, 1)
+    assert.equal(r.codigo, 1, 'linha antes do primeiro ## P passou calada: ' + r.linhas.join(' | '))
+    assert.equal(existsSync(perguntas(dir)), false, 'gravou perguntas com linha fora de bloco')
+    assert.ok(r.linhas.some(l => l.includes('linha fora de bloco')), 'sem o motivo: ' + r.linhas.join(' | '))
+  } finally {
+    rmSync(dirOk, { recursive: true, force: true })
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test('gabarito em CRLF tambem gera so perguntas, em CRLF', () => {
   const g = gabarito()
   const dir = pasta(g, 2, CRLF)

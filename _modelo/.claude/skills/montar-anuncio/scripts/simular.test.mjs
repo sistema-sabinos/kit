@@ -2,6 +2,7 @@
 // Rodar: node --test simular.test.mjs
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { numero, precoParaDigitar, custoInformado, tipoDeAnuncio, argumentos, textoDeHtml, lerResumo, categoriaDoTexto, freteNaTela, lucro } from './simular.mjs'
 
 test('numero le real brasileiro com milhar, negativo e vazio', () => {
@@ -261,4 +262,20 @@ test('lucro com imposto 0 (MEI) calcula sem erro', () => {
   const r = lucro({ voceRecebe: 80, preco: 100, custo: 50, impostoPct: 0 })
   assert.equal(r.imposto, 0)
   assert.equal(r.lucro_liquido, 30)
+})
+
+// Rodada 5.15: o --custo sem imposto mandava pro /mercado-livre, que devolve quem esta na trilha pra trilha.
+// Nao roda a linha de comando: com a configuracao completa ela iria pro Chrome.
+test('item 12: sem imposto, o --custo diz a saida da trilha e nao manda so pro /mercado-livre', async () => {
+  const m = await import('./simular.mjs')
+  const { exigir } = await import('../../mercado-livre/scripts/lib/config.mjs')
+  assert.equal(typeof m.impostoPctOuRecado, 'function', 'o simular.mjs exporta o impostoPctOuRecado')
+  assert.equal(m.impostoPctOuRecado(() => exigir({ imposto_pct: 0 }, ['imposto_pct'])), 0, 'canario: o imposto 0 do MEI passa')
+  let msg = ''
+  try { m.impostoPctOuRecado(() => exigir({}, ['imposto_pct'])) } catch (e) { msg = e.message }
+  assert.match(msg, /esta sem: imposto_pct/, 'canario: o erro veio e diz o campo')
+  assert.ok(msg.includes('sem --custo') && msg.includes('/comecar-a-vender'), 'o recado nao diz a saida de quem esta na trilha')
+  assert.ok(!msg.includes('Rode /mercado-livre e responda'), 'o recado ainda manda so pro /mercado-livre')
+  const fonte = readFileSync(new URL('./simular.mjs', import.meta.url), 'utf8')
+  assert.ok(fonte.includes('a.custo === null ? null : impostoPctOuRecado()'), 'a linha de comando nao usa o recado novo')
 })

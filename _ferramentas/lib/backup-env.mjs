@@ -6,9 +6,9 @@
 // tudo na mão.
 //
 // Guarda cópias datadas FORA do projeto (nunca vai pro controle de versão), mantém as
-// últimas MANTER cópias, e tem um GUARDA: se o .env estiver truncado (menos chaves que o
-// mínimo esperado), NÃO faz backup, pra um arquivo corrompido não sobrescrever as cópias
-// boas que já existem.
+// últimas MANTER cópias, e tem um GUARDA: se o .env estiver truncado (sem nenhuma chave, ou
+// com menos da metade das chaves da última cópia), NÃO faz backup, pra um arquivo
+// corrompido não sobrescrever as cópias boas que já existem.
 //
 // Uso como lib:
 //   import { backupEnv } from './backup-env.mjs'
@@ -23,12 +23,12 @@
 // precisar configurar nada. Pra agendar isso rodando sozinho todo dia, ver o README desta
 // pasta.
 
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, renameSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, renameSync, existsSync } from 'node:fs';
 import { join, basename, dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import os from 'node:os';
 
-const MIN_CHAVES_PADRAO = 20; // um .env saudável costuma ter bem mais que isso; abaixo é sinal de arquivo corrompido
+const MIN_CHAVES_PADRAO = 1;  // .env de verdade pode ter 2 ou 3 chaves; zero é arquivo zerado
 const MANTER_PADRAO = 30;     // quantas cópias datadas guardar
 
 function contarChaves(txt) {
@@ -57,8 +57,13 @@ export function backupEnv({ envPath, backupDir, minChaves = MIN_CHAVES_PADRAO, m
   const raw = readFileSync(envPath, 'utf8');
   const chaves = contarChaves(raw);
 
-  if (chaves < minChaves) {
-    return { ok: false, motivo: `arquivo com só ${chaves} chaves (mínimo ${minChaves}), parece truncado`, chaves };
+  // truncado se mede contra a última cópia boa, e não por um número fixo: quem tem 3 chaves
+  // de verdade faz backup, e um .env que caiu pra menos da metade das chaves de antes, não
+  const ultima = join(destinoBase, 'latest.env');
+  const antes = existsSync(ultima) ? contarChaves(readFileSync(ultima, 'utf8')) : 0;
+  if (chaves < minChaves || chaves * 2 < antes) {
+    const comparado = antes ? `, a última cópia tinha ${antes}` : '';
+    return { ok: false, motivo: `arquivo com só ${chaves} chaves${comparado}, parece truncado`, chaves };
   }
 
   mkdirSync(destinoBase, { recursive: true });

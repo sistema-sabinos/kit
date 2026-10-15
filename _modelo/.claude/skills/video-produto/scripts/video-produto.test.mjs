@@ -1546,3 +1546,39 @@ test('fase 3 tira de final/ o video antigo antes de qualquer recusa, e o dry-run
   assert.equal(fs.existsSync(final), false, 'o video que a pessoa pediu pra ajustar continuou em final/')
   assert.equal(fs.readFileSync(path.join(pasta, '_tmp', 'final-anterior.mp4'), 'utf8'), 'video da rodada anterior')
 })
+
+// Windows nao deixa mover o MP4 aberto num player: o rename falha com EBUSY. O renomear
+// falso faz o papel do player sem depender do sistema.
+const ocupado = (alvo) => (de, para) => {
+  if (alvo(de, para)) throw Object.assign(new Error(`EBUSY: resource busy or locked, rename '${de}' -> '${para}'`), { code: 'EBUSY' })
+  fs.renameSync(de, para)
+}
+
+test('item 15: fase 3 com o video de final/ aberto num player da recado e deixa o video onde estava', async () => {
+  preparar(carimbado(roteiroValido()))
+  copiarClipes()
+  fs.rmSync(path.join(pasta, 'bloco-4.mp4'))
+  const final = path.join(pasta, 'final', `${SLUG}.mp4`)
+  fs.mkdirSync(path.dirname(final), { recursive: true })
+  fs.writeFileSync(final, 'video da rodada anterior')
+  const r = await chamar([`--mlb=${MLB}`, '--fase=3', ...PRECOS_AUTORIZADO], { ...depsDaFase3(''), renomear: ocupado((de) => de === final) })
+    .catch((e) => ({ status: 'lancou', stderr: e.stack }))
+  assert.equal(r.status, 1, r.stderr)
+  assert.match(r.stderr, /aberto em outro programa/, 'canario do caminho: o recado de arquivo aberto saiu')
+  assert.doesNotMatch(r.stderr, /faltam clipes/, 'seguiu adiante sem tirar o video antigo de final/')
+  assert.equal(fs.readFileSync(final, 'utf8'), 'video da rodada anterior')
+})
+
+test('item 15: fase 3 aprovada com final/ travado da recado e deixa o aprovado em _tmp', async () => {
+  const roteiro = carimbado(roteiroValido())
+  preparar(roteiro)
+  copiarClipes()
+  criarNarracoes()
+  const final = path.join(pasta, 'final', `${SLUG}.mp4`)
+  const r = await chamar([`--mlb=${MLB}`, '--fase=3', ...PRECOS_AUTORIZADO], { ...depsDaFase3(falasDe(roteiro)), renomear: ocupado((de, para) => para === final) })
+    .catch((e) => ({ status: 'lancou', stderr: e.stack }))
+  assert.equal(r.status, 1, r.stderr)
+  assert.match(r.stderr, /aberto em outro programa/)
+  assert.ok(fs.existsSync(path.join(pasta, '_tmp', `${SLUG}.mp4`)), 'o video aprovado sumiu de _tmp')
+  assert.ok(r.stderr.includes(path.join(pasta, '_tmp', `${SLUG}.mp4`)), 'o recado diz onde o aprovado ficou')
+})

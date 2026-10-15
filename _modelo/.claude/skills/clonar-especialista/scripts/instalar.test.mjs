@@ -2,7 +2,7 @@
 // Rodar: node --test instalar.test.mjs
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
+import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url'
 import { instalar, faltando, carimbar } from './instalar.mjs'
 import { SECOES, RODAPE } from './medir-persona.mjs'
 import { carimboPersona } from './lib/carimbo.mjs'
+import { ehMestra } from './lib/pasta-mae.mjs'
 import { montarBateria } from './montar-bateria.mjs'
 
 const SCRIPT = fileURLToPath(new URL('./instalar.mjs', import.meta.url))
@@ -23,7 +24,7 @@ const fonte = (n, camada, etiqueta, status, novos) => `| ${n} | ${camada} | x | 
 const INVENTARIO = ['pessoa: Fulano de Tal', 'nome-no-agente: nao', '',
   '| N | camada | tipo | idioma | ano | fonte | etiqueta | status | itens | novos |', '|---|---|---|---|---|---|---|---|---|---|',
   fonte(1, 'a', 'artifact', 'feita', 40), fonte(2, 'a', 'artifact', 'feita', 30), fonte(3, 'b', 'verbatim', 'feita', 20),
-  fonte(4, 'b', 'verbatim', 'feita', 10), fonte(5, 'c', 'verbatim', 'feita', 3), fonte(6, 'e', 'impression', 'feita', 1),
+  fonte(4, 'b', 'verbatim', 'feita', 10), fonte(5, 'c', 'verbatim', 'feita', 3), fonte(6, 'd', 'impression', 'feita', 1),
   fonte(7, 'c', 'verbatim', 'feita', 0), fonte(8, 'e', 'impression', 'feita', 0), fonte(9, 'b', 'verbatim', 'prova', 0)]
 
 // bateria rodada de verdade: gabarito no formato fixo, perguntas geradas pelo montar-bateria e
@@ -39,7 +40,10 @@ const bateria = (mestra, n) => {
 // copia-mestra que passa em tudo: persona medida, citacao batendo com a ficha, sem o nome real,
 // coleta completa e teste de fidelidade da rodada 1 rodado, liberado e carimbado
 function cenario(apelido = 'mentor-x') {
+  // a raiz e a pasta-mae (com _modelo e VERSAO): so a copia-mestra em <pasta-mae>/agentes instala
   const raiz = mkdtempSync(join(tmpdir(), 'instalar-'))
+  mkdirSync(join(raiz, '_modelo'))
+  writeFileSync(join(raiz, 'VERSAO'), '5.15')
   const mestra = join(raiz, 'agentes', apelido)
   mkdirSync(join(mestra, 'fichas'), { recursive: true })
   mkdirSync(join(mestra, 'prova'))
@@ -85,6 +89,48 @@ test('instala skill, fichas e agente, sem levar inventario', () => {
     assert.ok(existsSync(join(c.casa, '.claude', 'agents', 'mentor-x.md')))
     assert.ok(!existsSync(join(c.casa, '.claude', 'skills', 'mentor-x', 'inventario.md')), 'inventario tem o nome real e fica so na copia-mestra')
   } finally { rmSync(c.raiz, { recursive: true, force: true }) }
+})
+
+test('copia fora de agentes/ e conselheiros/ nao instala; a de agentes/ e a de conselheiros/ instalam', () => {
+  const c = cenario()
+  const skillInstalada = join(c.casa, '.claude', 'skills', c.apelido, 'SKILL.md')
+  try {
+    const copia = join(c.raiz, 'copia-teste', c.apelido)
+    cpSync(c.mestra, copia, { recursive: true })
+    // agentes/ fora de qualquer pasta-mae tambem nao e copia-mestra
+    const solta = join(c.raiz, 'outra', 'agentes', c.apelido)
+    cpSync(c.mestra, solta, { recursive: true })
+    for (const p of [copia, solta]) {
+      const r = instalar(p, c.casa)
+      assert.ok(r.linhas.length > 0, 'saida veio vazia')
+      assert.equal(r.codigo, 1, `instalou a copia ${p}: ${r.linhas.join(' | ')}`)
+      assert.equal(existsSync(skillInstalada), false, `a copia ${p} chegou no ~/.claude`)
+      assert.match(r.linhas.join('\n'), /so a copia-mestra/)
+    }
+    // canario: a mesma persona na copia-mestra instala
+    const ok = instalar(c.mestra, c.casa)
+    assert.equal(ok.codigo, 0, ok.linhas.join('\n'))
+    assert.ok(existsSync(skillInstalada), 'canario: a copia-mestra instalou')
+    // fora da pasta-mae, a copia-mestra mora em ~/.claude/conselheiros/<apelido>
+    rmSync(join(c.casa, '.claude', 'skills'), { recursive: true, force: true })
+    const cons = join(c.casa, '.claude', 'conselheiros', c.apelido)
+    cpSync(c.mestra, cons, { recursive: true })
+    assert.equal(instalar(cons, c.casa).codigo, 0, 'a copia-mestra de ~/.claude/conselheiros nao instalou')
+    assert.ok(existsSync(skillInstalada))
+  } finally { rmSync(c.raiz, { recursive: true, force: true }) }
+})
+
+test('AGENTES com maiuscula na pasta-mae e copia-mestra no Windows', { skip: process.platform !== 'win32' && 'so no Windows AGENTES e agentes sao a mesma pasta' }, () => {
+  const raiz = mkdtempSync(join(tmpdir(), 'instalar-'))
+  try {
+    mkdirSync(join(raiz, '_modelo'))
+    writeFileSync(join(raiz, 'VERSAO'), '5.15')
+    const casa = join(raiz, 'casa')
+    // canario: a grafia de sempre passa e pasta fora de agentes/ nao passa
+    assert.equal(ehMestra(join(raiz, 'agentes', 'mentor-x'), casa), true)
+    assert.equal(ehMestra(join(raiz, 'copia-teste', 'mentor-x'), casa), false)
+    assert.equal(ehMestra(join(raiz, 'AGENTES', 'mentor-x'), casa), true, 'AGENTES no Windows e a mesma pasta agentes')
+  } finally { rmSync(raiz, { recursive: true, force: true }) }
 })
 
 test('reinstalar troca a versao anterior e tira ficha que sumiu', () => {

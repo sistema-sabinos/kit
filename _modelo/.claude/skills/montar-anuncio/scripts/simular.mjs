@@ -290,12 +290,20 @@ export async function simularNaPagina(page, { termo, preco, tipo, frete }) {
   return { categoria, texto: await page.evaluate(() => document.body.innerText) }
 }
 
+// Sem imposto, a configuracao manda pro /mercado-livre, que devolve quem esta na trilha
+// (/comecar-a-vender, antes da etapa 8) pra trilha. O recado daqui diz a saida dos dois.
+export function impostoPctOuRecado(carregar = () => exigir(carregarConfiguracao(), ['imposto_pct'])) {
+  try { return carregar().imposto_pct } catch (e) {
+    throw new Error(`${e.message.split('\n')[0]}\nSem o imposto: rode de novo sem --custo e faca a conta a mao ("Voce recebe" menos o custo), avisando que esse lucro ainda nao desconta o imposto. O imposto entra na etapa 8 da /comecar-a-vender (quem esta na trilha) ou pela /mercado-livre (quem ja vende).`)
+  }
+}
+
 const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
 if (ehCli) {
   let browser = null
   try {
     const a = argumentos(process.argv.slice(2))
-    const impostoPct = a.custo === null ? null : exigir(carregarConfiguracao(), ['imposto_pct']).imposto_pct
+    const impostoPct = a.custo === null ? null : impostoPctOuRecado()
     browser = await conectar()
     const ctx = browser.contexts()[0] || (await browser.newContext())
     const page = ctx.pages().find(p => p.url().includes('simulador')) || ctx.pages()[0] || (await ctx.newPage())

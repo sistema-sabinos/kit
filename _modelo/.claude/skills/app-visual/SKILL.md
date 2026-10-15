@@ -119,8 +119,10 @@ print quando a IA consegue abrir a imagem.
   8 em 8. Escrever a escada.
 - **Cantos, sombras e movimento:** dois ou três de cada (canto pouco redondo, médio e
   redondo; sombra de cartão e de janela flutuante; animação rápida e normal).
-- **Disposição:** largura máxima do conteúdo, colunas, larguras em que a tela muda de
-  arrumação (do celular pro computador), largura da barra lateral, altura do topo.
+- **Disposição:** largura máxima do conteúdo, largura da barra lateral e altura do topo.
+  As larguras em que a tela muda de arrumação (do celular pro computador) ficam as do
+  Tailwind (`sm`, `md`, `lg`), sem medir: a `/app-testar` confere cada tela em 320, 390 e
+  1440 pixels.
 
 ### Passo 2. Os tokens
 

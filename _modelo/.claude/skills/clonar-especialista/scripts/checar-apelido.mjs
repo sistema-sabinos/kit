@@ -12,7 +12,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { homedir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { acharPastaMae } from './lib/pasta-mae.mjs'
+import { acharPastaMae, pastaMestra } from './lib/pasta-mae.mjs'
 import { ehNossa } from './lib/frontmatter.mjs'
 
 const FORMATO = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -33,7 +33,7 @@ export function checarApelido(apelido, { projeto = '.', casa = homedir(), atuali
   const pastaSkill = join(casa, '.claude', 'skills', apelido)
   const agente = join(casa, '.claude', 'agents', `${apelido}.md`)
   // pasta de trabalho: na pasta-mae (com backup) ou, fora dela, no ~/.claude/conselheiros/
-  const mestra = mae ? join(mae, 'agentes', apelido) : join(casa, '.claude', 'conselheiros', apelido)
+  const mestra = pastaMestra(apelido, { projeto, casa })
   const temSkill = existsSync(pastaSkill)
   const temAgente = existsSync(agente)
   const temMestra = existsSync(mestra)

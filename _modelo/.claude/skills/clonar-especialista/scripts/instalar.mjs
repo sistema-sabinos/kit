@@ -3,7 +3,9 @@
 // procurados ate a raiz do repositorio, e cada projeto tem git proprio: doc do Claude Code,
 // conferida em 2026-10-12). Copia SKILL.md e fichas/ para ~/.claude/skills/<apelido>/ e
 // agente.md para ~/.claude/agents/<apelido>.md. Inventario, conflitos, prova e fontes ficam so
-// na copia-mestra. Nunca sobrescreve o que nao tem "origem: clonar-especialista". Antes de
+// na copia-mestra. Nunca sobrescreve o que nao tem "origem: clonar-especialista". So instala a
+// copia-mestra (<pasta-mae>/agentes/<apelido> ou ~/.claude/conselheiros/<apelido>, regra do
+// lib/pasta-mae.mjs): copia de teste com o mesmo nome nao passa. Antes de
 // copiar, a copia-mestra passa de novo pelas travas (persona medida, citacoes, nome) e precisa
 // do teste de fidelidade liberado ("Liberado: sim" em prova/resultado.md) e carimbado ("Persona:
 // <carimbo>" igual ao carimbo de agora, lib/carimbo.mjs): a reinstalacao do /checar vem por aqui
@@ -19,6 +21,7 @@ import { homedir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { ehNossa } from './lib/frontmatter.mjs'
 import { carimboPersona } from './lib/carimbo.mjs'
+import { ehMestra } from './lib/pasta-mae.mjs'
 import { medirPersona } from './medir-persona.mjs'
 import { travarNome } from './travar-nome.mjs'
 import { medirColeta } from './medir-coleta.mjs'
@@ -43,6 +46,10 @@ const destinos = (apelido, casa) => ({
 
 export function instalar(pasta, casa = homedir()) {
   const apelido = basename(resolve(pasta))
+  // copia carimbada fora da copia-mestra, com o mesmo nome, sobrescreveria calada o instalado
+  if (!ehMestra(pasta, casa)) {
+    return { codigo: 1, linhas: [`nao instalei: so a copia-mestra em <pasta-mae>/agentes/${apelido} ou em ~/.claude/conselheiros/${apelido} instala, e ${resolve(pasta)} fica fora das duas`] }
+  }
   const med = medirPersona(pasta)
   if (med.codigo) return { codigo: 1, linhas: ['persona reprovada no medir-persona, nada instalado:', ...med.linhas] }
   const cit = conferirPasta(pasta, { persona: true })

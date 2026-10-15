@@ -10,10 +10,11 @@ import { medirColeta, lerInventario } from './medir-coleta.mjs'
 const CRLF = String.fromCharCode(13, 10)
 const CAB = ['pessoa: Fulano', '', '| N | camada | tipo | idioma | ano | fonte | etiqueta | status | itens | novos |', '|---|---|---|---|---|---|---|---|---|---|']
 const linha = (n, camada, etiqueta, status, novos) => `| ${n} | ${camada} | x | en | 2020 | fonte ${n} | ${etiqueta} | ${status} | 10 | ${novos} |`
-// 8 feitas (4 de base com muito item novo, 4 depois quase sem novidade), 1 de prova
+// 8 feitas (4 de base com muito item novo, 4 depois quase sem novidade), 1 de prova.
+// A 8 (camada e) fica fora da saturacao: das camadas a a d sao 7
 const COMPLETA = [
   linha(1, 'a', 'artifact', 'feita', 40), linha(2, 'a', 'artifact', 'feita', 30), linha(3, 'b', 'verbatim', 'feita', 20),
-  linha(4, 'b', 'verbatim', 'feita', 10), linha(5, 'c', 'verbatim', 'feita', 3), linha(6, 'e', 'impression', 'feita', 1),
+  linha(4, 'b', 'verbatim', 'feita', 10), linha(5, 'c', 'verbatim', 'feita', 3), linha(6, 'd', 'impression', 'feita', 1),
   linha(7, 'c', 'verbatim', 'feita', 0), linha(8, 'e', 'impression', 'feita', 0), linha(9, 'b', 'verbatim', 'prova', 0),
 ]
 
@@ -66,7 +67,7 @@ test('duas provas em dez fontes (20%) passam do teto de 15%', () => {
   try {
     const r = medirColeta(dir)
     assert.equal(r.codigo, 1)
-    assert.ok(r.linhas.some(l => /^falta prova: 2 separadas de 10 fontes \(entre 1 e 1\)/.test(l)), r.linhas.join(' | '))
+    assert.ok(r.linhas.some(l => /^falta prova: 2 separadas de 10 fontes \(exatamente 1\)/.test(l)), r.linhas.join(' | '))
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
@@ -76,7 +77,7 @@ test('uma prova em 14 fontes (7%) fica abaixo de 10% e reprova', () => {
   try {
     const r = medirColeta(dir)
     assert.equal(r.codigo, 1, r.linhas.join(' | '))
-    assert.ok(r.linhas.some(l => /^falta prova: 1 separadas de 14 fontes \(entre 2 e 2\)/.test(l)), r.linhas.join(' | '))
+    assert.ok(r.linhas.some(l => /^falta prova: 1 separadas de 14 fontes \(exatamente 2\)/.test(l)), r.linhas.join(' | '))
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
@@ -103,6 +104,60 @@ test('coleta incompleta aceita pelo aluno passa; prova fora da faixa nunca', () 
     assert.equal(medirColeta(comProvaDemais).codigo, 1)
   } finally {
     for (const d of [sem, com, comProvaDemais]) rmSync(d, { recursive: true, force: true })
+  }
+})
+
+test('prova da camada e sai 1 com falta prova primaria, mesmo com coleta aceita', () => {
+  const comCamada = c => COMPLETA.map(l => l.replace('| 9 | b |', `| 9 | ${c} |`))
+  const LINHA = /^falta prova primaria: fonte 9/
+  const c = pasta(comCamada('c'))
+  const e = pasta(comCamada('e'))
+  const eAceita = pasta(comCamada('e'), ['coleta-aceita: 2026-10-12, so existe 1 entrevista longa'])
+  try {
+    assert.ok(comCamada('e').join(CRLF).includes('| 9 | e |'), 'canario: a prova virou camada e')
+    const rc = medirColeta(c)
+    assert.equal(rc.codigo, 0, `canario: prova da camada c passa: ${rc.linhas.join(' | ')}`)
+    assert.ok(!rc.linhas.some(l => LINHA.test(l)), rc.linhas.join(' | '))
+    for (const d of [e, eAceita]) {
+      const r = medirColeta(d)
+      assert.ok(r.linhas.length > 0, 'saida veio vazia')
+      assert.equal(r.codigo, 1, r.linhas.join(' | '))
+      assert.ok(r.linhas.some(l => LINHA.test(l)), r.linhas.join(' | '))
+    }
+  } finally {
+    for (const d of [c, e, eAceita]) rmSync(d, { recursive: true, force: true })
+  }
+})
+
+test('coleta-aceita abaixo da tabela nao vale', () => {
+  const umaFala = COMPLETA.map(l => l.replace('| 4 | b |', '| 4 | c |'))
+  const ACEITE = 'coleta-aceita: 2026-10-12, so existe 1 entrevista longa'
+  const noCabecalho = pasta(umaFala, [ACEITE])
+  const abaixo = pasta([...umaFala, '', ACEITE])
+  try {
+    assert.equal(medirColeta(noCabecalho).codigo, 0, 'canario: o aceite no cabecalho vale')
+    const r = medirColeta(abaixo)
+    assert.ok(r.linhas.length > 0, 'saida veio vazia')
+    assert.equal(r.codigo, 1, r.linhas.join(' | '))
+    assert.ok(!r.linhas.some(l => l.startsWith('AVISO: coleta incompleta aceita')), r.linhas.join(' | '))
+  } finally {
+    for (const d of [noCabecalho, abaixo]) rmSync(d, { recursive: true, force: true })
+  }
+})
+
+test('sem linha fases no cabecalho avisa, sem mudar o codigo de saida', () => {
+  const AVISO = 'AVISO: fases da carreira sem conferencia registrada (linha fases: no cabecalho do inventario)'
+  const sem = pasta(COMPLETA)
+  const com = pasta(COMPLETA, ['fases: 2026-10-12, comeco, auge e fase atual'])
+  try {
+    const r = medirColeta(sem)
+    assert.equal(r.codigo, 0, r.linhas.join(' | '))
+    assert.ok(r.linhas.includes(AVISO), r.linhas.join(' | '))
+    const rc = medirColeta(com)
+    assert.equal(rc.codigo, 0, rc.linhas.join(' | '))
+    assert.ok(!rc.linhas.includes(AVISO), 'avisou com a linha fases no cabecalho')
+  } finally {
+    for (const d of [sem, com]) rmSync(d, { recursive: true, force: true })
   }
 })
 
@@ -143,6 +198,31 @@ test('ficha de fonte de prova reprova a prova intacta, mesmo com coleta aceita',
     }
   } finally {
     for (const d of [limpa, vazada, aceita]) rmSync(d, { recursive: true, force: true })
+  }
+})
+
+test('camada e nao conta na saturacao', () => {
+  // Ficha da camada e poe tudo em Fatos e criticas, que o contador nao conta: tres dela no fim
+  // dariam janela de 0% falsa. Canario: o mesmo caso com 5 a 7 na camada c satura
+  const fonte = (n, camada, etiqueta, status, itens, novos) => `| ${n} | ${camada} | x | en | 2020 | fonte ${n} | ${etiqueta} | ${status} | ${itens} | ${novos} |`
+  const caso = c => [
+    fonte(1, 'a', 'artifact', 'feita', 10, 10), fonte(2, 'a', 'artifact', 'feita', 10, 10),
+    fonte(3, 'b', 'verbatim', 'feita', 10, 10), fonte(4, 'b', 'verbatim', 'feita', 10, 10),
+    ...[5, 6, 7].map(n => fonte(n, c, 'impression', 'feita', 0, 0)), fonte(8, 'c', 'verbatim', 'prova', 0, 0),
+  ]
+  const fases = ['fases: 2026-10-14, comeco e auge']
+  const e = pasta(caso('e'), fases)
+  const c = pasta(caso('c'), fases)
+  try {
+    const rc = medirColeta(c)
+    assert.ok(rc.linhas.length > 0, 'saida veio vazia')
+    assert.ok(rc.linhas.some(l => /^ok saturacao/.test(l)), `canario: camada c nao saturou: ${rc.linhas.join(' | ')}`)
+    const re = medirColeta(e)
+    assert.ok(re.linhas.length > 0, 'saida veio vazia')
+    assert.equal(re.codigo, 1, re.linhas.join(' | '))
+    assert.ok(re.linhas.some(l => /^falta saturacao/.test(l)), re.linhas.join(' | '))
+  } finally {
+    for (const d of [e, c]) rmSync(d, { recursive: true, force: true })
   }
 })
 

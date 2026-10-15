@@ -1004,6 +1004,16 @@ async function fase2({ mlb, base, slug, a, d, precos }) {
   return 0
 }
 
+// No Windows o MP4 aberto num player nao sai do lugar (EBUSY, EPERM): a pessoa recebe o
+// recado do que fechar, nunca o stack trace. Outro erro segue subindo.
+function moverVideo(d, de, para, depois) {
+  try { d.renomear(de, para); return true } catch (e) {
+    if (!['EBUSY', 'EPERM', 'EACCES'].includes(e.code)) throw e
+    console.error(`[fase 3] nao consegui mover ${de} pra ${para}: o arquivo esta aberto em outro programa (em geral o player de video). ${depois}`)
+    return false
+  }
+}
+
 async function fase3({ mlb, base, slug, a, d, precos }) {
   const aberto = abrirProduto({ mlb, base, slug, nomeDaFase: 'fase 3' })
   if (!aberto) return 1
@@ -1019,7 +1029,7 @@ async function fase3({ mlb, base, slug, a, d, precos }) {
   if (!a.tem('dry-run') && fs.existsSync(final)) {
     const anterior = path.join(trabalho, 'final-anterior.mp4')
     fs.mkdirSync(trabalho, { recursive: true })
-    fs.renameSync(final, anterior)
+    if (!moverVideo(d, final, anterior, 'Feche o video e rode a fase 3 de novo. Nada foi gasto.')) return 1
     console.error(`[fase 3] o video anterior saiu de final/ e ficou em ${anterior}: so um video que passar nos dois gates volta pra final/.`)
   }
 
@@ -1161,7 +1171,7 @@ async function fase3({ mlb, base, slug, a, d, precos }) {
   }
 
   fs.mkdirSync(pastaFinal, { recursive: true })
-  fs.renameSync(saida, final)
+  if (!moverVideo(d, saida, final, `O video passou nos dois gates e ficou em ${saida}. Feche o programa que esta com ele ou com ${final} aberto e mova o arquivo pra ${final}: rodar a fase 3 de novo paga a transcricao outra vez.`)) return 1
   console.error([
     '',
     `[fase 3] ${final} aprovado nos dois gates tecnicos.`,
@@ -1176,6 +1186,7 @@ async function fase3({ mlb, base, slug, a, d, precos }) {
 
 const DEPS_PADRAO = {
   coletar, coletarDeEspionagem, gerarClipe, narrar, transcrever, gerarMusica, montarVideo, registrarCusto, carregarConfiguracao,
+  renomear: (de, para) => fs.renameSync(de, para),
 }
 
 // `deps` troca as pecas pagas por falsas nos testes; no CLI vale o padrao.

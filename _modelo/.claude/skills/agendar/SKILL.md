@@ -2,7 +2,8 @@
 name: agendar
 description: >
   Monta um robô que roda sozinho no horário marcado, confere algo do negócio e
-  avisa no Telegram só quando tem problema. Use quando o usuário chamar /agendar,
+  avisa só quando tem problema (no Telegram ou, sem ele, num recado no projeto).
+  Use quando o usuário chamar /agendar,
   disser "todo dia às 8h confere...", "roda isso sozinho", "me avisa no celular
   quando...", "quais robôs eu tenho" ou "tira o robô X". O robô só lê e avisa:
   gastar, publicar ou responder cliente fica de fora.
@@ -13,8 +14,9 @@ description: >
 Um robô é um arquivo pequeno em `robos/<nome>.mjs` (a receita) que o computador
 roda sozinho no horário marcado. O motor desta skill cuida do resto: espera o
 computador terminar de ligar, não roda duas vezes no mesmo dia, confere o acesso
-antes, anota cada rodada em `robos/execucoes.jsonl` e avisa no Telegram só
-quando tem problema. Silêncio quer dizer que deu tudo certo.
+antes, anota cada rodada em `robos/execucoes.jsonl` e avisa só quando tem
+problema: no Telegram, se estiver ligado, ou num recado em `_memoria/recados/`, que o
+`/iniciar` mostra quando a pessoa abre o projeto. Silêncio quer dizer que deu tudo certo.
 
 Funciona no Windows e no Mac, com o computador ligado e a sessão do usuário
 aberta. No Windows, computador desligado ou dormindo na hora marcada: roda

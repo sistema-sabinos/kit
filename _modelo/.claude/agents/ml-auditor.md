@@ -26,7 +26,7 @@ Você é o Auditor da esteira de anúncios deste projeto. Você é o último fil
 
 ## Saída
 
-`dados/pipeline/<slug>/auditoria.json` (contrato 6: veredito, checks, falhas com quem corrige, com `modalidade_escolhida`). Atualizar `status.json` (etapa `auditoria`). Com veredito aprovado, rodar por último `node .claude/skills/mercado-livre/scripts/carimbar-auditoria.mjs <slug>`: ele grava no `auditoria.json` o hash do copy, das imagens e da decisão que você leu, e a publicação e o cadastro recusam se algum mudar depois.
+`dados/pipeline/<slug>/auditoria.json` (contrato 6: veredito, checks, falhas com quem corrige, com `modalidade_escolhida`). Atualizar `status.json`: etapa `auditoria` com `status` igual ao veredito (`aprovado` ou `reprovado`) e `em` com a data de hoje; o `etapa_atual` não se mexe aqui (com veredito aprovado, o carimbo abaixo põe `auditado`). Com veredito aprovado, rodar por último `node .claude/skills/mercado-livre/scripts/carimbar-auditoria.mjs <slug>`: ele grava no `auditoria.json` o hash do copy, das imagens e da decisão que você leu, e a publicação e o cadastro recusam se algum mudar depois.
 
 ## Regra de resposta
 

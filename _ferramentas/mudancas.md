@@ -607,3 +607,11 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o `AGENTS.md` do projeto não tem uma regra com o título "Chave no `.env`." em negrito (com ou sem número na frente).
 **Como aplicar:** copiar a regra "Chave no `.env`" do `_modelo/AGENTS.md` do kit pro fim de "Regras de operação", com o próximo número do projeto (item 6 do "Como usar"); depois ajustar a lista da regra 11 (**Camadas de regra**, achada pelo título) pro número que a regra nova ganhou no projeto: na frase das regras que "se repetem aqui de propósito", acrescentar esse número. Projeto sem essa frase na Camadas de regra só ganha a regra. Mostrar o antes e o depois.
 **Como testar:** o título "Chave no `.env`." aparece uma vez, em negrito, no `AGENTS.md`, e a lista de regras que se repetem na **Camadas de regra** cita o número que ele ganhou.
+
+## gitignore-jsx-cjs
+
+**O que é:** o backup do projeto passa a levar código `.jsx` e `.cjs` (tela de app escrita em JavaScript e arquivo de configuração no formato antigo do Node).
+**Por quê:** o `.gitignore` fechado liberava `.js`, `.ts` e `.tsx`, mas não esses dois, e a `/app-construir` promete que o código do app sobe; o arquivo ficava fora do GitHub sem aviso.
+**Te afeta se:** a primeira linha do `.gitignore` do projeto que não é comentário nem vazia é `*` (o fechado) e falta a linha `!*.jsx` ou a linha `!*.cjs`.
+**Como aplicar:** no `.gitignore` do projeto, logo abaixo da linha `!*.tsx` (sem ela, no fim do bloco `# script`), acrescentar `!*.jsx` e `!*.cjs`, uma por linha. Mostrar o antes e o depois.
+**Como testar:** na raiz do projeto, `git check-ignore app/codigo/x.jsx` e `git check-ignore x.cjs` voltam vazios.

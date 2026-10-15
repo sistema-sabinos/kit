@@ -1,6 +1,7 @@
 # Funcoes compartilhadas da skill otimizar-pc. Carregado com dot-source pelos outros scripts.
 
-$Global:OtimLogDir = Join-Path $env:USERPROFILE '.claude\logs\otimizar-pc'
+# Elevado pelo UAC com a senha de outra conta, o USERPROFILE e o dela: quem chama passa -LogDir
+$Global:OtimLogDir = if ($LogDir) { $LogDir } else { Join-Path $env:USERPROFILE '.claude\logs\otimizar-pc' }
 if (-not (Test-Path -LiteralPath $Global:OtimLogDir)) {
     New-Item -ItemType Directory -Path $Global:OtimLogDir -Force | Out-Null
 }

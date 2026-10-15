@@ -69,10 +69,12 @@ Bloco 3 aprovado: uma segunda pergunta com multi-select por item, só com os ids
 Os que precisam de admin devem ser disparados assim, e **avisar o usuário pra aprovar o UAC na tela dele**:
 
 ```powershell
-Start-Process powershell -ArgumentList "-NoProfile","-ExecutionPolicy","Bypass","-File","<caminho do script>" -Verb RunAs -Wait
+$script = (Resolve-Path '.claude/skills/otimizar-pc/scripts/quarentena-installer.ps1').Path
+$logs = Join-Path $env:USERPROFILE '.claude\logs\otimizar-pc'
+Start-Process powershell -ArgumentList "-NoProfile","-ExecutionPolicy","Bypass","-File","`"$script`"","-LogDir","`"$logs`"" -Verb RunAs -Wait
 ```
 
-Como o processo elevado não devolve saída pro chat, cada script grava log em `~/.claude/logs/otimizar-pc/` e a leitura é feita depois com `Read`.
+O PowerShell elevado abre em `C:\Windows\System32`: por isso o caminho do script vai inteiro (o `Resolve-Path`, rodado na raiz do projeto) e entre aspas, porque pasta com espaço no nome quebra o comando. Trocar `quarentena-installer.ps1` pelo script do bloco. O `-LogDir` faz o log cair no seu perfil mesmo quando o UAC pede a senha de outra conta de administrador; como o processo elevado não devolve saída pro chat, a leitura é feita depois com `Read` em `~/.claude/logs/otimizar-pc/`. Pra desfazer a quarentena, o mesmo comando com `"-Desfazer"` no fim da lista.
 
 Bloco 6 (inicialização) é registro puro, roda inline. Desativar pelo `StartupApproved\Run` (primeiro byte `0x03`), **nunca apagando a chave do `Run`**, pra continuar reversível num clique no Gerenciador de Tarefas.
 

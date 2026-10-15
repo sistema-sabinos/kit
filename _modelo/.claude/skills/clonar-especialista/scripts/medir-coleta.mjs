@@ -1,5 +1,5 @@
 // Passo 6 da /clonar-especialista: a coleta acabou? Le a tabela do inventario.md e confere as
-// condicoes que tem numero (a quinta, toda fase da carreira com fonte, e julgamento e fica na
+// condicoes que tem numero (a sexta, toda fase da carreira com fonte, e julgamento e fica na
 // skill): saturacao (Guest, Namey e Chen 2020: base de 4 fontes, janela de 3, no maximo 5% de
 // item novo sobre o acumulado), mais da metade de fonte primaria, 2 falas espontaneas, nenhuma
 // obra propria pendente e de 10% a 15% das fontes separadas pra prova. Linha torta da tabela
@@ -51,10 +51,12 @@ export function medirColeta(pasta) {
   const saida = []
   const marca = (ok, nome, detalhe) => saida.push(`${ok ? 'ok' : 'falta'} ${nome}: ${detalhe}`)
 
-  const acumulado = feitas.reduce((s, l) => s + l.novos, 0)
-  const janela = feitas.slice(-3).reduce((s, l) => s + l.novos, 0)
+  // camada e poe tudo em Fatos e criticas, que o contador nao conta: entraria sempre com 0 novos
+  const saturam = feitas.filter(l => l.camada !== 'e')
+  const acumulado = saturam.reduce((s, l) => s + l.novos, 0)
+  const janela = saturam.slice(-3).reduce((s, l) => s + l.novos, 0)
   const pct = acumulado ? (100 * janela) / acumulado : 100
-  marca(feitas.length >= 7 && pct <= 5, 'saturacao', `${feitas.length} fontes lidas (minimo 7), ultimas 3 trouxeram ${pct.toFixed(1)}% de item novo (maximo 5%)`)
+  marca(saturam.length >= 7 && pct <= 5, 'saturacao', `${saturam.length} fontes lidas das camadas a a d (minimo 7), ultimas 3 delas trouxeram ${pct.toFixed(1)}% de item novo (maximo 5%)`)
   const primarias = feitas.filter(l => l.etiqueta === 'verbatim' || l.etiqueta === 'artifact').length
   marca(feitas.length > 0 && primarias * 2 > feitas.length, 'fonte primaria', `${primarias} de ${feitas.length} lidas sao da propria pessoa (precisa mais da metade)`)
   const espontaneas = feitas.filter(l => l.camada === 'b').length
@@ -67,7 +69,10 @@ export function medirColeta(pasta) {
   const min = Math.max(1, Math.ceil(vivas.length * 0.1))
   const max = Math.max(min, Math.floor(vivas.length * 0.15))
   const provaOk = prova >= min && prova <= max
-  marca(provaOk, 'prova', `${prova} separadas de ${vivas.length} fontes (entre ${min} e ${max})`)
+  marca(provaOk, 'prova', `${prova} separadas de ${vivas.length} fontes (${min === max ? `exatamente ${min}` : `entre ${min} e ${max}`})`)
+  // prova de terceiro (camada e) nao testa o jeito de pensar da pessoa. Nunca se aceita, igual a faixa
+  const provaTerceiro = linhas.filter(l => l.status === 'prova' && l.camada === 'e').map(l => l.n)
+  for (const n of provaTerceiro) saida.push(`falta prova primaria: fonte ${n} de prova vem da camada e (terceiros); troque por fonte das camadas a a d`)
   // Livro sem amostra legitima entra como fora (Passo 4): sem nenhuma obra propria lida, a persona
   // tem de dizer isso nos Limites. So avisa, nao muda o codigo de saida
   if (!feitas.some(l => l.camada === 'a')) saida.push('AVISO: nenhuma obra propria lida (camada a): diga isso nos Limites da persona')
@@ -75,7 +80,12 @@ export function medirColeta(pasta) {
   // Passo 6: sem fonte nova pra buscar, o aluno pode aceitar seguir assim. Vale pras 4 primeiras
   // condicoes; prova fora da faixa e linha torta nunca se aceitam.
   const todas = saida.filter(l => l.startsWith('ok ')).length === 5
-  const aceita = /^coleta-aceita:[ \t]*(.+?)[ \t]*$/m.exec(texto)?.[1]
+  // aceite e fases so valem no cabecalho, antes da linha de titulo da tabela
+  const titulo = /^[ \t]*\|[ \t]*N[ \t]*\|/im.exec(texto)
+  const cabecalho = titulo ? texto.slice(0, titulo.index) : texto
+  const aceita = /^coleta-aceita:[ \t]*(.+?)[ \t]*$/m.exec(cabecalho)?.[1]
+  // sexta condicao (julgamento): sem a linha fases: ninguem registrou a conferencia. So avisa
+  if (!/^fases:[ \t]*\S/m.test(cabecalho)) saida.push('AVISO: fases da carreira sem conferencia registrada (linha fases: no cabecalho do inventario)')
   if (aceita && !todas) saida.push(`AVISO: coleta incompleta aceita pelo aluno: ${aceita}`)
   // fonte de prova com ficha em fichas/ chegou ao conselheiro: a prova deixou de ser cega. Nunca se
   // aceita; o ponto fraco se corrige com fonte nova ou ficha de fonte feita
@@ -85,7 +95,7 @@ export function medirColeta(pasta) {
   const vazadas = [...new Set(fichas.map(f => /^(\d+)-.*\.md$/.exec(f)?.[1]).filter(Boolean).map(Number))].filter(n => nProva.has(n)).sort((a, b) => a - b)
   for (const n of vazadas) saida.push(`falta prova intacta: ficha de fonte de prova (fonte ${n})`)
   saida.push(`pendentes: ${linhas.filter(l => l.status === 'pendente').length}`)
-  const ok = !tortas.length && provaOk && !vazadas.length && (todas || Boolean(aceita))
+  const ok = !tortas.length && provaOk && !provaTerceiro.length && !vazadas.length && (todas || Boolean(aceita))
   return { codigo: ok ? 0 : 1, linhas: saida }
 }
 

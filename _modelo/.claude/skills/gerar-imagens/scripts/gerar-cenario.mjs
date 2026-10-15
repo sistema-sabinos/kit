@@ -1,8 +1,8 @@
 // Cenario VAZIO por IA: fundo de foto (bancada, cozinha, estudio) sem produto,
 // sem texto e sem pessoa. O produto real entra depois pelo compor-cena.mjs e o
 // texto pelo montar-peca.mjs, porque a IA erra letra e redesenha rotulo.
-// Com --uso video o cenario e fundo de video vertical (a /editar-video): o assunto do lugar
-// fica no centro, porque as laterais da imagem quadrada sao cortadas.
+// Com --uso video o cenario e fundo de video vertical (a /editar-video): sai em pe, 9:16, com o
+// assunto do lugar no centro, porque o que sobrar nas bordas e cortado.
 // Uso:
 //   node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau codex --cenas <cenas.json> [--uso video]
 //   node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau gemini --cenas <cenas.json> --preco-usd 0.05 --contexto "designer <slug>" [--autorizado] [--uso video]
@@ -32,9 +32,9 @@ export const REGRAS_VIDEO = `REGRAS OBRIGATORIAS, valem para TODAS as imagens:
 - NENHUM produto, pote, frasco, embalagem, caixa ou objeto a venda na imagem, nem ao fundo, nem desfocado
 - NENHUM texto, letra, numero, logo, placa ou rotulo
 - NENHUMA pessoa, mao ou parte de corpo
-- O assunto principal do lugar fica no CENTRO, numa faixa vertical: a imagem vira fundo de video vertical e as laterais sao cortadas
+- O assunto principal do lugar fica no CENTRO, numa faixa vertical: a imagem vira fundo de video vertical e o que sobrar nas bordas e cortado
 - Luz natural suave, profundidade de campo rasa, sem saturacao exagerada
-- Formato quadrado 1:1, fotorrealista`
+- Formato vertical 9:16 (em pe), fotorrealista`
 
 const barra = (p) => p.split(String.fromCharCode(92)).join('/')
 
@@ -42,7 +42,8 @@ export function montarPrompt(cenas, { uso = 'anuncio' } = {}) {
   const regras = uso === 'video' ? REGRAS_VIDEO : REGRAS
   const destino = uso === 'video' ? 'CENARIO DE FUNDO de video vertical, atras de uma pessoa gravada no fundo verde' : 'CENARIO DE FUNDO em foto de anuncio'
   const blocos = cenas.map((c, i) => `CENA ${i + 1}, arquivo: ${barra(resolve(c.out))}\n${c.descricao}`).join('\n\n')
-  return `Gere ${cenas.length === 1 ? 'UMA imagem' : `${cenas.length} imagens`} quadrada(s) 1:1, fotorrealista(s), para servir de ${destino}.
+  const formato = uso === 'video' ? 'vertical(is) 9:16' : 'quadrada(s) 1:1'
+  return `Gere ${cenas.length === 1 ? 'UMA imagem' : `${cenas.length} imagens`} ${formato}, fotorrealista(s), para servir de ${destino}.
 
 ${regras}
 
@@ -120,7 +121,7 @@ export async function viaGemini(cenas, {
   }
   for (const c of cenas) {
     try {
-      const corpo = { contents: [{ parts: [{ text: montarPrompt([c], { uso }) }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '1:1' } } }
+      const corpo = { contents: [{ parts: [{ text: montarPrompt([c], { uso }) }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: uso === 'video' ? '9:16' : '1:1' } } }
       let json = null
       for (let tentativa = 1; tentativa <= 3; tentativa++) {
         const r = await buscar(`${API}/models/${modelo}:generateContent?key=${chave}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })

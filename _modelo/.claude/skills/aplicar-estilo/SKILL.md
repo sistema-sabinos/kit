@@ -109,8 +109,9 @@ molde. Abra o vídeo pro aluno ver e ouvir e pergunte se quer algum ajuste; ajus
 mesma pasta da edição, seguindo o `SKILL.md` do estilo.
 
 Aprovado, preencha o `producao/<pasta>/post.md` do mesmo jeito do passo 8 da `/editar-video`
-(legenda de 3 a 6 linhas, título e descrição do Short, a linha `ia:`), sem sobrar linha com
-texto entre `<` e `>`. Feche dizendo: com o pacote de mídia social, "Pra agendar, chama a
+(legenda de 3 a 6 linhas, título e descrição do Short, a linha `ia:`).
+Nenhum texto entre `<` e `>` pode sobrar na legenda nem nas seções do YouTube, senão o agendador
+recusa. Feche dizendo: com o pacote de mídia social, "Pra agendar, chama a
 `/publicar-social` com a pasta `<pasta>` e o horário"; sem ele, o vídeo e a legenda estão
 prontos pra postar à mão.
 

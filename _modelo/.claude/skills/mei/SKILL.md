@@ -69,7 +69,8 @@ com os números do `/caixa` prontos.
 ## Lembrete no celular
 
 Projeto com o `/agendar`: oferecer um robô que roda `mei.mjs alertas` todo dia de manhã
-e avisa no Telegram quando tem DAS a 5 dias, declaração a 30 ou teto acima de 70%. A
+e avisa no Telegram (sem ele, num recado que aparece quando a pessoa abre o projeto) quando
+tem DAS a 5 dias, declaração a 30 ou teto acima de 70%. A
 receita do robô chama o script e devolve cada linha da saída como aviso; saída vazia,
 nenhum aviso.
 
