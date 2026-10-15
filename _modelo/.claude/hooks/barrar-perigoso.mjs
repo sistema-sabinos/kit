@@ -185,6 +185,86 @@ function removeItemPipePerigoso(comando) {
     new RegExp(String.raw`\|\s*(?:%|foreach\b|ForEach-Object\b)[^\n]*\b${RE_ALIAS}\b`, 'i').test(comando)
 }
 
+// "format" sozinho e o comando de formatar disco. Ate a 5.15 a regra casava "format" e
+// qualquer letra de unidade depois na linha, e barrava ffmpeg (format=gray), ffprobe
+// (-show_entries format) e git log --format com caminho de unidade. Desde a 5.16 a letra
+// tem que ser o primeiro argumento do format; antes dela so podem vir opcao com barra
+// (/q, /FS:NTFS, colada ou nao), o --% do PowerShell e redirecionamento (2> erros.txt,
+// >nul, <respostas.txt, 2>&1). Le pedaco por pedaco, linha por linha e comando por
+// comando: as tres versoes em regex dessa rodada abriram buraco novo a cada remendo, e
+// uma delas travava o hook com "format" seguido de muita barra.
+// Format no fim de um caminho e seguido de espaco e o programa chamado pelo caminho
+// completo (System32, ou /c/Windows/System32 no Git Bash) ou o \format do bash, que pula
+// apelido; pasta chamada format no meio de um caminho (seguida de barra) e so caminho
+const RE_FORMAT = /(?<![\w\-=.:\/\\])format(?:\.com)?(?=[\s\/<>]|$)|(?<=[\\\/])format(?:\.com)?(?=\s|$)/gi
+function formatPerigoso(comando) {
+  // ^ e o escape do cmd (format^ D: roda format D:) e a crase o do PowerShell (format `D:);
+  // barra invertida ou crase no fim da linha continua o comando na de baixo
+  const junto = comando.replace(/\^/g, '').replace(/[\\`]\r?\n/g, ' ').replace(/`/g, '')
+  for (const linha of junto.split(/[\r\n]+/)) {
+    // antes de dividir no & (que no cmd separa comando) e no |, os redirecionamentos que
+    // usam esses sinais (2>&1, *>&1, 2>&-, &>log, &>>log, >&log, >|log) viram um > comum
+    const semDup = linha.replace(/&>|>&|>\|/g, '>')
+    for (const seg of semDup.split(/&&|\|\||[;&|]/)) {
+      const iStart = seg.search(/\b(?:Start-Process|saps|start)\b/i)
+      let lido = 0
+      for (const m of seg.matchAll(RE_FORMAT)) {
+        // format que ja foi lido como nome de arquivo ou opcao de um format anterior nao
+        // e comando; reler cada um fazia "format<" repetido custar o quadrado do tamanho
+        if (m.index < lido) continue
+        if (/show_entries\s+$/i.test(seg.slice(Math.max(0, m.index - 40), m.index))) continue
+        const inicio = m.index + m[0].length
+        // Start-Process format -ArgumentList D: (e -Verb RunAs no meio): a letra vem depois
+        // de opcao do Start-Process, entao vale letra de unidade em qualquer ponto do resto
+        if (iStart >= 0 && iStart < m.index) {
+          if (/(?<![\w:])[a-zA-Z]:(?:[\\\/\s<>,]|$)/.test(seg.slice(inicio))) return true
+          break
+        }
+        const r = lerArgumentosDoFormat(seg, inicio)
+        if (r.unidade) return true
+        lido = r.fim
+      }
+    }
+  }
+  return false
+}
+
+// regex com y testa exatamente na posicao, sem copiar o resto do texto a cada volta
+const Y_ESPACO = /\s*/y
+const Y_OPCAO = /\/[^\s\/<>]*|--%/y
+const Y_REDIR = /[\d*]?[<>]{1,2}/y
+const Y_ALVO = /[^\s<>]*/y
+const Y_UNIDADE_SOZINHA = /[a-zA-Z]:(?=\s|$)/y
+// \D: no bash entrega D: ao programa
+const Y_UNIDADE = /\\?[a-zA-Z]:(?:[\\\/\s<>]|$)/y
+function casaEm(re, seg, i) {
+  re.lastIndex = i
+  const m = re.exec(seg)
+  return m ? m[0].length : -1
+}
+
+// cada volta consome pelo menos um caractere, entao o tempo cresce em linha reta
+function lerArgumentosDoFormat(seg, i) {
+  for (;;) {
+    i += casaEm(Y_ESPACO, seg, i)
+    if (i >= seg.length) return { unidade: false, fim: i }
+    const opcao = casaEm(Y_OPCAO, seg, i)
+    if (opcao > 0) { i += opcao; continue }
+    // 2> erros.txt, >nul, <respostas.txt e o *> do PowerShell (todas as saidas)
+    const redir = casaEm(Y_REDIR, seg, i)
+    if (redir > 0) {
+      i += redir
+      i += casaEm(Y_ESPACO, seg, i)
+      // o nome entre aspas ja saiu antes desta regra: "> "meu log.txt" C:" chega como
+      // "> C:", e letra de unidade sozinha nao e nome de arquivo, entao fica pra volta seguinte
+      if (casaEm(Y_UNIDADE_SOZINHA, seg, i) > 0) continue
+      i += casaEm(Y_ALVO, seg, i)
+      continue
+    }
+    return { unidade: casaEm(Y_UNIDADE, seg, i) > 0, fim: i }
+  }
+}
+
 // rodada 5.2: opcao -EncodedCommand do powershell.exe e do pwsh, que roda um comando
 // escrito em base64 (ninguem le o que vai rodar). A doc do pwsh 7 lista -e e -ec; a do
 // 5.1 so o nome inteiro, mas medido nas duas versoes (PS 5.1.26100 e pwsh 7.6.6) rodam
@@ -298,9 +378,7 @@ const PERIGOS = [
   // Microsoft confirma os dois como apelido do mesmo Remove-Item; cobrir um so e deixar
   // o gemeo de fora era o buraco que esta rodada veio fechar
   { re: /\b(?:del|erase)\b(?=[^\n]*\s\/s\b)/i, motivo: 'apaga arquivo de varias pastas de uma vez' },
-  // "format" sozinho e o comando de formatar disco; a negativa evita casar cmdlet tipo
-  // Format-Table/Format-List, que so mostra dado na tela e nao apaga nada
-  { re: /\bformat\b(?!-)(?=[^\n]*\b[a-zA-Z]:(?:\\|\/|\s|$))/i, motivo: 'apaga tudo do disco pra sempre' },
+  { teste: formatPerigoso, motivo: 'apaga tudo do disco pra sempre' },
   ...PERIGOS_POWERSHELL,
 ]
 

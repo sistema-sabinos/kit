@@ -127,6 +127,107 @@ test('item 1: barra apagar pasta inteira em sintaxe Windows (PowerShell e CMD)',
   }
 })
 
+// ---------------------------------------------------------------------------
+// 5.16: a regra do format casava "format" e qualquer letra de unidade depois na
+// linha, e barrava ffmpeg, ffprobe e git log --format com caminho E:/. Agora a
+// letra tem que ser o primeiro argumento do comando format.
+// ---------------------------------------------------------------------------
+
+test('5.16: format continua barrado com a unidade como argumento', () => {
+  const barra = String.fromCharCode(92)
+  const casos = [
+    'format C:',
+    'format D: /q',
+    'format /q D:',
+    'format/q C:',
+    'format/FS:NTFS D:',
+    'format.com C:',
+    'cmd /c format C:',
+    'cmd /c "format C:"',
+    `FORMAT c:${barra}`,
+    'format --% D: /q /y',
+    'format.com --% D: /q /y',
+    'format 2> erros.txt D:',
+    'format < respostas.txt D:',
+    'format >nul D: /q',
+    'format 2>&1 D:',
+    'format /q >log.txt D:',
+    'format>nul C:',
+    'format<respostas.txt C:',
+    'format>log /q C:',
+    'format 2>>erros.txt D:',
+    'format > "meu log.txt" C:',
+    `format 2>"C:${barra}Meus Logs${barra}erro.txt" D:`,
+    'format *> $null D:',
+    'format *>&1 D:',
+    'format D:>nul',
+    'cmd /c format^ D:',
+    'format ^D:',
+    'Start-Process format -ArgumentList D:',
+    'Start-Process -FilePath format.com -ArgumentList D: -Verb RunAs',
+    `format /q ${barra}${String.fromCharCode(10)}  D:`,
+    'format &>log D:',
+    'format &>> log D:',
+    'format >&log D:',
+    'format >| log D:',
+    'format 2>&- D:',
+    `${barra}format D:`,
+    `format ${barra}D:`,
+    `format ${String.fromCharCode(96)}D:`,
+    `format /q ${String.fromCharCode(96)}D:`,
+    ['C:', 'Windows', 'System32', 'format.com D: /q'].join(barra),
+    '/c/Windows/System32/format.com D:',
+  ]
+  for (const cmd of casos) {
+    const motivo = ehPerigoso(cmd)
+    assert.ok(motivo && motivo.length > 0, `deveria barrar: ${cmd}`)
+  }
+})
+
+test('5.16: deixa passar format que nao e formatar disco, mesmo com caminho E:/', () => {
+  // unidade montada por codigo: caminho de Windows literal no kit reprova o Gate 6
+  const u = 'E:'
+  const d = 'D:'
+  const quebra = String.fromCharCode(10)
+  const seguros = [
+    `npm run format${quebra}${u}/ffmpeg/bin/ffprobe.exe -i a.mp4`,
+    `echo ok # format${quebra}${u}/ffmpeg/bin/ffmpeg.exe -i a.mp4 b.mp4`,
+    `ffprobe -show_entries stream:format ${u}/v.mp4`,
+    `cp ${u}/proj/format/x.txt ${d}/backup/`,
+    `ffprobe -v error -show_entries ${String.fromCharCode(92)}${quebra}  format ${u}/a.mp4`,
+    `ffmpeg -i ${u}/a.mp4 -vf "format=gray" ${u}/b.mp4`,
+    `ffprobe -show_entries format=duration ${u}/v.mp4`,
+    `ffprobe -show_entries format ${u}/v.mp4`,
+    `git log --format "%h" ${u}/a`,
+    'Get-Volume | Format-List',
+  ]
+  for (const cmd of seguros) {
+    assert.strictEqual(ehPerigoso(cmd), null, `nao deveria barrar: ${cmd}`)
+  }
+})
+
+test('5.16: regra do format le cada pedaco uma vez so, mesmo com barra ou redirecionamento repetido', () => {
+  // reler cada "format" ja lido fazia linha longa custar o quadrado do tamanho. A prova conta
+  // as chamadas de exec das regex (cronometro em teste e proibido: bancada/tempo-de-parede):
+  // o dobro de entrada tem de dar menos que o triplo de trabalho
+  const original = RegExp.prototype.exec
+  let chamadas = 0
+  RegExp.prototype.exec = function (...args) { chamadas++; return original.apply(this, args) }
+  const medidas = []
+  try {
+    for (const pedaco of ['/', '2>&1 ', '/>a ', 'format<', 'format > ']) {
+      const contar = n => { chamadas = 0; ehPerigoso('format ' + pedaco.repeat(n)); return chamadas }
+      medidas.push([pedaco, contar(400), contar(800)])
+    }
+  } finally {
+    RegExp.prototype.exec = original
+  }
+  for (const [pedaco, c1, c2] of medidas) {
+    assert.ok(c1 > 0, `canario: nenhuma regex contada com ${pedaco}`)
+    assert.ok(c2 < c1 * 3, `${pedaco}: ${c1} chamadas com 400 repeticoes e ${c2} com 800`)
+  }
+})
+
 test('item 1: deixa passar comando Windows do dia a dia', () => {
   const seguros = [
     'Get-ChildItem',
