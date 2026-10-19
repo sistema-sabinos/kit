@@ -6,7 +6,9 @@ Roda os gates que ja existiam e acrescenta o que so se ve quadro a quadro:
   2. respiro: 40 px entre camadas (atras, frente, legenda, interface, moldura), em todo quadro
   3. rosto coberto por cartao, legenda, interface ou moldura (rosto pelo YuNet, a cada quadro)
   4. fala sem legenda: cada palavra dita no video final (whisper local) tem legenda na tela em pelo menos 60% do tempo
-  5. grafico sem som: todo grafico que entra tem efeito sonoro a ate 0,17 s (5 quadros)
+  5. grafico sem som: todo grafico que entra tem efeito sonoro a ate 0,17 s (5 quadros). Vira um aviso so em dois
+     casos: com --midia e a biblioteca/sfx/ sem som, ou com o pedido do aluno anotado em "pedidoSemEfeito" nas
+     --props-base e nenhum efeito no video inteiro. Fora deles, grafico sem efeito reprova.
   6. quadro preto no meio do video
 Como enxerga as camadas: renderiza a composicao de novo com a prop `fiscal` = nome da camada (so ela, branca sobre
 preto, a meia resolucao), e o efeito sonoro vira um quadrado no canto (`Efeitos` do kit). Tudo local e gratis.
@@ -20,6 +22,7 @@ Teste do portao pago: `--so-olho-final` pula render e gates e roda so o passo 7 
 
 Uso: fiscal.py <Composicao> <final.mp4> <bruto.mp4> <pasta-saida> --remotion <remotion-cli.js> --public-dir <public da peca>
              --props-base <props.json> [--props-verificar <props.json>] [--transcrever <transcrever.mjs> [--modelo small|medium]]
+             [--midia <_video>/midia]
              [--roteiro <roteiro.md> --preco-usd <US$ do olho final, preco do dia> --autorizado
               --ver-video <ver-video.mjs> --registrar-custo <registrar-custo-cli.mjs>]
 
@@ -50,6 +53,7 @@ ap.add_argument("composicao"); ap.add_argument("final"); ap.add_argument("bruto"
 ap.add_argument("--remotion", default=None); ap.add_argument("--public-dir", default=None)
 ap.add_argument("--props-base", default=None); ap.add_argument("--props-verificar", default=None)
 ap.add_argument("--transcrever", default=None)
+ap.add_argument("--midia", default=None, help="<_video>/midia: com biblioteca/sfx/ sem som, grafico sem efeito vira aviso, nao reprovacao")
 ap.add_argument("--modelo", default="small", choices=["small", "medium"], help="modelo do whisper que o --transcrever usa (o do maquina.json); padrao small")
 ap.add_argument("--roteiro", default=None); ap.add_argument("--preco-usd", type=float, default=None)
 ap.add_argument("--autorizado", action="store_true")
@@ -99,6 +103,33 @@ falhas = []
 
 def falha(tipo, seg, texto, etapa):
     falhas.append({"tipo": tipo, "seg": round(seg, 2), "texto": texto, "etapa": ETAPA[etapa]})
+
+
+def biblioteca_sem_som(midia):
+    """Sem --midia nao da pra saber: conta como biblioteca com som (o fiscal segue cobrando efeito)."""
+    if not midia:
+        return False
+    pasta = Path(midia) / "biblioteca" / "sfx"
+    sons = {".wav", ".mp3", ".m4a", ".aac", ".ogg"}   # os de som do EXTENSAO do preparar-public.mjs
+    return not pasta.is_dir() or not any(p.is_file() and p.suffix.lower() in sons for p in pasta.iterdir())
+
+
+def pedido_sem_efeito(props):
+    """O pedido do aluno por video sem efeito, anotado com as palavras dele em "pedidoSemEfeito" das --props-base
+    (SKILL.md, Passo 4B). Sem o campo, vazio ou que nao seja texto: None (esquecimento nao vira pedido)."""
+    p = props.get("pedidoSemEfeito")
+    return p.strip() if isinstance(p, str) and p.strip() else None
+
+
+def graficos_sem_som(ent, onsets, sem_som, pedido):
+    """Entrada de grafico sem efeito a ate 5 quadros. Vira um aviso so, nunca reprovacao, quando a biblioteca esta sem som
+    ou quando o aluno pediu video sem efeito e o video nao tem nenhum. Devolve (falhas como (seg, texto), aviso ou None)."""
+    soltos = [(seg, c) for q, seg, c in ent if not any(abs(o - q) <= 5 for o in onsets)]
+    if soltos and sem_som:
+        return [], f"{len(soltos)} gráfico(s) entraram sem efeito sonoro porque a biblioteca de efeitos (biblioteca/sfx/) está sem som"
+    if soltos and pedido and not onsets:
+        return [], f'{len(soltos)} gráfico(s) entraram sem efeito sonoro porque o aluno pediu vídeo sem efeito (pedidoSemEfeito: "{pedido}")'
+    return [(seg, f"gráfico entrou na camada '{c}' sem efeito sonoro a até 0,17 s") for seg, c in soltos], None
 
 
 def roda(cmd, **kw):
@@ -284,9 +315,13 @@ for q, seg, c in sorted(entradas):
         ent.append((q, seg, c))
     ultimo[c] = q
 onsets = [k for k in range(N) if sfx[k] and (k == 0 or not sfx[k - 1])]
-for q, seg, c in ent:
-    if not any(abs(o - q) <= 5 for o in onsets):
-        falha("gráfico sem som", seg, f"gráfico entrou na camada '{c}' sem efeito sonoro a até 0,17 s", "som")
+avisos = []
+soltos_som, aviso_som = graficos_sem_som(ent, onsets, biblioteca_sem_som(ARGS.midia),
+                                         pedido_sem_efeito(json.loads(PROPS_BASE.read_text(encoding="utf-8"))))
+for seg, texto in soltos_som:
+    falha("gráfico sem som", seg, texto, "som")
+if aviso_som:
+    avisos.append({"tipo": "gráfico sem som", "seg": 0, "texto": aviso_som, "etapa": ETAPA["som"]})
 
 # fala sem legenda, palavra por palavra
 ruins = []
@@ -353,7 +388,6 @@ for chave, lista in exemplos.items():
 # ---------- 5) olho final (Gemini, PAGO): so roda com --roteiro, --preco-usd e --autorizado, e so se a conferencia por
 # script passou, pra nao pagar por video que ja ia voltar. Ve e ouve o video inteiro contra o roteiro e julga o que
 # script nao julga. So problema GRAVE reprova; o leve vai como aviso.
-avisos = []
 olho_final(falhas, avisos)
 
 # ---------- 6) relatório

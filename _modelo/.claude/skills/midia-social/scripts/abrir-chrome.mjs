@@ -10,5 +10,5 @@ try {
   console.log('A coleta da /pauta le so paginas publicas do Instagram: nao precisa (e nao deve) fazer login no Instagram nessa janela.')
 } catch (e) {
   console.error(e.message)
-  process.exit(1)
+  process.exitCode = 1
 }

@@ -17,7 +17,7 @@ O `--midia` é a pasta de mídia da biblioteca (para achar os efeitos sonoros).
 Todos os nomes de arquivo dentro do `edicao.json` são relativos à pasta
 `producao/<slug>/public/`.
 
-## Os dois truques do `preparar-props.py`
+## Os quatro truques do `preparar-props.py`
 
 **1. Tempo por palavra.** Qualquer campo de tempo (`deSeg`, `ateSeg`, `seg`,
 `aSeg`) pode ser um número, ou um objeto que aponta uma palavra da fala:
@@ -36,6 +36,14 @@ para ancorar.
 **2. Efeito sonoro com volume medido.** Cada item de `sfx` que traz `dbVoz`
 ganha volume calculado pela voz. O som tratado vai para `public/sfx-mix/` e o item
 sai com volume 1. Item sem `dbVoz` passa como veio.
+
+**3. Câmera lenta.** Cada item de `cameraLenta` repete uma palavra mais devagar
+logo depois de ela ser falada, e anda pra frente todo o resto (veja
+`## cameraLenta` abaixo).
+
+**4. Onda medida.** Os `valores` de cada item de `ondas` saem da voz, 30 por
+segundo. Onda curta demais, fora da zona segura ou em cima da legenda derruba o
+script com a mensagem (veja `## ondas` abaixo).
 
 ## Campos obrigatórios
 
@@ -60,7 +68,9 @@ sai com volume 1. Item sem `dbVoz` passa como veio.
 | `chaves` | `[]` | Palavras-chave grandes (abaixo) |
 | `cartoes` | `[]` | Cartões de texto em tela cheia (abaixo) |
 | `flashes` | `[]` | Clarão de 2 quadros na troca de assunto: `{ "seg": 3.2 }`, com `cor` opcional |
+| `ondas` | `[]` | Onda que mexe com a voz, em barras amarelas (abaixo) |
 | `sfx` | `[]` | Efeitos sonoros (abaixo) |
+| `cameraLenta` | `[]` | A palavra repetida devagar, no máximo uma ou duas por vídeo (abaixo) |
 | `abertura` | `{ "de": 1.4, "frames": 12 }` | O vídeo começa com zoom 1,4 e assenta em 12 quadros. `null` desliga |
 | `empurrao` | nenhum | Zoom lento no fecho: `{ "deSeg": 24, "ateSeg": 29, "ate": 1.2 }` |
 | `acabamento` | valores de `referencias/acabamento.md` | Grão, vinheta e ajuste de luz. `null` desliga |
@@ -110,6 +120,35 @@ precisa de destaque.
 `aSeg` é quantos segundos depois do começo do cartão a linha entra. As linhas
 também não quebram: valem a mesma conta de largura da chave.
 
+## `ondas`: a onda que mexe com a voz
+
+Barras amarelas no meio da tela que sobem e descem com a voz, do centro pras
+bordas. Serve pra trecho de fala sem imagem pra mostrar.
+
+```json
+{ "deSeg": { "palavra": "agora" }, "ateSeg": 6.0, "topo": 1060 }
+```
+
+| Campo | O que é |
+|---|---|
+| `deSeg`, `ateSeg` | Quando entra e quando sai |
+| `topo` | Altura do topo da onda em pixels (padrão 1060) |
+| `altura` | Altura máxima das barras (padrão 150) |
+| `largura` | Largura da onda, centrada (padrão 720, no máximo 800) |
+| `barras` | Quantas barras (padrão 28, de 4 a 64) |
+| `cor` | Cor das barras (padrão amarelo) |
+| `valores` | O volume da voz quadro a quadro. Sai do `preparar-props.py` |
+
+Quatro cuidados:
+
+- **Não usar junto com chave no peito.** As duas ficam em 1060 e uma cobre a outra.
+- **No mínimo 0,5 s.** Mais curta, a entrada e a saída não cabem e o script recusa.
+- **Zona segura e legenda.** O topo fica de 250 pra baixo, topo mais altura até
+  1436, e a onda termina acima da legenda (`topoLegenda`, 1240 quando não vem).
+  Fora disso o script para e diz o que mudar.
+- **Os valores nunca se escrevem à mão.** Quem mede é o `preparar-props.py`; no
+  `edicao.json` vão só tempo e posição.
+
 ## `sfx`: os efeitos sonoros
 
 ```json
@@ -152,6 +191,36 @@ Os campos `palavras`, `lista`, `circulos`, `riscos` e `rotulos` desenham sobre o
 painel de cima e só aparecem quando `alturaTela` é maior que 0. Neste estilo,
 com quadro inteiro, use `chaves` e `cartoes` no lugar.
 
+## `cameraLenta`: a palavra repetida devagar
+
+Logo depois de a pessoa falar a palavra, ela volta mais devagar, com imagem e voz
+juntas e o tom da voz igual. Serve pra palavra que é o centro do vídeo ("prazo",
+"grátis"). Uma palavra, no máximo duas, e no máximo uma ou duas vezes por vídeo:
+mais que isso cansa.
+
+```json
+"cameraLenta": [
+  { "deSeg": { "palavra": "prazo" }, "ateSeg": { "palavra": "prazo", "fim": true }, "fator": 0.5, "escala": 1.25 }
+]
+```
+
+- `fator`: de 0,25 a 0,9. O normal é 0,5 (metade da velocidade). Trecho de até 1,5 s.
+- Todos os tempos do `edicao.json` são da fala original, como sempre. O
+  `preparar-props.py` anda pra frente tudo que vem depois da palavra (chaves,
+  cartões, efeitos, cortes). Uma chave que cobre a palavra atravessa a repetição e
+  fica na tela até o fim dela.
+- A legenda repete a palavra numa página só dela, que fica na tela até a palavra
+  lenta acabar.
+- `escala`: o zoom da repetição. Sem ele, a repetição sai na escala contrária à do
+  bloco (o zoom troca e esconde o pulo). Bloco em 1,0 por ter frase atrás da cabeça
+  pede `"escala": 1.0`, senão o zoom corta a frase.
+- Se o `preparar-props.py` avisar "o corte sai sem zoom", a repetição e o bloco
+  seguinte ficaram na mesma escala: mude o `escala` da `cameraLenta`.
+- O que sai fica em `public/lenta/` (pessoa, voz e legenda) e as props levam
+  `lentas`, pro `verificar-video.py` não confundir a repetição com boca fora da voz.
+- No fundo verde, a câmera lenta roda antes do recorte, pela linha de comando do
+  `camera_lenta.py` (passo 4B do `SKILL.md`), e não entra no `edicao.json`.
+
 ## Exemplo completo
 
 ```json
@@ -167,11 +236,14 @@ com quadro inteiro, use `chaves` e `cartoes` no lugar.
   "flashes": [ { "seg": 3.2 } ],
   "sfx": [
     { "arquivo": "biblioteca/sfx/pop.wav", "seg": { "palavra": "prazo", "mais": -0.1 }, "dbVoz": -12 },
-    { "arquivo": "biblioteca/sfx/whoosh-curto.wav", "seg": 3.2, "dbVoz": -14 }
+    { "arquivo": "biblioteca/sfx/pop.wav", "seg": 3.2, "dbVoz": -14 }
   ]
 }
 ```
 
 O `duracaoSeg` sai da voz quando não vem. Os outros campos ficam com o padrão.
 Um exemplo menor, já no formato de props, está em
-`.claude/skills/editar-video/motor/exemplos/videov2-exemplo.json`.
+`.claude/skills/editar-video/motor/exemplos/videov2-exemplo.json`. Ele serve só
+pra abrir o motor no Studio, e o render mistura as props com ele: por isso o
+`props.json` sai sempre do `preparar-props.py`, que grava vazio todo campo que o
+exemplo preenche (sem isso, vídeo sem `chaves` mostrava a chave PRAZO do exemplo).

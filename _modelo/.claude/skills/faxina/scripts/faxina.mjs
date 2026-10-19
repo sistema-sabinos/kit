@@ -115,16 +115,25 @@ export function planoArquivo(raiz, hoje) {
   return plano
 }
 
-export function aplicarArquivo(raiz, hoje) {
+// No Windows, diario aberto em outro programa (editor, Drive sincronizando) nao sai do lugar
+// (EBUSY, EPERM, EACCES): vai pra presos e o lote segue. Outro erro sobe.
+const PRESO = new Set(['EBUSY', 'EPERM', 'EACCES'])
+
+export function aplicarArquivo(raiz, hoje, renomear = renameSync) {
   const plano = planoArquivo(raiz, hoje)
-  const feito = { movidos: [], pulados: [], decisoes: [] }
+  const feito = { movidos: [], pulados: [], presos: [], decisoes: [] }
   for (const { de, para } of plano.diarios) {
     const destino = join(raiz, para)
     if (existsSync(destino)) { feito.pulados.push(de); continue }   // nunca sobrescreve
     mkdirSync(join(destino, '..'), { recursive: true })
-    renameSync(join(raiz, de), destino)
+    try { renomear(join(raiz, de), destino) } catch (e) {
+      if (!PRESO.has(e.code)) throw e
+      feito.presos.push(de)
+      continue
+    }
     feito.movidos.push(para)
   }
+  if (feito.presos.length) feito.recado = 'Esses dias do diario estao abertos em outro programa (editor de texto, Drive sincronizando) e ficaram onde estavam. Feche o programa e rode a faxina de novo: o que ja foi movido nao se repete.'
   if (plano.decisoes.length) {
     const arqDec = join(raiz, '_memoria', 'decisoes.md')
     const texto = readFileSync(arqDec, 'utf8')
@@ -537,13 +546,11 @@ if (process.argv[1]) {
     const args = process.argv.slice(2)
     const iHoje = args.indexOf('--hoje')
     let hoje = iHoje >= 0 ? args[iHoje + 1] : dataLocal()
+    const raiz = process.cwd()
     if (iHoje >= 0 && !/^\d{4}-\d{2}-\d{2}$/.test(hoje)) {
       console.error('--hoje deve estar no formato AAAA-MM-DD')
       process.exitCode = 2
-      process.exit(2)
-    }
-    const raiz = process.cwd()
-    if (args[0] === 'arquivar') {
+    } else if (args[0] === 'arquivar') {
       if (!args.includes('--sim')) { console.error('arquivar so roda com --sim, depois do sim da pessoa'); process.exitCode = 2 }
       else console.log(JSON.stringify(aplicarArquivo(raiz, hoje), null, 1))
     } else if (args[0] && args[0] !== 'relatorio' && args[0] !== '--hoje') {

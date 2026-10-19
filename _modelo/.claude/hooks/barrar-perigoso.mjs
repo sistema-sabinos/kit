@@ -87,9 +87,9 @@ function ehEscritorDeTexto(textoAntesDaAspa) {
   return PADROES_ESCRITOR_DE_TEXTO.some(re => re.test(textoAntesDaAspa))
 }
 
-// Tres limites conhecidos, fora do escopo desta trava de proposito: resolver os tres
-// de verdade pede um analisador de shell (tokenizar variavel, aspas, escape), nao regex.
-// Confirmados contra o codigo de hoje (nao e so teoria, os tres passam batido agora):
+// Quatro limites conhecidos, fora do escopo desta trava de proposito: resolver de
+// verdade pede um analisador de shell (tokenizar variavel, aspas, escape), nao regex.
+// Confirmados contra o codigo de hoje (nao e so teoria, todos passam batido agora):
 // 1. Comando montado em duas variaveis separadas e rodado por expansao depois:
 //    `CMD=rm; ARGS=-rf; $CMD $ARGS pasta` (nenhum padrao ve "rm" e "-rf" juntos, porque
 //    nunca aparecem na mesma janela de texto).
@@ -102,6 +102,13 @@ function ehEscritorDeTexto(textoAntesDaAspa) {
 //    `. <(curl x)` e baixar pra um arquivo e rodar depois (`curl -o a.sh x && sh a.sh`).
 //    E o contrario: `<(curl ...)` logo depois de um texto que termina em "sh" (tipo
 //    `diff <(curl x/a.sh) <(curl y)`) barra sem precisar.
+// 4. Trava de disco (rodada 5.17). Passam: `cp ubuntu.iso /dev/sdb` (o cp so cita),
+//    `fdisk /dev/sda` e `parted /dev/sda mklabel gpt` (interativos ou com verbo depois),
+//    `nvme format /dev/nvme0n1`, `hdparm --security-erase`, `dd of=$DISCO` (o limite 1),
+//    `echo "format D:" | cmd`, `git -c alias.f=!format f D:` e `rg --pre format`. E o
+//    contrario, barram sem precisar: `notepad mkfs.txt`, `wipefs /dev/sdb` sem -a (so
+//    lista), mencao solta como `echo usar wipefs depois >> licoes.md` e `diskutil
+//    eraseDisk ... -WhatIf` (o diskutil nao tem -WhatIf).
 function classificarTrechosEntreAspas(comando) {
   const RE_ASPAS = /"([^"]*)"|'([^']*)'/g
   const suspeitos = []
@@ -157,10 +164,33 @@ const RE_RM_RECURSIVO_E_FORCADO =
 // (Remove-Item e apelidos, rm), entao mora num teste a parte em vez de repetido em
 // cada padrao. "-wi" e o alias oficial; o resto e prefixo de "WhatIf" (abreviacao que
 // o PowerShell aceita).
-const RE_WHATIF = /\s-(?:wh(?:a(?:t(?:i(?:f)?)?)?)?|wi)\b/i
+// rodada 5.17 (decisao 11): -WhatIf:$false roda de verdade, entao o ":" logo depois nao
+// conta como simulacao (-WhatIf:$true tambem barra, do lado seguro)
+const RE_WHATIF = /\s-(?:wh(?:a(?:t(?:i(?:f)?)?)?)?|wi)\b(?!:)/i
+
+// rodada 5.17 (revisao comum do bloco 1): -WhatIf dentro de comentario (<# -WhatIf #> ou
+// # -WhatIf) nao simula nada e o comando roda de verdade, entao a simulacao so vale fora
+// de comentario. Comentario de bloco sem fechar vai inteiro embora (do lado seguro). Le o
+// texto uma vez so, sem regex que volta
+function semComentarios(s) {
+  let fora = ''
+  let i = 0
+  for (;;) {
+    const a = s.indexOf('<#', i)
+    if (a < 0) { fora += s.slice(i); break }
+    fora += s.slice(i, a) + ' '
+    const b = s.indexOf('#>', a + 2)
+    if (b < 0) break
+    i = b + 2
+  }
+  return fora.replace(/(^|\s)#[^\n]*/g, '$1')
+}
+function simula(s) {
+  return RE_WHATIF.test(semComentarios(s))
+}
 
 function rmPerigoso(comando) {
-  if (RE_WHATIF.test(comando)) return false
+  if (simula(comando)) return false
   const segmentos = semTrechoEntreAspas(comando).split(/&&|\|\||[;&|`\n]/)
   return segmentos.some(seg => RE_RM_RECURSIVO_E_FORCADO.test(seg))
 }
@@ -168,7 +198,7 @@ function rmPerigoso(comando) {
 // correcao 7: Remove-Item e os apelidos oficiais dele que nao sao "rm" (ver comentario
 // da regra abaixo). So exige a ideia de recursivo (nunca -Force, doc na regra abaixo).
 function removeItemPerigoso(comando) {
-  if (RE_WHATIF.test(comando)) return false
+  if (simula(comando)) return false
   return /\b(?:Remove-Item|ri|del|erase|rd|rmdir)\b(?=[^\n]*\s-r(?:e(?:c(?:u(?:r(?:s(?:e)?)?)?)?)?)?\b)/i.test(comando)
 }
 
@@ -177,7 +207,7 @@ function removeItemPerigoso(comando) {
 // lista), entao aceita QUALQUER coisa antes do "|" e olha so o que vem depois: um
 // apelido de Remove-Item direto, ou um ForEach-Object/% cujo bloco chama Remove-Item.
 function removeItemPipePerigoso(comando) {
-  if (RE_WHATIF.test(comando)) return false
+  if (simula(comando)) return false
   const RE_ALIAS = /(?:Remove-Item|ri|del|erase|rd|rmdir|rm)/.source
   // "%" nao e caractere de palavra, entao \b logo depois dele nunca casa (nem "{" nem
   // " " sao \w); o \b so faz sentido nas duas outras formas, que sao palavras de verdade
@@ -197,34 +227,138 @@ function removeItemPipePerigoso(comando) {
 // completo (System32, ou /c/Windows/System32 no Git Bash) ou o \format do bash, que pula
 // apelido; pasta chamada format no meio de um caminho (seguida de barra) e so caminho
 const RE_FORMAT = /(?<![\w\-=.:\/\\])format(?:\.com)?(?=[\s\/<>]|$)|(?<=[\\\/])format(?:\.com)?(?=\s|$)/gi
-function formatPerigoso(comando) {
-  // ^ e o escape do cmd (format^ D: roda format D:) e a crase o do PowerShell (format `D:);
-  // barra invertida ou crase no fim da linha continua o comando na de baixo
+
+// rodada 5.17: programa que so le, formata codigo ou copia arquivo e recebe "format" como
+// texto (grep, ruff format e dotnet format com caminho de unidade, cp -r format pra outra
+// unidade). Lista CURTA de quem so cita, no espirito dos escritores de texto: programa que
+// ninguem previu continua do lado seguro. Vale so com o programa no comeco do pedaco
+// (sudo grep ... segue barrado). O where do PowerShell roda bloco de script e so pode
+// ficar na lista porque o pedacosDeComando divide no "{"
+const SO_CITAM = new Set(['grep', 'egrep', 'fgrep', 'rg', 'findstr', 'select-string', 'sls',
+  'git', 'ruff', 'dotnet', 'ffmpeg', 'ffprobe', 'cp', 'mv', 'ls', 'dir', 'cd', 'mkdir',
+  'copy', 'move', 'xcopy', 'robocopy', 'copy-item', 'cpi', 'move-item', 'mi', 'cat', 'type',
+  'get-content', 'gc', 'get-childitem', 'gci', 'code', 'get-help', 'help', 'man',
+  'get-command', 'gcm', 'where', 'which'])
+function primeiroProgramaSoCita(seg) {
+  const m = /^\s*(\S+)/.exec(seg)
+  if (!m) return false
+  const nome = m[1].replace(/^.*[\\\/]/, '').replace(/\.exe$/i, '').toLowerCase()
+  return SO_CITAM.has(nome)
+}
+
+// le o comando do jeito que as regras de disco precisam: escape do cmd (^, format^ D: roda
+// format D:) e do PowerShell (crase) fora, linha continuada (barra invertida ou crase no
+// fim) junta, comentario de shell no fim da linha fora, e cada linha dividida nos
+// separadores, no "(" (o $( do bash e o ( do PowerShell abrem comando) e no "{" (bloco de
+// script). Entrega cada pedaco com a marca de "so cita". Crase fora do fim de linha (que no
+// bash roda o que esta dentro) desliga o "so cita" do comando todo: grep x `format D:`
+// roda o format
+// o # entre aspas nao precisa disto: a leitura sem o trecho entre aspas (semTrechoEntreAspas)
+// ja tira o comentario falso junto com as aspas
+function parenteseAberto(prefixo) {
+  let parenteses = 0
+  for (const c of prefixo) {
+    if (c === '(') parenteses++
+    else if (c === ')') parenteses--
+  }
+  return parenteses > 0
+}
+
+function pedacosDeComando(comando) {
+  const pedacos = []
+  const crase = /`(?!\r?\n)/.test(comando)
   const junto = comando.replace(/\^/g, '').replace(/[\\`]\r?\n/g, ' ').replace(/`/g, '')
-  for (const linha of junto.split(/[\r\n]+/)) {
+  for (let linha of junto.split(/[\r\n]+/)) {
+    // # no comeco de palavra abre comentario no bash e no PowerShell; no cmd nao, e la o
+    // & separa comando, entao comentario com & ou | no meio continua sendo lido. Dentro de
+    // parentese aberto o # e texto (cmd /c "for %i in ( # ) do ..." roda o corpo, revisao
+    // comum do bloco 1 da 5.17), entao ai a linha fica inteira
+    const iComentario = linha.search(/(?:^|\s)#/)
+    if (iComentario >= 0 && !/[&|]|#>/.test(linha.slice(iComentario)) && !parenteseAberto(linha.slice(0, iComentario))) linha = linha.slice(0, iComentario)
     // antes de dividir no & (que no cmd separa comando) e no |, os redirecionamentos que
     // usam esses sinais (2>&1, *>&1, 2>&-, &>log, &>>log, >&log, >|log) viram um > comum
     const semDup = linha.replace(/&>|>&|>\|/g, '>')
-    for (const seg of semDup.split(/&&|\|\||[;&|]/)) {
-      const iStart = seg.search(/\b(?:Start-Process|saps|start)\b/i)
-      let lido = 0
-      for (const m of seg.matchAll(RE_FORMAT)) {
-        // format que ja foi lido como nome de arquivo ou opcao de um format anterior nao
-        // e comando; reler cada um fazia "format<" repetido custar o quadrado do tamanho
-        if (m.index < lido) continue
-        if (/show_entries\s+$/i.test(seg.slice(Math.max(0, m.index - 40), m.index))) continue
-        const inicio = m.index + m[0].length
-        // Start-Process format -ArgumentList D: (e -Verb RunAs no meio): a letra vem depois
-        // de opcao do Start-Process, entao vale letra de unidade em qualquer ponto do resto
-        if (iStart >= 0 && iStart < m.index) {
-          if (/(?<![\w:])[a-zA-Z]:(?:[\\\/\s<>,]|$)/.test(seg.slice(inicio))) return true
-          break
-        }
-        const r = lerArgumentosDoFormat(seg, inicio)
-        if (r.unidade) return true
-        lido = r.fim
-      }
+    for (const seg of semDup.split(/&&|\|\||[;&|({]/)) {
+      pedacos.push({ seg, soCita: !crase && primeiroProgramaSoCita(seg) })
     }
+  }
+  return pedacos
+}
+
+function formatPerigoso(comando) {
+  for (const { seg, soCita } of pedacosDeComando(comando)) {
+    if (soCita) continue
+    const iStart = seg.search(/\b(?:Start-Process|saps|start)\b/i)
+    let lido = 0
+    for (const m of seg.matchAll(RE_FORMAT)) {
+      // format que ja foi lido como nome de arquivo ou opcao de um format anterior nao
+      // e comando; reler cada um fazia "format<" repetido custar o quadrado do tamanho
+      if (m.index < lido) continue
+      if (/show_entries\s+$/i.test(seg.slice(Math.max(0, m.index - 40), m.index))) continue
+      const inicio = m.index + m[0].length
+      // Start-Process format -ArgumentList D: (e -Verb RunAs no meio): a letra vem depois
+      // de opcao do Start-Process, entao vale letra de unidade em qualquer ponto do resto
+      if (iStart >= 0 && iStart < m.index) {
+        if (/(?<![\w:])[a-zA-Z]:(?:[\\\/\s<>,]|$)/.test(seg.slice(inicio))) return true
+        break
+      }
+      const r = lerArgumentosDoFormat(seg, inicio)
+      if (r.unidade) return true
+      lido = r.fim
+    }
+  }
+  return false
+}
+
+// rodada 5.17: os comandos de disco do PowerShell apagam o disco ou a particao inteira, e o
+// diskpart sem nada abre o modo interativo, que a trava nao enxerga (o "clean" vem depois,
+// digitado ou de um arquivo /s), entao barra sempre, ate pra listar. O -WhatIf do
+// PowerShell so simula, igual no Remove-Item. Initialize-Disk fica livre: so aceita disco
+// RAW, sem particao
+const RE_DISCO_PS = /\b(?:Format-Volume|Clear-Disk|Remove-Partition)\b/i
+const RE_DISKPART = /(?<![\w\-.])diskpart(?:\.exe)?(?![\w\-.])/i
+function discoPerigoso(comando) {
+  for (const { seg, soCita } of pedacosDeComando(comando)) {
+    if (soCita) continue
+    if (RE_DISKPART.test(seg)) return true
+    if (RE_DISCO_PS.test(seg) && !simula(seg)) return true
+  }
+  return false
+}
+
+// rodada 5.17 (decisao 12): os gemeos de Mac e Linux, conferidos em 2026-10-18 em
+// ss64.com/mac/diskutil.html (eraseDisk, eraseVolume, reformat, partitionDisk, zeroDisk,
+// randomDisk, secureErase, splitPartition, mergePartitions, resetFusion, destroyRAID e os
+// delete* do apfs, appleRAID e coreStorage apagam), man7.org mkfs(8) ("front-end for the
+// various filesystem builders (mkfs.fstype)", mais mke2fs e mkdosfs), wipefs(8),
+// blkdiscard(8) e sgdisk(8) (-Z/--zap-all, -z/--zap e -o/--clear destroem a tabela).
+// Mesmo criterio do format: pedaco por pedaco, quem so cita fica livre, mencao solta barra.
+// O verbo do diskutil vale em minuscula tambem (diskutil erasevolume aparece no forum da
+// Apple). A lista de verbos e fechada pra deixar o deleteSnapshot livre (so tira o
+// snapshot). Nome seguido de barra e pasta no meio de um caminho, como no format
+const RE_DISKUTIL = /(?<![\w\-.])diskutil(?![\w\-.\/])/i
+const RE_DISKUTIL_APAGA = /(?:^|\s)(?:erase(?:Disk|Volume|Optical|CD)|delete(?:Container|Volume|VolumeGroup|LVG|LV)?|reformat|partitionDisk|zeroDisk|randomDisk|secureErase|splitPartition|mergePartitions|resetFusion|destroyRAID)(?=\s|$)/i
+const RE_FORMATA_UNIX = /(?<![\w\-.])(?:mkfs(?:\.\w+)?|mke2fs|mkdosfs|mkntfs|newfs(?:_\w+)?|wipefs|blkdiscard)(?![\w\-.\/])/i
+const RE_SGDISK = /(?<![\w\-.])sgdisk(?![\w\-.\/])/i
+const RE_SGDISK_ZAP = /(?:^|\s)(?:-[Zzo]|--zap-all|--zap|--clear)(?=\s|$)/
+// disco inteiro ou particao: sda, nvme0n1, mmcblk0, disk2 e rdisk2 do Mac, /dev/disk/by-id
+const DISCO_DEV = String.raw`\/dev\/(?:r?disk|sd[a-z]|hd[a-z]|vd[a-z]|xvd[a-z]|nvme\d|mmcblk\d|md\d|dm-\d|mapper\/|nbd\d)`
+// o of= so existe no dd e nos primos dele (gdd, dcfldd), entao nem precisa achar o nome
+const RE_DD_DISCO = new RegExp(String.raw`(?:^|\s)of=${DISCO_DEV}`)
+// > /dev/sdb grava por cima do disco seja qual for o programa (cat imagem.iso > /dev/sdb),
+// entao vale ate no pedaco que so cita
+const RE_REDIR_DISCO = new RegExp(String.raw`>\s*${DISCO_DEV}`)
+const RE_SHRED_TEE = /(?<![\w\-.])(?:shred|tee)(?![\w\-.\/])/i
+const RE_ARG_DISCO = new RegExp(String.raw`(?:^|\s)${DISCO_DEV}`)
+function discoUnixPerigoso(comando) {
+  for (const { seg, soCita } of pedacosDeComando(comando)) {
+    if (RE_REDIR_DISCO.test(seg)) return true
+    if (soCita) continue
+    if (RE_FORMATA_UNIX.test(seg) || RE_DD_DISCO.test(seg)) return true
+    const iDiskutil = seg.search(RE_DISKUTIL)
+    if (iDiskutil >= 0 && RE_DISKUTIL_APAGA.test(seg.slice(iDiskutil))) return true
+    if (RE_SGDISK.test(seg) && RE_SGDISK_ZAP.test(seg)) return true
+    if (RE_SHRED_TEE.test(seg) && RE_ARG_DISCO.test(seg)) return true
   }
   return false
 }
@@ -235,8 +369,8 @@ const Y_OPCAO = /\/[^\s\/<>]*|--%/y
 const Y_REDIR = /[\d*]?[<>]{1,2}/y
 const Y_ALVO = /[^\s<>]*/y
 const Y_UNIDADE_SOZINHA = /[a-zA-Z]:(?=\s|$)/y
-// \D: no bash entrega D: ao programa
-const Y_UNIDADE = /\\?[a-zA-Z]:(?:[\\\/\s<>]|$)/y
+// \D: no bash entrega D: ao programa; o ")" e o "}" fecham o $( ) e o bloco de script
+const Y_UNIDADE = /\\?[a-zA-Z]:(?:[\\\/\s<>)}]|$)/y
 function casaEm(re, seg, i) {
   re.lastIndex = i
   const m = re.exec(seg)
@@ -320,6 +454,14 @@ function subshellPerigoso(comando) {
 const PERIGOS_SUBSHELL = [
   { teste: subshellPerigoso, motivo: 'roda um script baixado da internet sem ninguem ler' },
 ]
+// rodada 5.17: as regras de disco leem o limpo (na lista PERIGOS) e o desaspado: format "D:"
+// e o format.com do System32 chamado pelo caminho entre aspas tinham a letra ou o programa
+// dentro das aspas
+const PERIGOS_DISCO = [
+  { teste: formatPerigoso, motivo: 'apaga tudo do disco pra sempre' },
+  { teste: discoPerigoso, motivo: 'apaga tudo do disco pra sempre' },
+  { teste: discoUnixPerigoso, motivo: 'apaga tudo do disco pra sempre' },
+]
 
 const PERIGOS = [
   { teste: rmPerigoso, motivo: 'apaga uma pasta inteira de uma vez' },
@@ -378,7 +520,7 @@ const PERIGOS = [
   // Microsoft confirma os dois como apelido do mesmo Remove-Item; cobrir um so e deixar
   // o gemeo de fora era o buraco que esta rodada veio fechar
   { re: /\b(?:del|erase)\b(?=[^\n]*\s\/s\b)/i, motivo: 'apaga arquivo de varias pastas de uma vez' },
-  { teste: formatPerigoso, motivo: 'apaga tudo do disco pra sempre' },
+  ...PERIGOS_DISCO,
   ...PERIGOS_POWERSHELL,
 ]
 
@@ -402,7 +544,7 @@ export function ehPerigoso(comando) {
   const emUmaLinha = desaspado.replace(/`?\r?\n\s*/g, ' ')
   // e tambem linha a linha: juntar tudo deixava um `-Command` da primeira linha encerrar a
   // leitura das opcoes e esconder o `powershell "-e"` da segunda (achado do Codex na final)
-  const motivo = testarPadroes(limpo) || testarPadroes(desaspado, PERIGOS_POWERSHELL) || testarPadroes(emUmaLinha, PERIGOS_POWERSHELL) || testarPadroes(desaspado, PERIGOS_SUBSHELL)
+  const motivo = testarPadroes(limpo) || testarPadroes(desaspado, PERIGOS_POWERSHELL) || testarPadroes(emUmaLinha, PERIGOS_POWERSHELL) || testarPadroes(desaspado, PERIGOS_SUBSHELL) || testarPadroes(desaspado, PERIGOS_DISCO)
   if (motivo) return motivo
   // correcao 5: todo trecho entre aspas que NAO veio de um escritor de texto conhecido
   // e comando de verdade em potencial, e testa nele mesmo, recursivo (o texto extraido

@@ -26,15 +26,14 @@ O kit instalado é uma foto do dia em que foi baixado. Toda melhoria nova (skill
 
 ## O que é do kit e pode ser atualizado
 
-`_modelo/` inteiro, `.claude/skills/` da pasta-mãe, `_ferramentas/`, `docs/`, `VERSAO`, `README.md`, `COMECE-AQUI.md`, `AGENTS.md` e `CLAUDE.md` da pasta-mãe, e o texto do `RESPONDA-AQUI.txt` **só se ainda estiver em branco**. O catálogo de estilos de vídeo, `_estilos-video/`, também é do kit, mas tem caminho próprio (seção "Catálogo de estilos de vídeo", depois do Passo 3).
+`_modelo/` inteiro, `.claude/skills/` da pasta-mãe, `_ferramentas/`, `docs/`, `VERSAO`, `README.md`, `COMECE-AQUI.md`, `AGENTS.md` e `CLAUDE.md` da pasta-mãe, e o texto do `RESPONDA-AQUI.txt` **só se ainda estiver em branco**.
 
 O `.gitignore` e o `.claude/settings.json` da pasta-mãe são metade do kit e metade da pessoa: seguem o passo "Arquivos misturados da pasta-mãe", logo depois do Passo 3.
 
 ## Passo 1, onde está o zip novo
 
-Os comandos de baixar e descompactar desta skill (aqui e na seção "Catálogo de
-estilos de vídeo") rodam pela ferramenta Bash; no Windows ela é o Git Bash, que
-vem com o Git. Pela ferramenta PowerShell eles quebram.
+Os comandos de baixar e descompactar desta skill rodam pela ferramenta Bash; no Windows
+ela é o Git Bash, que vem com o Git. Pela ferramenta PowerShell eles quebram.
 
 Oferecer os dois caminhos, nessa ordem:
 
@@ -42,8 +41,7 @@ Oferecer os dois caminhos, nessa ordem:
    `_modelo/.claude/skills/atualizar-sabinos/SKILL.md` lendo a versão atual do
    arquivo `VERSAO` desta pasta-mãe (não do `.sabinos/instalado.json`, que só existe
    em projeto), e depois o Passo 2. A versão nova é a pasta `kit-<versão>` extraída.
-   Se ele concluir que o kit já está na última versão, não encerrar aqui: dizer isso e ir
-   direto pra seção "Catálogo de estilos de vídeo", que tem versão própria.
+   Se ele concluir que o kit já está na última versão, dizer isso e encerrar.
 2. **Zip que a pessoa já baixou:** perguntar onde está (formato de 4 partes) e
    extrair sempre numa pasta temporária nova e vazia, criada agora, fora da pasta-mãe:
    no Windows `"C:/Windows/System32/tar.exe" -xf "<zip>" -C "<temp>"`, no Mac `unzip -q "<zip>" -d "<temp>"`.
@@ -87,20 +85,6 @@ Se a pessoa pedir detalhe, mostrar o diff daquele arquivo resumido em prosa (o q
 2. Copiar os arquivos aprovados por cima. Arquivo "sumiu" só se apaga com aprovação explícita e nominal. Bloco do motor recusado: nada dele muda, e o Passo 4 não roda.
 3. `RESPONDA-AQUI.txt`: substituir só se o atual estiver em branco (nenhuma resposta escrita).
 4. Rodar `node _ferramentas/verificar-kit.mjs .` (obrigatório, não pular: em teste real este passo ficou pra trás) e mostrar ao usuário a última linha da saída, a que começa com `Resultado:` (quantas conferências ficaram verdes, quantas falharam e quantas não rodaram inteiras). Na pasta-mãe é normal o Gate 1 sair `parcial` (a lista de termos só existe na bancada de quem faz o kit) e o Gate 7 sair `n/a` (sem zip ao lado): dizer isso em uma frase, sem tratar como problema. Gate 11 `n/a` (git não encontrado) fica fora desse normal: o backup não foi conferido; ligar o git pelo passo de primeira vez do `/syncar` e rodar de novo. Se algum gate falhar, dizer qual e o que fazer; não desfazer sozinho. Gate 11, Gate 9 ou Gate 3 (linha que falta no `.gitignore`) vermelho na pasta-mãe: fazer o passo dos arquivos misturados (abaixo) e rodar de novo.
-
-## Catálogo de estilos de vídeo
-
-A pasta `_estilos-video/` guarda os estilos de edição que a `/aplicar-estilo` usa (uns 230 MB de vídeo, som e foto). Ela entra inteira ou não entra, nunca arquivo por arquivo, e nunca vai pro backup: o `.gitignore` da pasta-mãe a deixa fora de propósito. Rodar este passo depois do Passo 3, mesmo se a pessoa recusou o resto.
-
-1. Ler a versão do catálogo daqui: a primeira linha de `_estilos-video/VERSAO` (sem a pasta, a pessoa ainda não tem os estilos).
-2. **Zip que a pessoa já baixou (caminho 2 do Passo 1):** se a pasta extraída tem `_estilos-video/VERSAO` diferente da daqui, o catálogo aparece como um item a mais no resumo do Passo 2 ("Estilos de edição de vídeo: versão nova") e, aprovado, entra inteiro.
-3. **Baixar do GitHub (caminho 1):** o catálogo não vem no download do kit, porque tem repositório próprio. Ler a versão publicada com `curl -fsSL https://raw.githubusercontent.com/sistema-sabinos/estilos-video/main/VERSAO`. Igual à daqui: nada a fazer e nada a dizer. Diferente, ou sem pasta aqui: avisar "tem estilos de edição de vídeo novos (ou: os estilos de edição de vídeo ainda não estão nesta pasta), são uns 230 MB pra baixar; baixo agora?" e esperar o sim. Com o sim:
-   - baixar numa pasta temporária nova e vazia, fora da pasta-mãe: `curl -fL -o "<temp>/estilos.zip" https://github.com/sistema-sabinos/estilos-video/archive/refs/heads/main.zip`;
-   - extrair como no Passo 1 (no Windows pelo `"C:/Windows/System32/tar.exe"`, no Mac pelo `unzip`); a pasta extraída é `<temp>/estilos-video-main/`;
-   - conferir que ela tem `catalogo.md` e que a primeira linha do `VERSAO` dela é a mesma lida no raw; se não for, parar e dizer que o download veio diferente;
-   - mover o `_estilos-video/` atual (se existe) pra `_kit-anterior-<AAAA-MM-DD>/_estilos-video/` e pôr a pasta extraída no lugar, com o nome `_estilos-video`.
-   Sem o sim: seguir e dizer que dá pra trazer os estilos depois, rodando a `/atualizar-kit` de novo.
-4. Nunca editar arquivo do catálogo à mão: a próxima atualização troca a pasta inteira.
 
 ## Arquivos misturados da pasta-mãe
 

@@ -34,6 +34,7 @@ CENAS = {
 }
 
 def probe(path):
+    # width e height crus: so vale pra video sem rotacao (a fala-montada do montar-blocos); bruto girado embaralha o quadro
     out = subprocess.check_output(["ffprobe", "-v", "error", "-select_streams", "v:0",
         "-show_entries", "stream=width,height,r_frame_rate,nb_frames", "-of", "csv=p=0", path]).decode().strip().split(",")
     w, h = int(out[0]), int(out[1]); num, den = out[2].split("/"); fps = int(num) / int(den)

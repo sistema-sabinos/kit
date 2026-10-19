@@ -1,5 +1,5 @@
 // Legenda central em duas cores: entrada em pop por página, palavra falada em cor de destaque.
-// Lê o arquivo alinhado (palavra por palavra) e junta 2 a 3 palavras por página.
+// Lê o arquivo alinhado (palavra por palavra) e junta até 3 palavras por página (4 quando as 3 primeiras são curtas).
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -12,12 +12,13 @@ import {
   useDelayRender,
   useVideoConfig,
 } from "remotion";
-import { createTikTokStyleCaptions } from "@remotion/captions";
 import type { Caption, TikTokPage } from "@remotion/captions";
+import { fimDaPaginaMs, paginas } from "./curtas";
 import { tema } from "./tema";
 
-// quantas palavras por página: ~900 ms junta 2 a 3 palavras
+// página de até 3 palavras (4 quando as 3 primeiras são curtas) ou ~900 ms, sem fechar em palavra curta (curtas.ts)
 const TROCA_A_CADA_MS = 900;
+const MAX_PALAVRAS = 3;
 
 const Pagina: React.FC<{ page: TikTokPage; fontFamily: string; topo: number }> = ({
   page,
@@ -96,10 +97,7 @@ export const Legendas: React.FC<{
 
   const { pages } = useMemo(() => {
     if (!captions) return { pages: [] as TikTokPage[] };
-    return createTikTokStyleCaptions({
-      captions,
-      combineTokensWithinMilliseconds: TROCA_A_CADA_MS,
-    });
+    return { pages: paginas(captions, MAX_PALAVRAS, TROCA_A_CADA_MS) };
   }, [captions]);
 
   if (!captions) return null;
@@ -109,10 +107,7 @@ export const Legendas: React.FC<{
       {pages.map((page, i) => {
         const prox = pages[i + 1] ?? null;
         const inicio = (page.startMs / 1000) * fps;
-        const fim = Math.min(
-          prox ? (prox.startMs / 1000) * fps : Infinity,
-          inicio + (TROCA_A_CADA_MS / 1000) * fps + fps * 0.3,
-        );
+        const fim = (fimDaPaginaMs(page, prox, TROCA_A_CADA_MS) / 1000) * fps;
         const dur = fim - inicio;
         if (dur <= 0) return null;
         return (

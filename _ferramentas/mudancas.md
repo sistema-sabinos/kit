@@ -544,14 +544,6 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Como aplicar:** projeto com a pasta: a skill chega pelo motor do `/atualizar-sabinos`; fazer à pessoa a pergunta 3 da "Primeira vez" da `/mei` (vende fora do `/caixa`? quanto no ano, no painel de cada um?) e gravar cada resposta com `externo`. Projeto sem a pasta: oferecer a `/mei` dizendo que ela traz junto os scripts do `/caixa`; com o sim, trazer da pasta-mãe as pastas do pacote loja que faltam e a da `mei` (`_modelo/.claude/skills/caixa/`, `atendimento/`, `cobrar/` e `mei/`) e seguir a "Primeira vez" da `/mei`.
 **Como testar:** `node .claude/skills/mei/scripts/mei.mjs proximos` mostra o teto, e com venda de fora anotada a linha traz `de fora (`.
 
-## aplicar-estilo
-
-**O que é:** skill nova do pacote de vídeo, a `/aplicar-estilo`: edita o vídeo da pessoa num dos mais de 70 estilos prontos de profissional (aula, receita, antes e depois, notícia, anúncio), vertical ou horizontal. Os estilos ficam na pasta `_estilos-video/` da pasta-mãe, que chega pela `/atualizar-kit`.
-**Por quê:** a `/editar-video` edita do jeito da pessoa; quem quer um formato pronto do nicho dela agora escolhe um estilo e recebe a edição completa.
-**Te afeta se:** o projeto tem `.claude/skills/editar-video/` e não tem `.claude/skills/aplicar-estilo/`.
-**Como aplicar:** copiar a pasta `_modelo/.claude/skills/aplicar-estilo/` da pasta-mãe pro projeto (sem os arquivos `.test.mjs`). Se a pasta-mãe ainda não tem `_estilos-video/`, rodar a `/atualizar-kit` lá antes (uns 230 MB, com o sim da pessoa). Depois, o passo 5 da `/configurar-video` (skills do Remotion), se ainda não foi feito.
-**Como testar:** `node .claude/skills/aplicar-estilo/scripts/estilos.mjs conferir` sai com tudo `ok`, e `estilos.mjs listar` mostra os estilos.
-
 ## clonar-especialista
 
 **O que é:** comando novo `/clonar-especialista`: você diz uma pessoa pública e o sistema estuda o que ela publicou (em qualquer idioma, mais o livro ou curso que você tiver) e monta um conselheiro que pensa do jeito dela, aplicado ao seu negócio, que aparece em todos os seus projetos.
@@ -586,7 +578,7 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## node-22
 
-**O que é:** o SabinOS passa a pedir o Node 22 ou mais (antes aceitava o 20). O `/setup` e o `/novo-projeto` conferem a versão e oferecem a instalação, e as conferências do `/configurar-video` e da `/aplicar-estilo` (que chegam pelo atualizador) passam a marcar Node abaixo de 22 como faltando.
+**O que é:** o SabinOS passa a pedir o Node 22 ou mais (antes aceitava o 20). O `/setup` e o `/novo-projeto` conferem a versão e oferecem a instalação, e a conferência do `/configurar-video` (que chega pelo atualizador) passa a marcar Node abaixo de 22 como faltando.
 **Por quê:** o Node 20 parou de receber correção de segurança em 2026-04-30, e partes do sistema (Mercado Livre, vídeo de produto) quebram nas primeiras versões dele.
 **Te afeta se:** `node -v` mostra versão abaixo de 22.
 **Como aplicar:** nada muda nos arquivos do projeto. Rodar a conferência dos programas do `/setup` (`../.claude/skills/setup/SKILL.md`, seção "Conferir os programas", itens 1 a 4) e seguir o que ela mandar, com os mesmos textos e o ok da pessoa antes de instalar. Sem a pasta-mãe neste computador: mandar a pessoa pro nodejs.org, versão LTS, opções padrão.
@@ -615,3 +607,11 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** a primeira linha do `.gitignore` do projeto que não é comentário nem vazia é `*` (o fechado) e falta a linha `!*.jsx` ou a linha `!*.cjs`.
 **Como aplicar:** no `.gitignore` do projeto, logo abaixo da linha `!*.tsx` (sem ela, no fim do bloco `# script`), acrescentar `!*.jsx` e `!*.cjs`, uma por linha. Mostrar o antes e o depois.
 **Como testar:** na raiz do projeto, `git check-ignore app/codigo/x.jsx` e `git check-ignore x.cjs` voltam vazios.
+
+## efeitos-pop-acende
+
+**O que é:** o `/editar-video` agora cria sozinho dois efeitos sonoros básicos, o pop e o acende, na biblioteca de efeitos quando ela está sem nenhum som. Quem pede vídeo sem efeito tem o pedido anotado no `verificar-props.json` (campo `pedidoSemEfeito`), e o fiscal do fundo verde aceita o vídeo sem efeito com um aviso.
+**Por quê:** com a biblioteca vazia, o primeiro vídeo saía sem efeito nenhum, e o fiscal do fundo verde reprovava todo gráfico sem som, mesmo quando o aluno tinha pedido assim.
+**Te afeta se:** o projeto tem `.claude/skills/editar-video/` e ainda não tem `.claude/skills/editar-video/scripts/gerar-sfx.mjs`.
+**Como aplicar:** o `/atualizar-sabinos` traz a skill nova; depois rode `/configurar-video` uma vez, porque o motor de vídeo mudou.
+**Como testar:** `node .claude/skills/editar-video/scripts/gerar-sfx.mjs` termina dizendo quantos efeitos gerou e quantos já existiam, e nunca troca um som que já estava na pasta.

@@ -59,6 +59,8 @@ reescrito. O Claude avisa o aluno e não decide sozinho.
 
 - [ ] Tem variedade de estímulo, ou é o mesmo enquadramento o tempo todo?
 - [ ] Tem imagem parada por mais de 2 segundos sem motivo?
+- [ ] **Densidade conferida por script** no cenário próprio (o render reprova vão
+      longo; efeito sonoro sozinho não conta).
 - [ ] Tem poluição visual, dois ou mais elementos disputando o olho?
 - [ ] Cada efeito presente tem um motivo declarado?
 
@@ -99,9 +101,10 @@ reescrito. O Claude avisa o aluno e não decide sozinho.
 ## Técnico (antes de exportar)
 
 - [ ] Vertical, 1080 por 1920, 30 quadros por segundo?
+- [ ] Pessoa sem esticar (rosto redondo, não comprido)?
 - [ ] Sem marca d'água de aplicativo?
 - [ ] Primeiro e último quadro limpos, sem quadro preto nem sobra?
-- [ ] A música e os efeitos usados estão liberados para uso comercial? Confira em
+- [ ] A música e os efeitos usados estão liberados para uso comercial (o pop e o acende gerados pelo SabinOS já são liberados)? Confira em
       nos `registro.md` da biblioteca e na página do site de onde veio. Música que exige
       crédito entra na descrição do post.
 

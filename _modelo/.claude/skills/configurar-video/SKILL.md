@@ -21,9 +21,10 @@ Todos os comandos rodam da pasta do projeto (onde fica a pasta `.claude`).
 ## Antes de falar do peso
 
 A instalação precisa de uns 4 GB livres no disco (os programas e a folga pra gerar o
-vídeo). Depois de pronta, ela ocupa uns 3 GB. Música e efeito sonoro não vêm no kit: a
+vídeo). Depois de pronta, ela ocupa uns 3 GB. Música não vem no kit: a
 licença dos sites de música grátis não deixa o SabinOS repassar os arquivos, então cada
-pessoa baixa os seus, de graça, e o `/editar-video` mostra onde colocar. O primeiro vídeo
+pessoa baixa a sua, de graça, e o `/editar-video` mostra onde colocar. Dos efeitos
+sonoros, o kit gera só o pop e o acende, e o resto a pessoa baixa. O primeiro vídeo
 gerado ainda baixa sozinho um navegador sem tela, que o Remotion usa pra desenhar cada
 quadro (uns 270 MB no disco).
 

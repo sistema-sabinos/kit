@@ -42,8 +42,6 @@ const RE_SEGREDO = /(API_KEY|ACCESS_TOKEN|REFRESH_TOKEN|CLIENT_SECRET|BOT_TOKEN|
 // valor que e placeholder ou leitura de variavel, nao chave real
 const RE_PLACEHOLDER = /xxx|aqui|exemplo|placeholder|process\.env|sua.?chave|seu.?token/i
 const RE_LINK = /\[[^\]]*\]\(([^)]+)\)/g
-// pasta da pasta-mae com os estilos de edicao de video (5.9): vai no zip, fica fora do backup
-export const CATALOGO_ESTILOS = '_estilos-video/'
 // Gate 6: dependencia de Windows chumbada (exportado pro teste dos guias na bancada)
 export const RE_WIN = /(?:\b[A-Z]:[\\/]{1,2}[\w\\/]|schtasks|\.bat\b|\\\\Users\\\\)/i
 
@@ -672,9 +670,7 @@ export function rodarGates(dirKit, opcoes = {}) {
     const primeira = readFileSync(join(dirKit, '.gitignore'), 'utf8').split('\n').map(l => l.trim())
       .find(l => l && !l.startsWith('#'))
     if (primeira !== '*') falhas.push({ gate: 11, arquivo: '.gitignore', detalhe: "é o antigo (aberto); seguir o passo 'Arquivos misturados da pasta-mãe' do .claude/skills/atualizar-kit/SKILL.md" })
-    // o catalogo de estilos de video fica fora do backup de proposito: e conteudo do kit
-    // (~230 MB de video, som e foto) e volta pelo /atualizar-kit, nunca coisa do aluno
-    const fora = foraDoBackup(dirKit, arquivos.filter(r => !r.startsWith('_modelo/') && !r.startsWith(CATALOGO_ESTILOS)))
+    const fora = foraDoBackup(dirKit, arquivos.filter(r => !r.startsWith('_modelo/')))
     if (fora === null) semGit11('o .gitignore da pasta-mae')
     else for (const r of fora) falhas.push({ gate: 11, arquivo: r, detalhe: 'fora do repositorio da pasta-mae: liberar o tipo ou o caminho no .gitignore da pasta-mae' })
   }
@@ -695,10 +691,9 @@ export function rodarGates(dirKit, opcoes = {}) {
 
   // Gate 14: terminal e da IA. Frase que manda o aluno digitar, rodar ou colar comando no
   // terminal, no texto que vai pra ele (detalhe e escopo no terminalProAluno, la em cima).
-  // O catalogo de estilos e conteudo de video, nao fala com o aluno.
   for (const rel of arquivos) {
     const direto = RE_FALA_DIRETA.test(rel)
-    if (!direto && (!rel.endsWith('.md') || rel.startsWith(CATALOGO_ESTILOS))) continue
+    if (!direto && !rel.endsWith('.md')) continue
     for (const { linha, trecho } of terminalProAluno(readFileSync(join(dirKit, rel), 'utf8'), !direto))
       falhas.push({ gate: 14, arquivo: rel, detalhe: `linha ${linha}: manda o aluno usar o terminal ("${trecho}"); trocar por "a IA roda" ou por clique, ou marcar <!-- ultimo-caso: motivo --> na linha` })
   }

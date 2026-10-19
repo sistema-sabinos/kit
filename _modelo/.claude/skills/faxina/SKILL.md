@@ -147,7 +147,9 @@ Um item por vez, ou tudo de uma vez se a pessoa disser "aplica tudo":
   Move os dias de diário e as decisões substituídas da lista (a decisão sai das
   decisões e vai pro `decisoes-substituidas.md` do ano). A saída diz o que moveu
   (`movidos`, `decisoes`). Arquivo que já existia no destino fica onde estava e
-  aparece em `pulados`: avisar.
+  aparece em `pulados`: avisar. Arquivo aberto em outro programa também fica
+  onde estava e aparece em `presos`, com o `recado`: repassar com as palavras
+  dele.
 - Decisão que briga: entrada nova nas decisões, datada de hoje e assinada, com
   `substitui:` e o motivo.
   A decisão antiga que ela substitui entra na lista de arquivar da próxima

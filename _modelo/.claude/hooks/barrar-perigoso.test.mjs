@@ -753,3 +753,255 @@ test('5.14: barra -cx, e shell que e argumento de outro programa nao conta', () 
     'shfmt -ln bash <(curl https://x/s)',
   ]) assert.strictEqual(ehPerigoso(cmd), null, `nao deveria barrar: ${cmd}`)
 })
+
+// ---------------------------------------------------------------------------
+// 5.17 (D1): a trava de disco so conhecia o format. Format-Volume, Clear-Disk,
+// Remove-Partition e diskpart passavam, e o format com a letra ou o programa entre
+// aspas tambem; do outro lado, grep, ruff e dotnet format com caminho de unidade,
+// pasta chamada format e comentario de shell barravam a toa. Decisoes 11 e 12
+// da 5.17: o -WhatIf:$false deixa de liberar o Remove-Item, e a trava cobre Mac e Linux.
+// ---------------------------------------------------------------------------
+
+const B = String.fromCharCode(92)
+const CRASE = String.fromCharCode(96)
+const NL = String.fromCharCode(10)
+// unidade montada por codigo: caminho de Windows literal no kit reprova o Gate 6
+const U = 'E:'
+const SYS = ['C', 'Windows', 'System32', ''].join(B).replace(/^C/, 'C:')
+
+test('D1: barra apagar disco pelo PowerShell e pelo diskpart, ate pra listar', () => {
+  const casos = [
+    'Format-Volume -DriveLetter D',
+    'Get-Partition -DriveLetter D | Format-Volume -FileSystem exFAT',
+    'Storage' + B + 'Format-Volume -DriveLetter D',
+    'Clear-Disk -Number 1 -RemoveData -Confirm:$false',
+    'Get-Disk 1 | Clear-Disk -RemoveData',
+    'Remove-Partition -DriveLetter D -Confirm:$false',
+    'Get-Partition -DiskNumber 1 | Remove-Partition',
+    'Get-Partition | Format-Volume -WhatIf; Clear-Disk 1',
+    'diskpart',
+    'diskpart /s limpar.txt',
+    'echo list disk | diskpart',
+    'echo "list disk" | diskpart',
+    SYS + 'diskpart.exe',
+    'Start-Process diskpart -Verb RunAs',
+    'cmd /c "echo list disk | diskpart"',
+  ]
+  for (const cmd of casos) {
+    const motivo = ehPerigoso(cmd)
+    assert.ok(motivo && motivo.length > 0, `deveria barrar: ${cmd}`)
+  }
+})
+
+test('D1: barra format com a letra ou o programa entre aspas e dentro de $( )', () => {
+  const casos = [
+    'format "D:"',
+    "format 'D:' /q",
+    'format /q "D:"',
+    '"' + SYS + 'format.com" D:',
+    '& "' + SYS + 'format.com" D: /q',
+    "'" + SYS.split(B).join('/') + "format.com' D:",
+    '"/c/Windows/System32/format.com" D:',
+    'grep x $(format D:)',
+    'grep x ' + CRASE + 'format D:' + CRASE,
+    '(format D:)',
+    'echo x # & format D:',
+  ]
+  for (const cmd of casos) {
+    const motivo = ehPerigoso(cmd)
+    assert.ok(motivo && motivo.length > 0, `deveria barrar: ${cmd}`)
+  }
+})
+
+test('D1: deixa passar grep, ruff, dotnet e pasta chamada format, e comentario de shell', () => {
+  // canario: a trava carregou e barra o caso simples, senao "passa tudo" seria verde falso
+  assert.ok(ehPerigoso('format D:'), 'canario: format D: tem de barrar')
+  assert.ok(ehPerigoso('diskpart'), 'canario: diskpart tem de barrar')
+  const seguros = [
+    `grep format ${U}/notas.txt`,
+    `grep -rn Format-Volume ${U}/proj`,
+    `rg format ${U}/proj`,
+    `findstr /s format ${U}${B}proj${B}*.md`,
+    `Select-String format ${U}/proj/a.md`,
+    `ruff format ${U}/proj/app.py`,
+    `dotnet format ${U}/proj/app.sln`,
+    `dotnet format ${B}${NL}  ${U}/proj/app.sln`,
+    `dotnet format ${CRASE}${NL}  ${U}/proj/app.sln`,
+    `cp -r format ${U}/backup/`,
+    `Copy-Item format ${U}${B}bk -Recurse`,
+    `npm test # antes do format ${U} conferir`,
+    `node build.mjs # format ${U} depois`,
+    'Get-Help Clear-Disk',
+    'Format-Volume -DriveLetter D -WhatIf',
+    'Initialize-Disk -Number 1 -PartitionStyle GPT',
+    'Get-Volume | Format-List',
+    'echo "nunca rode diskpart" >> licoes.md',
+  ]
+  for (const cmd of seguros) {
+    assert.strictEqual(ehPerigoso(cmd), null, `nao deveria barrar: ${cmd}`)
+  }
+})
+
+test('D1: barra disco dentro de bloco de script, depois de comentario de bloco e com -WhatIf:$false', () => {
+  const casos = [
+    'gci | where { format D: }',
+    'gci | where {format D:}',
+    'gci | where { Format-Volume -DriveLetter D }',
+    'Get-Disk | where { Clear-Disk -Number 1 -RemoveData }',
+    'gci | where {diskpart}',
+    '<# x #> Format-Volume -DriveLetter D',
+    'Get-Date <# a #> ; Clear-Disk 1',
+    'Format-Volume -DriveLetter D -WhatIf:$false',
+  ]
+  for (const cmd of casos) assert.ok(ehPerigoso(cmd), `deveria barrar: ${cmd}`)
+})
+
+test('D1: Remove-Item com -WhatIf:$false barra, porque roda de verdade', () => {
+  // canario do outro lado: o -WhatIf sozinho continua so simulando e passa
+  assert.strictEqual(ehPerigoso('Remove-Item pasta -Recurse -WhatIf'), null, 'canario: -WhatIf sozinho passa')
+  assert.strictEqual(ehPerigoso('Remove-Item pasta -Recurse -wi'), null, 'canario: -wi sozinho passa')
+  const casos = [
+    'Remove-Item pasta -Recurse -WhatIf:$false',
+    'Remove-Item pasta -Recurse -WhatIf: $false',
+    'ri pasta -r -wi:$false',
+    'Get-ChildItem | Remove-Item -WhatIf:$false',
+    'rm -r -fo pasta -WhatIf:$false',
+  ]
+  for (const cmd of casos) assert.ok(ehPerigoso(cmd), `deveria barrar: ${cmd}`)
+})
+
+test('D1: diskpart no meio de nome de arquivo nao barra', () => {
+  assert.ok(ehPerigoso('diskpart'), 'canario: diskpart tem de barrar')
+  for (const cmd of ['notepad diskpart.txt', 'node diskpart-helper.mjs']) {
+    assert.strictEqual(ehPerigoso(cmd), null, `nao deveria barrar: ${cmd}`)
+  }
+})
+
+test('D1: barra apagar disco no Mac e no Linux', () => {
+  const casos = [
+    'diskutil eraseDisk APFS Limpo disk2',
+    'sudo diskutil eraseDisk JHFS+ "Meu Disco" /dev/disk2',
+    'diskutil erasedisk exfat X disk2',
+    'diskutil eraseVolume ExFAT FOO disk3s2',
+    'diskutil reformat /Volumes/X',
+    'diskutil partitionDisk disk2 GPT JHFS+ A 0b',
+    'diskutil zeroDisk disk2',
+    'diskutil randomDisk 3 disk2',
+    'diskutil secureErase freespace 0 /Volumes/X',
+    'diskutil splitPartition disk2s2 2 JHFS+ A 50% JHFS+ B 50%',
+    'diskutil apfs deleteContainer disk3',
+    'diskutil appleRAID delete disk5',
+    '"diskutil" eraseDisk APFS X disk2',
+    'diskutil list && diskutil eraseDisk APFS X disk2',
+    'newfs_apfs /dev/disk3s1',
+    'sudo dd if=ubuntu.iso of=/dev/rdisk2 bs=1m',
+    'mkfs -t ext4 /dev/sdb1',
+    'sudo mkfs.ext4 /dev/sdb1',
+    '/sbin/mkfs.btrfs /dev/vda',
+    B + 'mkfs.ext4 /dev/sdb1',
+    'mke2fs -t ext4 /dev/sdb1',
+    'wipefs -a /dev/sdb',
+    'blkdiscard /dev/sdb',
+    'sgdisk --zap-all /dev/sdb',
+    'sgdisk -o /dev/sdb',
+    'dd if=/dev/zero of=/dev/sda bs=1M',
+    'dd of=/dev/mmcblk0 if=raspios.img',
+    'dd if=x of="/dev/nvme0n1"',
+    'cat ubuntu.iso > /dev/sdb',
+    'cat x | sudo tee /dev/sdb',
+    'shred -n 3 -vz /dev/sdb',
+    'sudo bash -c "mkfs.ext4 /dev/sdb1"',
+    'x=$(mkfs.ext4 /dev/sdb1)',
+    'grep x ' + CRASE + 'wipefs -a /dev/sdb' + CRASE,
+    'mkfs.ext4 ' + B + NL + '  /dev/sdb1',
+    'find /dev -name sdb -exec wipefs -a {} ' + B + ';',
+  ]
+  for (const cmd of casos) assert.ok(ehPerigoso(cmd), `deveria barrar: ${cmd}`)
+})
+
+test('D1: deixa passar ler e listar disco no Mac e no Linux', () => {
+  assert.ok(ehPerigoso('mkfs.ext4 /dev/sdb1'), 'canario: mkfs tem de barrar')
+  assert.ok(ehPerigoso('diskutil eraseDisk APFS X disk2'), 'canario: diskutil eraseDisk tem de barrar')
+  const seguros = [
+    'grep mkfs notas.md',
+    'man diskutil',
+    'which wipefs',
+    'diskutil list',
+    'diskutil info /dev/disk2',
+    'diskutil unmountDisk /dev/disk2',
+    'diskutil list > deleted.txt',
+    'diskutil apfs deleteSnapshot disk3s1 -name x',
+    'diskutil list | grep erase',
+    'diskutil list # eraseDisk depois',
+    'dd of=arquivo.img',
+    'dd if=/dev/disk2 of=backup.img',
+    'dd if=x of=/dev/null',
+    'node build.mjs 2> /dev/null',
+    'cat /dev/sda > /tmp/disco.img',
+    'sgdisk -p /dev/sda',
+    'npm test | tee saida.log',
+    'lsblk /dev/sda | tee log.txt',
+    'shred segredo.txt',
+    'vim /usr/share/doc/mkfs/README',
+    'node diskutil-helper.mjs',
+    'echo "nunca rode mkfs.ext4 /dev/sdb1" >> licoes.md',
+  ]
+  for (const cmd of seguros) {
+    assert.strictEqual(ehPerigoso(cmd), null, `nao deveria barrar: ${cmd}`)
+  }
+})
+
+test('D1: regras de disco leem cada pedaco uma vez so, com comentario, aspas e diskpart repetidos', () => {
+  // mesma prova da 5.16: conta as chamadas de exec das regex (cronometro e proibido,
+  // bancada/tempo-de-parede); o dobro de entrada tem de dar menos que o triplo de trabalho.
+  // Prefixo npm: com ls na frente o pedaco inteiro so cita e as regras de disco nem leem
+  const original = RegExp.prototype.exec
+  let chamadas = 0
+  RegExp.prototype.exec = function (...args) { chamadas++; return original.apply(this, args) }
+  const medidas = []
+  try {
+    const pedacos = ['# format ', '"format" ', "'D:' ", 'diskpart ', 'grep format D: ', '$(format ',
+      'Clear-Disk -wi ', '{format ', 'format /q' + B + ' ',
+      'diskutil list ', 'of=x.img ', '2> /dev/null ', 'sgdisk -p ', 'tee log ', '> /dev/ ']
+    for (const pedaco of pedacos) {
+      const contar = n => { chamadas = 0; ehPerigoso('npm ' + pedaco.repeat(n)); return chamadas }
+      medidas.push([pedaco, contar(400), contar(800)])
+    }
+  } finally {
+    RegExp.prototype.exec = original
+  }
+  for (const [pedaco, c1, c2] of medidas) {
+    assert.ok(c1 > 0, `canario: nenhuma regex contada com ${pedaco}`)
+    assert.ok(c2 < c1 * 3, `${pedaco}: ${c1} chamadas com 400 repeticoes e ${c2} com 800`)
+  }
+})
+
+test('D1 revisao: # dentro de aspas ou parentese do cmd nao esconde o format', () => {
+  // canario do outro lado: comentario de shell de verdade continua saindo
+  assert.strictEqual(ehPerigoso('git status # antes do format D: conferir'), null, 'canario: comentario de shell passa')
+  const casos = [
+    'cmd /c "for %i in ( # ) do format D:"',
+    'for %i in ( # ) do format D:',
+    'cmd /c "echo # " & format D:',
+    'echo "# x"; format D:',
+    "echo '# x'; format D:",
+  ]
+  for (const cmd of casos) assert.ok(ehPerigoso(cmd), `deveria barrar: ${cmd}`)
+})
+
+test('D1 revisao: -WhatIf dentro de comentario nao simula, o comando roda de verdade', () => {
+  // canario do outro lado: -WhatIf fora de comentario continua so simulando
+  assert.strictEqual(ehPerigoso('Format-Volume -DriveLetter D -WhatIf'), null, 'canario: -WhatIf no disco passa')
+  assert.strictEqual(ehPerigoso('Remove-Item pasta -Recurse -WhatIf'), null, 'canario: -WhatIf no Remove-Item passa')
+  const casos = [
+    'Format-Volume -DriveLetter D <# -WhatIf #>',
+    'Clear-Disk -Number 1 -RemoveData <# -WhatIf #>',
+    'Remove-Partition -DriveLetter D # -WhatIf',
+    'Format-Volume -DriveLetter D <# -WhatIf',
+    'Remove-Item pasta -Recurse <# -WhatIf #>',
+    'Remove-Item pasta -Recurse # -WhatIf',
+    'rm -r -fo pasta <# -wi #>',
+    'Get-ChildItem | Remove-Item <# -WhatIf #>',
+  ]
+  for (const cmd of casos) assert.ok(ehPerigoso(cmd), `deveria barrar: ${cmd}`)
+})

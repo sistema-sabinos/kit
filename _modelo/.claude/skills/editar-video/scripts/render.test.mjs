@@ -58,7 +58,8 @@ function falso({ criar = true, passado = false } = {}) {
   return { executar, chamadas }
 }
 
-const base = (c, extra = {}) => ({ slug: 'peca-teste', tipo: 'videov2', raiz: c.raiz, base: c.base, motorKit: c.motorKit, ...extra })
+// semDensidade: as props destes testes sao vazias de proposito; a densidade se prova no densidade.test.mjs
+const base = (c, extra = {}) => ({ slug: 'peca-teste', tipo: 'videov2', raiz: c.raiz, base: c.base, motorKit: c.motorKit, semDensidade: true, ...extra })
 
 test('pronto.json de motor diferente sai 3 mandando rodar configurar-video', () => {
   const c = cenario({ pronto: false })
@@ -264,4 +265,31 @@ test('lerArgumentos aceita volume negativo separado por espaco (--musica-db -6)'
   assert.equal(a.tipo, 'videov2')
   assert.equal(m.lerArgumentos(['--slug', 'x', '--tipo', 'videov2', '--duck-ratio', '-1.5']).duckRatio, -1.5)
   assert.equal(m.lerArgumentos(['--slug', 'x', '--tipo', 'videov2']).musicaDb, -3)
+})
+
+// Windows nao deixa apagar o MP4 aberto num player: o rmSync falha com EPERM (com o video aberto so
+// pra leitura o copyFileSync por cima falha com EBUSY). O apagar falso faz o papel do player.
+test('P8: final aberto no player da recado de fechar o video e nem chama o render', () => {
+  const c = cenario()
+  try {
+    writeFileSync(join(c.peca, 'props.json'), '{"duracaoSeg":1}')
+    const final = join(c.peca, 'final', 'peca-teste.mp4')
+    mkdirSync(join(c.peca, 'final'), { recursive: true })
+    writeFileSync(final, 'video velho')
+    const f = falso()
+    let tentou = false
+    const apagar = (p, op) => {
+      if (p === final) { tentou = true; throw Object.assign(new Error(`EPERM, Permission denied: ${p}`), { code: 'EPERM' }) }
+      return rmSync(p, op)
+    }
+    assert.throws(() => render(base(c, { executar: f.executar, apagar })), (e) => {
+      assert.match(e.message, /Feche o video no player e rode de novo/)
+      assert.ok(e.message.includes(final), 'o recado diz qual video fechar')
+      assert.doesNotMatch(e.message, /EPERM|Permission denied/)
+      return true
+    })
+    assert.ok(tentou, 'canario: o render tentou apagar o final pelo apagar injetado')
+    assert.equal(f.chamadas.length, 0, 'chamou o render sem conseguir tirar o video antigo')
+    assert.equal(readFileSync(final, 'utf8'), 'video velho')
+  } finally { c.limpar() }
 })

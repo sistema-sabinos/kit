@@ -8,11 +8,17 @@ derruba vídeo.
 
 ## A biblioteca é do aluno
 
-O SabinOS não traz música nem efeito: a licença dos sites grátis deixa usar o som
-dentro do vídeo, mas não deixa repassar o arquivo. Então cada aluno baixa os seus.
+O SabinOS não traz música: a licença dos sites grátis deixa usar o som dentro do
+vídeo, mas não deixa repassar o arquivo. Dos efeitos, ele traz só dois básicos, o
+`pop.wav` e o `acende.wav`, que gera por fórmula (`scripts/gerar-sfx.mjs`): são do
+próprio kit e podem ir em qualquer post. Whoosh, impacto, glitch, riser e o resto
+cada aluno baixa os seus.
 
-- **Pasta vazia ou sem a pasta:** o vídeo sai sem efeito e sem música, e funciona.
-  Avise uma vez: "Se quiser música e efeito, baixe grátis no Mixkit (mixkit.co) ou
+- **Pasta de efeitos sem nenhum som:** o Passo 5 roda o `gerar-sfx.mjs`, que grava
+  o pop e o acende e as duas linhas deles no `registro.md`. Nunca sobrescreve som
+  nem linha que já existe.
+- **Sem música, ou só com os 2 efeitos do kit:** o vídeo sai assim, e funciona.
+  Avise uma vez: "Se quiser música e mais efeitos, baixe grátis no Mixkit (mixkit.co) ou
   no Pixabay (pixabay.com), na parte de música e de efeitos sonoros, e salve aqui:
   efeitos em `<_video>/midia/biblioteca/sfx/`, músicas em
   `<_video>/midia/biblioteca/musica/`. Antes, leia a licença na página do site."
@@ -39,7 +45,7 @@ Combinações que funcionam (confira no registro, que é a fonte):
 | Troca de assunto ou entrada de tela cheia | whoosh |
 | Título grande entrando | impacto grave |
 | Riscar ou cortar algo | glitch |
-| Revelação, antes do número que importa | riser, depois um hit |
+| Revelação, antes do número que importa | riser (se o aluno baixar), depois o acende ou um hit |
 
 Regras de dosagem:
 

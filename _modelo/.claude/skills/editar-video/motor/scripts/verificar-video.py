@@ -46,6 +46,9 @@ def alinhar_quadros(mov, visivel):
     """A pessoa pode ter 1 quadro a mais ou a menos que int(DUR * FPS): corta os dois vetores no menor comprimento."""
     n = min(len(mov), len(visivel))
     return mov[:n], visivel[:n]
+def janela_na_lenta(t0, lentas):
+    """Camera lenta (preparar-props.py grava "lentas"): a janela de 1 s que encosta na repeticao tem imagem e voz esticadas de proposito."""
+    return any(t0 < l["ateSeg"] and t0 + 1 > l["deSeg"] for l in lentas)
 def nquadros(p):
     return int(subprocess.check_output(["ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0", "-show_entries",
                                         "stream=nb_read_frames", "-of", "csv=p=0", str(p)]).decode().strip())
@@ -122,6 +125,7 @@ else:
         for t0 in np.arange(0, DUR - 1, 0.5):
             q0 = int(t0 * FPS)
             if visivel[q0:q0 + FPS].mean() < 1 or (ev[int(t0 * 100):int(t0 * 100) + 100] > limiar).mean() < 0.6: continue
+            if janela_na_lenta(t0, P.get("lentas", [])): continue
             ks = np.arange(q0, min(q0 + FPS, len(F)), 3)
             C = F[ks] @ Bp.T / F.shape[1]                        # correlacao de cada quadro com cada quadro do bruto
             offs = np.arange(0, len(Bp) - int(fb) - 1)

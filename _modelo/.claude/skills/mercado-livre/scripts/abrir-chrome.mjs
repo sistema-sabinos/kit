@@ -10,5 +10,5 @@ try {
   console.log('Na primeira vez, entre em mercadolivre.com.br nessa janela e faca login na sua conta de vendedor. O login fica salvo nesse perfil, so nele.')
 } catch (e) {
   console.error(e.message)
-  process.exit(1)
+  process.exitCode = 1
 }

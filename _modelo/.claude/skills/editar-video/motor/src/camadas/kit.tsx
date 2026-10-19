@@ -100,7 +100,7 @@ export const Cartao: React.FC<{ ini: number; style: React.CSSProperties; childre
 export const rotulo: React.CSSProperties = { fontWeight: 600, fontSize: 24, letterSpacing: 3, color: "rgba(255,255,255,0.6)" };
 export const valor: React.CSSProperties = { fontWeight: 800, fontSize: 44, lineHeight: 1.15 };
 
-// legenda de 1 a 3 palavras no peito, última palavra em amarelo
+// legenda de 1 a 3 palavras (4 quando as 3 primeiras são curtas) no peito, última palavra em amarelo
 export type Pagina = { ini: number; fim: number; palavras: string[] };
 export const LegendaPeito: React.FC<{ paginas: Pagina[] }> = ({ paginas }) => {
   const frame = useCurrentFrame();

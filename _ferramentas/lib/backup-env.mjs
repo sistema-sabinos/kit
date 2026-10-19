@@ -17,16 +17,18 @@
 // Uso via linha de comando:
 //   node backup-env.mjs [caminho-do-.env]   (default: ./.env, a partir de onde você rodar)
 //
-// O nome da pasta de backup é derivado automaticamente do nome da pasta que contém o
-// .env (um .env em .../meu-projeto/.env vira backup em
-// ~/.claude/backups/meu-projeto-env/), então cada projeto ganha sua própria pasta sem
-// precisar configurar nada. Pra agendar isso rodando sozinho todo dia, ver o README desta
+// O nome da pasta de backup é derivado automaticamente da pasta que contém o .env: o nome
+// dela mais 8 letras tiradas do caminho inteiro (um .env em .../meu-projeto/.env vira backup
+// em ~/.claude/backups/meu-projeto-1a2b3c4d-env/), com o caminho em minúsculas no Windows.
+// Assim cada projeto ganha sua própria pasta sem configurar nada, inclusive dois projetos de
+// mesmo nome em lugares diferentes. Pra agendar isso rodando sozinho todo dia, ver o README desta
 // pasta.
 
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, renameSync, existsSync } from 'node:fs';
 import { join, basename, dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import os from 'node:os';
+import { createHash } from 'node:crypto';
 
 const MIN_CHAVES_PADRAO = 1;  // .env de verdade pode ter 2 ou 3 chaves; zero é arquivo zerado
 const MANTER_PADRAO = 30;     // quantas cópias datadas guardar
@@ -43,6 +45,16 @@ function escreverAtomico(caminho, conteudo) {
   renameSync(tmp, caminho);
 }
 
+// Nome + 8 letras do caminho inteiro: dois projetos "loja" em pastas diferentes nao dividem a
+// mesma pasta de backup (a conta do truncado compararia o .env de um com a copia do outro).
+// No Windows o caminho vai em minusculas, pra letra de unidade maiuscula ou minuscula cair na
+// mesma pasta. A pasta antiga, so com o nome, fica onde esta e nao recebe mais copia.
+function pastaDoProjeto(envPath) {
+  const dir = dirname(resolve(envPath));
+  const chave = process.platform === 'win32' ? dir.toLowerCase() : dir;
+  return `${basename(dir)}-${createHash('sha256').update(chave).digest('hex').slice(0, 8)}-env`;
+}
+
 /**
  * Faz o backup do .env em `envPath`.
  *
@@ -52,7 +64,7 @@ function escreverAtomico(caminho, conteudo) {
 export function backupEnv({ envPath, backupDir, minChaves = MIN_CHAVES_PADRAO, manter = MANTER_PADRAO } = {}) {
   if (!envPath) throw new Error('backupEnv: informe envPath');
 
-  const destinoBase = backupDir || join(os.homedir(), '.claude', 'backups', `${basename(dirname(resolve(envPath)))}-env`);
+  const destinoBase = backupDir || join(os.homedir(), '.claude', 'backups', pastaDoProjeto(envPath));
 
   const raw = readFileSync(envPath, 'utf8');
   const chaves = contarChaves(raw);

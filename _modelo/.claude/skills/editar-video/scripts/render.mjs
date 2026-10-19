@@ -2,7 +2,8 @@
 // Remotion pelo node, confere que o mp4 e NOVO (nao sobra de outra rodada), mixa a musica e grava em
 // producao/<slug>/final/<slug>.mp4. Se o render falhar, nada e mixado.
 //
-// uso: node render.mjs --slug <slug> --tipo videov2|camadas [--musica biblioteca/musica/...] [--musica-db -3] [--duck-ratio 2]
+// uso: node render.mjs --slug <slug> --tipo videov2|camadas [--musica biblioteca/musica/...] [--musica-db -3] [--duck-ratio 2] [--sem-densidade]
+// No videov2 confere antes a densidade (densidade.mjs) e para se a edicao estiver parada demais.
 // Saida 3 = motor nao configurado ou desatualizado (rodar /configurar-video). Saida 1 = qualquer outra falha.
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
@@ -13,6 +14,7 @@ import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
 import { caminhos, conferirPronto, pastaVideo } from '../../configurar-video/scripts/lib/pasta-video.mjs'
 import { rodarPython } from '../../configurar-video/scripts/lib/plataforma.mjs'
 import { prepararPublic, refsBiblioteca, textoDaPeca } from './preparar-public.mjs'
+import { conferirPeca } from './densidade.mjs'
 
 const AQUI = dirname(fileURLToPath(import.meta.url))
 const MOTOR_KIT = resolve(AQUI, '..', 'motor')
@@ -53,7 +55,7 @@ function fresco(caminho, inicio) {
 
 export function render({
   slug, tipo, raiz = RAIZ, base, motorKit = MOTOR_KIT, musica, musicaDb = -3, duckRatio = 2,
-  executar = spawnSync, pularPronto = false, agora = Date.now,
+  executar = spawnSync, pularPronto = false, agora = Date.now, apagar = rmSync, semDensidade = false,
 }) {
   if (!slug) throw new ErroRender('falta o --slug da peca')
   if (!['videov2', 'camadas'].includes(tipo)) throw new ErroRender('tipo invalido: use videov2 ou camadas')
@@ -66,11 +68,15 @@ export function render({
   const pastaPeca = join(raiz, 'producao', slug)
   const props = join(pastaPeca, 'props.json')
   if (tipo === 'videov2' && !existsSync(props)) throw new ErroRender(`nao achei ${props}. Gere as props da peca antes de renderizar.`)
+  if (tipo === 'videov2' && !semDensidade) {
+    const d = conferirPeca(pastaPeca)
+    if (!d.ok) throw new ErroRender(`a edicao esta parada demais, e nada foi renderizado:\n- ${d.falhas.join('\n- ')}\nCorrija o edicao.json, gere as props de novo e rode o render. Trecho parado de proposito, com o aluno de acordo: --sem-densidade.`)
+  }
   const musicaAbs = musica ? resolve(c.midia, ...musica.split('/')) : null
   if (musica && !existsSync(musicaAbs)) throw new ErroRender(`a musica ${musica} nao existe na midia (${c.midia}). Escolha uma do registro da biblioteca.`)
 
   const pub = prepararPublic({ pastaPeca, midia: c.midia, refs: refsBiblioteca(textoDaPeca(pastaPeca, tipo)) })
-  if (pub.faltando.length) throw new ErroRender(`faltam na midia: ${pub.faltando.join(', ')}. Confira o nome no registro da biblioteca.`)
+  if (pub.faltando.length) throw new ErroRender(`faltam na midia: ${pub.faltando.join(', ')}. Confira o nome no registro da biblioteca: o kit gera so o pop e o acende (gerar-sfx.mjs); o resto da biblioteca e do aluno (ver referencias/som.md).`)
 
   if (tipo === 'camadas') copiarCamadas({ pastaPeca, slug, motor: c.motor })
 
@@ -80,7 +86,12 @@ export function render({
   mkdirSync(c.tmp, { recursive: true })
   mkdirSync(dirname(final), { recursive: true })
   rmSync(saidaMotor, { force: true })
-  rmSync(final, { force: true })
+  // No Windows o MP4 aberto num player nao sai do lugar (EPERM, EBUSY): a pessoa recebe o
+  // recado do que fechar, antes dos minutos de render. Outro erro segue subindo.
+  try { apagar(final, { force: true }) } catch (e) {
+    if (!['EBUSY', 'EPERM', 'EACCES'].includes(e.code)) throw e
+    throw new ErroRender(`o video ${final} esta aberto em outro programa (em geral o player de video). Feche o video no player e rode de novo. O render nem comecou.`)
+  }
 
   const id = tipo === 'camadas' ? idDaComposicao(slug) : 'VideoV2'
   const cli = join(c.motor, 'node_modules', '@remotion', 'cli', 'remotion-cli.js')
@@ -121,8 +132,9 @@ export function lerArgumentos(argv) {
   const { values: v } = parseArgs({ args, options: {
     slug: { type: 'string' }, tipo: { type: 'string' }, musica: { type: 'string' },
     'musica-db': { type: 'string', default: '-3' }, 'duck-ratio': { type: 'string', default: '2' },
+    'sem-densidade': { type: 'boolean', default: false },
   } })
-  return { slug: v.slug, tipo: v.tipo, musica: v.musica, musicaDb: Number(v['musica-db']), duckRatio: Number(v['duck-ratio']) }
+  return { slug: v.slug, tipo: v.tipo, musica: v.musica, musicaDb: Number(v['musica-db']), duckRatio: Number(v['duck-ratio']), semDensidade: v['sem-densidade'] }
 }
 
 const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])

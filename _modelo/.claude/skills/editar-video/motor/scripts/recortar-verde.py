@@ -29,6 +29,7 @@ def main():
     a = p.parse_args()
     LO, HI = a.lo, a.hi
     saida = Path(a.saida_dir); saida.mkdir(parents=True, exist_ok=True)
+    # width e height crus: so vale pra video sem rotacao (a fala-montada do montar-blocos); bruto girado embaralha o quadro
     dim = sonda(a.bruto, "v:0", "width,height")
     if not dim: sys.exit(f"nao achei video em {a.bruto}")
     W, H = int(dim[0]), int(dim[1])

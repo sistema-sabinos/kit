@@ -39,8 +39,7 @@
       ".claude/agents/ml-minerador.md", ".claude/agents/ml-espiao.md", ".claude/agents/ml-copywriter.md", ".claude/agents/ml-designer.md", ".claude/agents/ml-auditor.md", ".claude/agents/ml-publicador.md"
     ] },
     "video": { "depende": ["nucleo", "mercado-livre", "assistir-video"], "caminhos": [
-      ".claude/skills/configurar-video/", ".claude/skills/video-produto/", ".claude/skills/editar-video/",
-      ".claude/skills/aplicar-estilo/"
+      ".claude/skills/configurar-video/", ".claude/skills/video-produto/", ".claude/skills/editar-video/"
     ] },
     "midia-social": { "depende": ["nucleo", "assistir-video", "transcribe"], "caminhos": [".claude/skills/midia-social/",
       ".claude/skills/pauta/",

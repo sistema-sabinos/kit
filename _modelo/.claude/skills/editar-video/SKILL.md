@@ -92,7 +92,9 @@ Todos os comandos abaixo que começam assim servem para os dois sistemas
    - Se o assunto é saúde, suplemento, emagrecimento ou dinheiro, passe pelo
      "Promessa e regras" de `referencias/checklist-qc.md` antes de mostrar.
    - Escreva `roteiro.md` como tabela com as colunas **Fala**, **Na tela** e
-     **Som**. A coluna "Na tela" diz o gráfico ou o recurso de cada frase.
+     **Som**. A coluna "Na tela" diz o gráfico ou o recurso de cada frase; as
+     ideias por tipo de vídeo (aula, receita, anúncio, review, depoimento e outros)
+     estão em `referencias/nichos.md`.
 5. **Roteiro que veio da `/pauta`.** Ele tem outras colunas:
    `Bloco | Fala (literal) | O que aparece na tela | Duracao`. Leia assim:
    "Fala (literal)" é a **Fala**, "O que aparece na tela" é o **Na tela**, e cada
@@ -208,7 +210,8 @@ node .claude/skills/editar-video/scripts/py.mjs montar-blocos.py producao/<slug>
 Ele imprime a duração e os cortes medidos de verdade. Guarde esses números: são os
 `cortesSeg` do estilo cenário próprio. Corte onde a pessoa já está falando e
 termine antes de ela virar o rosto para ler: aumente `--antes` ou `--depois` se
-preciso, e abra um quadro de cada borda para conferir.
+preciso, e abra um quadro de cada borda para conferir. Se ele avisar HDR ou fora
+de 9:16, abra um quadro e mostre ao aluno.
 
 **3.4 Voz limpa.** Tira ruído e nivela o volume:
 
@@ -241,7 +244,9 @@ então o erro vai direto pra legenda. Confira por amostra que as palavras estão
    Isso decide onde cabe a palavra-chave.
 3. Escreva `producao/<slug>/edicao.json` seguindo `referencias/videov2.md`: os
    `cortesSeg` do passo 3.3, `escalasSeg` (1,0 no bloco com frase atrás da
-   cabeça), `chaves`, `cartoes`, `flashes` e `sfx`. O zoom segue
+   cabeça), `chaves`, `cartoes`, `flashes`, `ondas`, `sfx` e, se pedir, `cameraLenta` (a
+   palavra repetida devagar, no máximo uma ou duas por vídeo; no bloco com frase
+   atrás da cabeça, `"escala": 1.0` nela). O zoom segue
    `referencias/movimento.md`. Todo tempo sai da palavra na fala alinhada.
 4. Gere as props:
 
@@ -256,6 +261,19 @@ node .claude/skills/editar-video/scripts/py.mjs preparar-props.py producao/<slug
 
 O guia completo está em `referencias/camadas.md`. Os comandos:
 
+0. **Câmera lenta (opcional, no máximo uma ou duas palavras por vídeo).** Uma vez
+   só, copie `public/voz.wav` e `public/voz.alinhado.json` para
+   `trab/voz-original.wav` e `trab/voz-original.alinhado.json`, se ainda não
+   existirem. Depois rode, com o início e o fim da palavra na fala alinhada e o
+   fator (0,5 é o normal; veja `## cameraLenta` em `referencias/videov2.md`):
+
+```
+node .claude/skills/editar-video/scripts/py.mjs camera_lenta.py producao/<slug>/trab/fala-montada.mp4 producao/<slug>/trab/voz-original.wav producao/<slug>/trab/voz-original.alinhado.json producao/<slug>/trab/fala-lenta.mp4 producao/<slug>/public/voz.wav producao/<slug>/public/voz.alinhado.json --trecho <ini>:<fim>:0.5
+```
+
+   A voz e a legenda lentas gravam por cima das de sempre, e o resto do passo 4B
+   segue igual. Se ele disser que a legenda já passou pela câmera lenta, a cópia
+   de `trab/voz-original.*` foi feita depois da lenta: refaça a voz e a legenda (passos 3.4 e 3.5).
 1. **Recorte da pessoa.** Primeiro uma prévia de um quadro (grava `recorte.jpg`):
 
 ```
@@ -264,7 +282,8 @@ node .claude/skills/editar-video/scripts/py.mjs recortar-verde.py --bruto produc
 
    Abra `producao/<slug>/trab/recorte.jpg` e confira (franja verde, buraco no
    corpo, aura no contorno). Ajuste `--lo` e `--hi` se precisar. Quando estiver
-   bom, rode sem `--preview`:
+   bom, rode sem `--preview`. Com câmera lenta (passo 0), nos dois comandos o
+   `--bruto` é `producao/<slug>/trab/fala-lenta.mp4`:
 
 ```
 node .claude/skills/editar-video/scripts/py.mjs recortar-verde.py --bruto producao/<slug>/trab/fala-montada.mp4 --saida-dir producao/<slug>/trab
@@ -303,22 +322,52 @@ node .claude/skills/editar-video/scripts/py.mjs profundidade.py producao/<slug>/
 { "pessoa": "pessoa.webm", "voz": "voz.wav", "duracaoSeg": <duracaoSeg do dados.json>, "segmentos": [], "sfx": [] }
 ```
 
+   Se o aluno pediu vídeo sem efeito sonoro, acrescente nesse arquivo
+   `"pedidoSemEfeito": "<a frase dele, como ele disse>"`. Só com esse campo o
+   fiscal aceita o vídeo inteiro sem efeito (sai um aviso). Sem o pedido, o campo
+   não entra, e gráfico sem efeito reprova.
+
 ## Passo 5: música e efeitos (o aluno escolhe a música)
 
-Siga `referencias/som.md`. A biblioteca é do aluno (o kit não traz música nem
-efeito, por licença): sem arquivo em `<_video>/midia/biblioteca/`, pule os itens 1 e
-2, deixe a lista de efeitos vazia, avise uma vez como montar a biblioteca (texto em
-`som.md`) e siga sem som extra.
+Siga `referencias/som.md`. O kit não traz música (licença) e dos efeitos traz só
+dois, o `pop` e o `acende`, que ele mesmo gera. O resto da biblioteca é do aluno.
+
+- Sem nenhum som em `<_video>/midia/biblioteca/sfx/`: rode
+  `node .claude/skills/editar-video/scripts/gerar-sfx.mjs` (grátis, sem internet,
+  uns 2 s) e avise uma vez: "Criei 2 efeitos sonoros básicos do SabinOS na sua
+  biblioteca, o pop e o acende. Whoosh, impacto e os outros você baixa grátis
+  (eu mostro onde), e pode trocar os meus quando quiser". Depois siga o item 1.
+- Se o gerador sair 1 (o ffmpeg falhou): deixe a lista de efeitos vazia, avise
+  uma vez e siga. O fiscal, com `--midia`, transforma o gráfico sem efeito em aviso.
+- Sem música na biblioteca: pule só o item 2.
+- O aluno pediu vídeo sem efeito: deixe a lista vazia e, no fundo verde, anote o
+  pedido no `verificar-props.json` (Passo 4B, item 5).
 
 1. Efeitos: escolha pela coluna "Uso" de `<_video>/midia/biblioteca/sfx/registro.md`.
    Cada gráfico que entra tem um. No cenário próprio vão no `sfx` do
-   `edicao.json`; no verde, na lista `SFX` da composição.
+   `edicao.json`; no verde, na lista `SFX` da composição. No cenário próprio, depois
+   de pôr os efeitos, gere as props de novo (o mesmo comando do Passo 4A, item 4):
+   sem isso o render sai sem os sons.
 2. Música: 3 a 5 candidatas de `<_video>/midia/biblioteca/musica/registro.md`
    pelo clima do assunto, uma amostra de 12 segundos de cada uma, e a pergunta
    "Qual número você escolhe?". Sem escolha, o vídeo sai sem música.
 3. Sobre licença: se a faixa exigir crédito, guarde o texto para entregar junto.
 
 ## Passo 6: render e mix
+
+**Olhada (só cenário próprio).** Antes do render, tire os quadros de olhada:
+
+```
+node .claude/skills/editar-video/scripts/olhada.mjs --slug <slug>
+```
+
+Ela tira 3 ou 4 quadros parados (plano mais fechado, primeira chave, chave no peito,
+cartão) em `producao/<slug>/olhada/`, com a zona segura, o topo da legenda, o rosto
+e a caixa da chave desenhados por cima, e escreve o aviso de cada um. Leva 1 a 2 min
+pra empacotar o motor e uns 5 s por quadro. Abra cada PNG. Com aviso (chave em cima
+do olho, do nariz ou da boca, chave encostando na legenda, rosto fora do quadro),
+corrija o `edicao.json`, gere as props de novo e só então renderize. Saiu com
+**código 1**: leia a mensagem (mídia faltando, quadro que não saiu ou quadro sem as guias) e rode de novo.
 
 ```
 node .claude/skills/editar-video/scripts/render.mjs --slug <slug> --tipo <videov2|camadas> --musica biblioteca/musica/<pasta>/<arquivo>.mp3
@@ -331,6 +380,12 @@ montar o vídeo. Leva alguns minutos e ele pode ficar lento enquanto isso".
 - Saiu com **código 3**: o motor não está pronto. Mande para `/configurar-video`.
 - Saiu com **código 1**: leia a mensagem. Ela diz o que fazer (mídia faltando,
   composição com erro, render que falhou). Corrija e rode de novo.
+- No cenário próprio o render confere a densidade antes de começar: trecho longo
+  sem nada novo na tela, poucas novidades ou pouca coisa por cima da pessoa param
+  o render com o segundo e a fala do trecho. Ponha ali uma troca de zoom, uma
+  chave, um cartão ou um flash (efeito sonoro sozinho não resolve), gere as props
+  de novo e rode. O `--sem-densidade` só vale com o aluno de acordo que o trecho
+  fica parado.
 - Deu certo: o vídeo está em `producao/<slug>/final/<slug>.mp4`.
 
 O render só mixa se o vídeo for novo (nunca mixa o arquivo velho de outra rodada).
@@ -351,7 +406,7 @@ e confira de novo. Depois olhe quadros do vídeo com o
 camadas, rosto coberto, fala sem legenda, gráfico sem som, quadro preto):
 
 ```
-node .claude/skills/editar-video/scripts/py.mjs fiscal.py <Composicao> producao/<slug>/final/<slug>.mp4 producao/<slug>/trab/bruto-pad.mp4 producao/<slug>/fiscal --remotion <_video>/motor/node_modules/@remotion/cli/remotion-cli.js --public-dir producao/<slug>/public --props-base producao/<slug>/verificar-props.json --transcrever <_video>/motor/scripts/transcrever.mjs --modelo <modelo>
+node .claude/skills/editar-video/scripts/py.mjs fiscal.py <Composicao> producao/<slug>/final/<slug>.mp4 producao/<slug>/trab/bruto-pad.mp4 producao/<slug>/fiscal --remotion <_video>/motor/node_modules/@remotion/cli/remotion-cli.js --public-dir producao/<slug>/public --props-base producao/<slug>/verificar-props.json --transcrever <_video>/motor/scripts/transcrever.mjs --modelo <modelo> --midia <_video>/midia
 ```
 
 `<Composicao>` é `Camadas-` seguido do `<slug>` só com as letras, os números e os
@@ -456,3 +511,4 @@ projeto e avise o aluno do que mudou.
 - `referencias/acabamento.md`: grão, vinheta e luz.
 - `referencias/zona-segura.md`: onde pode haver texto na tela.
 - `referencias/checklist-qc.md`: a conferência de qualidade.
+- `referencias/nichos.md`: ideias de tela por tipo de vídeo.

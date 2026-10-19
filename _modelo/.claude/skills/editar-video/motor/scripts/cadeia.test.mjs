@@ -5,11 +5,12 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync, readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from 'node:fs'
+import { mkdtempSync, rmSync, readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { rodarPython } from '../../../configurar-video/scripts/lib/plataforma.mjs'
+import { hashPasta } from '../../../configurar-video/scripts/lib/pasta-video.mjs'
 
 const AQUI = dirname(fileURLToPath(import.meta.url))
 const script = (nome) => join(AQUI, nome)
@@ -32,6 +33,35 @@ async function comTemp(fn) {
   try { await fn(dir) } finally { rmSync(dir, { recursive: true, force: true }) }
 }
 const semTraco = (s) => String(s || '')
+
+// ajudantes da camera lenta (P6): contagem de quadros, duracao, amostras de audio e tom dominante
+const quadros = (arq) => Number(spawnSync('ffprobe', ['-v', 'error', '-count_frames', '-select_streams', 'v:0', '-show_entries', 'stream=nb_read_frames', '-of', 'csv=p=0', arq], { encoding: 'utf8' }).stdout.trim())
+const duracao = (arq) => Number(spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', arq], { encoding: 'utf8' }).stdout.trim())
+function amostras(arq, de, ate, sr = 16000) {
+  const b = spawnSync('ffmpeg', ['-v', 'error', '-ss', String(de), '-to', String(ate), '-i', arq, '-ac', '1', '-ar', String(sr), '-f', 'f32le', '-'], { maxBuffer: 1 << 26 }).stdout
+  return new Float32Array(b.buffer, b.byteOffset, b.length / 4)
+}
+// frequencia dominante por Goertzel de 100 a 1200 Hz, passo 2 Hz
+function dominante(x, sr = 16000) {
+  let melhor = 0, fMelhor = 0
+  for (let f = 100; f <= 1200; f += 2) {
+    const w = 2 * Math.cos(2 * Math.PI * f / sr)
+    let s1 = 0, s2 = 0
+    for (const v of x) { const s0 = v + w * s1 - s2; s2 = s1; s1 = s0 }
+    const p = s1 * s1 + s2 * s2 - w * s1 * s2
+    if (p > melhor) { melhor = p; fMelhor = f }
+  }
+  return fMelhor
+}
+const quadroCinza = (arq, t) => spawnSync('ffmpeg', ['-v', 'error', '-ss', t.toFixed(4), '-i', arq, '-frames:v', '1', '-vf', 'scale=32:32,format=gray', '-f', 'rawvideo', '-'], { maxBuffer: 1 << 20 }).stdout
+const difer = (a, b) => a.reduce((s, v, i) => s + Math.abs(v - b[i]), 0) / a.length
+// fala sintetica: "um" e um tom de 440 Hz de 1,0 a 1,5 s, "dois" um de 660 Hz de 2,5 a 3,0 s, 4 s ao todo
+function fala(d) {
+  const tom = 'if(between(t,1,1.5),0.5*sin(2*PI*440*t),0)+if(between(t,2.5,3),0.5*sin(2*PI*660*t),0)'
+  ff('-f', 'lavfi', '-i', `aevalsrc='${tom}':s=48000:d=4`, '-c:a', 'pcm_s24le', join(d, 'voz.wav'))
+  ff('-f', 'lavfi', '-i', 'testsrc2=s=320x568:r=30:d=4', '-i', join(d, 'voz.wav'), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', join(d, 'pessoa.mp4'))
+  writeFileSync(join(d, 'voz.alinhado.json'), JSON.stringify([{ text: ' um', startMs: 1000, endMs: 1490 }, { text: ' ja', startMs: 1490, endMs: 1700 }, { text: ' dois', startMs: 2500, endMs: 3000 }]))
+}
 
 test('tratar-voz gera wav de 48 kHz sem o DeepFilterNet', () => comTemp((d) => {
   const ent = join(d, 'seno.wav'), sai = join(d, 'voz.wav')
@@ -86,6 +116,112 @@ test('montar-blocos junta os trechos e imprime os cortes medidos', () => comTemp
   assert.match(r.stdout, /2 blocos/)
   assert.ok(existsSync(sai))
   assert.ok(Math.abs(Number(sonda(sai, { sel: 'v:0', campo: 'width' })) - 1080) < 1)
+}))
+
+// P1: caixa branca (largura x altura) do quadrado no primeiro quadro, em cinza
+function caixaBranca(arq) {
+  const q = spawnSync('ffmpeg', ['-v', 'error', '-ss', '0.3', '-i', arq, '-frames:v', '1', '-pix_fmt', 'gray', '-f', 'rawvideo', '-'], { maxBuffer: 1 << 25 })
+  assert.equal(q.stdout.length, 1080 * 1920, 'quadro de saida fora de 1080x1920')
+  let x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1
+  for (let y = 0; y < 1920; y++) for (let x = 0; x < 1080; x++) if (q.stdout[y * 1080 + x] > 200) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y) }
+  assert.ok(x1 > 0, 'nao achei o quadrado branco na saida')
+  return { l: x1 - x0 + 1, a: y1 - y0 + 1 }
+}
+// bruto preto com um quadrado branco de 60x60 no centro
+function brutoQuadrado(d, nome, s) {
+  const v = join(d, nome)
+  const [w, h] = s.split('x').map(Number)
+  ff('-f', 'lavfi', '-i', `color=c=black:s=${s}:r=30:d=2`, '-f', 'lavfi', '-i', 'sine=f=300:d=2',
+    '-vf', `drawbox=x=${w / 2 - 30}:y=${h / 2 - 30}:w=60:h=60:color=white:t=fill`, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', v)
+  return v
+}
+function girar(d, ent, nome) {
+  const v = join(d, nome)
+  ff('-display_rotation', '90', '-i', ent, '-c', 'copy', v)
+  return v
+}
+const quadrado = (c) => Math.abs(c.l / c.a - 1) < 0.05
+
+test('P1: canario, o bruto vertical de controle sai com o quadrado quadrado e sem aviso', () => comTemp((d) => {
+  const b = brutoQuadrado(d, 'vert.mp4', '360x640'), s = join(d, 's.mp4')
+  const r = py('montar-blocos.py', [b, s, '0.3:1.5'])
+  assert.equal(r.status, 0, semTraco(r.stderr))
+  assert.doesNotMatch(r.stdout, /aviso/)
+  const c = caixaBranca(s)
+  assert.ok(quadrado(c), JSON.stringify(c))
+}))
+
+test('P1: corte central, bruto deitado sai cortado no centro, sem esticar, e avisa', () => comTemp((d) => {
+  const b = brutoQuadrado(d, 'deitado.mp4', '640x360'), s = join(d, 's.mp4')
+  const r = py('montar-blocos.py', [b, s, '0.3:1.5'])
+  assert.equal(r.status, 0, semTraco(r.stderr))
+  assert.match(r.stdout, /fora de 9:16/)
+  assert.equal(sonda(s, { sel: 'v:0', campo: 'sample_aspect_ratio' }), '1:1')
+  const c = caixaBranca(s)
+  assert.ok(quadrado(c), 'quadrado esticado: ' + JSON.stringify(c))
+}))
+
+test('P1: corte central, bruto quadrado sai cortado no centro, sem esticar', () => comTemp((d) => {
+  const b = brutoQuadrado(d, 'q.mp4', '480x480'), s = join(d, 's.mp4')
+  const r = py('montar-blocos.py', [b, s, '0.3:1.5'])
+  assert.equal(r.status, 0, semTraco(r.stderr))
+  assert.match(r.stdout, /fora de 9:16/)
+  const c = caixaBranca(s)
+  assert.ok(quadrado(c), 'quadrado esticado: ' + JSON.stringify(c))
+}))
+
+test('P1: corte central com rotacao do celular, em pe gravado com rotacao nao avisa e deitado com rotacao corta', () => comTemp((d) => {
+  const deit = brutoQuadrado(d, 'deitado.mp4', '640x360'), vert = brutoQuadrado(d, 'vert.mp4', '360x640')
+  const emPe = girar(d, deit, 'empe-rot.mp4'), deitRot = girar(d, vert, 'deitado-rot.mp4')
+  assert.match(spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'stream_side_data=rotation', '-of', 'csv=p=0', emPe], { encoding: 'utf8' }).stdout, /90/, 'canario: a rotacao nao foi gravada')
+  const s1 = join(d, 's1.mp4'), s2 = join(d, 's2.mp4')
+  const r1 = py('montar-blocos.py', [emPe, s1, '0.3:1.5']), r2 = py('montar-blocos.py', [deitRot, s2, '0.3:1.5'])
+  assert.equal(r1.status, 0, semTraco(r1.stderr)); assert.equal(r2.status, 0, semTraco(r2.stderr))
+  assert.doesNotMatch(r1.stdout, /fora de 9:16/)
+  assert.match(r2.stdout, /fora de 9:16/)
+  const c1 = caixaBranca(s1), c2 = caixaBranca(s2)
+  assert.ok(quadrado(c1) && quadrado(c2), JSON.stringify({ c1, c2 }))
+}))
+
+// R menos B de um pixel do meio: cor do bt2020 lida como bt709 sai desbotada
+// (medido no prototipo: 164,100,60 so remarcado; 177,69,42 com tonemap)
+function espalhamento(arq) {
+  const q = spawnSync('ffmpeg', ['-v', 'error', '-ss', '0.5', '-i', arq, '-frames:v', '1', '-vf', 'crop=2:2:500:900,format=rgb24', '-f', 'rawvideo', '-'])
+  assert.equal(q.stdout.length, 12)
+  return q.stdout[0] - q.stdout[2]
+}
+function brutoHdr(d, trc) {
+  const v = join(d, `hdr-${trc}.mp4`)
+  ff('-f', 'lavfi', '-i', 'color=c=0xA06040:s=360x640:r=30:d=2', '-f', 'lavfi', '-i', 'sine=f=300:d=2', '-vf', 'format=yuv420p10le',
+    '-c:v', 'libx265', '-x265-params', `log-level=none:colorprim=bt2020:transfer=${trc}:colormatrix=bt2020nc`, '-c:a', 'aac', v)
+  assert.equal(sonda(v, { sel: 'v:0', campo: 'color_transfer' }), trc, 'canario: o bruto sintetico nao saiu marcado HDR')
+  return v
+}
+
+for (const trc of ['arib-std-b67', 'smpte2084']) {
+  test(`P1: HDR ${trc} sai em bt709, com a cor convertida, e avisa`, () => comTemp((d) => {
+    // canario de ambiente: sem zscale o teste reprovaria pelo motivo errado
+    const filtros = spawnSync('ffmpeg', ['-hide_banner', '-filters'], { encoding: 'utf8' }).stdout
+    assert.ok(/\szscale\s/.test(filtros) && /\stonemap\s/.test(filtros), 'este ffmpeg nao tem zscale; rode /configurar-video')
+    const s = join(d, 's.mp4')
+    const r = py('montar-blocos.py', [brutoHdr(d, trc), s, '0.3:1.5'])
+    assert.equal(r.status, 0, semTraco(r.stderr))
+    assert.match(r.stdout, /HDR .*convertido/)
+    assert.equal(sonda(s, { sel: 'v:0', campo: 'color_transfer' }), 'bt709')
+    assert.equal(sonda(s, { sel: 'v:0', campo: 'color_primaries' }), 'bt709')
+    const e = espalhamento(s)
+    assert.ok(e > 120, 'cor desbotada: ' + e)
+  }))
+}
+
+test('P1: HDR sem zscale sai remarcado em bt709 com aviso de cor lavada', () => comTemp((d) => {
+  const s = join(d, 's.mp4')
+  const r = py('montar-blocos.py', [brutoHdr(d, 'arib-std-b67'), s, '0.3:1.5'], { env: { ...ENV, EDITAR_VIDEO_SEM_ZSCALE: '1' } })
+  assert.equal(r.status, 0, semTraco(r.stderr))
+  assert.match(r.stdout, /nao tem o filtro zscale/)
+  assert.equal(sonda(s, { sel: 'v:0', campo: 'color_transfer' }), 'bt709')
+  const e = espalhamento(s)
+  assert.ok(e < 120, 'canario da medida de cor: sem tonemap devia sair desbotado, deu ' + e)
 }))
 
 test('mix-final e loudness: o master sai e o gate passa', () => comTemp((d) => {
@@ -191,6 +327,28 @@ test('preparar-props gera props que o schemaVideoV2 aceitaria', () => comTemp((d
   assert.ok(Number(sonda(join(pub, p.sfx[0].arquivo), { sel: 'a:0', campo: 'sample_rate' })) > 0)
 }))
 
+// O render passa as props por --props e o Remotion as mistura com o defaultProps do Root.tsx, que e o exemplo:
+// campo que o exemplo preenche e o edicao.json omite vinha do exemplo (a chave PRAZO de 0,5 a 2,5 s)
+test('C1: preparar-props grava todo campo que o exemplo do Studio preenche, sem herdar nada dele', () => comTemp((d) => {
+  const exemplo = JSON.parse(readFileSync(join(AQUI, '..', 'exemplos', 'videov2-exemplo.json'), 'utf8'))
+  assert.ok(exemplo.chaves.length > 0 && 'sfx' in exemplo, 'canario: o exemplo preenche chaves e sfx')
+  assert.ok(readFileSync(join(AQUI, '..', 'src', 'Root.tsx'), 'utf8').includes('defaultProps={schemaVideoV2.parse(exemplo)}'), 'canario: o Root usa o exemplo como defaultProps')
+  const pub = join(d, 'public')
+  mkdirSync(pub, { recursive: true })
+  ff('-f', 'lavfi', '-i', 'sine=f=300:d=3:r=48000', join(pub, 'voz.wav'))
+  writeFileSync(join(pub, 'voz.alinhado.json'), JSON.stringify([{ text: ' oi', startMs: 100, endMs: 600 }]))
+  const edicao = join(d, 'edicao.json'), sai = join(d, 'props.json')
+  writeFileSync(edicao, JSON.stringify({ pessoa: 'p.mp4', voz: 'voz.wav', legendas: 'voz.alinhado.json' }))
+  const r = py('preparar-props.py', [edicao, sai, '--public-dir', pub])
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  const p = JSON.parse(readFileSync(sai, 'utf8'))
+  const campos = Object.keys(exemplo)
+  assert.ok(campos.length >= 10, 'canario: campos do exemplo lidos')
+  for (const c of campos) assert.ok(c in p, `o exemplo preenche "${c}" e as props nao: o video herdaria o do exemplo`)
+  assert.deepEqual(p.chaves, [])
+  assert.deepEqual(p.sfx, [])
+}))
+
 test('preparar-props recusa palavra que nao esta na legenda', () => comTemp((d) => {
   const pub = join(d, 'public')
   mkdirSync(pub, { recursive: true })
@@ -205,6 +363,166 @@ test('preparar-props recusa palavra que nao esta na legenda', () => comTemp((d) 
   assert.notEqual(r.status, 0)
   assert.match(semTraco(r.stderr), /inexistente/)
 }))
+
+test('P6: camera lenta repete a palavra na metade da velocidade, imagem e voz do mesmo tamanho e o tom igual', () => comTemp((d) => {
+  fala(d)
+  assert.ok(Math.abs(dominante(amostras(join(d, 'voz.wav'), 1.1, 1.4)) - 440) <= 4, 'canario: o tom original devia dar 440 Hz')
+  const sv = join(d, 'l', 'pessoa.mp4'), sa = join(d, 'l', 'voz.wav'), sl = join(d, 'l', 'leg.json')
+  const r = py('camera_lenta.py', [join(d, 'pessoa.mp4'), join(d, 'voz.wav'), join(d, 'voz.alinhado.json'), sv, sa, sl, '--trecho', '1.0:1.5:0.5'])
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.equal(quadros(sv), 150, 'video: 4 s mais 1 s de lenta = 150 quadros')
+  assert.ok(Math.abs(duracao(sa) - 5) < 0.01, `voz com ${duracao(sa)} s`)
+  const fLenta = dominante(amostras(sa, 1.6, 2.4))
+  assert.ok(Math.abs(fLenta - 440) <= 4, `o trecho lento devia ficar em 440 Hz e deu ${fLenta}`)
+  assert.ok(Math.abs(dominante(amostras(sa, 3.6, 3.9)) - 660) <= 4, '"dois" andou 1 s e segue em 660 Hz')
+  // imagem: o quadro 2k do trecho lento e o quadro k da palavra
+  for (const k of [3, 7]) {
+    const lento = quadroCinza(sv, 1.5 + (2 * k + 0.5) / 30), orig = quadroCinza(join(d, 'pessoa.mp4'), 1.0 + (k + 0.5) / 30)
+    assert.ok(difer(lento, orig) < 6, `quadro ${k} da lenta difere do original em ${difer(lento, orig)}`)
+  }
+  const leg = JSON.parse(readFileSync(sl, 'utf8'))
+  assert.deepEqual(leg.map((c) => [c.text.trim(), c.startMs, c.endMs]), [['um', 1000, 1490], ['um', 1500, 2480], ['ja', 2490, 2700], ['dois', 3500, 4000]], '"ja" comeca no meio do quadro do corte e vai pra depois da repeticao')
+  assert.equal(leg[0].pageBreakAfter, true)
+  assert.equal(leg[1].pageBreakAfter, true)
+  // rodar de novo em cima da saida esticaria duas vezes: recusa
+  const r2 = py('camera_lenta.py', [sv, sa, sl, join(d, 'm', 'p.mp4'), join(d, 'm', 'v.wav'), join(d, 'm', 'l.json'), '--trecho', '1.0:1.5:0.5'])
+  assert.notEqual(r2.status, 0)
+  assert.match(semTraco(r2.stderr), /ja passou pela camera lenta/)
+}))
+
+test('P6: fora do grid de meio segundo a imagem sai com o mesmo tamanho da voz e sem buraco', () => comTemp((d) => {
+  fala(d)
+  const sv = join(d, 'l', 'pessoa.mp4')
+  const r = py('camera_lenta.py', [join(d, 'pessoa.mp4'), join(d, 'voz.wav'), join(d, 'voz.alinhado.json'), sv, join(d, 'l', 'voz.wav'), join(d, 'l', 'leg.json'), '--trecho', '0.8667:1.9:0.4'])
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  const pts = spawnSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'frame=pts_time', '-of', 'csv=p=0', sv], { encoding: 'utf8' }).stdout.trim().split(/\r?\n/).map(Number)
+  assert.ok(pts.length > 100, 'canario: leu os quadros')
+  assert.equal(pts.length, Math.round(duracao(join(d, 'l', 'voz.wav')) * 30), 'quadros da imagem contra o tamanho da voz')
+  const buracos = pts.slice(1).filter((t, i) => t - pts[i] > 1.5 / 30)
+  assert.deepEqual(buracos, [])
+}))
+
+test('P6: preparar-props com cameraLenta anda cortes, escalas, chave e som e aponta pra lenta/', () => comTemp((d) => {
+  const pub = join(d, 'public'); mkdirSync(pub)
+  fala(pub)
+  const edicao = join(d, 'edicao.json'), sai = join(d, 'props.json')
+  writeFileSync(edicao, JSON.stringify({
+    pessoa: 'pessoa.mp4', voz: 'voz.wav', legendas: 'voz.alinhado.json', cortesSeg: [2.0], escalasSeg: [1.0, 1.25],
+    chaves: [{ chave: 'UM', deSeg: { palavra: 'um' }, ateSeg: { palavra: 'um', fim: true, mais: 0.2 }, topo: 400 }],
+    cartoes: [{ deSeg: 3.1, ateSeg: 3.6, linhas: [{ texto: 'X', aSeg: 0.3 }] }],
+    sfx: [{ arquivo: 'sfx/pop.wav', seg: { palavra: 'dois' } }],
+    cameraLenta: [{ deSeg: { palavra: 'um' }, ateSeg: { palavra: 'um', fim: true }, fator: 0.5 }],
+  }))
+  const r = py('preparar-props.py', [edicao, sai, '--public-dir', pub])
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  const p = JSON.parse(readFileSync(sai, 'utf8'))
+  assert.deepEqual(p.cortesSeg, [1.5, 2.5, 3.0])
+  assert.deepEqual(p.escalasSeg, [1.0, 1.25, 1.0, 1.25])
+  assert.deepEqual([p.chaves[0].deSeg, p.chaves[0].ateSeg], [1.0, 2.69], 'a chave do "um" atravessa a lenta')
+  assert.deepEqual([p.cartoes[0].deSeg, p.cartoes[0].ateSeg, p.cartoes[0].linhas[0].aSeg], [4.1, 4.6, 0.3])
+  assert.equal(p.sfx[0].seg, 3.5)
+  assert.equal(p.duracaoSeg, 5)
+  assert.deepEqual(p.lentas, [{ deSeg: 1.5, ateSeg: 2.5 }])
+  assert.deepEqual([p.pessoa, p.voz, p.legendas], ['lenta/pessoa.mp4', 'lenta/voz.wav', 'lenta/legendas.json'])
+  for (const a of [p.pessoa, p.voz, p.legendas]) assert.ok(existsSync(join(pub, a)), a)
+}))
+
+test('P6: preparar-props com corte colado no fim da palavra lenta nao duplica o corte e avisa da escala igual', () => comTemp((d) => {
+  const pub = join(d, 'public'); mkdirSync(pub)
+  fala(pub)
+  const edicao = join(d, 'edicao.json'), sai = join(d, 'props.json')
+  const base = { pessoa: 'pessoa.mp4', voz: 'voz.wav', legendas: 'voz.alinhado.json', cameraLenta: [{ deSeg: { palavra: 'um' }, ateSeg: { palavra: 'um', fim: true }, fator: 0.5 }] }
+  // canario: corte longe da palavra continua virando 2 cortes novos mais o andado
+  writeFileSync(edicao, JSON.stringify({ ...base, cortesSeg: [2.0] }))
+  let r = py('preparar-props.py', [edicao, sai, '--public-dir', pub])
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.deepEqual(JSON.parse(readFileSync(sai, 'utf8')).cortesSeg, [1.5, 2.5, 3], 'canario')
+  // corte da montagem logo depois do "um" (1,5 s): anda pra 2,5 s, que ja e o fim da repeticao
+  writeFileSync(edicao, JSON.stringify({ ...base, cortesSeg: [1.5], escalasSeg: [1.0, 1.25] }))
+  r = py('preparar-props.py', [edicao, sai, '--public-dir', pub])
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  const p = JSON.parse(readFileSync(sai, 'utf8'))
+  assert.deepEqual(p.cortesSeg, [1.5, 2.5])
+  assert.deepEqual(p.escalasSeg, [1.0, 1.25, 1.25])
+  assert.match(semTraco(r.stdout), /corte sai sem zoom/)
+}))
+
+// onda de voz (P7): voz de 2,5 s com 1 s de seno a 0,5, 1 s a 0,125 e 0,5 s de silencio
+function vozDaOnda(d) {
+  const pub = join(d, 'public')
+  mkdirSync(pub, { recursive: true })
+  ff('-f', 'lavfi', '-i', "aevalsrc='if(lt(t,1),0.5,if(lt(t,2),0.125,0))*sin(2*PI*300*t)':s=48000:d=2.5", '-c:a', 'pcm_f32le', join(pub, 'voz.wav'))
+  writeFileSync(join(pub, 'voz.alinhado.json'), JSON.stringify([{ text: ' oi', startMs: 100, endMs: 600 }]))
+  return (extra) => {
+    const edicao = join(d, 'edicao.json'), sai = join(d, 'props.json')
+    writeFileSync(edicao, JSON.stringify({ pessoa: 'pessoa.mp4', voz: 'voz.wav', legendas: 'voz.alinhado.json', duracaoSeg: 2.5, ...extra }))
+    const r = py('preparar-props.py', [edicao, sai, '--public-dir', pub])
+    return { r, props: () => JSON.parse(readFileSync(sai, 'utf8')) }
+  }
+}
+
+test('P7: preparar-props mede a onda de um seno com volume conhecido, 30 valores por segundo', () => comTemp((d) => {
+  const { r, props } = vozDaOnda(d)({ ondas: [{ deSeg: 0, ateSeg: 2.5 }] })
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  const v = props().ondas[0].valores
+  assert.equal(v.length, 75, '2,5 s a 30 por segundo')
+  const media = (a) => a.reduce((s, x) => s + x, 0) / a.length
+  // canario: o trecho alto tem de dar perto de 1, senao a medida nao rodou
+  assert.ok(Math.abs(media(v.slice(2, 28)) - 1) < 0.02, 'trecho a 0,5 vale 1: ' + media(v.slice(2, 28)))
+  assert.ok(Math.abs(media(v.slice(32, 58)) - 0.25) < 0.02, 'trecho a 0,125 vale 0,25: ' + media(v.slice(32, 58)))
+  assert.ok(v.slice(62).every((x) => x === 0), 'silencio vale 0')
+}))
+
+test('P7: preparar-props mede a onda so no trecho da palavra', () => comTemp((d) => {
+  const { r, props } = vozDaOnda(d)({ ondas: [{ deSeg: { palavra: 'oi', fim: true, mais: 0.9 }, ateSeg: 2.0 }] })
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  const o = props().ondas[0]
+  assert.equal(o.deSeg, 1.5)
+  assert.equal(o.valores.length, 15)
+  assert.ok(o.valores.every((x) => Math.abs(x - 0.25) < 0.03), JSON.stringify(o.valores))
+}))
+
+test('P7: preparar-props recusa onda curta, fora da zona segura ou em cima da legenda', () => comTemp((d) => {
+  const rodar = vozDaOnda(d)
+  // canarios: as bordas exatas passam (a legenda descida pra 1440 deixa a base util ser a borda)
+  for (const extra of [{ topoLegenda: 1440, ondas: [{ deSeg: 0, ateSeg: 1, topo: 1286 }] }, { ondas: [{ deSeg: 0, ateSeg: 0.5 }] }, { topoLegenda: 1210, ondas: [{ deSeg: 0, ateSeg: 1 }] }]) {
+    const { r } = rodar(extra)
+    assert.equal(r.status, 0, JSON.stringify(extra) + ' ' + semTraco(r.stderr))
+  }
+  const casos = [
+    [{ topoLegenda: 1440, ondas: [{ deSeg: 0, ateSeg: 1, topo: 1287 }] }, /zona segura/],
+    [{ ondas: [{ deSeg: 0, ateSeg: 1, topo: 249 }] }, /zona segura/],
+    [{ ondas: [{ deSeg: 0, ateSeg: 1, largura: 801 }] }, /zona segura/],
+    [{ ondas: [{ deSeg: 0, ateSeg: 0.3 }] }, /curta demais/],
+    [{ ondas: [{ deSeg: 1.5, ateSeg: 1.0 }] }, /curta demais/],
+    [{ topoLegenda: 1200, ondas: [{ deSeg: 0, ateSeg: 1 }] }, /legenda/],
+  ]
+  for (const [extra, msg] of casos) {
+    const { r } = rodar(extra)
+    assert.notEqual(r.status, 0, JSON.stringify(extra))
+    assert.match(semTraco(r.stderr), msg, JSON.stringify(extra))
+  }
+}))
+
+test('P7: onda sem topoLegenda nas props respeita a legenda padrao', () => comTemp((d) => {
+  const rodar = vozDaOnda(d)
+  // canario: encostada na legenda padrao (1090 + 150 = 1240) passa
+  const ok = rodar({ ondas: [{ deSeg: 0, ateSeg: 2, topo: 1090, altura: 150 }] })
+  assert.equal(ok.r.status, 0, semTraco(ok.r.stderr))
+  const { r } = rodar({ ondas: [{ deSeg: 0, ateSeg: 2, topo: 1200, altura: 150 }] })
+  assert.notEqual(r.status, 0, 'onda de 1200 a 1350 cobre a legenda padrao em 1240')
+  assert.match(semTraco(r.stderr), /legenda/)
+}))
+
+test('P7: o topoLegenda padrao do preparar-props bate com o do tema.ts', () => {
+  const pyTxt = readFileSync(script('preparar-props.py'), 'utf8')
+  const tema = readFileSync(join(AQUI, '..', 'src', 'tema.ts'), 'utf8')
+  const doPy = [...pyTxt.matchAll(/props\.get\("topoLegenda", (\d+)\)/g)].map((m) => Number(m[1]))
+  const doTema = [...tema.matchAll(/topoLegendaPadrao: (\d+)/g)].map((m) => Number(m[1]))
+  assert.equal(doPy.length, 1, 'canario: o preparar-props le o topoLegenda com padrao uma vez so')
+  assert.equal(doTema.length, 1, 'canario: o tema.ts tem um topoLegendaPadrao so')
+  assert.equal(doPy[0], doTema[0], 'o padrao do preparar-props tem de ser o do tema.ts')
+})
 
 test('verificar-video le props em JSON, usa --public-dir e reprova pessoa sem rosto', () => comTemp((d) => {
   const pub = join(d, 'public')
@@ -226,7 +544,7 @@ test('verificar-video le props em JSON, usa --public-dir e reprova pessoa sem ro
 test('fiscal lista as flags que o orquestrador precisa passar', () => {
   const r = py('fiscal.py', ['--help'])
   assert.equal(r.status, 0, semTraco(r.stderr))
-  for (const f of ['--remotion', '--public-dir', '--props-base', '--ver-video', '--preco-usd', '--registrar-custo', '--transcrever', '--modelo']) assert.ok(r.stdout.includes(f), `sem ${f}`)
+  for (const f of ['--remotion', '--public-dir', '--props-base', '--ver-video', '--preco-usd', '--registrar-custo', '--transcrever', '--modelo', '--midia']) assert.ok(r.stdout.includes(f), `sem ${f}`)
 })
 
 // A transcricao do final so roda depois do render do Remotion, entao nao da pra isolar o ramo aqui: confere-se o codigo.
@@ -404,6 +722,20 @@ test('verificar-video alinha os vetores quando a pessoa tem 1 quadro a mais ou a
   assert.ok(src.includes('alinhar_quadros(mov, visivel)'), 'a funcao nao esta ligada ao calculo da pessoa parada')
 }))
 
+test('P6: o verificar-video pula a sincronia so nas janelas que encostam na camera lenta', () => comTemp((d) => {
+  const r = funcaoDoPy('verificar-video.py', 'janela_na_lenta', [
+    'L = [{"deSeg": 2.2667, "ateSeg": 3.4}]',
+    'assert f(2.0, L) and f(1.5, L) and f(3.0, L), "canario: janela que encosta na repeticao tem de pular"',
+    'assert not f(1.0, L) and not f(3.5, L) and not f(4.0, L), "janela fora da repeticao segue conferida"',
+    'assert not f(2.0, []), "sem camera lenta nada pula"',
+    'print("ok")',
+  ].join('\n'), d)
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.match(semTraco(r.stdout), /ok/)
+  const src = readFileSync(script('verificar-video.py'), 'utf8')
+  assert.ok(src.includes('if janela_na_lenta(t0, P.get("lentas", [])): continue'), 'a funcao nao esta ligada ao laco da sincronia')
+}))
+
 test('fiscal resolve pra absoluto o caminho do transcritor e mostra o erro dele no relatorio', () => comTemp((d) => {
   const r = funcaoDoPy('fiscal.py', 'caminho_abs', [
     'rel = "../_video/motor/scripts/transcrever.mjs"',
@@ -456,6 +788,122 @@ test('scripts que gravam arquivo criam a pasta de saida que ainda nao existe (al
 }))
 
 test('todo .py que grava arquivo pela linha de comando cria a pasta antes', () => {
-  const gravam = ['alinhar.py', 'blocos.py', 'chroma.py', 'mix-final.py', 'montar-blocos.py', 'paginas-camadas.py', 'paginas-legenda.py', 'preparar-props.py', 'profundidade.py', 'sincronizar-bruto.py', 'tratar-voz.py']
+  const gravam = ['alinhar.py', 'blocos.py', 'camera_lenta.py', 'chroma.py', 'mix-final.py', 'montar-blocos.py', 'paginas-camadas.py', 'paginas-legenda.py', 'preparar-props.py', 'profundidade.py', 'sincronizar-bruto.py', 'tratar-voz.py', 'guias-olhada.py']
   for (const nome of gravam) assert.match(readFileSync(script(nome), 'utf8'), /os\.makedirs\(/, nome)
 })
+
+const ENT = 'ent = [(30, 1.0, "frente"), (120, 4.0, "interface"), (240, 8.0, "frente")]'
+
+test('P4: fiscal com a biblioteca de efeitos sem som avisa uma vez e nao reprova grafico sem efeito', () => comTemp((d) => {
+  const sfx = join(d, 'midia', 'biblioteca', 'sfx')
+  const r1 = funcaoDoPy('fiscal.py', 'graficos_sem_som', [
+    ENT,
+    'f_, a_ = f(ent, [], False, None)',
+    'assert len(f_) == 3 and a_ is None, (f_, a_)            # canario: com som na biblioteca e sem pedido, cobra',
+    'f_, a_ = f(ent, [31], False, None)',
+    'assert [s for s, _ in f_] == [4.0, 8.0] and a_ is None, (f_, a_)',
+    'f_, a_ = f(ent, [], True, None)',
+    'assert f_ == [] and a_.startswith("3 gr") and "biblioteca" in a_, (f_, a_)',
+    'assert f([], [], True, None) == ([], None)',
+    'print("ok")',
+  ].join('\n'), d)
+  assert.equal(r1.status, 0, semTraco(r1.stderr) + semTraco(r1.stdout))
+  assert.match(r1.stdout, /ok/)
+  const r2 = funcaoDoPy('fiscal.py', 'biblioteca_sem_som', [
+    `sfx = Path(${JSON.stringify(sfx)}); midia = sfx.parent.parent`,
+    'assert f(None) is False',
+    'assert f(str(midia)) is True                 # sem a pasta',
+    'sfx.mkdir(parents=True); (sfx / "registro.md").write_text("x", encoding="utf-8")',
+    'assert f(str(midia)) is True                 # so o registro',
+    '(sfx / "pop.wav").write_bytes(b"x")',
+    'assert f(str(midia)) is False',
+    'print("ok")',
+  ].join('\n'), d)
+  assert.equal(r2.status, 0, semTraco(r2.stderr) + semTraco(r2.stdout))
+  assert.match(r2.stdout, /ok/)
+  // o fiscal inteiro pede o render do Remotion: a ligacao das funcoes se confere no codigo
+  const src = readFileSync(script('fiscal.py'), 'utf8')
+  assert.ok(src.includes('ARGS.midia'), 'canario: o fiscal tem a flag --midia')
+  assert.ok(src.includes('graficos_sem_som(ent, onsets, biblioteca_sem_som(ARGS.midia),'), 'o fiscal nao liga a biblioteca ao gate')
+  const skill = readFileSync(join(AQUI, '..', '..', 'SKILL.md'), 'utf8')
+  const cmd = skill.split(/\r?\n/).filter((l) => l.includes('fiscal.py <Composicao>'))
+  assert.equal(cmd.length, 1, 'canario: uma linha de comando do fiscal na SKILL.md')
+  assert.ok(cmd[0].includes('--midia <_video>/midia'), 'o comando do fiscal na SKILL.md sem --midia')
+}))
+
+test('P4: fiscal com o pedido sem efeito anotado e zero efeito so avisa; sem o pedido ou com algum efeito reprova', () => comTemp((d) => {
+  const r1 = funcaoDoPy('fiscal.py', 'pedido_sem_efeito', [
+    'assert f({"pedidoSemEfeito": "  quero sem efeito nenhum "}) == "quero sem efeito nenhum"',
+    'assert f({}) is None                          # esquecimento: campo ausente',
+    'assert f({"pedidoSemEfeito": "   "}) is None   # vazio nao e pedido',
+    'assert f({"pedidoSemEfeito": True}) is None    # so vale a frase do aluno',
+    'print("ok")',
+  ].join('\n'), d)
+  assert.equal(r1.status, 0, semTraco(r1.stderr) + semTraco(r1.stdout))
+  assert.match(r1.stdout, /ok/)
+  const r2 = funcaoDoPy('fiscal.py', 'graficos_sem_som', [
+    ENT,
+    'p = "quero sem efeito nenhum"',
+    'f_, a_ = f(ent, [], False, None)',
+    'assert len(f_) == 3 and a_ is None, (f_, a_)   # canario: zero efeito sem o pedido segue reprovando',
+    'f_, a_ = f(ent, [], False, p)',
+    'assert f_ == [] and a_.startswith("3 gr") and p in a_, (f_, a_)',
+    'f_, a_ = f(ent, [31], False, p)',
+    'assert [s for s, _ in f_] == [4.0, 8.0] and a_ is None, (f_, a_)   # tem efeito: o pedido nao vale',
+    'assert f([], [], False, p) == ([], None)',
+    'print("ok")',
+  ].join('\n'), d)
+  assert.equal(r2.status, 0, semTraco(r2.stderr) + semTraco(r2.stdout))
+  assert.match(r2.stdout, /ok/)
+  const src = readFileSync(script('fiscal.py'), 'utf8')
+  assert.ok(src.includes('PROPS_BASE.read_text'), 'canario: o fiscal le as --props-base')
+  assert.ok(src.includes('pedido_sem_efeito(json.loads(PROPS_BASE.read_text(encoding="utf-8"))))'), 'o fiscal nao liga o pedido anotado ao gate')
+  const skill = readFileSync(join(AQUI, '..', '..', 'SKILL.md'), 'utf8')
+  assert.ok(skill.includes('producao/<slug>/verificar-props.json'), 'canario: a SKILL.md cita o verificar-props.json')
+  assert.ok(skill.includes('"pedidoSemEfeito": "<a frase dele, como ele disse>"'), 'a SKILL.md nao diz onde anotar o pedido sem efeito')
+}))
+
+// cor de um pixel do png pelo ffmpeg (recorte 1x1 em rgb24): [r, g, b]
+function pixel(png, x, y) {
+  const r = spawnSync('ffmpeg', ['-v', 'error', '-i', png, '-vf', `crop=1:1:${x}:${y}`, '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], { maxBuffer: 1 << 20 })
+  assert.equal(r.status, 0, semTraco(r.stderr))
+  return [...r.stdout.subarray(0, 3)]
+}
+
+test('P3: guias-olhada desenha zona segura e legenda e avisa rosto ausente e chave na legenda', () => comTemp((d) => {
+  const ent = join(d, 'cinza.png'), sai = join(d, 'nova', 'olhada.png')
+  ff('-f', 'lavfi', '-i', 'color=c=gray:s=1080x1920', '-frames:v', '1', ent)
+  const r = py('guias-olhada.py', [ent, sai, '--modelo', join(AQUI, 'modelos', 'face_detection_yunet_2023mar.onnx'),
+    '--zona-segura', script('zona-segura.py'), '--topo-legenda', '1240', '--chave', '1100,200'])
+  assert.equal(r.status, 0, semTraco(r.stderr))
+  assert.ok(String(r.stdout).trim().length > 0, 'canario: a saida nao veio vazia')
+  assert.match(r.stdout, /rosto nao achado/)
+  assert.match(r.stdout, /encosta na legenda/)
+  assert.ok(existsSync(sai))
+  // canario dos pixels: faixa de cima puxa pro vermelho, linha da legenda e amarela, meio continua cinza
+  const topo = pixel(sai, 540, 100), legenda = pixel(sai, 540, 1240), meio = pixel(sai, 540, 900)
+  assert.ok(topo[0] > topo[2] + 30, `topo ${topo}`)
+  assert.ok(legenda[0] > 200 && legenda[1] > 180 && legenda[2] < 60, `legenda ${legenda}`)
+  assert.ok(Math.abs(meio[0] - meio[2]) < 5, `meio ${meio}`)
+}))
+
+test('P3: guias-olhada nao deixa __pycache__ no motor', () => comTemp((d) => {
+  // copia do motor so com o que a olhada usa: o hash dela tem de sair igual depois de rodar
+  const motor = join(d, 'motor'), s = join(motor, 'scripts')
+  mkdirSync(join(s, 'modelos'), { recursive: true })
+  for (const n of ['guias-olhada.py', 'zona-segura.py']) copyFileSync(script(n), join(s, n))
+  copyFileSync(join(AQUI, 'modelos', 'face_detection_yunet_2023mar.onnx'), join(s, 'modelos', 'face_detection_yunet_2023mar.onnx'))
+  const ent = join(d, 'cinza.png'), sai = join(d, 'fora', 'olhada.png')
+  ff('-f', 'lavfi', '-i', 'color=c=gray:s=1080x1920', '-frames:v', '1', ent)
+  const antes = hashPasta(motor)
+  // o aluno roda sem PYTHONDONTWRITEBYTECODE: o env do teste nao pode esconder o defeito
+  const env = { ...ENV }
+  delete env.PYTHONDONTWRITEBYTECODE
+  assert.equal('PYTHONDONTWRITEBYTECODE' in env, false, 'canario: o env usado nao tem PYTHONDONTWRITEBYTECODE')
+  const r = rodarPython(join(s, 'guias-olhada.py'), [ent, sai, '--modelo', join(s, 'modelos', 'face_detection_yunet_2023mar.onnx'),
+    '--zona-segura', join(s, 'zona-segura.py'), '--topo-legenda', '1240'], { env })
+  assert.equal(r.status, 0, semTraco(r.stderr))
+  assert.ok(String(r.stdout).trim().length > 0, 'canario: a saida nao veio vazia')
+  assert.equal(existsSync(join(s, '__pycache__')), false, 'o importlib gravou __pycache__ no motor')
+  assert.equal(hashPasta(motor), antes)
+}))

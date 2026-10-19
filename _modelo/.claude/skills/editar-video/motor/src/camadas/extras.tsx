@@ -10,17 +10,6 @@ import { useThree } from "@react-three/fiber";
 import { AMARELO, BORDA, CLAMP, Camada, F, LegendaPeito, VIDRO, mola, mont, type Pagina } from "./kit";
 import { tema } from "../tema";
 
-// ---------- dados em public/ (rastreio, etc.)
-export const useJson = <T,>(arquivo: string): T | null => {
-  const [dado, setDado] = useState<T | null>(null);
-  const { delayRender, continueRender, cancelRender } = useDelayRender();
-  const [handle] = useState(() => delayRender(`carregando ${arquivo}`));
-  useEffect(() => {
-    fetch(staticFile(arquivo)).then((r) => r.json()).then((j) => { setDado(j); continueRender(handle); }).catch((e) => cancelRender(e));
-  }, [arquivo, continueRender, cancelRender, handle]);
-  return dado;
-};
-
 // ---------- 1) moldura 3D: o conteúdo entra numa tela inclinada que gira pra frente
 export const Moldura3D: React.FC<{ ini: number; largura?: number; topo?: number; proporcao?: string; children: React.ReactNode }> = ({ ini, largura = 860, topo = 330, proporcao = "9 / 16", children }) => {
   const frame = useCurrentFrame();

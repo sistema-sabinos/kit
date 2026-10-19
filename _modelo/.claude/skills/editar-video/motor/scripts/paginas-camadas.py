@@ -1,5 +1,5 @@
 """Paginas de legenda e tempos pro padrao camadas, num take corrido (sem corte: o tempo do bruto e o tempo final).
-A legenda alinhada vira paginas curtas (ate --max-palavras palavras e --max-chars caracteres), porque a legenda
+A legenda alinhada vira paginas curtas (ate --max-palavras palavras, uma a mais quando as anteriores sao curtas, e --max-chars caracteres), porque a legenda
 mora numa coluna estreita. Grava um JSON: { duracaoSeg, paginas: [{ini, fim, palavras}], palavras: [{text, startMs, endMs}] }.
 A composicao em producao/<slug>/composicao.tsx importa esse JSON.
 
@@ -9,6 +9,7 @@ Uso: paginas-camadas.py --alinhado voz.alinhado.json --voz voz.wav --saida pagin
 """
 import argparse, io, json, os, wave
 from pathlib import Path
+from legenda_curtas import paginar
 
 def main():
     p = argparse.ArgumentParser()
@@ -24,17 +25,11 @@ def main():
         for w in ws: w["timestampMs"] = (w["startMs"] + w["endMs"]) // 2
         json.dump(ws, io.open(a.alinhado_saida, "w", encoding="utf-8"), ensure_ascii=False)
 
-    out, grupo = [], []
-    pal = [w for w in ws if w["text"].strip()]
-    for i, w in enumerate(pal):
-        grupo.append(w)
-        txt = "".join(g["text"] for g in grupo).strip()
-        ultimo = i == len(pal) - 1
-        prox = "" if ultimo else pal[i + 1]["text"]
-        if ultimo or txt[-1] in ".,?!:" or len(grupo) >= a.max_palavras or len(txt + prox) > a.max_chars:
-            fim = min(DUR, w["endMs"] / 1000 + 0.25) if ultimo else pal[i + 1]["startMs"] / 1000
-            out.append({"ini": round(grupo[0]["startMs"] / 1000, 3), "fim": round(fim, 3), "palavras": [g["text"].strip().rstrip(".,:") for g in grupo]})
-            grupo = []
+    out = []
+    grupos = paginar([w for w in ws if w["text"].strip()], a.max_palavras, a.max_chars, ".,?!:")
+    for k, grupo in enumerate(grupos):
+        fim = min(DUR, grupo[-1]["endMs"] / 1000 + 0.25) if k == len(grupos) - 1 else grupos[k + 1][0]["startMs"] / 1000
+        out.append({"ini": round(grupo[0]["startMs"] / 1000, 3), "fim": round(fim, 3), "palavras": [g["text"].strip().rstrip(".,:") for g in grupo]})
     dados = {"duracaoSeg": DUR, "paginas": out, "palavras": [{"text": w["text"], "startMs": w["startMs"], "endMs": w["endMs"]} for w in ws]}
     Path(a.saida).write_text(json.dumps(dados, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(len(out), "paginas;", DUR, "s")

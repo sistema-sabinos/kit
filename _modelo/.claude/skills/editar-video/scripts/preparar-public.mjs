@@ -56,7 +56,7 @@ if (ehCli) {
     const r = prepararPublic({ pastaPeca, midia: c.midia, refs: refsBiblioteca(textoDaPeca(pastaPeca, values.tipo)) })
     console.log(`Public pronto: ${r.copiados.length} arquivo(s) copiado(s).`)
     if (r.faltando.length) {
-      console.error(`Faltam na midia: ${r.faltando.join(', ')}. Confira o nome no registro da biblioteca, ou tire esse som do video: a biblioteca e do aluno e o kit nao traz som (ver referencias/som.md).`)
+      console.error(`Faltam na midia: ${r.faltando.join(', ')}. Confira o nome no registro da biblioteca, ou tire esse som do video: o kit gera so o pop e o acende (gerar-sfx.mjs); o resto da biblioteca e do aluno (ver referencias/som.md).`)
       process.exit(1)
     }
   } catch (e) {

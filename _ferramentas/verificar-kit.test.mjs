@@ -79,10 +79,10 @@ test('gate 1 nao junta palavras vizinhas: o termo espacado so conta em fronteira
 test('gate 1 le .ts e .tsx, e o gate 12 continua sem ler', () => {
   const dir = kitFalso()
   try {
-    mkdirSync(join(dir, '_estilos-video/x/src'), { recursive: true })
+    mkdirSync(join(dir, 'motor/x/src'), { recursive: true })
     const travessao = String.fromCharCode(0x2014)
-    writeFileSync(join(dir, '_estilos-video/x/src/tema.ts'), '// revisao do termo-secreto-exemplo\n')
-    writeFileSync(join(dir, '_estilos-video/x/src/Cena.tsx'), `export const espera = '${travessao}' // termo-secreto-exemplo\n`)
+    writeFileSync(join(dir, 'motor/x/src/tema.ts'), '// revisao do termo-secreto-exemplo\n')
+    writeFileSync(join(dir, 'motor/x/src/Cena.tsx'), `export const espera = '${travessao}' // termo-secreto-exemplo\n`)
     const { falhas } = rodarGates(dir, { proibidos: TERMOS })
     for (const arquivo of ['tema.ts', 'Cena.tsx']) {
       assert.ok(falhas.some(f => f.gate === 1 && f.arquivo.endsWith(arquivo)), `gate 1 devia ler ${arquivo}`)
@@ -1149,16 +1149,14 @@ test('o .gitignore da pasta-mae libera o kit e deixa fora segredo, midia, projet
   const dir = mkdtempSync(join(tmpdir(), 'gi-mae-'))
   try {
     writeFileSync(join(dir, '.gitignore'), GITIGNORE_MAE)
-    // o catalogo de estilos e do kit e fica fora do backup de proposito (5.9): vai pro "fica"
-    const entra = arquivosDoKitForaDoModelo(RAIZ_KIT).filter(r => r !== '.gitignore' && !r.startsWith('_estilos-video/'))
+    const entra = arquivosDoKitForaDoModelo(RAIZ_KIT).filter(r => r !== '.gitignore')
     assert.ok(entra.length > 20, 'canario: a lista real do kit veio cheia')
     for (const r of ['VERSAO', 'RESPONDA-AQUI.txt', '.claude/skills/.gitkeep', '_ferramentas/componentes.json', 'docs/roadmap-avancado.md'])
       assert.ok(entra.includes(r), `canario: ${r} esta na lista`)
     const fica = ['.env', '.env.local', 'video.mp4', 'SabinOS-Sistema-4.4.zip', 'node_modules/x.js', '.backup-falhou',
       '.claude/settings.local.json', '.agents/skills/x.md', 'meu-projeto/_contexto/empresa.md', 'meu-projeto/AGENTS.md',
       '_kit-anterior-4.3/x.md', '_kit-anterior-4.3/_modelo/AGENTS.md', 'docs/aula.mp4', '.origem',
-      '.claude/skills/x/.secrets/k.json', '.claude/skills/x/secrets/k.json',
-      '_estilos-video/catalogo.md', '_estilos-video/modelo-aula/SKILL.md', '_estilos-video/modelo-aula/assets/template/package.json']
+      '.claude/skills/x/.secrets/k.json', '.claude/skills/x/secrets/k.json']
     // canario: o .json da skill fora de pasta de chave continua no backup
     const fora = foraDoBackup(dir, ['.gitignore', ...entra, '.claude/skills/x/config.json', ...fica])
     assert.ok(fora !== null, 'git rodou')
@@ -1177,21 +1175,6 @@ test('gate 11 acusa arquivo do kit fora do _modelo que o .gitignore da pasta-mae
     const g11 = rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 11)
     assert.ok(g11.length > 0, 'canario: o gate rodou e achou alguma coisa')
     assert.deepEqual(g11.map(f => f.arquivo), ['docs/aula.mp4'])
-  } finally { rmSync(dir, { recursive: true, force: true }) }
-})
-
-test('gate 11 deixa o catalogo de estilos fora do backup da pasta-mae, e so ele', () => {
-  const dir = kitFalso()
-  try {
-    mkdirSync(join(dir, '_estilos-video/modelo-um/assets/template/src'), { recursive: true })
-    mkdirSync(join(dir, '_estilos-videos'), { recursive: true })
-    writeFileSync(join(dir, '.gitignore'), GITIGNORE_MAE)
-    writeFileSync(join(dir, '_estilos-video/catalogo.md'), '# catalogo\n')
-    writeFileSync(join(dir, '_estilos-video/modelo-um/assets/template/src/Cena.tsx'), 'export {}\n')
-    writeFileSync(join(dir, '_estilos-videos/x.md'), '# nome parecido\n')
-    writeFileSync(join(dir, 'VERSAO'), '5.9\n')
-    const g11 = rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 11)
-    assert.deepEqual(g11.map(f => f.arquivo), ['_estilos-videos/x.md'], 'canario: pasta de nome parecido segue acusada')
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 

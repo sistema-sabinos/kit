@@ -31,8 +31,9 @@ export const ITENS = [
   { id: 'whisper', mb: 500, cmd: 'node <_video>/motor/scripts/instalar-whisper.mjs --modelo <modelo>' },
   { id: 'deep-filter', mb: 26, cmd: 'node .claude/skills/configurar-video/scripts/baixar-deep-filter.mjs' },
 ]
-// Musica e efeito sonoro nao sao item: o aluno baixa os dele (a licenca do Mixkit e do Pixabay
-// nao deixa o kit redistribuir os arquivos). Ver o passo 5 do /editar-video.
+// Musica e efeito sonoro nao sao item: musica nao vem (a licenca do Mixkit e do Pixabay nao deixa o kit
+// redistribuir os arquivos); dos efeitos, o kit gera so o pop e o acende, e o resto o aluno baixa.
+// Ver o passo 5 do /editar-video.
 
 // Tamanho exato de cada modelo do whisper, da tabela modelSizes do @remotion/install-whisper-cpp
 // 4.0.527 (a versao do motor). Download que caiu no meio deixa o arquivo menor e o whisper quebra.

@@ -263,8 +263,9 @@ ler `dados/pipeline/<slug>/status.json` e continuar da etapa atual:
    desconto (antes de ativar, se a Central deixar), e quando
    ela disser que ativou, rodar o `--conferir`. PLANO B (variação ou
    catálogo): o publicador gera o checklist, a pessoa publica no painel, e
-   quando ela voltar com o código do anúncio, registrar em `publicacao.json`
-   e marcar `publicado`.
+   quando ela voltar com o código do anúncio, registrar o canal em `publicacao.json`
+   e marcar no `status.json` a etapa `publicacao` `ok` e o `etapa_atual`
+   `publicado`, sem linha no diário (ela sai no Fim de ciclo, mais abaixo).
 
 **`/mercado-livre continuar`**: varrer os `status.json`, achar o produto mais
 perto de publicar sem bloqueio e propor continuar ele.

@@ -1,9 +1,9 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, symlinkSync, unlinkSync, rmdirSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, symlinkSync, unlinkSync, rmdirSync, renameSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { lerDecisoes, planoArquivo, aplicarArquivo, varrerSegredos, cpfValido, orfaos, automacoes, foraDoBackup, memoriaDoAgente, diasEntre, relatorio, diarioRende, frescor, ferramentasSemRegistro } from './faxina.mjs'
 
@@ -530,6 +530,21 @@ test('CLI: --hoje invalido (nao /\\d{4}-\\d{2}-\\d{2}/) sai com codigo 2 e erro 
   })
 })
 
+test('B2: faxina com --hoje invalido sai com 2 e nao roda o relatorio', () => {
+  comProjeto({ 'AGENTS.md': 'x' }, raiz => {
+    // canario: com data valida o relatorio sai no stdout
+    const ok = spawnSync(process.execPath, [SCRIPT, '--hoje', '2026-10-18'], { cwd: raiz, encoding: 'utf8' })
+    assert.equal(ok.status, 0, ok.stderr)
+    assert.ok(ok.stdout.trim().startsWith('{'), 'canario: o relatorio nao saiu com data valida')
+    for (const ruim of ['2026-10-5', 'invalido']) {
+      const r = spawnSync(process.execPath, [SCRIPT, '--hoje', ruim], { cwd: raiz, encoding: 'utf8' })
+      assert.equal(r.status, 2, `--hoje ${ruim}`)
+      assert.match(r.stderr, /AAAA-MM-DD/)
+      assert.equal(r.stdout, '', `--hoje ${ruim} rodou o relatorio mesmo assim`)
+    }
+  })
+})
+
 // repositorio de teste: commit com data marcada, sem conversao de final de linha
 function iniciarGit(raiz) {
   execFileSync('git', ['init', '-q', raiz])
@@ -639,4 +654,39 @@ test('relatorio traz as tres checagens novas', () => {
     assert.deepEqual(r.frescor, { semGit: true, parados: [] })
     assert.deepEqual(r.ferramentasSemRegistro, { mcp: ['notion'], env: [] })
   })
+})
+
+// Rodada 5.17, item D2a: diario aberto em outro programa nao derruba o lote do arquivar.
+test('D2a: diario aberto em outro programa vai pra presos com recado e o lote continua', () => {
+  const raiz = mkdtempSync(join(tmpdir(), 'faxina-'))
+  try {
+    const dias = ['2026-06-01', '2026-06-02', '2026-06-03']
+    mkdirSync(join(raiz, '_memoria/diario'), { recursive: true })
+    for (const d of dias) writeFileSync(join(raiz, '_memoria/diario', d + '.md'), 'velho ' + d)
+    let tentouPreso = 0
+    const renomear = (de, para) => {
+      if (de.endsWith('2026-06-02.md')) { tentouPreso++; throw Object.assign(new Error('EBUSY: resource busy or locked'), { code: 'EBUSY' }) }
+      renameSync(de, para)
+    }
+    const f = aplicarArquivo(raiz, '2026-10-05', renomear)
+    assert.equal(tentouPreso, 1, 'canario: o renomear falso foi chamado pro diario preso')
+    assert.deepEqual(f.movidos, ['_memoria/arquivo/2026/2026-06-01.md', '_memoria/arquivo/2026/2026-06-03.md'], 'o lote seguiu depois do preso')
+    assert.deepEqual(f.presos, ['_memoria/diario/2026-06-02.md'])
+    assert.match(f.recado || '', /aberto/)
+    assert.ok(existsSync(join(raiz, '_memoria/diario/2026-06-02.md')), 'o preso ficou onde estava')
+  } finally {
+    rmSync(raiz, { recursive: true, force: true })
+  }
+})
+
+test('D2a: erro que nao e arquivo preso continua subindo', () => {
+  const raiz = mkdtempSync(join(tmpdir(), 'faxina-'))
+  try {
+    mkdirSync(join(raiz, '_memoria/diario'), { recursive: true })
+    writeFileSync(join(raiz, '_memoria/diario/2026-06-01.md'), 'velho')
+    const renomear = () => { throw Object.assign(new Error('ENOSPC'), { code: 'ENOSPC' }) }
+    assert.throws(() => aplicarArquivo(raiz, '2026-10-05', renomear), /ENOSPC/)
+  } finally {
+    rmSync(raiz, { recursive: true, force: true })
+  }
 })

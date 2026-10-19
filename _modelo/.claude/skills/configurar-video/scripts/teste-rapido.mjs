@@ -42,13 +42,17 @@ function rodar(executar, cmd, args, op, rotulo) {
 }
 
 // vozTeste: so pra prova da bancada (uma fala gerada fora do kit); o aluno sempre usa a do kit.
-export async function testeRapido({ base, motorKit = MOTOR_KIT, vozPadrao = VOZ_DO_KIT, vozTeste, executar = spawnSync, agora = () => new Date() }) {
+export async function testeRapido({ base, motorKit = MOTOR_KIT, vozPadrao = VOZ_DO_KIT, vozTeste, executar = spawnSync, agora = () => new Date(), apagar = rmSync }) {
   const voz = vozTeste ?? vozPadrao
   if (!existsSync(voz)) throw new Error('falta referencias/teste-voz.wav (arquivo do kit). Atualize o SabinOS e rode de novo.')
   const c = caminhos(base)
   if (!motorSincronizado({ origem: motorKit, destino: c.motor })) throw new Error('o motor em ' + c.motor + ' esta diferente do motor do kit. Rode node .claude/skills/configurar-video/scripts/sincronizar-motor.mjs (e instalar-motor.mjs, se ele pedir) e depois o teste-rapido de novo.')
   const pasta = join(c.tmp, 'teste-rapido')
-  rmSync(pasta, { recursive: true, force: true })
+  // No Windows o video do teste aberto num player segura a pasta (EPERM, EBUSY): recado, nunca o erro cru
+  try { apagar(pasta, { recursive: true, force: true }) } catch (e) {
+    if (!['EBUSY', 'EPERM', 'EACCES'].includes(e.code)) throw e
+    throw new Error(`um arquivo de ${pasta} esta aberto em outro programa (em geral o video do teste no player). Feche o video no player e rode de novo.`)
+  }
   const raiz = join(pasta, 'raiz')
   const pastaPeca = join(raiz, 'producao', 'teste')
   const pub = join(pastaPeca, 'public')
@@ -84,7 +88,8 @@ export async function testeRapido({ base, motorKit = MOTOR_KIT, vozPadrao = VOZ_
     // vazios de proposito: o Remotion mistura os props com o exemplo do motor, e o exemplo cita um efeito sonoro da biblioteca
     chaves: [], sfx: [], cartoes: [], flashes: [],
   }, null, 2) + '\n')
-  const r = render({ slug: 'teste', tipo: 'videov2', raiz, base, motorKit, pularPronto: true, executar })
+  // vazio de proposito: o gate de densidade do render nao vale pro teste do motor
+  const r = render({ slug: 'teste', tipo: 'videov2', raiz, base, motorKit, pularPronto: true, executar, semDensidade: true })
 
   // 5. conferencia
   const sonda = rodar(executar, 'ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', r.saida], {}, 'medir a duracao (ffprobe)')
