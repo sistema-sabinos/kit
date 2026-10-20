@@ -210,7 +210,7 @@ export function freteNaTela(texto, rotulo) {
 
 export function lucro({ voceRecebe, preco, custo, impostoPct }) {
   for (const [k, v] of Object.entries({ voceRecebe, preco, custo, impostoPct })) {
-    if (typeof v !== 'number' || !Number.isFinite(v)) throw new Error(`lucro precisa de ${k} numerico (o imposto_pct vem de _contexto/mercado-livre.md; rode /mercado-livre se estiver vazio)`)
+    if (typeof v !== 'number' || !Number.isFinite(v)) throw new Error(`lucro precisa de ${k} numerico (o imposto_pct vem de _contexto/mercado-livre.md: quem esta na trilha preenche ele na etapa 8 da /comecar-a-vender, quem ja vende pela /mercado-livre)`)
   }
   const r2 = x => Math.round(x * 100) / 100
   const imposto = preco * impostoPct / 100

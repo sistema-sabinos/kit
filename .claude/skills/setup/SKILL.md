@@ -664,7 +664,8 @@ existe e pode ser instalado depois pelo `/mapear`.
 Kebab case do nome do negócio ou projeto, **sem acento nem caractere especial**
 (ex: "Doce Vida Confeitaria" vira `doce-vida-confeitaria/`, "Açaí do Zé" vira
 `acai-do-ze/`). Acento em nome de pasta cria conflito de normalização entre Mac e
-Windows no git, e o backup passa a ver o mesmo arquivo como dois.
+Windows no git, e o backup passa a ver o mesmo arquivo como dois. Se já existir
+uma pasta com esse nome na raiz, avisar e perguntar outro nome antes de seguir.
 
 ### O que copiar de `_modelo/` para `<pasta-do-projeto>/`
 
@@ -744,8 +745,8 @@ Windows no git, e o backup passa a ver o mesmo arquivo como dois.
 
 ### O que nunca copiar
 
-- `templates/` inteira: fica só em `_modelo/`, é a biblioteca de origem, não o
-  produto final.
+- `templates/` inteira: é a biblioteca de origem e fica só em `_modelo/`; o
+  projeto recebe só o que o passo anterior copiou dela.
 - `README.md` do `_modelo/`.
 - Qualquer skill de `_modelo/.claude/skills/` que não tenha sido escolhida pra
   este negócio.

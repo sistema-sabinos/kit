@@ -15,20 +15,23 @@ const MEDIDOR = fileURLToPath(new URL('./medir-mesa.mjs', import.meta.url));
 // chars: quantos caracteres em cada arquivo do _contexto/.
 function medir({ agentsChars = 10, contexto = {}, crlf = false } = {}) {
   const pasta = mkdtempSync(join(tmpdir(), 'mesa-'));
-  const quebra = crlf ? '\r\n' : '\n';
-  writeFileSync(join(pasta, 'AGENTS.md'), 'a'.repeat(agentsChars) + quebra);
-  if (Object.keys(contexto).length) mkdirSync(join(pasta, '_contexto'));
-  for (const [nome, chars] of Object.entries(contexto)) {
-    writeFileSync(join(pasta, '_contexto', nome), 'a'.repeat(chars) + quebra);
-  }
   let saida = '', codigo = 0;
   try {
-    saida = execFileSync(process.execPath, [MEDIDOR, pasta], { encoding: 'utf8' });
-  } catch (e) {
-    saida = (e.stdout || '') + (e.stderr || '');
-    codigo = e.status;
+    const quebra = crlf ? '\r\n' : '\n';
+    writeFileSync(join(pasta, 'AGENTS.md'), 'a'.repeat(agentsChars) + quebra);
+    if (Object.keys(contexto).length) mkdirSync(join(pasta, '_contexto'));
+    for (const [nome, chars] of Object.entries(contexto)) {
+      writeFileSync(join(pasta, '_contexto', nome), 'a'.repeat(chars) + quebra);
+    }
+    try {
+      saida = execFileSync(process.execPath, [MEDIDOR, pasta], { encoding: 'utf8' });
+    } catch (e) {
+      saida = (e.stdout || '') + (e.stderr || '');
+      codigo = e.status;
+    }
+  } finally {
+    rmSync(pasta, { recursive: true, force: true });
   }
-  rmSync(pasta, { recursive: true, force: true });
   // 0 e 1 sao as saidas previstas. Qualquer outra e o medidor quebrando, e o teste
   // precisa acusar em vez de deixar um "doesNotMatch" passar com saida vazia.
   if (codigo !== 0 && codigo !== 1) throw new Error(`medidor quebrou (codigo ${codigo}): ${saida}`);

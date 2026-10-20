@@ -107,11 +107,11 @@ pendência "NCM: pedir à contadora", porque classificação fiscal é assunto d
 
 Base: `preco.alvo_pos_desconto` de `decisao.json` (o que o cliente paga, sobre
 o qual a comissão incide); `preco.tabela` é a lista inflada. A conta é a da
-`precificacao.md`: preço menos comissão da categoria (Clássico, e Premium com
-mais 5 pontos), menos custo de envio (nunca zero abaixo de R$ 79), menos
+`precificacao.md`: preço menos comissão da categoria (Clássico ou Premium, cada
+uma com a sua), menos custo de envio (nunca zero abaixo de R$ 79), menos
 `imposto_pct` sobre o preço, menos custo. A comissão sai da API que a `precificacao.md` cita ou da Central de
 Vendedores, com data. Clássico no alvo da decisão; Premium no preço que
-segura a mesma margem com os 5 pontos a mais, terminado em ,90 e abaixo de
+segura a mesma margem com a comissão do Premium, terminado em ,90 e abaixo de
 `preco.tabela` (a publicação desconta da tabela até o preço de cada
 modalidade). Respeitar o degrau dos R$ 79 e terminar em ,90. O degrau
 dos R$ 79 e a comissão estão datados na `precificacao.md`; conferir ao vivo
@@ -123,7 +123,7 @@ Tabela no `copy.md`:
 | Modalidade  | Preço   | Comissão usada          | Margem provisória |
 |-------------|---------|--------------------------|-------------------|
 | ML Clássico | R$ X    | N% (fonte, AAAA-MM-DD)  | R$ Y (validar no simulador) |
-| ML Premium  | R$ X    | N% + 5 pontos           | R$ Y (validar no simulador) |
+| ML Premium  | R$ X    | N% (fonte, AAAA-MM-DD)  | R$ Y (validar no simulador) |
 ```
 
 A margem daqui é provisória e vai marcada assim. Quem crava o número oficial é

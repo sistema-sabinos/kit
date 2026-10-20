@@ -44,6 +44,10 @@ exemplo `app-vercel-pro`). Antes de mostrar qualquer valor ao aluno, abrir a lin
 `conferido_em`. Com mais de 60 dias, conferir de novo na fonte da linha (fonte oficial
 primeiro, buscando em português e em inglês), atualizar a linha com a data de hoje e só então
 mostrar. Valor que mudou também muda a recomendação: refazer a conta antes de seguir.
+Preço e taxa de empresa (plano pago, taxa por venda, conta de desenvolvedor, domínio) não
+ficam na tabela: a linha guarda o que não muda toda hora e a fonte, e o valor se confere na
+fonte na hora de mostrar, mesmo dentro dos 60 dias, e vai com a data de hoje. Isso vale pras
+outras skills do pacote que leem esta tabela.
 
 ## Fluxo
 

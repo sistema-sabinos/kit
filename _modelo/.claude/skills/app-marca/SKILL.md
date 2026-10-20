@@ -57,7 +57,9 @@ que identifica uma cor). A `/app-lancar` e a `/app-publicar` usam o mesmo arquiv
   busca do lado.
 - **Valor que muda se confere antes.** Antes de dizer preço, taxa, prazo ou regra ao aluno,
   achar a linha no `fatos.md` pelo id e olhar o `conferido_em`. Mais de 60 dias: abrir a
-  fonte da linha hoje, atualizar fato e data no `fatos.md` e só então falar.
+  fonte da linha hoje, atualizar fato e data no `fatos.md` e só então falar. Preço de
+  empresa (o domínio) não fica no `fatos.md`: abrir a fonte da linha na hora, mesmo dentro
+  dos 60 dias, e dizer o valor com a data de hoje.
 - **Informação pra decidir, sem garantia de resultado jurídico.** As buscas desta skill
   são uma triagem. O registro de verdade passa pelo INPI e, se tiver dinheiro em jogo,
   por um advogado de marcas.

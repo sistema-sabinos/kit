@@ -13,7 +13,7 @@ A regra que rege tudo aqui: **medir e mostrar antes de apagar**. O usuário deci
 
 ## Por que espaço vira velocidade
 
-Windows com menos de ~15% do disco de sistema livre se sabota sozinho: para de expandir o arquivo de paginação, o índice de busca e o Defender brigam por espaço, e toda escrita fica mais lenta. Na maioria dos casos de "PC lento" a causa é essa, não o hardware. **Primeiro medir o disco, depois teorizar sobre RAM e CPU.**
+Windows com menos de ~15% do disco de sistema livre se sabota sozinho: para de expandir o arquivo de paginação, o índice de busca e o Defender brigam por espaço, e toda escrita fica mais lenta. Na maioria dos casos de "PC lento" a causa é essa, e o hardware fica por último na lista de suspeitos. **Primeiro medir o disco, depois teorizar sobre RAM e CPU.**
 
 ## Fluxo
 
@@ -51,19 +51,15 @@ Bloco 3 aprovado: uma segunda pergunta com multi-select por item, só com os ids
 
 ```powershell
 # blocos 1 e 3 (escopo do usuário, não precisa admin); -Itens só com os ids aprovados
-& "...\scripts\limpar.ps1" -Blocos 1,3 -Itens gradle,fortnite
+& ".claude/skills/otimizar-pc/scripts/limpar.ps1" -Blocos 1,3 -Itens gradle,fortnite
 
 # lixeira, só se aprovada à parte (sozinha, sem -Blocos, não mexe em mais nada)
-& "...\scripts\limpar.ps1" -Lixeira
+& ".claude/skills/otimizar-pc/scripts/limpar.ps1" -Lixeira
 
-# bloco 2 (precisa admin, dispara UAC)
-& "...\scripts\quarentena-installer.ps1"
-
-# bloco 4 (precisa admin, 10 a 20 min, trava a máquina em rajadas)
-& "...\scripts\dism.ps1"
-
-# bloco 5 (precisa admin)
-& "...\scripts\atualizar-apps.ps1"
+# blocos 2, 4 e 5 precisam de admin e disparam o UAC: nunca chamar direto daqui.
+# Use o comando de admin logo abaixo, trocando o nome do script:
+# bloco 2 quarentena-installer.ps1, bloco 4 dism.ps1 (10 a 20 min, trava a máquina
+# em rajadas), bloco 5 atualizar-apps.ps1
 ```
 
 Os que precisam de admin devem ser disparados assim, e **avisar o usuário pra aprovar o UAC na tela dele**:
@@ -81,7 +77,7 @@ Bloco 6 (inicialização) é registro puro, roda inline. Desativar pelo `Startup
 ### 4. Verificar integridade (obrigatório, nunca pular)
 
 ```powershell
-& "...\scripts\verificar.ps1"
+& ".claude/skills/otimizar-pc/scripts/verificar.ps1"
 ```
 
 Confere que a operação do usuário continua de pé: `.env` com as chaves, o Chrome dedicado dos robôs (`dados/chrome-perfil`) e o Playwright de cada pacote, perfis e senhas do navegador, tarefas agendadas em Ready, git do workspace. **Relatar o resultado, não só dizer "deu certo".**
@@ -98,7 +94,7 @@ Tabela de antes e depois do disco, o que foi atualizado, e as pontas soltas (o E
 
 **`WinSxS` mente no tamanho.** Varredura comum reporta quase o dobro do real porque conta hardlink duas vezes. Antes de prometer número, rodar `dism /online /cleanup-image /analyzecomponentstore` e usar a linha "Backups e Recursos Desabilitados", que é a parte de fato recuperável.
 
-**`C:\Windows\Installer` quase sempre é a maior mina.** Cruzar os `.msi/.msp` da pasta com o que o registro referencia (`HKLM:\...\Installer\UserData\<SID>\Products\*\InstallProperties\LocalPackage` e os `Patches\*\LocalPackage`). O que não é referenciado é órfão. **Mover pra quarentena, nunca apagar**, com manifesto CSV pra saber desfazer.
+**`C:\Windows\Installer` quase sempre é a maior mina.** Cruzar os `.msi/.msp` da pasta com o que o registro referencia (`HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\<SID>\Products\*\InstallProperties\LocalPackage` e os `Patches\*\LocalPackage`). O que não é referenciado é órfão. **Mover pra quarentena, nunca apagar**, com manifesto CSV pra saber desfazer.
 
 **O Edge não atualiza por winget.** Dá "tecnologia de instalação diferente", e o updater próprio dele também resiste por linha de comando. Solução: mandar o usuário abrir o Edge e ir em Ajuda e comentários, Sobre o Microsoft Edge. Atualiza sozinho ao abrir a tela.
 

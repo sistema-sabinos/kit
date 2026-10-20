@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { medirFaixasNoQuadro, planoDeCorte, pareceBorda, MINIMO_PRA_VALER_PCT } from './bordas.mjs';
 import fs from 'node:fs';
@@ -13,6 +13,7 @@ import { spawnSync } from 'node:child_process';
 // RESOLUÇÃO do arquivo (que estava certa) e a borda estava DENTRO da imagem.
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bordas-'));
+after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
 // desenha um PNG com faixa chapada em cima e embaixo, igual ao que o Veo devolveu
 function pngComFaixa(nome, { largura = 90, altura = 160, faixa = 35 } = {}) {

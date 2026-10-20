@@ -2,8 +2,8 @@
 
 > Este arquivo já vem preenchido com um padrão que funciona bem.
 > O /setup te mostra ele e pergunta o que você quer mudar. Pode editar quando quiser.
-> Teto: 800 tokens (o `/checar` mede). Entra em toda conversa, então é regra de
-> escrita, não coleção de exemplo.
+> Teto: 800 tokens (o `/checar` mede). Entra em toda conversa, então guarda só regra
+> de escrita, sem coleção de exemplo.
 
 ## Tom
 

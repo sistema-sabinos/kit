@@ -5,6 +5,7 @@
 import { readdirSync, statSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { exigir } from '../../midia-social/scripts/lib/config.mjs'
+import { dataHoraLocal } from '../../midia-social/scripts/lib/hora.mjs'
 
 export const REDES = ['instagram', 'tiktok', 'youtube']
 const MAX_SLIDES = 10
@@ -123,7 +124,7 @@ export function linhasValidas(texto) {
 export const idsValidosAgora = texto => linhasValidas(texto).map(l => l.id).filter(id => id !== '?')
 
 export function gravarPublicacao(textoAntigo, { linhas, evento, agora = new Date() }) {
-  const carimbo = agora.toISOString().slice(0, 16).replace('T', ' ')
+  const carimbo = dataHoraLocal(agora)
   const historicoAntigo = ((/## Historico\r?\n([\s\S]*)$/.exec(String(textoAntigo)) || [])[1] || '').trim()
   const ids = linhas.map(l => l.id).filter(id => id !== '?')
   const valido = linhas.length
@@ -133,7 +134,7 @@ export function gravarPublicacao(textoAntigo, { linhas, evento, agora = new Date
       linhas.some(l => l.status === 'incerto') ? 'Linha "incerto": o post pode ter entrado no Buffer. O proximo --confirmar confere sozinho.' : '',
     ].filter(Boolean).join('\n')
     : 'nada agendado'
-  const historico = [historicoAntigo, `- ${carimbo} UTC: ${evento}`].filter(Boolean).join('\n')
+  const historico = [historicoAntigo, `- ${carimbo}: ${evento}`].filter(Boolean).join('\n')
   return `# Publicacao\n\n## VALIDO AGORA\n\n${valido}\n\n## Historico\n\n${historico}\n`
 }
 

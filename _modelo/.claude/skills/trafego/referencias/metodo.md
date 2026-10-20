@@ -17,8 +17,8 @@ cai numa de quatro faixas:
 | PASSE | 5 resultados ou mais com retorno acima do ponto de aprovação da régua. | Liberar mais verba. |
 
 Se mais de 10 anúncios caírem em CRÍTICO na mesma rodada, a régua não entrega a lista de corte. Ela
-avisa que o ticket provavelmente está errado, porque uma rodada com mais de dez cortes de uma vez é
-sinal de régua errada, não de dia ruim.
+avisa que o ticket provavelmente está errado, porque mais de dez cortes de uma vez numa rodada
+quase sempre apontam régua errada.
 
 São quatro faixas, e não três, porque criativo cansando e criativo queimando pedem coisas opostas.
 Um anúncio cansando ainda merece confiança: as pessoas continuam vendo, só pararam de clicar, e a

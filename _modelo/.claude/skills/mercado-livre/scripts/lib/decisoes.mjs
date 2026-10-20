@@ -14,6 +14,7 @@ import { appendFileSync, readFileSync, mkdirSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from './raiz.mjs'
+import { dataLocal } from './pipeline.mjs'
 
 export const ARQUIVO_ATA = join(RAIZ, 'dados', 'decisoes.jsonl')
 // Decisao sem prazo vale esta janela. Silencio infinito so com permanente: true, pedido de proposito.
@@ -25,6 +26,10 @@ const soData = v => String(v).slice(0, 10)
 const podeLer = v => typeof v === 'string' && !Number.isNaN(new Date(v).getTime())
 const dataValida = v => podeLer(v) && /^\d{4}-\d{2}-\d{2}$/.test(v)
 const horaValida = v => podeLer(v) && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(v)
+
+// Dia local em que a decisao foi tomada, o mesmo relogio do prazoDe: com o dia UTC, a frase de uma
+// decisao das 22h no Brasil mostraria "decidido em" amanha e um prazo de 6 dias.
+export const diaDaDecisao = ts => (podeLer(String(ts)) ? dataLocal(new Date(ts)) : soData(ts))
 
 export function validarDecisao(d) {
   if (!d || typeof d !== 'object') return ['a decisao precisa ser um objeto']
@@ -48,11 +53,15 @@ export function prazoDe(d, prazoPadraoDias = PRAZO_PADRAO_DIAS) {
   if (dataValida(d.reavaliar_em)) return d.reavaliar_em
   const base = new Date(d.ts).getTime()
   if (Number.isNaN(base)) return null
-  return new Date(base + prazoPadraoDias * DIA_MS).toISOString().slice(0, 10)
+  // dia local de quem decidiu: decisao das 22h nao ganha um dia a mais por ja ser amanha em UTC.
+  // Soma em dias de calendario (setDate): somar horas erraria um dia na troca de horario de verao.
+  const fim = new Date(base)
+  fim.setDate(fim.getDate() + prazoPadraoDias)
+  return dataLocal(fim)
 }
 
 export function diasDesde(ts, hoje) {
-  const ms = new Date(soData(hoje)).getTime() - new Date(soData(ts)).getTime()
+  const ms = new Date(soData(hoje)).getTime() - new Date(diaDaDecisao(ts)).getTime()
   return Number.isNaN(ms) ? 0 : Math.max(0, Math.floor(ms / DIA_MS))
 }
 
@@ -71,29 +80,29 @@ export function decisoesVigentes(decisoes, { escopo } = {}) {
 
 // Estado frente as metricas de hoje (atual = { acos_7d, cost_7d, total_amount_7d }).
 // Precedencia: permanente, furou, vencida, em vigor. Sem metricas (atual = {}), so o prazo decide.
-export function estadoDaDecisao(d, atual = {}, guard = {}, hoje = new Date().toISOString().slice(0, 10)) {
-  if (d.permanente === true) return { estado: 'em_vigor', motivo: `decisao permanente de ${soData(d.ts)}: ${d.resumo}` }
+export function estadoDaDecisao(d, atual = {}, guard = {}, hoje = dataLocal()) {
+  if (d.permanente === true) return { estado: 'em_vigor', motivo: `decisao permanente de ${diaDaDecisao(d.ts)}: ${d.resumo}` }
   const pp = guard.furar_acos_pp ?? 0.03
   const limiteGasto = guard.furar_gasto_sem_venda ?? 30
   const baseAcos = d.baseline?.acos_7d
   // Gatilho 1, a eficiencia piorou. Infinity (gastou sem vender) fica pro gatilho 2, que tem limiar.
   if (baseAcos != null && Number.isFinite(atual.acos_7d) && atual.acos_7d >= baseAcos + pp) {
-    return { estado: 'furou', motivo: `furou o combinado: o ACOS de 7 dias foi de ${(baseAcos * 100).toFixed(1)}% pra ${(atual.acos_7d * 100).toFixed(1)}% desde a decisao de ${soData(d.ts)}` }
+    return { estado: 'furou', motivo: `furou o combinado: o ACOS de 7 dias foi de ${(baseAcos * 100).toFixed(1)}% pra ${(atual.acos_7d * 100).toFixed(1)}% desde a decisao de ${diaDaDecisao(d.ts)}` }
   }
   // Gatilho 2, sangria: parou de vender e segue gastando. O gasto desde a decisao sai do ritmo
   // diario recente, porque a janela de 30 dias desliza e a subtracao de acumulados da negativo.
   if (atual.total_amount_7d === 0 && atual.cost_7d != null) {
     const acumulado = (atual.cost_7d / 7) * diasDesde(d.ts, hoje)
     if (acumulado >= limiteGasto) {
-      return { estado: 'furou', motivo: `furou o combinado: sem venda ha 7 dias e ja foram uns R$ ${acumulado.toFixed(2)} desde a decisao de ${soData(d.ts)}` }
+      return { estado: 'furou', motivo: `furou o combinado: sem venda ha 7 dias e ja foram uns R$ ${acumulado.toFixed(2)} desde a decisao de ${diaDaDecisao(d.ts)}` }
     }
   }
   const prazo = prazoDe(d)
   if (prazo && soData(hoje) >= prazo) {
     const esperado = d.esperado ? ` Esperavamos: ${d.esperado}.` : ''
-    return { estado: 'vencida', motivo: `combinamos reavaliar hoje. Em ${soData(d.ts)}: ${d.resumo}.${esperado}` }
+    return { estado: 'vencida', motivo: `combinamos reavaliar hoje. Em ${diaDaDecisao(d.ts)}: ${d.resumo}.${esperado}` }
   }
-  return { estado: 'em_vigor', motivo: `${d.resumo} (decidido em ${soData(d.ts)}, reavaliar em ${prazo})` }
+  return { estado: 'em_vigor', motivo: `${d.resumo} (decidido em ${diaDaDecisao(d.ts)}, reavaliar em ${prazo})` }
 }
 
 // Leitura que nunca derruba o diagnostico: ata ausente ou linha quebrada vira aviso, e o resto segue.
@@ -140,7 +149,7 @@ if (ehCli) {
     } else if (acao === '--listar') {
       const vigentes = decisoesVigentes(lerDecisoes(undefined, { log: m => console.error(m) }), { escopo: valor })
       if (!vigentes.size) console.log('a ata esta vazia pra esse escopo')
-      for (const d of vigentes.values()) console.log(`${d.escopo} ${d.alvo.id} (${d.alvo.nome ?? ''}): ${d.decisao}, ${estadoDaDecisao(d).motivo}`)
+      for (const d of vigentes.values()) console.log(`${d.escopo} ${d.alvo.id} (${d.alvo.nome ?? ''}): ${d.decisao}, ${estadoDaDecisao(d, {}, {}, dataLocal()).motivo}`)
     } else {
       throw new Error('uso: decisoes.mjs --gravar <arquivo.json> | --listar [ads|conta]')
     }

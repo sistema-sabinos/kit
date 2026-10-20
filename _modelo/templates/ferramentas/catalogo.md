@@ -73,7 +73,7 @@ node --env-file=.env scripts/publish-postforme.js
 **O que faz:** Envia e recebe mensagens de WhatsApp programaticamente (atendimento, notificacao, automacao)
 **Precisa de conta:** Sim. Dois caminhos:
 - **WhatsApp Cloud API (oficial Meta):** conta Meta Business verificada + numero dedicado. Desde jul/2025 cobra POR MENSAGEM DE TEMPLATE entregue, por categoria (marketing custa mais; utilidade e autenticacao custam centavos; resposta a cliente que iniciou a conversa e gratis na janela de 24h, com cota mensal gratuita de conversas de servico)
-- **Provedor intermediario (BSP/API de terceiro):** mais simples de plugar, cobra mensalidade propria (no Brasil, de ~R$ 100 a R$ 500+/mes) alem do custo Meta
+- **Provedor intermediario (BSP/API de terceiro):** mais simples de plugar, cobra mensalidade propria alem do custo Meta (o valor de hoje se confere no site do provedor, na hora)
 **Configurar:** Tokens no `.env` (varia por provedor)
 **Atencao:** e a integracao de maior friccao deste catalogo (verificacao de negocio, numero, provedor: leva dias). Enquanto nao sai, a triagem manual assistida (colar conversas pro Claude classificar e rascunhar) resolve boa parte
 **Quando usar:** Skills de atendimento automatico, envio de notificacao, follow-up de venda
@@ -124,9 +124,10 @@ winget install yt-dlp      # Windows
 
 ### OpenAI Whisper API
 **O que faz:** Transcreve audio em texto com alta qualidade, suporta varios idiomas
-**Precisa de conta:** Sim, OpenAI (pago, ~$0.006/min)
+**Precisa de conta:** Sim, OpenAI (pago por minuto de audio; o valor de hoje se confere em https://developers.openai.com/api/docs/pricing, na hora)
 **Configurar:** Salvar `OPENAI_API_KEY` no `.env`
 **Quando usar:** Transcrever audio de reuniao, podcast, audio de WhatsApp, qualquer arquivo de audio que nao seja video do YouTube
+**Atencao:** a OpenAI tira o `whisper-1` da API em 2027-02-26 e indica o `gpt-transcribe` ou o `gpt-live-transcribe` no lugar (conferido em 2026-10-19 em https://developers.openai.com/api/docs/deprecations); conferir o modelo na hora de ligar
 **Dica:** Tem versao open-source (whisper.cpp) pra rodar local sem custo, mais lenta
 
 ### AssemblyAI
@@ -141,22 +142,23 @@ winget install yt-dlp      # Windows
 
 ### Gemini (Google AI)
 **O que faz:** Gera imagens a partir de texto; a mesma chave tambem serve pra assistir video (/assistir-video) e transcrever
-**Precisa de conta:** Sim, Google AI Studio. **Pre-pago:** compra minima de US$ 10 em credito, que expira em 12 meses. Quando o credito zera, TUDO que usa a chave para de uma vez; vale ligar recarga automatica com teto
+**Precisa de conta:** Sim, Google AI Studio. **Pre-pago:** compra minima de credito (o valor de hoje aparece na tela de compra), que expira em 12 meses. Quando o credito zera, TUDO que usa a chave para de uma vez; vale ligar recarga automatica com teto
 **Configurar:** Salvar `GEMINI_API_KEY` no `.env`
 **Atencao:** nunca fixar nome de modelo no codigo; listar os modelos pela API e escolher em runtime (modelo em preview some sem aviso)
 **Quando usar:** Capas, ilustracoes, imagens pra posts, analise de video
 
-### DALL-E (OpenAI)
-**O que faz:** Gera imagens a partir de texto
+### GPT Image (OpenAI)
+**O que faz:** Gera e edita imagens a partir de texto (o DALL-E saiu da API em 2026-05-12)
 **Precisa de conta:** Sim, OpenAI (pago)
 **Configurar:** Salvar `OPENAI_API_KEY` no `.env`
+**Atencao:** o id do modelo muda rapido: em 2026-10-19 eram o `gpt-image-2.5-sunburst` (o mais capaz) e o `gpt-image-2.5-flare` (o rapido do dia a dia), e o `gpt-image-1` sai em 2026-10-23. Conferir o id na hora em https://developers.openai.com/api/docs/models
 **Quando usar:** Alternativa ao Gemini pra geracao de imagens
 
 ### FAL API
 **O que faz:** Plataforma de inferencia de modelos de imagem premium: gpt-image-2, Flux, Recraft, Stable Diffusion 3, Nano Banana 2 (Gemini), entre outros
 **Precisa de conta:** Sim, fal.ai (pago por imagem, varia por modelo)
 **Configurar:** Salvar `FAL_KEY` no `.env`
-**Quando usar:** Quando Gemini/DALL-E nao dao a qualidade necessaria. FAL roda os modelos mais novos e tem o melhor pra cada caso de uso (photorealismo, ilustracao, mockup, ad creative)
+**Quando usar:** Quando Gemini/GPT Image nao dao a qualidade necessaria. FAL roda os modelos mais novos e tem o melhor pra cada caso de uso (photorealismo, ilustracao, mockup, ad creative)
 
 ---
 
@@ -269,7 +271,7 @@ claude mcp add notion -- npx -y @notionhq/notion-mcp-server
 ### Google Calendar
 **O que faz:** Ve agenda, cria eventos e encontra horarios disponiveis
 **Precisa de conta:** Sim, conta Google
-**Como instalar:** Conector oficial: claude.ai > Configuracoes > Conectores > Google Calendar. Alternativa por MCP de terceiro: `claude mcp add google-calendar -- npx -y @gongrzhe/server-google-calendar-autoauth-mcp`
+**Como instalar:** Conector oficial: claude.ai > Configuracoes > Conectores > Google Calendar. Alternativa por MCP de terceiro: `claude mcp add google-calendar -- npx -y @gongrzhe/server-calendar-autoauth-mcp`
 **Quando usar:** Skills de agendamento, planejamento, organizacao de reunioes
 
 ### Canva

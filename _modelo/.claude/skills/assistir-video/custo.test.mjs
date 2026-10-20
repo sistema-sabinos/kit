@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { tokensDaResposta, linhaDeCusto, registrarCusto, PRECOS } from './custo.mjs'
+import { tokensDaResposta, linhaDeCusto, registrarCusto, PRECOS, dataLocal } from './custo.mjs'
 
 test('raciocinio do modelo entra como saida, porque o Google cobra como saida', () => {
   assert.deepEqual(tokensDaResposta({ promptTokenCount: 1000, candidatesTokenCount: 200, thoughtsTokenCount: 300 }), { entrada: 1000, saida: 500 })
@@ -24,6 +24,21 @@ test('linha no contrato do kit {em, servico, usd, contexto} com o preco da tabel
 test('depois do fim da promocao vale o preco cheio', () => {
   const l = linhaDeCusto({ modelo: 'gemini-3.8-flash', uso: { promptTokenCount: 1e6 }, contexto: 'c', hoje: '2027-01-02', agora: 'a' })
   assert.equal(l.usd, PRECOS['gemini-3.8-flash'].depois.entrada)
+})
+
+test('as 22h do ultimo dia da promocao no Brasil ainda vale a promocao (dia local, nao UTC)', () => {
+  const antes = process.env.TZ
+  try {
+    process.env.TZ = 'America/Sao_Paulo'
+    const agora = new Date('2026-12-31T22:00:00-03:00')
+    assert.ok(agora.toISOString().startsWith('2027-01-01'), 'canario: em UTC ja virou o ano')
+    assert.equal(dataLocal(agora), '2026-12-31')
+    const l = linhaDeCusto({ modelo: 'gemini-3.8-flash', uso: { promptTokenCount: 1e6 }, contexto: 'c', hoje: dataLocal(agora), agora: agora.toISOString() })
+    assert.equal(l.usd, PRECOS['gemini-3.8-flash'].entrada)
+  } finally {
+    if (antes === undefined) delete process.env.TZ
+    else process.env.TZ = antes
+  }
 })
 
 test('modelo fora da tabela grava os tokens com usd null e diz por que, nunca inventa preco', () => {

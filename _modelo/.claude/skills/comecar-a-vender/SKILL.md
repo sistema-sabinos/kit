@@ -25,7 +25,10 @@ skill; `_contexto/` e `fornecedores/` são da raiz do projeto.
   rodar `node .claude/skills/comecar-a-vender/scripts/fatos.mjs vencidos`. Fato
   vencido: pesquisar na web agora (fonte oficial primeiro, em português e em
   inglês), atualizar a linha com a data de hoje, e só então falar. Nunca de
-  memória.
+  memória. Preço e taxa de empresa (Bling, certificado A1, plataforma de drop,
+  impressora, tarifa e custo de envio do Mercado Livre, Decola) não ficam na
+  tabela: abrir a fonte da linha na hora, mesmo dentro dos 60 dias, e dizer o
+  valor com a data de hoje.
 - **Senha, código de SMS e cartão são só da pessoa.** Nunca pedir, nunca
   aceitar colado no chat. Se colar, avisar pra trocar a senha.
 - **Tela se lê no print.** Nos sites (gov.br, SEFAZ, Mercado Livre, Bling),

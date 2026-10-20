@@ -2,7 +2,7 @@
 // decisoes, pra nao recomendar hoje o que a pessoa decidiu ontem. Devolve o relatorio em
 // Markdown e a fila do que fazer. Nada aqui mexe em campanha.
 import { classificarCampanha, tacos } from './estrategia.mjs'
-import { decisoesVigentes, estadoDaDecisao, prazoDe } from '../../mercado-livre/scripts/lib/decisoes.mjs'
+import { decisoesVigentes, estadoDaDecisao, prazoDe, diaDaDecisao } from '../../mercado-livre/scripts/lib/decisoes.mjs'
 
 const pct = v => `${(v * 100).toFixed(1)}%`
 const brl = v => `R$ ${v.toFixed(2).replace('.', ',')}`
@@ -64,7 +64,7 @@ export function diagnosticar(snap, freio, { decisoes = [] } = {}) {
   if (acoes.length) { md.push('', '## O que fazer (uma por vez, no painel, com o seu "pode ir")'); for (const a of acoes) md.push(`- **${a.acao.toUpperCase()}** ${a.nome}: ${a.motivo}`) }
   if (emVigor.length) {
     md.push('', '## Decisoes em vigor', 'Fora da fila porque ja foram decididas. Pra reabrir, grave uma decisao nova na ata.')
-    for (const d of emVigor) md.push(`- **${d.alvo.nome || d.alvo.id}** (${String(d.ts).slice(0, 10)}): ${d.resumo}. ${prazoDe(d) ? `Reavaliar em ${prazoDe(d)}.` : 'Permanente.'}`)
+    for (const d of emVigor) md.push(`- **${d.alvo.nome || d.alvo.id}** (${diaDaDecisao(d.ts)}): ${d.resumo}. ${prazoDe(d) ? `Reavaliar em ${prazoDe(d)}.` : 'Permanente.'}`)
   }
   return { relatorioMd: md.join('\n') + '\n', acoes, emVigor, ativas: ativas.length, pausadas }
 }

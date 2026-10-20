@@ -75,18 +75,29 @@ test('pede a faixa com folga sobre a duração do vídeo, pra não precisar repe
   assert.match(promptDeMusica('calma', { segundos: 68 }), /About 68 seconds/)
 })
 
-test('sucesso grava UMA linha gemini-musica com o precoUsd passado e usa o Lyria Pro descoberto', async () => {
+test('sucesso grava UMA linha gemini-musica com o precoUsd passado e usa o lyria-3.5 descoberto', async () => {
   const corpos = instalarFetch({ modelos: LYRIA })
   const saida = join(pasta, 'cama.wav')
   const r = await gerarMusica({ estilo: 'calma', segundos: 60, saida, precoUsd: 0.08, registrarCusto: espiao, contexto: 'video-produto slug-teste' })
 
   assert.equal(r.custoUsd, 0.08)
   assert.ok(fs.existsSync(saida))
-  assert.equal(corpos[0].model, 'lyria-3-pro-preview')
+  assert.equal(corpos[0].model, 'lyria-3.5')
   assert.equal(linhas.length, 1)
   assert.equal(linhas[0].servico, 'gemini-musica')
   assert.equal(linhas[0].usd, 0.08)
   assert.match(linhas[0].contexto, /status=sucesso/)
+})
+
+test('sem o lyria-3.5 na chave cai no Lyria Pro, e com o 3.5 ele fica na frente do Pro', async () => {
+  const sem35 = LYRIA.filter((m) => m.name !== 'models/lyria-3.5')
+  const corpos = instalarFetch({ modelos: sem35 })
+  await gerarMusica({ estilo: 'calma', segundos: 60, saida: join(pasta, 'c.wav'), precoUsd: 0.08, registrarCusto: espiao })
+  assert.equal(corpos[0].model, 'lyria-3-pro-preview')
+  // o Pro listado antes do 3.5: a ordem da lista nao pode decidir
+  const com35 = instalarFetch({ modelos: LYRIA })
+  await gerarMusica({ estilo: 'calma', segundos: 60, saida: join(pasta, 'd.wav'), precoUsd: 0.08, registrarCusto: espiao })
+  assert.equal(com35[0].model, 'lyria-3.5')
 })
 
 test('modelo explicito tem prioridade e dispensa o ListModels', async () => {

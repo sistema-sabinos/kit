@@ -26,7 +26,9 @@ Todo preço, taxa, limite e regra citados aqui moram em
 `.claude/skills/app-planejar/referencias/fatos.md`, um id por fato, com a data em que
 foi conferido. Antes de afirmar qualquer um deles ao aluno, abrir a linha do id. Se a
 data tiver mais de 60 dias, conferir na fonte da linha (e na web, em português e
-inglês) antes de falar, e atualizar a linha com a data nova.
+inglês) antes de falar, e atualizar a linha com a data nova. Preço e taxa de empresa
+(plano pago, taxa por venda) não ficam no `fatos.md`: abrir a fonte da linha na hora,
+mesmo dentro dos 60 dias, e dizer o valor com a data de hoje.
 
 ## Dependências
 

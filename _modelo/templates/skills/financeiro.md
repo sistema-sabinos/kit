@@ -29,7 +29,7 @@ description: >
 ### Colher os dados (formato de 4 partes, uma pergunta por vez)
 
 1. "Quanto custa pra você ter esse produto pronto pra vender (ou entregar esse serviço)?" (por que pergunto: é a base de tudo, e costuma estar subestimada; exemplos: "compro por R$ 18 e a embalagem sai R$ 1,50" / "gasto 3 horas por atendimento e meu hora vale R$ 80")
-2. "Por onde ele é vendido e o que cada canal cobra por venda?" (por que pergunto: a mesma venda deixa lucro diferente em cada canal; exemplos: "marketplace cobra 16% mais R$ 6 fixos abaixo de R$ 79" / "Instagram com Pix, sem taxa" / "cartão em 3x cobra 4,5%")
+2. "Por onde ele é vendido e o que cada canal cobra por venda?" (por que pergunto: a mesma venda deixa lucro diferente em cada canal; exemplos: "marketplace cobra 14% mais o envio" / "Instagram com Pix, sem taxa" / "cartão em 3x cobra 4,5%")
 3. "Quanto de imposto sai de cada venda?" (por que pergunto: no Simples a alíquota depende do faturamento anual, e muita gente esquece; exemplos: "meu contador disse 6%" / "sou MEI, pago fixo por mês" / "não sei" vira pendência pro contador, seguir com uma estimativa marcada como estimativa)
 4. "Tem frete, devolução ou brinde que sai do seu bolso?" (por que pergunto: frete grátis é o custo que mais some da conta; exemplos: "frete grátis acima de R$ 79, me custa uns R$ 12 por pedido" / "uns 3% dos pedidos voltam")
 5. "Quanto você quer que sobre por venda, em reais ou em porcentagem?" (por que pergunto: margem alvo define o preço mínimo; exemplos: "quero R$ 10 limpos por unidade" / "30% de margem")

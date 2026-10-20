@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync, readdirSync, rmSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -232,5 +232,55 @@ test('D2b: dois projetos de mesmo nome guardam o backup em pastas separadas', ()
   } finally {
     devolverEnv(envAntigo);
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('o nome da cópia sai na hora local: 22h no Brasil ainda é o mesmo dia', () => {
+  const dirProjeto = mkdtempSync(join(tmpdir(), 'projeto-'));
+  const dirBackup = mkdtempSync(join(tmpdir(), 'backup-'));
+  const tzAntigo = { TZ: process.env.TZ };
+  try {
+    process.env.TZ = 'America/Sao_Paulo';
+    const envPath = join(dirProjeto, '.env');
+    writeFileSync(envPath, envComNChaves(5));
+    const agora = new Date('2026-10-19T22:30:15-03:00');
+    assert.ok(agora.toISOString().startsWith('2026-10-20'), 'canario: em UTC ja e o dia seguinte');
+    const resultado = backupEnv({ envPath, backupDir: dirBackup, agora });
+    assert.equal(resultado.ok, true);
+    assert.match(basename(resultado.destino), /^env-2026-10-19_22-30-15-[0-9a-z]+\.bak$/);
+  } finally {
+    devolverEnv(tzAntigo);
+    rmSync(dirProjeto, { recursive: true, force: true });
+    rmSync(dirBackup, { recursive: true, force: true });
+  }
+});
+
+test('rotação na troca de UTC pra hora local: a cópia nova fica e sai a mais antiga', () => {
+  const dirProjeto = mkdtempSync(join(tmpdir(), 'projeto-'));
+  const dirBackup = mkdtempSync(join(tmpdir(), 'backup-'));
+  const tzAntigo = { TZ: process.env.TZ };
+  try {
+    process.env.TZ = 'America/Sao_Paulo';
+    const envPath = join(dirProjeto, '.env');
+    writeFileSync(envPath, envComNChaves(5));
+    // três cópias da versão antiga, com nome em UTC, gravadas há 3h, 2h e 1h
+    const antigas = ['env-2026-10-20_01-00-00-a.bak', 'env-2026-10-20_01-30-00-b.bak', 'env-2026-10-20_02-00-00-c.bak'];
+    antigas.forEach((f, i) => {
+      const caminho = join(dirBackup, f);
+      writeFileSync(caminho, envComNChaves(5));
+      const quando = new Date(Date.now() - (3 - i) * 3600000);
+      utimesSync(caminho, quando, quando);
+    });
+    const agora = new Date('2026-10-19T23:30:00-03:00');
+    const resultado = backupEnv({ envPath, backupDir: dirBackup, manter: 3, agora });
+    assert.equal(resultado.ok, true);
+    assert.ok(basename(resultado.destino) < antigas[0], 'canario: pelo nome, a cópia nova vem antes das antigas');
+    assert.equal(existsSync(resultado.destino), true, 'a cópia recém-feita não pode ser apagada pela rotação');
+    assert.equal(existsSync(join(dirBackup, antigas[0])), false, 'a cópia mais antiga é a que sai');
+    assert.equal(readdirSync(dirBackup).filter((f) => f.endsWith('.bak')).length, 3);
+  } finally {
+    devolverEnv(tzAntigo);
+    rmSync(dirProjeto, { recursive: true, force: true });
+    rmSync(dirBackup, { recursive: true, force: true });
   }
 });

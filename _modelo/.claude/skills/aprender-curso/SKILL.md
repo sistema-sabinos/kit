@@ -213,7 +213,22 @@ Quando a pessoa pedir orientacao num assunto que tem curso estudado (`inteligenc
 2. Aplicar ao negocio dela, lendo `_contexto/empresa.md`. A resposta aconselha o caso dela, com o
    curso como base.
 3. Citar de onde veio: "(aula 3, 6:15)", ou "(aula 3, p. 41)" em PDF.
-4. Numero que envelhece: dizer o que o curso falou e a data, e conferir na internet antes de
+4. Antes de mostrar, conferir as citacoes no texto das aulas. Gravar o rascunho da resposta em
+   `inteligencia/cursos/<nome>/fontes/resposta.md` (fica so neste computador; cada resposta
+   sobrescreve a anterior) e rodar:
+   ```
+   node .claude/skills/aprender-curso/scripts/conferir-citacoes.mjs inteligencia/cursos/<nome> --resposta inteligencia/cursos/<nome>/fontes/resposta.md
+   ```
+   Saida 0: o script sorteia 3 citacoes e mostra, de cada uma, a linha da resposta e o trecho da
+   aula em volta da marca. Ler os dois e ver se a aula diz mesmo o que a resposta afirma. Nao
+   bateu: corrigir a frase ou a citacao e rodar de novo. Saida 1: cada linha antes de `problemas: N`
+   e uma citacao que nao existe na aula ou esta fora do formato; corrigir e rodar de novo. `AVISO`
+   de nenhuma citacao: resposta que usa o curso cita de onde veio (item 3). Resposta toda fora do
+   curso (item 6) nao cita e nao passa por aqui.
+   Fechar a resposta com uma linha curta pra pessoa, com os numeros que o script deu (`sorteadas: 3
+   de 7`): "Conferi 3 de 7 citacoes no texto das aulas: batem." Se precisou corrigir: "Conferi 3 de
+   7 citacoes no texto das aulas e corrigi 1 que nao batia."
+5. Numero que envelhece: dizer o que o curso falou e a data, e conferir na internet antes de
    aconselhar com ele. Se mudou, dar o valor de hoje e avisar que o curso esta desatualizado nisso.
    Numero da categoria errada (o curso usou moda, a pessoa vende pet): avisar e buscar o da categoria
    dela. Pagina oficial bloqueada (erro 403 e comum nas do Mercado Livre) e fontes de fora
@@ -221,9 +236,9 @@ Quando a pessoa pedir orientacao num assunto que tem curso estudado (`inteligenc
    a ferramenta oficial que decide (simulador, painel) em vez de cravar um valor.
    Curso que erra em regra de lei (prazo de garantia, imposto): corrigir com a fonte e avisar que ali
    o curso esta impreciso.
-5. Fora do curso: dizer "o curso nao cobre isso" e, se ajudar, responder separado, marcado como
+6. Fora do curso: dizer "o curso nao cobre isso" e, se ajudar, responder separado, marcado como
    fora do metodo.
-6. Curso que briga com regra deste projeto: a regra daqui ganha, e o mentor avisa da diferenca.
+7. Curso que briga com regra deste projeto: a regra daqui ganha, e o mentor avisa da diferenca.
 
 Dois cursos sobre o mesmo assunto e conselhos diferentes: mostrar os dois lados com a fonte de cada
 um, e deixar a decisao com a pessoa.

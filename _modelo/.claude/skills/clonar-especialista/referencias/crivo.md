@@ -1,7 +1,7 @@
 # Crivo da /clonar-especialista
 
 Conferido em 2026-10-12. Reconferir a cada versão do kit: lei e política de IA estão andando.
-Não é parecer jurídico; é o mínimo que o sistema cumpre.
+Este crivo é o mínimo que o sistema cumpre. Dúvida de lei de verdade vai pra um advogado.
 
 ## Quem pode virar conselheiro
 

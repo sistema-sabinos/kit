@@ -19,7 +19,7 @@ larg = int(sys.argv[sys.argv.index("--largura") + 1]) if "--largura" in sys.argv
 
 im = Image.open(ent).convert("RGB")
 W, H = im.size
-# lado multiplo de 14, mantendo a proporcao (518 no lado curto, como no treino)
+# largura fixa em 518 (como no treino) e altura na mesma proporcao, arredondada pra multiplo de 14
 w = 518
 h = int(round(H / W * w / 14)) * 14
 x = np.asarray(im.resize((w, h), Image.BICUBIC), dtype=np.float32) / 255.0

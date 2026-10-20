@@ -595,8 +595,8 @@ perguntar outro nome antes de seguir.
 
 ### O que nunca copiar
 
-- `templates/` inteira: fica só em `_modelo/`, é a biblioteca de origem, não
-  o produto final.
+- `templates/` inteira: é a biblioteca de origem e fica só em `_modelo/`; o
+  projeto recebe só o que o passo anterior copiou dela.
 - `README.md` do `_modelo/`.
 - Qualquer skill de `_modelo/.claude/skills/` que não tenha sido escolhida
   pra este projeto.
@@ -740,7 +740,23 @@ qual é o próximo passo ao terminar cada etapa)".
    "igual" e nada é trocado: o que fica é o recibo `.sabinos/instalado.json` e o
    motor guardado, que deixam o `/atualizar-sabinos` saber, na versão seguinte,
    o que veio do SabinOS e o que é da pessoa.
-5. Mensagem final, ensinando clique a clique, cobrindo Windows e Mac, como
+5. **Teste de aceite.** Reler do disco, nunca da memória da conversa, o
+   `_contexto/empresa.md`, o `_contexto/estrategia.md` e o
+   `_contexto/preferencias.md` do projeto novo, e provar com três fatos tirados
+   deles, numa frase só:
+
+   > "Pra conferir que ficou certo: este projeto <o que é e pra quem>, o foco
+   > agora é <foco>, e comigo você quer <o jeito>. Bateu?"
+
+   Bateu: seguir. Não bateu: corrigir o arquivo de onde saiu o fato errado,
+   anotar no `_contexto/licoes.md` do projeto (entendimento errado corrigido) e
+   repetir só o fato corrigido. O teste lê o arquivo porque é ele que o sistema
+   vai ler amanhã: fato que ficou só na conversa some.
+
+   Exceção de propósito entre os gêmeos: o `bem-vindo.html` do Passo 7 do
+   `/setup` fica só no primeiro projeto. Ele apresenta a casa a quem chegou
+   agora, e quem cria o segundo projeto já conhece.
+6. Mensagem final, ensinando clique a clique, cobrindo Windows e Mac, como
    abrir a pasta nova no VS Code (menu Arquivo, opção Abrir Pasta, ou
    arrastar a pasta pro ícone do VS Code). Antes de fechar, dizer que a
    estrutura de hoje é o começo, com este texto:

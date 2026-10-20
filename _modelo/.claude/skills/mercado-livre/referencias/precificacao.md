@@ -22,8 +22,9 @@ margem = preço que o cliente paga
        - custo do produto
 ```
 
-- Premium é sempre Clássico mais 5 pontos de comissão, em qualquer categoria.
-  Sabendo um, deriva o outro. `gold_pro` é Premium, `gold_special` é Clássico.
+- O Premium cobra comissão maior que o Clássico, e a diferença depende da
+  categoria e muda. As duas saem da API abaixo ou do simulador, uma de cada vez.
+  `gold_pro` é Premium, `gold_special` é Clássico.
 - A comissão exata sai de graça por API:
   `GET /sites/MLB/listing_prices?price=<preço>&category_id=<cat>&listing_type_id=<tipo>`.
 - O frete também: `GET /users/<seu-id>/shipping_options/free?dimensions=<alt>x<larg>x<comp>,<peso_g>&listing_type_id=<tipo>&item_price=<preço>&verbose=true&condition=new&logistic_type=drop_off`.
@@ -35,11 +36,14 @@ margem = preço que o cliente paga
 ## O degrau dos R$ 79
 
 Acima de R$ 79 o frete grátis vira obrigatório e o Mercado Livre cobre uma
-parte pela sua reputação. Abaixo, o custo de envio é menor, mas existe. Medido
-em 2026-08-14: a R$ 78,90 sobrava mais lucro que a R$ 79,90, e só voltava a
-compensar acima de R$ 84,80. Regra: ou ancora em R$ 78,90, ou pula pra R$ 85
-ou mais. Nunca no meio. Vale pro preço de lista, pro promocional e pro preço
-com desconto de assinante, que é o que costuma cruzar o degrau sem ninguém ver.
+parte pela sua reputação. Abaixo, o custo de envio é menor, mas existe. Por
+isso o preço logo acima dos R$ 79 pode dar menos lucro que o de logo abaixo, e
+o ponto em que volta a compensar muda com o peso, a categoria e a reputação.
+Regra: preço perto dos R$ 79, rodar o simulador dos dois lados (um pouco abaixo
+e um pouco acima, subindo até o lucro passar o do lado de baixo) e ficar com o
+lado que dá mais lucro. Nunca no meio. Vale pro preço de lista, pro promocional
+e pro preço com desconto de assinante, que é o que costuma cruzar o degrau sem
+ninguém ver.
 
 ## Preço de lista inflado e a catraca do desconto
 
@@ -72,9 +76,9 @@ mesma hora.
 ## Clássico ou Premium
 
 Um anúncio por produto. A modalidade se escolhe rodando o simulador nas duas e
-ficando com a que entrega mais lucro líquido. Premium custa 5 pontos a mais e
-dá parcelamento em 12 vezes e mais exposição; costuma valer em ticket a partir
-de R$ 80.
+ficando com a que entrega mais lucro líquido. O Premium cobra mais comissão e
+dá parcelamento sem juros e mais exposição; o simulador mostra se a diferença
+compensa no seu preço.
 
 ## Centavos
 

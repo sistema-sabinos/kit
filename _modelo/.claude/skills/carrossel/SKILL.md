@@ -197,7 +197,7 @@ Cada carrossel é uma pasta `producao/<slug>/`, com `<slug>` no formato `AAAA-MM
    **Slide final (CTA):** Chamada pra ação + menção ao canal/marca. Curto. O CTA precisa ter uma frase-ponte que conecta o conteúdo do carrossel com a ação (não um "segue pra mais" solto).
 
 **Regras de construção do texto:**
-- Cada slide é um parágrafo de reportagem, não uma lista disfarçada. 2-4 frases que fluem com conectivos naturais (porque, só que, por isso, enquanto, mas, então, aí)
+- Cada slide é um parágrafo de reportagem, em frases corridas. 2-4 frases que fluem com conectivos naturais (porque, só que, por isso, enquanto, mas, então, aí)
 - Artigos sempre presentes: "um mercado", "a marca", "os dados". Nunca cortar artigo pra economizar espaço
 - Cada frase deve funcionar lida em voz alta. Se soar robótico, reescrever
 - Preferir 2 frases curtas com ponto a 1 frase longa com vírgula. Ritmo é mais importante que economia

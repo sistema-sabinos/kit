@@ -30,6 +30,20 @@ test('decisao em vigor cala a recomendacao e aparece no rodape', () => {
   assert.match(r.relatorioMd, /Decisoes em vigor/)
 })
 
+test('rodape das decisoes mostra o dia local da decisao, o mesmo relogio do prazo', () => {
+  const antes = process.env.TZ
+  try {
+    process.env.TZ = 'America/Sao_Paulo'
+    // 19/09 as 22h em Sao Paulo; prazo padrao de 7 dias cai em 26/09
+    const d = decisao({ ts: '2026-09-20T01:00:00.000Z', reavaliar_em: undefined })
+    const r = diagnosticar(snap([camp({ cost_7d: 1 })]), { ...PADROES }, { decisoes: [d] })
+    assert.match(r.relatorioMd, /\(2026-09-19\): segurar uma semana\. Reavaliar em 2026-09-26\./)
+  } finally {
+    if (antes === undefined) delete process.env.TZ
+    else process.env.TZ = antes
+  }
+})
+
 test('decisao vencida volta como revisar, com o combinado no motivo', () => {
   const r = diagnosticar(snap([camp()]), { ...PADROES }, { decisoes: [decisao({ reavaliar_em: '2026-09-22' })] })
   assert.deepEqual(r.acoes.map(a => a.acao), ['revisar'])

@@ -129,6 +129,102 @@ test('CLI --persona com ficha faltando sai 1', () => {
   }
 })
 
+// Modo --resposta: rascunho da resposta do mentor gravado em resposta.md dentro da pasta do curso
+function comResposta(resposta, aulas) {
+  const dir = curso({ mentor: 'x (aula 1, 1:00)', aulas })
+  writeFileSync(join(dir, 'resposta.md'), resposta)
+  return dir
+}
+const rodarResposta = (dir, ...extra) =>
+  spawnSync(process.execPath, [SCRIPT, dir, '--resposta', join(dir, 'resposta.md'), ...extra], { encoding: 'utf8' })
+
+const AULAS_CINCO = {
+  '01-a.md': ['[1:00] um', '[2:00] dois', '[3:00] tres'].join(CRLF),
+  '02-b.md': ['[4:00] quatro', '[5:00] cinco'].join(CRLF),
+}
+const RESPOSTA_CINCO = [
+  'A (aula 1, 1:00).', 'B (aula 1, 2:00).', 'C (aula 1, 3:00).', 'D (aula 2, 4:00).', 'E (aula 2, 5:00).',
+].join(CRLF)
+
+test('resposta: amostra com semente sai igual nas duas vezes e sorteia N de todas', () => {
+  const dir = comResposta(RESPOSTA_CINCO, AULAS_CINCO)
+  try {
+    const a = rodarResposta(dir, '--amostra', '2', '--semente', '7')
+    const b = rodarResposta(dir, '--amostra', '2', '--semente', '7')
+    assert.ok(a.stdout.length > 0, 'saida veio vazia')
+    assert.equal(a.status, 0, a.stdout + a.stderr)
+    const cabecas = s => s.split(/\r?\n/).filter(l => l.startsWith('--- ') || l.startsWith('sorteadas:'))
+    assert.deepEqual(cabecas(a.stdout), cabecas(b.stdout))
+    const escolhidas = cabecas(a.stdout).filter(l => l.startsWith('--- '))
+    assert.equal(escolhidas.length, 2)
+    assert.equal(new Set(escolhidas.map(l => l.replace(/^--- \d de 2: /, ''))).size, 2)
+    for (const l of escolhidas) assert.match(l, /^--- \d de 2: \(aula [12], [1-5]:00\)$/)
+    assert.equal(cabecas(a.stdout).at(-1), 'sorteadas: 2 de 5')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('resposta: devolve a linha do mentor e o trecho da aula em volta da marca', () => {
+  const aula = ['# Aula 1', 'antes longe', 'antes perto', '- frete gratis acima de 79 [6:15]', 'depois perto', 'depois perto 2', 'depois longe'].join(CRLF)
+  const dir = comResposta('Pra sua loja, frete gratis compensa (aula 1, 6:15).', { '01-frete.md': aula })
+  try {
+    const r = rodarResposta(dir, '--amostra', '1')
+    assert.ok(r.stdout.length > 0, 'saida veio vazia')
+    assert.equal(r.status, 0, r.stdout + r.stderr)
+    assert.deepEqual(r.stdout.trim().split(/\r?\n/), [
+      '--- 1 de 1: (aula 1, 6:15)',
+      'resposta: Pra sua loja, frete gratis compensa (aula 1, 6:15).',
+      'aulas/01-frete.md:',
+      '  antes longe',
+      '  antes perto',
+      '  - frete gratis acima de 79 [6:15]',
+      '  depois perto',
+      '  depois perto 2',
+      '  ...',
+      'sorteadas: 1 de 1',
+    ])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('resposta sem citacao sai 1 com aviso', () => {
+  const dir = comResposta('Faz assim que da certo, como a aula 1 ensina.', { '01-a.md': '[1:00] x' })
+  try {
+    const r = rodarResposta(dir)
+    assert.equal(r.status, 1)
+    assert.match(r.stdout, /AVISO: nenhuma citacao no formato \(aula N, marca\) achada no texto da resposta/)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('resposta com marca que nao existe na aula sai 1 e nao sorteia', () => {
+  const dir = comResposta('A (aula 1, 1:00). B (aula 1, 9:59).', { '01-a.md': '[1:00] x' })
+  try {
+    const r = rodarResposta(dir, '--semente', '1')
+    assert.ok(r.stdout.length > 0, 'saida veio vazia')
+    assert.equal(r.status, 1)
+    assert.deepEqual(r.stdout.trim().split(/\r?\n/), ['aula 1 sem a marca [9:59]', 'problemas: 1'])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('CLI --resposta sem o caminho do arquivo sai 1 com aviso', () => {
+  const dir = comResposta('A (aula 1, 1:00).', { '01-a.md': '[1:00] um' })
+  try {
+    const r = spawnSync(process.execPath, [SCRIPT, dir, '--resposta'], { encoding: 'utf8' })
+    assert.ok(r.stdout.length > 0, 'saida veio vazia')
+    assert.equal(r.status, 1, r.stdout + r.stderr)
+    assert.match(r.stdout, /AVISO: --resposta precisa do caminho/)
+    assert.doesNotMatch(r.stdout, /conferidas:/)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test('CLI --persona sem SKILL.md sai 1 com aviso', () => {
   const dir = persona({ fichas: { '01-x.md': '[1:00]' } })
   try {

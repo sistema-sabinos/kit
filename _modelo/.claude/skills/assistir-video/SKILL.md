@@ -60,7 +60,7 @@ O script pergunta pra API quais modelos existem e escolhe o melhor disponível (
 
 ## Custo (pay-per-use, na billing Gemini do usuário)
 
-NÃO é grátis, mas é barato. Vídeo é cobrado por segundo de duração: medido em 2026-10-04, uns 91 tokens de entrada por segundo de vídeo. Estimativa = segundos × 91 × preço por milhão de tokens de entrada do modelo, conferido no dia na página oficial (ai.google.dev/gemini-api/docs/pricing), nunca de memória. No dia da medição, com `--barato`, uma aula de 8 minutos saiu US$ 0,04 e uma de 28 minutos, US$ 0,13; o pro custa algumas vezes mais.
+Tem custo, e ele é baixo. Vídeo é cobrado por segundo de duração: medido em 2026-10-04, uns 91 tokens de entrada por segundo de vídeo. Estimativa = segundos × 91 × preço por milhão de tokens de entrada do modelo, conferido no dia na página oficial (ai.google.dev/gemini-api/docs/pricing), nunca de memória. O `--barato` sai algumas vezes mais em conta que o pro.
 
 Avisar o custo aproximado antes de toda chamada e esperar o "pode ir" (regra do gate humano).
 
@@ -75,4 +75,4 @@ Avisar o custo aproximado antes de toda chamada e esperar o "pode ir" (regra do 
 
 - Vídeo privado ou de conta fechada não entra (nem o YouTube não listado, nem post de perfil privado).
 - Vídeo muito longo pode estourar contexto; nesse caso usar `--barato` ou pedir foco num trecho via `--pergunta`.
-- Lê o que está na tela, mas não clica nem interage; é observação, não automação.
+- Só lê o que está na tela: não clica e não mexe em nada.

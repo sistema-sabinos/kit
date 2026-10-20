@@ -16,9 +16,7 @@ const API = 'https://generativelanguage.googleapis.com/v1beta'
 // com a data nova.
 export const PRECOS = {
   'gemini-3.8-flash': { entrada: 0.75, saida: 3.75, promocional_ate: '2026-12-31', depois: { entrada: 1.5, saida: 7.5 }, conferido_em: '2026-10-04' },
-  'gemini-3.7-flash': { entrada: 0.75, saida: 3.75, promocional_ate: '2026-12-31', depois: { entrada: 1.5, saida: 7.5 }, conferido_em: '2026-10-04' },
   'gemini-3.6-flash': { entrada: 0.75, saida: 3.75, promocional_ate: '2026-12-31', depois: { entrada: 1.5, saida: 7.5 }, conferido_em: '2026-10-04' },
-  'gemini-3.5-flash': { entrada: 1.5, saida: 9, conferido_em: '2026-10-04' },
 }
 // Consumo medido por foto no motor de origem (1.540 de entrada e 1.060 de saida). O ensaio recalibra.
 export const TOKENS_POR_FOTO = { entrada: 1540, saida: 1060 }

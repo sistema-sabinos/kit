@@ -44,6 +44,8 @@ const RE_PLACEHOLDER = /xxx|aqui|exemplo|placeholder|process\.env|sua.?chave|seu
 const RE_LINK = /\[[^\]]*\]\(([^)]+)\)/g
 // Gate 6: dependencia de Windows chumbada (exportado pro teste dos guias na bancada)
 export const RE_WIN = /(?:\b[A-Z]:[\\/]{1,2}[\w\\/]|schtasks|\.bat\b|\\\\Users\\\\)/i
+// linha que ensina Windows e Mac juntos passa (exportado pro conferir-prototipo da bancada)
+export const RE_ENSINA = /windows.*mac|mac.*windows/i
 
 // Gate 14: terminal e da IA. Texto que vai pro aluno nunca manda ele digitar, rodar ou colar
 // comando no terminal; quem roda e o Claude, o Codex ou outra IA. Exportado pro teste dos guias
@@ -92,6 +94,50 @@ export function terminalProAluno(txt, soFala = false) {
     if (t) achados.push({ linha: i + 1, trecho: t.trim().slice(0, 100) })
   })
   return achados
+}
+
+// Gate 15: frase que nega uma coisa pra afirmar outra logo depois (regra 1 do kit). A regra mora
+// na /humanizar (a R-1 do varrer.mjs). O import e dinamico: varrer quebrado vira naoRodou do 15 e
+// os outros gates seguem rodando. Trecho entre aspas (retas, ate uma quebra de linha dentro, ou
+// curvas), entre crases ou em bloco de codigo cita o proibido e passa: o conteudo vira x do mesmo
+// tamanho, pra linha bater com o arquivo. Exportado pro teste dos guias na bancada.
+let contrasteR1 = null, erroR1 = ''
+try { ({ contraste: contrasteR1 } = await import('../_modelo/.claude/skills/humanizar/scripts/varrer.mjs')) } catch (e) { erroR1 = e.message }
+const ENTIDADES = { amp: '&', lt: '<', gt: '>', quot: '"', nbsp: ' ' }
+// acento por nome (&atilde;, &Eacute;, &ccedil;): a letra mais a marca combinante, depois NFC.
+// As marcas se montam por codigo (U+0301, U+0300, U+0302, U+0303, U+0327, U+0308).
+const MARCA_DE = { acute: 0x301, grave: 0x300, circ: 0x302, tilde: 0x303, cedil: 0x327, uml: 0x308 }
+const RE_ENTIDADE = /&(?:#(\d+)|#x([0-9a-f]+)|(amp|lt|gt|quot|nbsp)|([a-z])(acute|grave|circ|tilde|cedil|uml));/gi
+const RE_CITADO = new RegExp('"[^"\\n]*(?:\\n[^"\\n]*)?"|' + ABRE + '[^' + FECHA + ']*' + FECHA + '|`[^`\\n]*`', 'g')
+const apagar = m => m.replace(/[^\n]/g, 'x')
+
+// bloco de codigo: fecha so com a mesma marca (crase ou til) e pelo menos o mesmo tamanho da
+// abertura, como no Markdown; cerca de 4 crases guarda linha de 3 dentro
+function semCitado(txt) {
+  let cerca = null
+  return txt.split('\n').map(l => {
+    const m = l.match(/^\s*(`{3,}|~{3,})/)
+    if (m && !cerca) { cerca = m[1]; return '' }
+    if (m && cerca && m[1][0] === cerca[0] && m[1].length >= cerca.length && !l.trim().slice(m[1].length).trim()) { cerca = null; return '' }
+    return cerca ? '' : l
+  }).join('\n').replace(RE_CITADO, apagar)
+}
+
+// html: tag vira espaco e entidade vira o caractere (acento escrito como &#233; ou &eacute; tambem conta)
+function deEntidade(m, dec, hex, nome, letra, marca) {
+  if (nome) return ENTIDADES[nome.toLowerCase()]
+  if (letra) return MARCA_DE[marca.toLowerCase()] ? (letra + String.fromCharCode(MARCA_DE[marca.toLowerCase()])).normalize('NFC') : m
+  const c = dec ? Number(dec) : parseInt(hex, 16)
+  return c === 10 || c === 13 ? ' ' : c > 0x10ffff ? m : String.fromCodePoint(c)
+}
+
+export function contrasteNoTexto(txt, html = false) {
+  if (!contrasteR1) throw new Error(`a R-1 da /humanizar nao carregou (${erroR1})`)
+  let t = String(txt).replace(/\r\n?/g, '\n')
+  if (html) t = t.replace(/<[^>]*>/g, m => m.replace(/[^\n]/g, ' ')).replace(RE_ENTIDADE, deEntidade)
+  // o trecho sai da linha original, sem a mascara de x
+  const linhas = t.split('\n')
+  return contrasteR1(semCitado(t)).map(o => ({ linha: o.linha, trecho: linhas[o.linha - 1].trim().slice(0, 120) }))
 }
 
 // Detectores de conteudo do Gate 1 sobre um texto: devolve o detalhe de cada achado.
@@ -290,8 +336,9 @@ function ehTexto(rel) {
   return /\.(md|json|txt|mjs|js|cjs|yml|yaml|ps1|py|sh)$/i.test(rel)
 }
 
-// Gate 1 le tambem .ts e .tsx (motor de video e estilos guardam nome em codigo de tela). O
-// ehTexto fica como esta porque o Gate 12 usa ele, e .ts/.tsx guardam travessao de tela.
+// Gate 1 le tambem .ts e .tsx (o motor de video guarda nome em codigo de tela, e o /app-testar
+// traz testes .spec.ts). O ehTexto fica como esta porque o Gate 12 usa ele, e .ts/.tsx guardam
+// travessao de tela.
 function ehTextoGate1(rel) {
   return ehTexto(rel) || /\.(ts|tsx)$/i.test(rel)
 }
@@ -467,7 +514,6 @@ export function rodarGates(dirKit, opcoes = {}) {
   }
 
   // Gate 6: portabilidade Windows/Mac (todo arquivo texto dentro de _modelo/ e do .claude/ da pasta-mae)
-  const RE_ENSINA = /windows.*mac|mac.*windows/i
   for (const rel of arquivos) {
     if (!ehTexto(rel)) continue
     if (!(rel.startsWith('_modelo/') || rel.startsWith('.claude/'))) continue
@@ -698,6 +744,23 @@ export function rodarGates(dirKit, opcoes = {}) {
       falhas.push({ gate: 14, arquivo: rel, detalhe: `linha ${linha}: manda o aluno usar o terminal ("${trecho}"); trocar por "a IA roda" ou por clique, ou marcar <!-- ultimo-caso: motivo --> na linha` })
   }
 
+  // Gate 15: frase de contraste (regra 1) no texto do kit: .md, .txt e .html, fora fixtures/
+  // (pagina de terceiro guardada como dado de teste) e fora o RESPONDA-AQUI.txt, que na pasta-mae
+  // guarda as respostas do aluno com as palavras dele (o /atualizar-kit mantem). Codigo .mjs fica
+  // fora: comentario e teste trazem o proibido de proposito. Detalhe no contrasteNoTexto.
+  if (!contrasteR1) naoRodou.push({ gate: 15, motivo: `a R-1 da /humanizar nao carregou (${erroR1}); conferir se a humanizar e a ler-avaliacoes estao no _modelo` })
+  else {
+    try {
+      for (const rel of arquivos) {
+        if (!/\.(md|txt|html)$/i.test(rel) || /(^|\/)fixtures\//.test(rel) || rel === 'RESPONDA-AQUI.txt') continue
+        for (const { linha, trecho } of contrasteNoTexto(readFileSync(join(dirKit, rel), 'utf8'), /\.html$/i.test(rel)))
+          falhas.push({ gate: 15, arquivo: rel, detalhe: `linha ${linha}: frase que nega uma coisa pra afirmar outra ("${trecho}"); reescrever afirmando direto, ou por entre aspas se for exemplo citado` })
+      }
+    } catch (e) {
+      naoRodou.push({ gate: 15, motivo: `a R-1 da /humanizar quebrou no meio (${e.message.split('\n')[0]})` })
+    }
+  }
+
   // Gate 13: gavetas da memoria. Todo caminho de memoria que o Mapa do _modelo/AGENTS.md
   // promete tem que existir no _modelo e ter quem escreva ou leia (Tabela de destinos ou Gatilhos)
   if (set.has('_modelo/AGENTS.md')) {
@@ -767,7 +830,7 @@ const NOMES = {
   6: 'Portabilidade Windows/Mac', 7: 'Empacotamento do zip',
   8: 'Regua do /trafego', 9: 'Travas de seguranca', 10: 'Atualizador',
   11: 'Backup do aluno (.gitignore)', 12: 'Travessao', 13: 'Gavetas da memoria',
-  14: 'Terminal e da IA',
+  14: 'Terminal e da IA', 15: 'Frase de contraste (regra 1)',
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -775,7 +838,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const { falhas, avisos, total, naoRodou = [] } = rodarGates(dir)
   console.log(`Kit: ${dir} (${total} arquivos)\n`)
   for (const a of avisos) console.log(`aviso: ${a}\n`)
-  for (const g of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]) {
+  const GATES = Object.keys(NOMES).map(Number)
+  for (const g of GATES) {
     const desse = falhas.filter(f => f.gate === g)
     const nr = naoRodou.find(n => n.gate === g)
     const estado = desse.length ? 'FALHOU' : !nr ? 'ok    ' : nr.parcial ? 'parcial' : 'n/a   '
@@ -785,6 +849,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   }
   const vermelhos = new Set(falhas.map(f => f.gate)).size
   const fora = naoRodou.filter(n => !falhas.some(f => f.gate === n.gate)).length
-  console.log(`\nResultado: ${14 - vermelhos - fora} verdes, ${vermelhos} com falha, ${fora} sem rodar inteiro${vermelhos ? '' : ' (nenhuma conferencia falhou)'}`)
-  process.exit(falhas.length ? 1 : 0)
+  console.log(`\nResultado: ${GATES.length - vermelhos - fora} verdes, ${vermelhos} com falha, ${fora} sem rodar inteiro${vermelhos ? '' : ' (nenhuma conferencia falhou)'}`)
+  // exitCode, nunca process.exit: o import do Gate 15 e um await no topo (licao 3.12)
+  process.exitCode = falhas.length ? 1 : 0
 }

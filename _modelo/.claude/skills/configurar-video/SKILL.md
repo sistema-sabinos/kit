@@ -33,6 +33,12 @@ seus projetos. Se você tiver projetos em versões diferentes do SabinOS, rode
 `/configurar-video` ao trocar de um pro outro (o motor muda de versão). Pra evitar isso,
 atualize todos com `/atualizar-sabinos`.
 
+Licença do Remotion, a biblioteca que monta o vídeo: ele é grátis pra pessoa física, pra
+empresa com até 3 pessoas e pra organização sem fins lucrativos; empresa maior precisa
+comprar a licença de empresa deles antes de usar (conferido em 2026-10-19 em
+https://github.com/remotion-dev/remotion/blob/main/LICENSE.md). Conte isso junto com o
+peso, antes do primeiro download.
+
 ## Passos (nesta ordem)
 
 ### 1. Medir o computador

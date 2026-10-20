@@ -12,13 +12,19 @@ export const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..',
 // os tokens com usd null, e quem le confere o preco.
 export const PRECOS = {
   'gemini-3.8-flash': { entrada: 0.75, saida: 3.75, promocional_ate: '2026-12-31', depois: { entrada: 1.5, saida: 7.5 }, conferido_em: '2026-10-04' },
-  'gemini-3.7-flash': { entrada: 0.75, saida: 3.75, promocional_ate: '2026-12-31', depois: { entrada: 1.5, saida: 7.5 }, conferido_em: '2026-10-04' },
   'gemini-3.1-pro-preview': { entrada: 2, saida: 12, conferido_em: '2026-10-04' },
 }
 
 export function tokensDaResposta(uso = {}) {
   uso = uso || {}
   return { entrada: uso.promptTokenCount ?? 0, saida: (uso.candidatesTokenCount ?? 0) + (uso.thoughtsTokenCount ?? 0) }
+}
+
+// 'hoje' sai do calendario local; o Date#toISOString fala UTC, e das 21h a meia-noite no Brasil
+// o UTC ja virou o dia, e no ultimo dia da promocao a linha sairia com o preco cheio.
+export function dataLocal(d = new Date()) {
+  const dois = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${dois(d.getMonth() + 1)}-${dois(d.getDate())}`
 }
 
 export function linhaDeCusto({ modelo, uso, contexto, hoje, agora }) {

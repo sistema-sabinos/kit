@@ -309,6 +309,13 @@ export function ocorrencias(texto) {
   return out.sort((a, b) => ORDEM_CAT.indexOf(a.cat) - ORDEM_CAT.indexOf(b.cat) || a.linha - b.linha || a.ini - b.ini)
 }
 
+// so a R-1 (frase que nega uma coisa pra afirmar outra), pro Gate 15 do verificar-kit: rodar
+// todas as regras pra filtrar uma custava 10 vezes o tempo
+const R1 = REGRAS.find(r => r.id === 'R-1')
+export function contraste(texto) {
+  return R1.achar(preparar(texto))
+}
+
 // ---------- fatos ----------
 
 // "1.500" e "1500" iguais; "1,5" e "1.5" iguais. Sai como TEXTO de algarismo, nunca por Number(),

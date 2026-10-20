@@ -1,6 +1,6 @@
 ---
 name: editar-video
-description: Edita o vídeo do aluno de ponta a ponta, a partir da fala gravada no celular. Escreve o roteiro com ele, corta as pausas e os erros, limpa a voz, faz a legenda palavra por palavra, põe zoom, palavra-chave, gráficos, música e efeitos sonoros, confere o resultado por medição e entrega o vídeo vertical pronto. Funciona com cenário próprio ou com fundo verde (pano verde trocado por um cenário). Para antes de gastar e espera o "pode ir". Use quando o usuário chamar /editar-video, disser "edita meu vídeo", "legenda esse vídeo", "gravei um vídeo", "fundo verde", "corta as pausas", "tira o silêncio do vídeo", "põe legenda e música", "faz um reels da minha fala".
+description: Edita o vídeo do aluno de ponta a ponta, a partir da fala gravada no celular. Escreve o roteiro com ele, corta as pausas e os erros, limpa a voz, faz a legenda palavra por palavra, põe zoom, palavra-chave, gráficos, música e efeitos sonoros e, se ele pedir, a câmera lenta numa palavra (a palavra volta mais devagar logo depois de falada), confere o resultado por medição e entrega o vídeo vertical pronto. Funciona com cenário próprio ou com fundo verde (pano verde trocado por um cenário). Para antes de gastar e espera o "pode ir". Use quando o usuário chamar /editar-video, disser "edita meu vídeo", "legenda esse vídeo", "gravei um vídeo", "fundo verde", "corta as pausas", "tira o silêncio do vídeo", "põe legenda e música", "faz um reels da minha fala", "câmera lenta", "põe câmera lenta nessa palavra".
 ---
 
 # /editar-video

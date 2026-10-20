@@ -69,7 +69,9 @@ palavras-chave.
   limite ou regra ao aluno, achar a linha no `fatos.md` pelo id e olhar o
   `conferido_em`. Mais de 60 dias: abrir a fonte da linha hoje (e buscar na
   web em português e inglês), atualizar fato e data no `fatos.md` e só então
-  falar.
+  falar. Preço e taxa de empresa (taxa por venda, conta de desenvolvedor) não
+  ficam no `fatos.md`: abrir a fonte da linha na hora, mesmo dentro dos 60 dias,
+  e dizer o valor com a data de hoje.
 - **Texto pro cliente passa pela voz da marca.** Página, ficha, e-mail e post
   se releem contra a voz da `/app-marca` antes de mostrar ao aluno, e fecham
   com o que foi suposto e o que conferir antes de usar, em até 2 linhas.

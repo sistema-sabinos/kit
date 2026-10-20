@@ -5,6 +5,10 @@
 > antes de mostrar custo ou regra ao aluno. Fato com mais de 60 dias se confere
 > na web (buscar em português e inglês, fonte oficial primeiro), e a linha se
 > atualiza aqui com a data nova. Mantenha as quatro colunas.
+> Preço e taxa de empresa (plano, mensalidade, tarifa, produto) não ficam guardados: a linha
+> guarda o que não muda toda hora e a fonte, e o valor de hoje se confere na fonte na hora de
+> falar com o aluno, mesmo com a linha dentro dos 60 dias, e vai com a data de hoje. Tributo do
+> governo (DAS, teto do MEI, Simples) fica com o número, pela regra dos 60 dias.
 
 | id | fato | fonte | conferido_em |
 |---|---|---|---|
@@ -17,19 +21,19 @@
 | ml-nota-estado | A nota tem que sair do mesmo estado de onde o pacote é coletado | https://vendedores.mercadolivre.com.br/nota/como-informar-as-notas-fiscais-no-mercado-livre | 2026-09-29 |
 | ml-emissor | Emissor de nota do Mercado Livre: grátis, pede CNPJ habilitado na SEFAZ, inscrição estadual e certificado A1 | https://vendedores.mercadolivre.com.br/nota/agora-emitir-nf-e-gratis-e-possivel | 2026-09-29 |
 | nff | Nota Fiscal Fácil (app da SEFAZ): grátis, sem certificado, login gov.br; SP está entre os estados | https://www.contabeis.com.br/noticias/67732/nota-fiscal-facil-para-quais-estados-esta-valendo-como-acessar-e-mais/ | 2026-09-29 |
-| certificado-a1 | Certificado digital e-CNPJ A1, 12 meses: Certisign R$ 249,90, Safeweb R$ 275 | https://certisign.com.br/certificados/e-cnpj | 2026-09-29 |
-| bling | Bling Cobalto: R$ 57 por mês, até 200 pedidos de marketplace, nota ilimitada, 30 dias grátis; vale a pena a partir de um segundo canal, do Full ou de uns 5 a 10 pedidos por dia | https://www.bling.com.br/planos-e-precos | 2026-09-29 |
-| drop-plataformas | Plataformas de drop nacional: Dropify R$ 149 a R$ 699/mês; DSlite R$ 189/mês (via ERP); Dropi não integra com o Mercado Livre | https://dropify.com.br/planos | 2026-09-29 |
-| ml-tarifa | Tarifa de venda: Clássico 10% a 14%; Premium 15% a 19% com parcelamento | https://www.mercadolivre.com.br/ajuda/quanto-custa-vender-um-produto_1338 | 2026-09-29 |
-| ml-custo-envio | Desde 02/03/2026 o custo fixo virou custo de envio por peso e preço; até 0,3 kg vai de R$ 5,65 a R$ 12,95; a partir de R$ 79 o frete grátis é do vendedor | https://www.mercadolivre.com.br/ajuda/40538 | 2026-09-29 |
+| certificado-a1 | Certificado digital e-CNPJ A1, 12 meses, vendido por certificadoras como Certisign e Safeweb; o valor de hoje está na fonte, conferido na hora de falar com o aluno | https://certisign.com.br/certificados/e-cnpj | 2026-09-29 |
+| bling | Bling Cobalto (o plano de entrada): mensalidade, até 200 pedidos de marketplace, nota ilimitada, 30 dias grátis; vale a pena a partir de um segundo canal, do Full ou de uns 5 a 10 pedidos por dia; o valor de hoje está na fonte, conferido na hora de falar com o aluno | https://www.bling.com.br/planos | 2026-10-19 |
+| drop-plataformas | Plataformas de drop nacional: Dropify e DSlite (via ERP) cobram mensalidade; Dropi não integra com o Mercado Livre; o valor de hoje está na fonte, conferido na hora de falar com o aluno | https://dropify.com.br/planos | 2026-09-29 |
+| ml-tarifa | Tarifa de venda: uma porcentagem que muda com a categoria, maior no Premium (que dá parcelamento) do que no Clássico; o valor de hoje está na fonte e no simulador, conferido na hora de falar com o aluno | https://www.mercadolivre.com.br/ajuda/quanto-custa-vender-um-produto_1338 | 2026-09-29 |
+| ml-custo-envio | Desde 02/03/2026 o custo fixo virou custo de envio por peso e preço, cobrado também abaixo de R$ 79; a partir de R$ 79 o frete grátis é do vendedor; o valor de hoje está na fonte e no simulador, conferido na hora de falar com o aluno | https://www.mercadolivre.com.br/ajuda/40538 | 2026-09-29 |
 | ml-dinheiro | Dinheiro liberado 12 dias depois da entrega em conta sem reputação | https://www.mercadolivre.com.br/ajuda/275 | 2026-09-29 |
 | ml-reputacao | Reputação fica cinza até 10 vendas; pra ficar verde, atrasos até 10% das vendas em 60 dias; atraso do fornecedor conta contra o vendedor | https://vendedores.mercadolivre.com.br/nota/despache-suas-vendas-no-prazo-a-chave-para-uma-boa-reputacao | 2026-09-29 |
-| ml-decola | Programa Decola: R$ 250 de garantia no Mercado Pago dão reputação verde, até R$ 250 em anúncio pago e acesso ao Flex | https://www.mercadolivre.com.br/ajuda/33314 | 2026-09-29 |
+| ml-decola | Programa Decola: uma garantia em dinheiro deixada no Mercado Pago dá reputação verde, crédito em anúncio pago e acesso ao Flex; o valor de hoje está na fonte, conferido na hora de falar com o aluno | https://www.mercadolivre.com.br/ajuda/33314 | 2026-09-29 |
 | ml-identidade | Validação de identidade: foto do documento e do rosto, análise em até 72 horas | https://envios.mercadolivre.com.br/envios-extra/ajuda/33107 | 2026-09-29 |
 | ml-fotos | Foto: fundo branco, quadrada, 1200x1200 recomendado, produto ocupando 95% | https://www.mercadolivre.com.br/ajuda/Como-tirar-boas-fotos-dos-seus-produtos_1320 | 2026-09-29 |
 | ml-gtin | Código universal (GTIN/EAN) obrigatório pra maioria dos produtos; código inventado leva a exclusão | https://vendedores.mercadolivre.com.br/nota/tudo-o-que-voce-precisa-saber-sobre-os-codigos-universais-de-produto | 2026-09-29 |
 | ml-drop-nome | No painel do Mercado Livre, "Dropshipping" é o nome de uma modalidade de envio pelos Correios | https://www.mercadolivre.com.br/ajuda/40184 | 2026-09-29 |
-| impressora | Impressora térmica de etiqueta: R$ 499 a R$ 699 nos modelos genéricos | https://lista.mercadolivre.com.br/impressora-termica-etiqueta-envio | 2026-09-29 |
+| impressora | Impressora térmica de etiqueta: modelo genérico serve; o valor de hoje está na fonte (uma busca no Mercado Livre), conferido na hora de falar com o aluno | https://lista.mercadolivre.com.br/impressora-termica-etiqueta-envio | 2026-09-29 |
 | mp-conta-pj | Conta Negócio do Mercado Pago pro MEI: sem abertura nem mensalidade | https://www.mercadopago.com.br/blog/como-abrir-conta-pj-gratuita-para-mei | 2026-09-29 |
 | regime-consulta | Consulta Optantes da Receita: grátis, sem login, pede o CNPJ e um captcha e mostra se a empresa está no Simples Nacional e no SIMEI (o MEI) | https://consopt.www8.receita.fazenda.gov.br/consultaoptantes (entrada: https://www8.receita.fazenda.gov.br/SimplesNacional/aplicacoes.aspx?id=21) | 2026-10-06 |
 | simples-anexo1 | Simples Nacional na revenda de mercadoria (comércio, Anexo I): até R$ 180 mil vendidos nos últimos 12 meses, 4% da venda com o ICMS dentro; acima disso a alíquota efetiva sobe e sai da conta do contador; empresa com menos de 12 meses entra na faixa pela receita proporcional (a média dos meses vezes 12), então pouca venda acumulada não garante os 4%. Reconferir em janeiro de 2027 (LC 214/2025, IBS e CBS) | https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm (Anexo I); fórmula no manual do PGDAS-D https://www8.receita.fazenda.gov.br/simplesnacional/arquivos/manual/manual_pgdas-d_2018_v4.pdf | 2026-10-06 |

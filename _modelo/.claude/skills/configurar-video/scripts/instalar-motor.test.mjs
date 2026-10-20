@@ -1,9 +1,12 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtempSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
+import { fileURLToPath } from 'node:url'
 import { instalarMotor, marcaEmDia, hashLock, MARCA } from './instalar-motor.mjs'
+
+const MOTOR_KIT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'editar-video', 'motor')
 
 function motor() {
   const d = mkdtempSync(join(tmpdir(), 'instmotor-'))
@@ -47,4 +50,21 @@ test('marca de outro lock nao vale', () => {
     assert.equal(marcaEmDia(t.d), false)
     assert.equal(marcaEmDia(join(t.d, 'nao-existe')), false)
   } finally { t.limpar() }
+})
+
+// O npm 11.16+ avisa (e o 12 bloqueia) script de instalacao de pacote fora do allowScripts
+// do package.json. Todo pacote do lock com script precisa de entrada nome@versao igual a do
+// lock; entrada que sobrou (versao velha, pacote que saiu) tambem reprova.
+test('allowScripts do motor libera exatamente os pacotes do lock que tem script de instalacao', () => {
+  const pkg = JSON.parse(readFileSync(join(MOTOR_KIT, 'package.json'), 'utf8'))
+  const lock = JSON.parse(readFileSync(join(MOTOR_KIT, 'package-lock.json'), 'utf8'))
+  const comScript = Object.entries(lock.packages)
+    .filter(([k, v]) => k.startsWith('node_modules/') && v.hasInstallScript)
+    .map(([k, v]) => k.slice(k.lastIndexOf('node_modules/') + 'node_modules/'.length) + '@' + v.version)
+    .sort()
+  assert.ok(comScript.length > 0, 'o lock deveria ter pelo menos um pacote com script (esbuild)')
+  assert.ok(comScript.some(p => p.startsWith('esbuild@')))
+  const liberados = Object.entries(pkg.allowScripts || {}).filter(([, v]) => v === true).map(([k]) => k).sort()
+  assert.deepEqual(liberados, comScript)
+  assert.deepEqual(Object.keys(pkg.allowScripts).sort(), liberados, 'so entradas true, sem negacao perdida')
 })

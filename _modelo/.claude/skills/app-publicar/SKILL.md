@@ -50,7 +50,10 @@ pasta preenchido.
 - **Valor que muda se confere antes.** Antes de dizer qualquer preço, taxa,
   limite ou regra ao aluno, achar a linha no `fatos.md` pelo id e olhar o
   `conferido_em`. Mais de 60 dias: abrir a fonte da linha hoje, atualizar fato
-  e data no `fatos.md` e só então falar.
+  e data no `fatos.md` e só então falar. Preço e taxa de empresa (plano pago,
+  taxa por venda, conta de desenvolvedor, domínio) não ficam no `fatos.md`:
+  abrir a fonte da linha na hora, mesmo dentro dos 60 dias, e dizer o valor com
+  a data de hoje.
 
 ### Como funciona cada gate
 
@@ -64,10 +67,10 @@ Gate é o ponto em que a skill para e pede autorização. Todo passo marcado
 4. Quando há custo, acrescentar uma linha no fim de `dados/custos.jsonl`
    (criar o arquivo se não existir), uma linha por gasto, sem editar as antigas:
    ```
-   {"em":"2026-10-07T14:30:00.000Z","servico":"vercel pro","usd":20,"contexto":"app <nome>, mensal, app-vercel-pro"}
+   {"em":"2026-10-07T14:30:00.000Z","servico":"vercel pro","usd":<valor>,"contexto":"app <nome>, mensal, app-vercel-pro"}
    ```
-   `em` é a data e hora em UTC, `usd` é número com ponto (o valor sai do id
-   do `fatos.md`, que vai no fim do `contexto`). Gasto cobrado em
+   `em` é a data e hora em UTC, `usd` é número com ponto (o valor sai da fonte
+   do id do `fatos.md`, conferida na hora; o id vai no fim do `contexto`). Gasto cobrado em
    reais vai com `"usd":0` e o valor em `"brl"`, porque converter dependeria do
    câmbio do dia.
 5. Conta nova (hospedagem, banco, e-mail, loja) vira linha em

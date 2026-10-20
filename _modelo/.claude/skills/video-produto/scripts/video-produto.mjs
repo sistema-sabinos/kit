@@ -590,9 +590,9 @@ function limiteDeGasto(d) {
   try { return d.carregarConfiguracao().limite_gasto_usd } catch (e) {
     const motivo = e.message.split(String.fromCharCode(10))[0]
     if (/^nao existe /.test(e.message)) {
-      console.error(`[aviso] ainda nao existe _contexto/mercado-livre.md, entao o teto de gasto usa o padrao de ${usd(PADROES.limite_gasto_usd)}. Essa configuracao vem da /mercado-livre: rode ela pra ajustar o teto.`)
+      console.error(`[aviso] ainda nao existe _contexto/mercado-livre.md, entao o teto de gasto usa o padrao de ${usd(PADROES.limite_gasto_usd)}. Essa configuracao vem da /mercado-livre (quem ja vende) ou da etapa 6 da /comecar-a-vender (quem esta na trilha).`)
     } else {
-      console.error(`[aviso] nao consegui ler limite_gasto_usd da configuracao (${motivo}); usando o padrao de ${usd(PADROES.limite_gasto_usd)}. Rode /mercado-livre pra ajustar.`)
+      console.error(`[aviso] nao consegui ler limite_gasto_usd da configuracao (${motivo}); usando o padrao de ${usd(PADROES.limite_gasto_usd)}. Pra ajustar, corrija o _contexto/mercado-livre.md no ponto que o motivo aponta (o modelo esta em .claude/skills/mercado-livre/referencias/configuracao-exemplo.md); quem esta na trilha completa esse arquivo na etapa 8 da /comecar-a-vender.`)
     }
     return PADROES.limite_gasto_usd
   }
@@ -608,7 +608,7 @@ function modelosDaRodada(roteiro) {
     `Veo 3.1 tier ${tiers} (clipe, preco por segundo)`,
     'Gemini Flash TTS (voz, preco por milhao de tokens)',
     'Gemini Flash mais novo que a sua chave enxerga, o que nao e de voz, imagem nem audio ao vivo (transcricao, preco por milhao de tokens)',
-    'Lyria Pro (musica, preco por musica)',
+    'lyria-3.5, ou Lyria Pro se a chave nao tiver o 3.5 (musica, preco por musica)',
   ].join('; ') + '.'
 }
 

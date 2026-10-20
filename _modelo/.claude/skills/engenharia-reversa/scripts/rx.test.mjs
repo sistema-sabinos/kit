@@ -125,7 +125,7 @@ test('gerarSaidas: sem fichas sao 5 testes; com fichas sao 10 e a anatomia sai',
 
 // O portao de custo do --ver. Regressao do ensaio de 2026-10-04: process.exit com a conexao do
 // Gemini aberta derrubava o Node no Windows (codigo 127 em vez de 3); agora a funcao devolve o codigo.
-function portao({ modelo = 'gemini-3.7-flash', fotos = 160, limite = 2, sim = false, devolve = { fichas: { A: [] }, gasto_usd: 0, parou: false } } = {}) {
+function portao({ modelo = 'gemini-3.8-flash', fotos = 160, limite = 2, sim = false, devolve = { fichas: { A: [] }, gasto_usd: 0, parou: false } } = {}) {
   const chamadas = []
   const porAnuncio = [{ id: 'A', titulo: 't', fotos: Array(fotos).fill('f.jpg') }]
   return {
@@ -139,7 +139,7 @@ test('passoVer sem --sim: estima, para com codigo 3 e nunca chama o Gemini', asy
   const r = await p.rodar()
   assert.equal(r.codigo, 3)
   assert.equal(r.saida.parou, 'precisa do pode ir da pessoa')
-  assert.deepEqual([r.saida.modelo, r.saida.fotos, r.saida.estimativa_usd, r.saida.preco_conferido_em], ['gemini-3.7-flash', 160, 0.82, '2026-10-04'])
+  assert.deepEqual([r.saida.modelo, r.saida.fotos, r.saida.estimativa_usd, r.saida.preco_conferido_em], ['gemini-3.8-flash', 160, 0.82, '2026-10-04'])
   assert.deepEqual(p.chamadas, [])
 })
 
@@ -160,7 +160,7 @@ test('passoVer com --sim dentro do limite chama o Gemini com o modelo descoberto
   const r = await p.rodar()
   assert.equal(r.codigo, 0)
   assert.deepEqual(r.fichas, { A: [] })
-  assert.deepEqual(p.chamadas, [['gemini-3.7-flash', 2]])
+  assert.deepEqual(p.chamadas, [['gemini-3.8-flash', 2]])
 })
 
 // Regressao da revisao final de 2026-10-04: cota estourada no meio nao pode virar "regra".

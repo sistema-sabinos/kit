@@ -1399,3 +1399,55 @@ test('gate 14 aceita a marca de ultimo caso com motivo, e so na linha dela', () 
     assert.deepEqual(linhas14(gate14(dir)), ['README.md linha 2', 'README.md linha 3'])
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
+
+// Gate 15: frase que nega uma coisa pra afirmar outra (regra 1). As frases de teste sao o
+// proprio proibido, de proposito, e este .mjs fica fora do gate.
+const gate15 = dir => rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 15)
+const linhas15 = g => g.map(f => `${f.arquivo} ${f.detalhe.split(':')[0]}`).sort()
+
+test('gate 15 acusa a frase de contraste em md, txt e html do kit, com acento em entidade', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo/templates'), { recursive: true })
+    writeFileSync(join(dir, 'README.md'), '# Kit\n\nIsso não é só um produto, é uma experiência.\n')
+    writeFileSync(join(dir, 'LEIA.txt'), 'linha limpa\nA ferramenta não é cara. É barata.\n')
+    writeFileSync(join(dir, '_modelo/templates/x.html'), '<p>oi</p>\n<p>Isso n&#227;o &#233; s&#243; um <b>produto</b>, &#xe9; uma experi&#234;ncia.</p>\n' +
+      '<p>A ferramenta n&atilde;o &eacute; cara. &Eacute; barata.</p>\n')
+    assert.deepEqual(linhas15(gate15(dir)), ['LEIA.txt linha 2', 'README.md linha 3', '_modelo/templates/x.html linha 2', '_modelo/templates/x.html linha 3'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// aspas curvas montadas por codigo, como no Gate 14
+test('gate 15 libera trecho entre aspas retas, curvas, crases, aspa que cruza a linha e bloco de codigo', () => {
+  const dir = kitFalso()
+  const A = String.fromCharCode(0x201c), F = String.fromCharCode(0x201d)
+  try {
+    writeFileSync(join(dir, 'b.md'), [
+      'Evite a construção "Isso não é só um produto, é uma experiência." no texto.',
+      `Evite ${A}A ferramenta não é cara. É barata.${F} também.`,
+      'O padrão `não é X, é Y` sai da copy.',
+      'Exemplo proibido: "Isso não é só um produto,',
+      'é uma experiência." fica entre aspas.',
+      '```', 'Isso não é só um produto, é uma experiência.', '```',
+      '',
+      'Isso não é só um produto, é uma experiência.',
+      '````md', '```', 'A ferramenta não é cara. É barata.', '```', '````',
+    ].join('\n') + '\n')
+    const g = gate15(dir)
+    assert.ok(g.length > 0, 'canario: o gate rodou e achou a linha sem aspas')
+    assert.deepEqual(linhas15(g), ['b.md linha 10'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// o RESPONDA-AQUI.txt da pasta-mae guarda as respostas do aluno, com as palavras dele
+test('gate 15 nao le .mjs, fixtures nem as respostas do RESPONDA-AQUI.txt', () => {
+  const dir = kitFalso()
+  try {
+    writeFileSync(join(dir, 'RESPONDA-AQUI.txt'), 'Sua resposta:\nA loja não é física, é online.\n')
+    mkdirSync(join(dir, '_modelo/x/fixtures'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/x/a.mjs'), '// Isso não é só um produto, é uma experiência.\n')
+    writeFileSync(join(dir, '_modelo/x/fixtures/pagina.html'), '<p>Isso não é só um produto, é uma experiência.</p>\n')
+    writeFileSync(join(dir, '_modelo/x/c.md'), 'Isso não é só um produto, é uma experiência.\n')
+    assert.deepEqual(linhas15(gate15(dir)), ['_modelo/x/c.md linha 1'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})

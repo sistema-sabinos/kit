@@ -6,6 +6,7 @@ import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { abrirPagina, ogDaPagina, opcoes, lista } from './lib/pagina.mjs'
 import { gradeDosLinks, seguidoresDoOg, ritmo } from './lib/instagram-publico.mjs'
+import { dataHoraLocal } from '../../midia-social/scripts/lib/hora.mjs'
 
 const USO = 'uso: node .claude/skills/pauta/scripts/frequencia.mjs --perfis a,b,c'
 
@@ -23,7 +24,7 @@ async function main(argv) {
       const grade = gradeDosLinks(links)
       saida.push({ user: u, seguidores: seguidoresDoOg(og), og, posts: grade.map(p => ({ tipo: p.tipo, codigo: p.codigo, data: p.data.toISOString() })) })
       console.log(`\n=== @${u}\nseguidores: ${seguidoresDoOg(og) ?? 'nao lido'}\ngrade: ${grade.length} posts`)
-      for (const p of grade) console.log('  ', p.data.toISOString().slice(0, 16).replace('T', ' '), p.tipo, p.codigo)
+      for (const p of grade) console.log('  ', dataHoraLocal(p.data), p.tipo, p.codigo)
       const r = ritmo(grade)
       if (r != null) console.log(`ritmo: ${r} posts por semana (com os fixados; tirar os fora da janela antes de confiar)`)
       await page.waitForTimeout(3000)

@@ -58,7 +58,7 @@ Pra cada um, responder sempre as mesmas 4 coisas: **o que te deixa fazer**, **é
 ### 4. Gemini (IA de mídia do Google: ver vídeo, gerar imagem, transcrever)
 
 - **O que te deixa fazer:** destrava o `/assistir-video` (eu assisto vídeo de YouTube, Instagram, TikTok vendo a tela e ouvindo, e te conto o que tem) e, mais pra frente, geração de imagem pra anúncio e post.
-- **Grátis ou pago:** **pago, pré-pago.** Compra mínima de US$ 10 em crédito, que expira em 12 meses. Vídeo curto custa centavos; o custo aproximado eu aviso antes de cada uso (regra da casa).
+- **Grátis ou pago:** **pago, pré-pago.** Tem compra mínima de crédito (o valor de hoje aparece na tela de compra, e eu confiro com você na hora), e o crédito expira em 12 meses. Vídeo curto custa centavos; o custo aproximado eu aviso antes de cada uso (regra da casa).
 - **Precisa de quê:** criar uma chave no Google AI Studio (aistudio.google.com), comprar o crédito inicial e colar a chave no arquivo `.env` como `GEMINI_API_KEY`. Eu te guio clique a clique.
 - **Hoje ou depois:** hoje se topar o gasto. **Aviso importante:** quando o crédito zera, tudo que usa essa chave para de uma vez, sem aviso. Vale ligar a recarga automática com um teto mensal baixo.
 
@@ -72,7 +72,7 @@ Pra cada um, responder sempre as mesmas 4 coisas: **o que te deixa fazer**, **é
 ### 6. WhatsApp (o mais desejado e o mais chato, na real)
 
 - **O que te deixa fazer:** na versão completa (API oficial), eu leio as mensagens recebidas, classifico por urgência, rascunho respostas e mando com sua aprovação.
-- **Grátis ou pago:** o modelo oficial cobra **por mensagem de template** enviada (marketing custa mais, utilidade custa centavos; resposta a cliente que te chamou primeiro é grátis dentro da janela de 24h, com cota mensal gratuita). E quase sempre tem a mensalidade de um provedor intermediário (BSP), que no Brasil vai de uns R$ 100 a mais de R$ 500 por mês.
+- **Grátis ou pago:** o modelo oficial cobra **por mensagem de template** enviada (marketing custa mais, utilidade custa centavos; resposta a cliente que te chamou primeiro é grátis dentro da janela de 24h, com cota mensal gratuita). E quase sempre tem a mensalidade de um provedor intermediário (BSP), que eu confiro no site dele na hora, com você, antes de qualquer contratação.
 - **Precisa de quê:** conta Meta Business verificada, um número dedicado e um provedor. É a maior fricção desta lista, leva dias, não minutos.
 - **Hoje ou depois:** **depois, e sem frustração.** Enquanto a API não sai, existe o caminho manual que já funciona hoje: você cola aqui os prints ou o texto das conversas, e eu classifico, priorizo e rascunho as respostas no seu tom, com preço e prazo tirados da sua tabela (o `/atendimento`, do pacote de loja, que o `/mapear` instala). Resolve 80% da dor sem custo nenhum.
 
@@ -148,7 +148,7 @@ Depois de apresentar o que interessou:
 
 > "Pra eu recomendar direito: quanto por mês o negócio topa gastar com ferramenta e crédito de IA? Pode ser zero, e aí eu monto tudo só com o que é grátis.
 >
-> Pergunto porque a diferença entre o plano grátis e uns R$ 50 por mês muda o que eu consigo automatizar, e não quero te empurrar custo que não se paga."
+> Pergunto porque a diferença entre o plano grátis e um plano pago muda o que eu consigo automatizar, e não quero te empurrar custo que não se paga."
 
 Filtrar as recomendações pela resposta.
 

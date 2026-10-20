@@ -54,7 +54,7 @@ fica bem abaixo disso).
 Use se o Cloudinary recusar o envio ou se o video passar de 100 MB.
 
 O R2 da Cloudflare e gratis ate 10 GB guardados, mas pede cartao de credito pra ativar: a
-Cloudflare faz uma checagem de US$ 5 no cartao, que nao vira cobranca. E o deposito que o criador do SabinOS
+Cloudflare faz uma checagem de valor pequeno no cartao, que nao vira cobranca. E o deposito que o criador do SabinOS
 usa na operacao dele.
 
 1. Criar a conta em https://dash.cloudflare.com e ativar o R2 (pede o cartao).

@@ -49,45 +49,89 @@ import { pathToFileURL } from 'node:url'
 // (ex.: `Add-Content x && rm -rf pasta && echo "..."` nao pode contar como escritor).
 const TOKEN_SEGURO = '[^\\s;&|()<>`$]+'
 
-const PADROES_ESCRITOR_DE_TEXTO = [
-  /\becho\s+$/i,
-  /\bprintf\s+$/i,
+// rodada 5.18 (chat 4, F1b): cada escritor era uma regex terminada em $ (tipo
+// /\bgrep\b(?:\s+-\S+)*\s+$/i) testada no comando inteiro ate cada aspa, e muita aspa fazia o
+// comando custar o quadrado do tamanho. Agora cada um e descrito palavra por palavra
+// (palavra = trecho sem espaco) e o leitorDeEscritores le o comando uma vez so. O nome do
+// programa (cabeca) e a ultima palavra de um trecho sem espaco, com o comeco do trecho ou um
+// caractere fora de [A-Za-z0-9_] antes dele, como o \b; depois vem qualquer quantidade de
+// palavras do meio, a ultima (quando tem) e espaco ate a aspa. git commit e git tag tem duas
+// palavras na cabeca, a segunda exata. O colado do git log e a ultima sem espaco antes da aspa
+const ANTES_DO_NOME = String.raw`(?:^|\W)`
+const nomeNoFim = nome => new RegExp(`${ANTES_DO_NOME}(?:${nome})$`, 'i')
+const exata = palavra => new RegExp(`^(?:${palavra})$`, 'i')
+const OPCAO_TRACO = /^-\S+$/
+const OPCAO_OU_NOME = new RegExp(`^-?${TOKEN_SEGURO}$`)
+const ESCRITORES_DE_TEXTO = [
+  { cabeca: [nomeNoFim('echo')] },
+  { cabeca: [nomeNoFim('printf')] },
   // -am e a forma combinada de -a (adiciona tudo) e -m (mensagem); --message e a forma
-  // longa. O grupo opcional deixa passar outra flag no meio, tipo
-  // `git commit --allow-empty -m "..."`
-  /\bgit\s+commit\s+(?:-\S+\s+)*(?:-a?m|--message)\s+$/i,
-  /\bgit\s+tag\s+(?:-\S+\s+)*-m\s+$/i,
+  // longa. O meio deixa passar outra flag, tipo `git commit --allow-empty -m "..."`
+  { cabeca: [nomeNoFim('git'), exata('commit')], meio: OPCAO_TRACO, ultima: exata('-a?m|--message') },
+  { cabeca: [nomeNoFim('git'), exata('tag')], meio: OPCAO_TRACO, ultima: exata('-m') },
   // correcao 7 (quinta revisao): "echo" no PowerShell e so um apelido; o nome de
   // verdade e Write-Output (doc: "PowerShell includes the following aliases for
   // Write-Output: All platforms: echo; Windows: write"). O apelido "echo" ja batia no
   // padrao acima (a palavra e igual); faltava o nome de verdade e o outro apelido
   // ("write"), que o aluno de Windows tambem pode digitar.
-  /\bWrite-Output\s+$/i,
-  /\bwrite\s+$/i,
+  { cabeca: [nomeNoFim('Write-Output')] },
+  { cabeca: [nomeNoFim('write')] },
   // paridade Windows do echo/printf: no PowerShell, anotar licao se faz com
   // Add-Content, Set-Content ou Out-File, geralmente com um nome de arquivo ou -Path
   // antes do texto (`Add-Content notas.md "..."`, `Set-Content -Path x -Value "..."`)
-  new RegExp(String.raw`\b(?:Add-Content|Set-Content|Out-File)\b(?:\s+-?${TOKEN_SEGURO})*\s+$`, 'i'),
+  { cabeca: [nomeNoFim('Add-Content|Set-Content|Out-File')], meio: OPCAO_OU_NOME },
   // grep/rg/findstr/Select-String so leem e comparam texto, nunca executam o padrao de
   // busca; procurar licao antiga sobre comando perigoso (`grep -rn "rm -rf" licoes.md`)
   // e rotina dentro do kit, e nao pode continuar sendo barrado. correcao 7: findstr e
   // do mundo do cmd, entao a opcao dele e com barra (/s), nao traco; o traco continua
   // valendo pro grep/rg
-  /\bgrep\b(?:\s+-\S+)*\s+$/i,
-  /\brg\b(?:\s+-\S+)*\s+$/i,
-  /\bfindstr\b(?:\s+\/\S+)*\s+$/i,
-  new RegExp(String.raw`\bSelect-String\b(?:\s+-?${TOKEN_SEGURO})*\s+$`, 'i'),
+  { cabeca: [nomeNoFim('grep')], meio: OPCAO_TRACO },
+  { cabeca: [nomeNoFim('rg')], meio: OPCAO_TRACO },
+  { cabeca: [nomeNoFim('findstr')], meio: /^\/\S+$/ },
+  { cabeca: [nomeNoFim('Select-String')], meio: OPCAO_OU_NOME },
   // correcao 7: opcao com "=" no meio (`git log --grep="..."`) nao tem espaco antes da
-  // aspa, entao nao usa o "\s+$" das outras; git log tambem so le, nunca executa a
-  // mensagem que esta procurando
-  /\bgit\s+log\b(?:\s+-\S+)*\s+--grep=$/i,
+  // aspa, entao e colado; git log tambem so le, nunca executa a mensagem que esta procurando
+  { cabeca: [nomeNoFim('git'), exata('log')], meio: OPCAO_TRACO, ultima: exata('--grep='), colado: true },
 ]
 
-function ehEscritorDeTexto(textoAntesDaAspa) {
-  return PADROES_ESCRITOR_DE_TEXTO.some(re => re.test(textoAntesDaAspa))
+// devolve uma funcao que responde, pra cada aspa (em ordem crescente de posicao), se o texto
+// antes dela termina num escritor de texto. Cada palavra e lida uma vez: agora diz se ate a
+// ultima palavra lida o escritor vale (cabeca e palavras do meio), antes diz o mesmo uma
+// palavra atras (pro escritor com ultima), e primeira diz se a ultima palavra fecha a
+// primeira palavra da cabeca de duas
+function leitorDeEscritores(comando) {
+  const RE_PALAVRA = /\S+/g
+  const estados = ESCRITORES_DE_TEXTO.map(() => ({ agora: false, antes: false, primeira: false }))
+  let ultima = null
+  let proxima = RE_PALAVRA.exec(comando)
+  const ler = palavra => {
+    ESCRITORES_DE_TEXTO.forEach((esc, i) => {
+      const e = estados[i]
+      const fechaCabeca = esc.cabeca.length === 1 ? esc.cabeca[0].test(palavra) : e.primeira && esc.cabeca[1].test(palavra)
+      e.antes = e.agora
+      e.agora = fechaCabeca || (e.agora && !!esc.meio && esc.meio.test(palavra))
+      e.primeira = esc.cabeca.length === 2 && esc.cabeca[0].test(palavra)
+    })
+    ultima = palavra
+  }
+  return posicaoDaAspa => {
+    while (proxima && proxima.index + proxima[0].length <= posicaoDaAspa) {
+      ler(proxima[0])
+      proxima = RE_PALAVRA.exec(comando)
+    }
+    if (posicaoDaAspa > 0 && /\s/.test(comando[posicaoDaAspa - 1])) {
+      if (ultima === null) return false
+      return ESCRITORES_DE_TEXTO.some((esc, i) => !esc.colado &&
+        (esc.ultima ? estados[i].antes && esc.ultima.test(ultima) : estados[i].agora))
+    }
+    // aspa colada no fim de uma palavra: so o colado vale, com espaco antes da palavra
+    if (!proxima || proxima.index === 0 || proxima.index >= posicaoDaAspa) return false
+    const colada = comando.slice(proxima.index, posicaoDaAspa)
+    return ESCRITORES_DE_TEXTO.some((esc, i) => esc.colado && estados[i].agora && esc.ultima.test(colada))
+  }
 }
 
-// Quatro limites conhecidos, fora do escopo desta trava de proposito: resolver de
+// Cinco limites conhecidos, fora do escopo desta trava de proposito: resolver de
 // verdade pede um analisador de shell (tokenizar variavel, aspas, escape), nao regex.
 // Confirmados contra o codigo de hoje (nao e so teoria, todos passam batido agora):
 // 1. Comando montado em duas variaveis separadas e rodado por expansao depois:
@@ -107,8 +151,12 @@ function ehEscritorDeTexto(textoAntesDaAspa) {
 //    `nvme format /dev/nvme0n1`, `hdparm --security-erase`, `dd of=$DISCO` (o limite 1),
 //    `echo "format D:" | cmd`, `git -c alias.f=!format f D:` e `rg --pre format`. E o
 //    contrario, barram sem precisar: `notepad mkfs.txt`, `wipefs /dev/sdb` sem -a (so
-//    lista), mencao solta como `echo usar wipefs depois >> licoes.md` e `diskutil
-//    eraseDisk ... -WhatIf` (o diskutil nao tem -WhatIf).
+//    lista) e mencao solta como `echo usar wipefs depois >> licoes.md`.
+// 5. Copias de sombra do Windows (rodada 5.18, doc conferida em 2026-10-19 em
+//    learn.microsoft.com/windows-server/administration/windows-commands/vssadmin): so o
+//    `vssadmin delete shadows` barra. Passam `vssadmin resize shadowstorage` (a doc avisa
+//    "Resizing the storage association may cause shadow copies to disappear"), `wmic
+//    shadowcopy delete` e o Delete() do Win32_ShadowCopy pelo PowerShell.
 function classificarTrechosEntreAspas(comando) {
   const RE_ASPAS = /"([^"]*)"|'([^']*)'/g
   const suspeitos = []
@@ -121,13 +169,13 @@ function classificarTrechosEntreAspas(comando) {
   let desaspado = ''
   let ultimoIndice = 0
   let m
+  const ehEscritorDeTexto = leitorDeEscritores(comando)
   while ((m = RE_ASPAS.exec(comando))) {
-    const antes = comando.slice(0, m.index)
     const conteudo = m[1] !== undefined ? m[1] : m[2]
     limpo += comando.slice(ultimoIndice, m.index)
     desaspado += comando.slice(ultimoIndice, m.index)
     ultimoIndice = RE_ASPAS.lastIndex
-    const escritor = ehEscritorDeTexto(antes)
+    const escritor = ehEscritorDeTexto(m.index)
     if (conteudo && !escritor) suspeitos.push(conteudo)
     if (!escritor) desaspado += conteudo
   }
@@ -156,63 +204,129 @@ function semTrechoEntreAspas(texto) {
 // juntos, diferente do resto da familia Remove-Item logo abaixo: e o unico apelido que
 // tambem e comando Unix de verdade, com o teste historico `rm -r pasta` (recursivo sem
 // forcar) deliberadamente livre, e nao da pra saber por regex qual dialeto e sem contexto.
-const RE_RM_RECURSIVO_E_FORCADO =
-  /\brm\b(?=[^\n]*\s(?:-[a-zA-Z]*[rR][a-zA-Z]*|--recursive)(?:\s|$))(?=[^\n]*\s(?:-[a-zA-Z]*f[a-zA-Z]*|--force)(?:\s|$))/i
+// rodada 5.18 (chat 4, F1): os dois lookaheads viraram o opcaoDepoisDaPalavra (abaixo) com
+// as duas opcoes, e a letra procurada vai num lookahead antes do bloco de letras: o
+// [a-zA-Z]*r[a-zA-Z]* voltava letra por letra numa opcao comprida sem espaco no fim e
+// custava o quadrado dela. O bloco inteiro de letras continua tendo de terminar em espaco
+const RE_RM = /\brm\b/gi
+const RE_RM_RECURSIVO = /\s(?:-(?=[a-zA-Z]*r)[a-zA-Z]+|--recursive)(?:\s|$)/gi
+const RE_RM_FORCADO = /\s(?:-(?=[a-zA-Z]*f)[a-zA-Z]+|--force)(?:\s|$)/gi
 
-// correcao 7 (quinta revisao): -WhatIf so simula, nunca apaga nada, igual ao --dry-run
-// do git clean que a trava ja respeita. Vale pra qualquer comando desta familia
-// (Remove-Item e apelidos, rm), entao mora num teste a parte em vez de repetido em
-// cada padrao. "-wi" e o alias oficial; o resto e prefixo de "WhatIf" (abreviacao que
-// o PowerShell aceita).
-// rodada 5.17 (decisao 11): -WhatIf:$false roda de verdade, entao o ":" logo depois nao
-// conta como simulacao (-WhatIf:$true tambem barra, do lado seguro)
-const RE_WHATIF = /\s-(?:wh(?:a(?:t(?:i(?:f)?)?)?)?|wi)\b(?!:)/i
+// rodada 5.18 (decisao 1): o -WhatIf deixou de liberar qualquer comando. Ate a 5.17 ele
+// valia como simulacao, mas o teste olhava o comando inteiro: `ls -WhatIf; rm -rf pasta`
+// passava, porque o -WhatIf de um comando soltava o vizinho. Nenhuma skill do kit usa
+// -WhatIf, entao o preco (simulacao de verdade barrada a toa) e pequeno.
 
-// rodada 5.17 (revisao comum do bloco 1): -WhatIf dentro de comentario (<# -WhatIf #> ou
-// # -WhatIf) nao simula nada e o comando roda de verdade, entao a simulacao so vale fora
-// de comentario. Comentario de bloco sem fechar vai inteiro embora (do lado seguro). Le o
-// texto uma vez so, sem regex que volta
-function semComentarios(s) {
-  let fora = ''
-  let i = 0
-  for (;;) {
-    const a = s.indexOf('<#', i)
-    if (a < 0) { fora += s.slice(i); break }
-    fora += s.slice(i, a) + ' '
-    const b = s.indexOf('#>', a + 2)
-    if (b < 0) break
-    i = b + 2
+// a opcao (reOpcao) vale se aparece depois da palavra (rePalavra) na mesma linha, igual a
+// um lookahead (?=[^\n]*...), que relia o resto da linha a cada palavra achada e fazia
+// linha longa custar o quadrado do tamanho. Cada regex le o texto uma vez so: basta a
+// primeira palavra da linha e a ultima opcao dela. O \s do comeco da opcao pode ser a
+// propria quebra de linha, como no lookahead. reFim troca o que encerra o trecho (a quebra
+// de linha, por padrao), pra regra que para tambem no separador de comando.
+// rodada 5.18 (chat 4, F1): reOpcao pode ser uma lista, e todas tem de aparecer depois da
+// mesma palavra (o git clean e o rm pedem duas opcoes, como os dois lookaheads de antes).
+// A busca de cada opcao recomeca uma letra depois do inicio da anterior, sem pular o que
+// ela consumiu: o espaco do fim de uma opcao pode ser o comeco da seguinte
+// (`x -rm -r -f` tem o "rm" dentro de "-rm", e o " -rm " engolia o espaco do " -r")
+function posicoes(texto, re) {
+  const achadas = []
+  re.lastIndex = 0
+  for (let m = re.exec(texto); m; m = re.exec(texto)) {
+    achadas.push(m.index)
+    re.lastIndex = m.index + 1
   }
-  return fora.replace(/(^|\s)#[^\n]*/g, '$1')
+  return achadas
 }
-function simula(s) {
-  return RE_WHATIF.test(semComentarios(s))
+// rodada 5.18 (chat 4, F1b): a opcao tambem pode vir pronta, { posicoes: [...] } em ordem
+// crescente, pra opcao que uma regex sozinha so acha relendo o texto (ver processoComDownload)
+function opcaoDepoisDaPalavra(texto, rePalavra, reOpcao, reFim = /\n/g) {
+  const listas = (Array.isArray(reOpcao) ? reOpcao : [reOpcao]).map(re => re.posicoes || posicoes(texto, re))
+  const ks = listas.map(() => 0)
+  let fimLinha = -1
+  for (const m of texto.matchAll(rePalavra)) {
+    const fim = m.index + m[0].length
+    if (fim > fimLinha) {
+      reFim.lastIndex = fim
+      const f = reFim.exec(texto)
+      fimLinha = f ? f.index : texto.length
+    }
+    let todas = true
+    listas.forEach((opcoes, j) => {
+      while (ks[j] < opcoes.length && opcoes[ks[j]] < fim) ks[j]++
+      if (!(ks[j] < opcoes.length && opcoes[ks[j]] <= fimLinha)) todas = false
+    })
+    if (todas) return true
+  }
+  return false
 }
 
 function rmPerigoso(comando) {
-  if (simula(comando)) return false
   const segmentos = semTrechoEntreAspas(comando).split(/&&|\|\||[;&|`\n]/)
-  return segmentos.some(seg => RE_RM_RECURSIVO_E_FORCADO.test(seg))
+  return segmentos.some(seg => opcaoDepoisDaPalavra(seg, RE_RM, [RE_RM_RECURSIVO, RE_RM_FORCADO]))
+}
+
+// rodada 5.18 (chat 4, F1): git push, git clean e rd/rmdir eram (?=[^\n]*...) ou
+// [^\n]*... depois da palavra, que relia o resto da linha a cada palavra repetida (o mesmo
+// quadrado que o opcaoDepoisDaPalavra resolveu no Remove-Item). No git clean a letra vai num
+// lookahead antes do bloco, como no rm
+const RE_GIT_PUSH = /\bgit\s+push\b/g
+const RE_PUSH_FORCE = /--force(?!-with-lease)\b/g
+const RE_PUSH_F = /\s-f(?:\s|$)/g
+const RE_PUSH_MAIS = /\s\+\S/g
+function pushForcado(comando) {
+  return opcaoDepoisDaPalavra(comando, RE_GIT_PUSH, RE_PUSH_FORCE) ||
+    opcaoDepoisDaPalavra(comando, RE_GIT_PUSH, RE_PUSH_F) ||
+    opcaoDepoisDaPalavra(comando, RE_GIT_PUSH, RE_PUSH_MAIS)
+}
+const RE_GIT_CLEAN = /\bgit\s+clean\b/g
+const RE_CLEAN_F = /\s-(?=[fdxniqeX]*f)[fdxniqeX]+\b/g
+const RE_CLEAN_D = /\s-(?=[fdxniqeX]*d)[fdxniqeX]+\b/g
+function cleanPerigoso(comando) {
+  return opcaoDepoisDaPalavra(comando, RE_GIT_CLEAN, [RE_CLEAN_F, RE_CLEAN_D])
+}
+function rdPerigoso(comando) {
+  return opcaoDepoisDaPalavra(comando, /\b(?:rmdir|rd)\b/gi, /\s\/s\b/gi)
+}
+// rodada 5.18 (chat 4, F1b): curl e wget com pipe pro shell eram [^\n]* depois da palavra,
+// o mesmo quadrado do git push
+const RE_PIPE_SHELL = /\|\s*(?:sudo\s+)?(?:ba)?sh\b/gi
+function curlPipePerigoso(comando) {
+  return opcaoDepoisDaPalavra(comando, /\bcurl\b/gi, RE_PIPE_SHELL)
+}
+function wgetPipePerigoso(comando) {
+  return opcaoDepoisDaPalavra(comando, /\bwget\b/gi, RE_PIPE_SHELL)
 }
 
 // correcao 7: Remove-Item e os apelidos oficiais dele que nao sao "rm" (ver comentario
 // da regra abaixo). So exige a ideia de recursivo (nunca -Force, doc na regra abaixo).
 function removeItemPerigoso(comando) {
-  if (simula(comando)) return false
-  return /\b(?:Remove-Item|ri|del|erase|rd|rmdir)\b(?=[^\n]*\s-r(?:e(?:c(?:u(?:r(?:s(?:e)?)?)?)?)?)?\b)/i.test(comando)
+  return opcaoDepoisDaPalavra(comando, /\b(?:Remove-Item|ri|del|erase|rd|rmdir)\b/gi,
+    /\s-r(?:e(?:c(?:u(?:r(?:s(?:e)?)?)?)?)?)?\b/gi)
+}
+
+// correcao 7: "erase" e sinonimo de "del" no cmd e aceita a mesma sintaxe (/s), doc da
+// Microsoft confirma os dois como apelido do mesmo Remove-Item; cobrir um so e deixar
+// o gemeo de fora era o buraco que esta rodada veio fechar
+function delPerigoso(comando) {
+  return opcaoDepoisDaPalavra(comando, /\b(?:del|erase)\b/gi, /\s\/s\b/gi)
 }
 
 // correcao 7: a regra do pipe nao pode depender de um nome literal do lado esquerdo
 // (Get-ChildItem tem apelidos gci/dir/ls, e podia vir qualquer outro comando gerando a
 // lista), entao aceita QUALQUER coisa antes do "|" e olha so o que vem depois: um
 // apelido de Remove-Item direto, ou um ForEach-Object/% cujo bloco chama Remove-Item.
+// rodada 5.18 (chat 4, F1b): as duas regex sairam de dentro da funcao, que as montava de novo
+// a cada chamada (cada trecho entre aspas chama o hook inteiro outra vez)
+const RE_ALIAS_REMOVE = /(?:Remove-Item|ri|del|erase|rd|rmdir|rm)/.source
+const RE_PIPE_REMOVE = new RegExp(String.raw`\|\s*${RE_ALIAS_REMOVE}\b`, 'i')
+const RE_REMOVE_NO_BLOCO = new RegExp(String.raw`\b${RE_ALIAS_REMOVE}\b`, 'gi')
 function removeItemPipePerigoso(comando) {
-  if (simula(comando)) return false
-  const RE_ALIAS = /(?:Remove-Item|ri|del|erase|rd|rmdir|rm)/.source
   // "%" nao e caractere de palavra, entao \b logo depois dele nunca casa (nem "{" nem
-  // " " sao \w); o \b so faz sentido nas duas outras formas, que sao palavras de verdade
-  return new RegExp(String.raw`\|\s*${RE_ALIAS}\b`, 'i').test(comando) ||
-    new RegExp(String.raw`\|\s*(?:%|foreach\b|ForEach-Object\b)[^\n]*\b${RE_ALIAS}\b`, 'i').test(comando)
+  // " " sao \w); o \b so faz sentido nas duas outras formas, que sao palavras de verdade.
+  // rodada 5.18 (decisao 8, achado da revisao): o bloco do ForEach era um [^\n]* que relia
+  // a linha a cada "|%", e passa pelo opcaoDepoisDaPalavra como o Remove-Item
+  return RE_PIPE_REMOVE.test(comando) ||
+    opcaoDepoisDaPalavra(comando, /\|\s*(?:%|foreach\b|ForEach-Object\b)/gi, RE_REMOVE_NO_BLOCO)
 }
 
 // "format" sozinho e o comando de formatar disco. Ate a 5.15 a regra casava "format" e
@@ -264,7 +378,16 @@ function parenteseAberto(prefixo) {
   return parenteses > 0
 }
 
+// rodada 5.18 (chat 4, F1b): as quatro regras de disco pedem os pedacos do mesmo texto, uma
+// atras da outra; guarda o ultimo (ninguem altera a lista devolvida)
+let ultimosPedacos = { comando: null, pedacos: null }
 function pedacosDeComando(comando) {
+  if (ultimosPedacos.comando === comando) return ultimosPedacos.pedacos
+  const pedacos = lerPedacos(comando)
+  ultimosPedacos = { comando, pedacos }
+  return pedacos
+}
+function lerPedacos(comando) {
   const pedacos = []
   const crase = /`(?!\r?\n)/.test(comando)
   const junto = comando.replace(/\^/g, '').replace(/[\\`]\r?\n/g, ' ').replace(/`/g, '')
@@ -312,16 +435,35 @@ function formatPerigoso(comando) {
 
 // rodada 5.17: os comandos de disco do PowerShell apagam o disco ou a particao inteira, e o
 // diskpart sem nada abre o modo interativo, que a trava nao enxerga (o "clean" vem depois,
-// digitado ou de um arquivo /s), entao barra sempre, ate pra listar. O -WhatIf do
-// PowerShell so simula, igual no Remove-Item. Initialize-Disk fica livre: so aceita disco
-// RAW, sem particao
-const RE_DISCO_PS = /\b(?:Format-Volume|Clear-Disk|Remove-Partition)\b/i
+// digitado ou de um arquivo /s), entao barra sempre, ate pra listar (e com -WhatIf, desde a
+// 5.18). Initialize-Disk fica livre: so aceita disco RAW, sem particao.
+// rodada 5.18 (decisao 1): Remove-VirtualDisk, doc conferida em 2026-10-19 em
+// learn.microsoft.com/powershell/module/storage/remove-virtualdisk ("deletes an existing
+// virtual disk", "This action also deletes any associated file system"), sem apelido na doc
+const RE_DISCO_PS = /\b(?:Format-Volume|Clear-Disk|Remove-Partition|Remove-VirtualDisk)\b/i
 const RE_DISKPART = /(?<![\w\-.])diskpart(?:\.exe)?(?![\w\-.])/i
 function discoPerigoso(comando) {
   for (const { seg, soCita } of pedacosDeComando(comando)) {
     if (soCita) continue
     if (RE_DISKPART.test(seg)) return true
-    if (RE_DISCO_PS.test(seg) && !simula(seg)) return true
+    if (RE_DISCO_PS.test(seg)) return true
+  }
+  return false
+}
+
+// rodada 5.18 (decisao 1): vssadmin delete shadows apaga as copias de sombra (as "versoes
+// anteriores" e os pontos de restauracao) pra sempre. Doc conferida em 2026-10-19 em
+// learn.microsoft.com/windows-server/administration/windows-commands/vssadmin-delete-shadows:
+// "vssadmin delete shadows /for=<ForVolumeSpec> [/oldest | /all | /shadow=<ShadowID>]
+// [/quiet]", e "delete shadows" e o unico verbo delete da tabela do vssadmin. Mesmo criterio
+// do format: pedaco por pedaco, quem so cita fica livre
+const RE_VSSADMIN = /(?<![\w\-.])vssadmin(?:\.exe)?(?![\w\-.\/])/i
+const RE_VSSADMIN_APAGA = /\sdelete\s+shadows(?=\s|$)/i
+function sombraPerigosa(comando) {
+  for (const { seg, soCita } of pedacosDeComando(comando)) {
+    if (soCita) continue
+    const i = seg.search(RE_VSSADMIN)
+    if (i >= 0 && RE_VSSADMIN_APAGA.test(seg.slice(i))) return true
   }
   return false
 }
@@ -426,12 +568,48 @@ function encodedPerigoso(comando) {
 // `curl x | iex` roda o que baixou; no 7 sobra so o iwr. Ficam de fora, sabidos:
 // `& ([scriptblock]::Create((irm x)))`, `irm x | powershell -` e comando montado em
 // variavel (limite 1 acima).
+// rodada 5.18 (chat 4, F1b): as duas regras eram [^\n;&]* e [^\n|;&]* depois da palavra, o
+// mesmo quadrado do git push. Na primeira, o primeiro "|" depois do download (antes de
+// quebra de linha, ; ou &) e o que vale: um "|" mais adiante no mesmo trecho acharia o mesmo
+// fim (quebra de linha, ; ou &&), entao nao acha iex que o primeiro nao ache.
+// proximaDesde guarda a ultima resposta e so busca de novo quando a posicao passa dela, por
+// isso as posicoes pedidas tem de crescer
+// o matchAll copia o lastIndex da regex, entao a do proximaDesde (que mexe nele) e sempre nova
+const RE_DOWNLOAD_PS = /\b(?:irm|iwr|curl|wget|Invoke-RestMethod|Invoke-WebRequest)\b/gi
+const RE_IEX = /\b(?:iex|Invoke-Expression)\b/gi
+function proximaDesde(texto, re) {
+  let achada = -1
+  return desde => {
+    if (desde > achada) {
+      re.lastIndex = desde
+      const m = re.exec(texto)
+      achada = m ? m.index : texto.length
+    }
+    return achada
+  }
+}
+function downloadProIex(comando) {
+  const fimDoTrecho = proximaDesde(comando, /[\n;&]/g)
+  const pipe = proximaDesde(comando, /\|/g)
+  const fimDepoisDoPipe = proximaDesde(comando, /[\n;]|&&/g)
+  const iex = proximaDesde(comando, new RegExp(RE_IEX.source, 'gi'))
+  for (const m of comando.matchAll(RE_DOWNLOAD_PS)) {
+    const fim = m.index + m[0].length
+    const p = pipe(fim)
+    if (p < fimDoTrecho(fim) && iex(p + 1) < fimDepoisDoPipe(p + 1)) return true
+  }
+  return false
+}
+function iexDoDownload(comando) {
+  return opcaoDepoisDaPalavra(comando, RE_IEX,
+    /\b(?:DownloadString|DownloadData|irm|iwr|curl|wget|Invoke-RestMethod|Invoke-WebRequest)\b/gi, /[\n|;&]/g)
+}
 const PERIGOS_POWERSHELL = [
   // o iex pode estar em qualquer ponto depois do pipe: com o modulo na frente
   // (Microsoft.PowerShell.Utility\Invoke-Expression), dentro de % { iex $_ } ou com &
   // (achado do Codex no Bloco A); & sozinho e o operador de chamada, && encerra
-  { re: /\b(?:irm|iwr|curl|wget|Invoke-RestMethod|Invoke-WebRequest)\b[^\n;&]*\|(?:[^\n;&]|&(?!&))*\b(?:iex|Invoke-Expression)\b/i, motivo: 'roda um script baixado da internet sem ninguem ler' },
-  { re: /\b(?:iex|Invoke-Expression)\b[^\n|;&]*\b(?:DownloadString|DownloadData|irm|iwr|curl|wget|Invoke-RestMethod|Invoke-WebRequest)\b/i, motivo: 'roda um script baixado da internet sem ninguem ler' },
+  { teste: downloadProIex, motivo: 'roda um script baixado da internet sem ninguem ler' },
+  { teste: iexDoDownload, motivo: 'roda um script baixado da internet sem ninguem ler' },
   { teste: encodedPerigoso, motivo: 'roda um comando escondido em codigo que ninguem consegue ler' },
 ]
 
@@ -445,11 +623,35 @@ const BREW_OFICIAL = '$(curl -fsSL https://raw.githubusercontent.com/Homebrew/in
 // vir junta (-lc) e o curl pode vir por caminho (/usr/bin/curl): achados da revisao do grupo F
 // Revisao final: o c vale em qualquer ponto da opcao (-cx), e o shell so conta no comeco de um
 // comando (depois de ; | & ( ou de sudo/env/exec...), nunca como argumento (shellcheck -s bash)
-const RE_SH_C_DOWNLOAD = /(?:^|[;|&(])\s*(?:(?:sudo|env|exec|command|nohup|time)\s+)*(?:\S*\/)?(?:ba|z|da|k)?sh(?=\s)[^\n|;&]*\s-[a-z]*c[a-z]*\s+(?:\$\(|`)\s*(?:\S*\/)?(?:curl|wget)\b/i
-const RE_SH_PROCESSO_DOWNLOAD = /(?:^|[;|&(])\s*(?:(?:sudo|env|exec|command|nohup|time)\s+)*(?:(?:\S*\/)?(?:ba|z|da|k)?sh|source)(?=\s)[^\n|;&]*<\(\s*(?:\S*\/)?(?:curl|wget)\b/i
+// rodada 5.18 (decisao 8): o caminho antes do shell e [^\s;|&(]* em vez de \S*, porque o \S*
+// engolia todo "&" seguinte e voltava letra por letra a cada "&", e 25 mil "&" levavam
+// segundos; o separador ja encerra o nome do programa no shell. Achado da revisao: o trecho
+// [^\n|;&]* depois do shell relia o comando inteiro a cada "(", entao o shell e o -c (ou o
+// <() viram regexes separadas, juntadas pelo opcaoDepoisDaPalavra, que para no separador
+const RE_SH_INICIO = /(?:^|[;|&(])\s*(?:(?:sudo|env|exec|command|nohup|time)\s+)*(?:[^\s;|&(]*\/)?(?:ba|z|da|k)?sh(?=\s)/gi
+const RE_SH_OU_SOURCE_INICIO = /(?:^|[;|&(])\s*(?:(?:sudo|env|exec|command|nohup|time)\s+)*(?:(?:[^\s;|&(]*\/)?(?:ba|z|da|k)?sh|source)(?=\s)/gi
+// rodada 5.18 (chat 4, F1b): o c do -c vai num lookahead antes do bloco de letras, como no rm
+// (o [a-z]*c[a-z]* voltava letra por letra numa opcao comprida). E o <( deixou de ser
+// <\(\s*(?:\S*\/)?(?:curl|wget)\b: o \S* relia o resto da palavra a cada <( e "<(<(<(..."
+// custava o quadrado. Agora vale o <( com o download logo depois dos espacos ou depois de uma
+// barra na mesma palavra, que e o que o \S*\/ aceitava
+const RE_SH_C_DOWNLOAD = /\s-(?=[a-z]*c)[a-z]+\s+(?:\$\(|`)\s*(?:\S*\/)?(?:curl|wget)\b/gi
+const RE_DOWNLOAD_DIRETO = /(?:curl|wget)\b/iy
+function processoComDownload(texto) {
+  const achadas = []
+  const fimDaPalavra = proximaDesde(texto, /\s/g)
+  const barraDownload = proximaDesde(texto, /\/(?:curl|wget)\b/gi)
+  for (const m of texto.matchAll(/<\(\s*/g)) {
+    const inicio = m.index + m[0].length
+    RE_DOWNLOAD_DIRETO.lastIndex = inicio
+    if (RE_DOWNLOAD_DIRETO.test(texto) || barraDownload(inicio) < fimDaPalavra(inicio)) achadas.push(m.index)
+  }
+  return achadas
+}
 function subshellPerigoso(comando) {
   const semBrew = comando.split(BREW_OFICIAL).join('')
-  return RE_SH_C_DOWNLOAD.test(semBrew) || RE_SH_PROCESSO_DOWNLOAD.test(semBrew)
+  return opcaoDepoisDaPalavra(semBrew, RE_SH_INICIO, RE_SH_C_DOWNLOAD, /[\n|;&]/g) ||
+    opcaoDepoisDaPalavra(semBrew, RE_SH_OU_SOURCE_INICIO, { posicoes: processoComDownload(semBrew) }, /[\n|;&]/g)
 }
 const PERIGOS_SUBSHELL = [
   { teste: subshellPerigoso, motivo: 'roda um script baixado da internet sem ninguem ler' },
@@ -461,17 +663,16 @@ const PERIGOS_DISCO = [
   { teste: formatPerigoso, motivo: 'apaga tudo do disco pra sempre' },
   { teste: discoPerigoso, motivo: 'apaga tudo do disco pra sempre' },
   { teste: discoUnixPerigoso, motivo: 'apaga tudo do disco pra sempre' },
+  { teste: sombraPerigosa, motivo: 'apaga as copias de seguranca do Windows (versoes anteriores e pontos de restauracao) pra sempre' },
 ]
 
 const PERIGOS = [
   { teste: rmPerigoso, motivo: 'apaga uma pasta inteira de uma vez' },
   // --force-with-lease e a variante segura (nao sobrescreve o que outra pessoa subiu);
   // barrar ela empurraria o aluno avancado a desligar a trava inteira, entao o
-  // lookahead negativo deixa exatamente essa variante passar.
-  { re: /\bgit\s+push\b[^\n]*--force(?!-with-lease)\b/, motivo: 'reescreve o historico do backup no GitHub' },
-  { re: /\bgit\s+push\b[^\n]*\s-f(?:\s|$)/, motivo: 'reescreve o historico do backup no GitHub' },
-  // empurrao forcado tambem se escreve com "+" na frente do nome da branch, sem --force
-  { re: /\bgit\s+push\b[^\n]*\s\+\S+/, motivo: 'reescreve o historico do backup no GitHub' },
+  // lookahead negativo deixa exatamente essa variante passar. Empurrao forcado tambem se
+  // escreve com -f e com "+" na frente do nome da branch, sem --force (ver pushForcado)
+  { teste: pushForcado, motivo: 'reescreve o historico do backup no GitHub' },
   { re: /\bgit\s+reset\s+--hard\b/, motivo: 'joga fora o trabalho que ainda nao foi salvo' },
   // correcao 7 (quinta revisao): o que importa e o alvo ser a pasta inteira (.), com ou
   // sem "--" e com ou sem revisao antes (`git checkout .`, `git checkout -- .` e
@@ -484,12 +685,12 @@ const PERIGOS = [
   // precisam estar juntos (combinados tipo -fdx ou separados) pra ser destrutivo, e o
   // token so pode ter as letras de flag de verdade do git clean, senao "--dry-run"
   // (que so simula, nao apaga nada) acusaria por ter "d" na palavra "dry"
-  { re: /\bgit\s+clean\b(?=[^\n]*\s-[fdxniqeX]*f[fdxniqeX]*\b)(?=[^\n]*\s-[fdxniqeX]*d[fdxniqeX]*\b)/, motivo: 'apaga arquivo e pasta fora do controle de versao, sem confirmacao' },
+  { teste: cleanPerigoso, motivo: 'apaga arquivo e pasta fora do controle de versao, sem confirmacao' },
   // "sudo" no meio do pipe (curl ... | sudo bash) e o jeito mais comum de instalar
   // script de terceiro com privilegio elevado, e tem que continuar batendo. Flag i desde
-  // a 5.2: `CURL x | SH` passava (o PowerShell nao liga pra maiuscula)
-  { re: /\bcurl\b[^\n]*\|\s*(?:sudo\s+)?(?:ba)?sh\b/i, motivo: 'roda um script baixado da internet sem ninguem ler' },
-  { re: /\bwget\b[^\n]*\|\s*(?:sudo\s+)?(?:ba)?sh\b/i, motivo: 'roda um script baixado da internet sem ninguem ler' },
+  // a 5.2: `CURL x | SH` passava (o PowerShell nao liga pra maiuscula). Ver curlPipePerigoso
+  { teste: curlPipePerigoso, motivo: 'roda um script baixado da internet sem ninguem ler' },
+  { teste: wgetPipePerigoso, motivo: 'roda um script baixado da internet sem ninguem ler' },
   // modo de 4 digitos (0777 a 7777: setuid/setgid/sticky, sozinhos ou combinados, + 777)
   // e tao aberto quanto o 777 puro; o lookbehind evita casar o final de um numero maior
   { re: /\bchmod\s+(?:-[a-zA-Z]+\s+)*(?<!\d)[0-7]?777\b/, motivo: 'libera o arquivo pra qualquer um do computador' },
@@ -515,11 +716,9 @@ const PERIGOS = [
   // the following aliases for ForEach-Object: All Platforms: %, foreach") cujo bloco
   // chama Remove-Item pra cada item, tipo `Get-ChildItem -Recurse | %{ Remove-Item $_ }`
   { teste: removeItemPipePerigoso, motivo: 'apaga varios arquivos de uma vez, um por um, sem confirmar nenhum' },
-  { re: /\b(?:rmdir|rd)\b(?=[^\n]*\s\/s\b)/i, motivo: 'apaga uma pasta inteira de uma vez' },
-  // correcao 7: "erase" e sinonimo de "del" no cmd e aceita a mesma sintaxe (/s), doc da
-  // Microsoft confirma os dois como apelido do mesmo Remove-Item; cobrir um so e deixar
-  // o gemeo de fora era o buraco que esta rodada veio fechar
-  { re: /\b(?:del|erase)\b(?=[^\n]*\s\/s\b)/i, motivo: 'apaga arquivo de varias pastas de uma vez' },
+  { teste: rdPerigoso, motivo: 'apaga uma pasta inteira de uma vez' },
+  // del e erase com /s: ver delPerigoso
+  { teste: delPerigoso, motivo: 'apaga arquivo de varias pastas de uma vez' },
   ...PERIGOS_DISCO,
   ...PERIGOS_POWERSHELL,
 ]

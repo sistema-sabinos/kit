@@ -24,7 +24,7 @@
 // mesmo nome em lugares diferentes. Pra agendar isso rodando sozinho todo dia, ver o README desta
 // pasta.
 
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, renameSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, renameSync, existsSync, statSync } from 'node:fs';
 import { join, basename, dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import os from 'node:os';
@@ -61,7 +61,7 @@ function pastaDoProjeto(envPath) {
  * Devolve `{ ok: true, destino, chaves, total, backupDir }` quando copiou, ou
  * `{ ok: false, motivo, chaves }` quando recusou por o arquivo parecer truncado.
  */
-export function backupEnv({ envPath, backupDir, minChaves = MIN_CHAVES_PADRAO, manter = MANTER_PADRAO } = {}) {
+export function backupEnv({ envPath, backupDir, minChaves = MIN_CHAVES_PADRAO, manter = MANTER_PADRAO, agora = new Date() } = {}) {
   if (!envPath) throw new Error('backupEnv: informe envPath');
 
   const destinoBase = backupDir || join(os.homedir(), '.claude', 'backups', pastaDoProjeto(envPath));
@@ -85,16 +85,24 @@ export function backupEnv({ envPath, backupDir, minChaves = MIN_CHAVES_PADRAO, m
   // isso, duas chamadas rápidas em sequência gerariam o MESMO nome de arquivo e a segunda
   // sobrescreveria a primeira em silêncio, quebrando a rotação (cada rodada tem que virar
   // um arquivo distinto pra "mantém só as últimas N" fazer sentido).
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
+  // A hora vai no relógio local, que é o que a pessoa procura ao abrir a pasta: em UTC, a cópia
+  // das 22h no Brasil sairia com a data de amanhã.
+  const z = (n) => String(n).padStart(2, '0');
+  const stamp = `${agora.getFullYear()}-${z(agora.getMonth() + 1)}-${z(agora.getDate())}_${z(agora.getHours())}-${z(agora.getMinutes())}-${z(agora.getSeconds())}`;
   const sufixo = process.hrtime.bigint().toString(36);
   const destino = join(destinoBase, `env-${stamp}-${sufixo}.bak`);
   escreverAtomico(destino, raw);
   escreverAtomico(join(destinoBase, 'latest.env'), raw); // cópia sempre atualizada, fácil de achar
 
-  // rotação: mantém só as últimas `manter` cópias datadas
+  // rotação: mantém só as últimas `manter` cópias datadas. A ordem vem da hora em que cada cópia
+  // foi gravada, com o nome só de desempate: pelo nome, as cópias antigas em UTC (até a 5.17)
+  // ficariam "depois" das novas em hora local, e a cópia recém-feita seria a primeira apagada.
+  const gravadaEm = (f) => statSync(join(destinoBase, f)).mtimeMs;
   const copias = readdirSync(destinoBase)
     .filter((f) => f.startsWith('env-') && f.endsWith('.bak'))
-    .sort();
+    .map((f) => ({ f, t: gravadaEm(f) }))
+    .sort((a, b) => a.t - b.t || (a.f < b.f ? -1 : a.f > b.f ? 1 : 0))
+    .map((c) => c.f);
   for (const f of copias.slice(0, Math.max(0, copias.length - manter))) {
     unlinkSync(join(destinoBase, f));
   }

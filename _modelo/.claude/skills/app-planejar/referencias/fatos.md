@@ -1,18 +1,22 @@
 # Fatos datados do pacote criar app
 
-> Todo preço, limite e regra que pode mudar mora aqui, com a fonte oficial e o dia em que foi conferido.
+> Todo limite, regra e fonte de preço que pode mudar mora aqui, com a fonte oficial e o dia em que foi conferido.
 > As skills do pacote leem daqui antes de mostrar custo ou regra ao aluno. Fato com mais de 60 dias
 > se confere na web (buscar em português e inglês, fonte oficial primeiro), e a linha se atualiza
 > aqui com a data nova. Mantenha as quatro colunas.
+> Preço e taxa de empresa (plano pago, taxa por venda, conta de desenvolvedor, domínio) não ficam
+> guardados: a linha guarda o que não muda toda hora e a fonte, e o valor de hoje se confere na fonte
+> na hora de mostrar ao aluno, mesmo dentro dos 60 dias. Tributo do governo (taxa do INPI) e limite
+> de plano grátis ficam com o número, pela regra dos 60 dias.
 > Linha com o mesmo id em outro fatos.md do kit tem que ficar igual nos dois.
 > Isto aqui é informação pra decidir, sem garantia de resultado jurídico. Caso que envolve dinheiro alto ou briga com outra empresa vai pra um advogado.
 
 | id | fato | fonte | conferido_em |
 |---|---|---|---|
 | app-vercel-hobby | Vercel Hobby: grátis, só pra uso pessoal sem fim comercial; app que cobra do cliente precisa do plano Pro | https://vercel.com/docs/limits/fair-use-guidelines | 2026-10-07 |
-| app-vercel-pro | Vercel Pro: US$ 20 por mês | https://vercel.com/docs/limits/fair-use-guidelines | 2026-10-07 |
+| app-vercel-pro | Vercel Pro: plano pago por mês; o valor de hoje está na fonte, conferido na hora de falar com o aluno | https://vercel.com/docs/limits/fair-use-guidelines | 2026-10-07 |
 | app-cloudflare-free | Cloudflare Workers Free: uso comercial liberado; a seção 2.2.1(h) dos termos proíbe processar ou coletar dado de cartão no plano grátis; limite de 100 mil requisições ao servidor por dia por conta (uma visita faz várias), e passou disso o site dá erro 1027 até o dia seguinte, sem troca automática pro plano pago | https://www.cloudflare.com/terms/ e https://developers.cloudflare.com/workers/platform/limits/ | 2026-10-07 |
-| app-cloudflare-paid | Cloudflare Workers Paid: mínimo de US$ 5 por mês, com 10 milhões de requisições inclusas; só entra se o aluno contratar | https://developers.cloudflare.com/workers/platform/pricing/ | 2026-10-07 |
+| app-cloudflare-paid | Cloudflare Workers Paid: mensalidade mínima, com 10 milhões de requisições inclusas; só entra se o aluno contratar; o valor de hoje está na fonte, conferido na hora de falar com o aluno | https://developers.cloudflare.com/workers/platform/pricing/ | 2026-10-07 |
 | app-cloudflare-nextjs | Next.js na Cloudflare Workers: a Cloudflare recomenda o vinext como caminho padrão; o adaptador OpenNext fica pra app que já usa OpenNext e ainda esbarra em algo que o vinext não cobre | https://developers.cloudflare.com/workers/framework-guides/web-apps/nextjs/ | 2026-10-07 |
 | app-netlify-free | Netlify Free: 300 créditos por mês com teto; acabaram os créditos, todos os projetos ficam pausados até o mês seguinte | https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/credit-based-pricing-plans/ | 2026-10-07 |
 | app-render-free | Render Free: o site dorme depois de 15 minutos sem acesso, e a própria documentação pede pra não usar em produção | https://render.com/docs/free | 2026-10-07 |
@@ -20,16 +24,16 @@
 | app-supabase-chaves | Chaves do Supabase: a publicável (`sb_publishable_...`) pode ir pro código que roda no navegador; a secreta (`sb_secret_...`) fica só no servidor; o nome antigo da publicável é `anon` e o da secreta é `service_role` | https://supabase.com/docs/guides/api/api-keys | 2026-10-08 |
 | app-resend-free | Resend Free (e-mail automático do app): 3.000 e-mails por mês, no máximo 100 por dia | https://resend.com/pricing | 2026-10-07 |
 | app-expo-free | Expo EAS Free (montar o app de celular): 15 builds de Android e 15 de iPhone por mês | https://expo.dev/pricing | 2026-10-07 |
-| app-registro-br | Domínio .com.br no registro.br: R$ 40,00 por ano | https://registro.br/dominio/valores/ | 2026-10-07 |
-| app-stripe-taxas | Stripe Brasil: cartão nacional 3,99% + R$ 0,39 por venda; Pix 1,19%, liberado só por convite do Stripe; boleto R$ 3,45 | https://stripe.com/br/pricing | 2026-10-07 |
+| app-registro-br | Domínio .com.br no registro.br: pago por ano; o valor de hoje está na fonte, conferido na hora de falar com o aluno | https://registro.br/dominio/valores/ | 2026-10-07 |
+| app-stripe-taxas | Stripe Brasil: cartão nacional com porcentagem mais um valor fixo por venda; Pix liberado só por convite do Stripe; boleto com valor fixo; o valor de hoje está na fonte, conferido na hora de falar com o aluno | https://stripe.com/br/pricing | 2026-10-07 |
 | app-stripe-reembolso | Stripe: no reembolso, a tarifa da cobrança original fica com o Stripe | https://docs.stripe.com/refunds | 2026-10-07 |
 | app-stripe-teste | Stripe em modo de teste: o cartão 4242 4242 4242 4242 aprova e o 4000 0000 0000 0002 é recusado | https://docs.stripe.com/testing | 2026-10-07 |
-| app-mp-checkout | Mercado Pago Checkout: Pix 0,99% com o dinheiro na hora; cartão 4,98% na hora, 4,49% em 14 dias ou 3,98% em 30 dias; boleto R$ 3,49 | https://www.mercadopago.com.br/ajuda/33399 | 2026-10-07 |
+| app-mp-checkout | Mercado Pago Checkout: Pix e cartão com porcentagem por venda, e no cartão ela cai quanto mais tempo o dinheiro leva pra ficar disponível (na hora, 14 ou 30 dias); boleto com valor fixo; o valor de hoje está na fonte, conferido na hora de falar com o aluno | https://www.mercadopago.com.br/ajuda/33399 | 2026-10-07 |
 | app-mp-teste | Mercado Pago em modo de teste: cartão Mastercard 5480 8328 0103 3311 ou Visa 4235 6477 2802 5682, CVV 123, validade 11/30; nome do titular APRO aprova e OTHE recusa | https://www.mercadopago.com.br/developers/pt/docs/checkout-api/additional-content/your-integrations/test/cards | 2026-10-07 |
 | app-mp-assinatura | Mercado Pago Assinaturas: cobrança automática todo mês só no cartão; Pix e boleto só no modo pendente, em que o cliente paga cada parcela por um link | https://www.mercadopago.com.br/developers/pt/docs/subscriptions/overview | 2026-10-07 |
 | app-mp-reembolso | Mercado Pago: devolução feita pelo painel sem cobrar a tarifa do pagamento devolvido | https://vendedores.mercadolivre.com.br/nota/como-fazer-estorno-de-dinheiro-com-o-mercado-pago | 2026-10-07 |
-| app-apple-conta | Conta de desenvolvedor da Apple: US$ 99 por ano, cobrada em moeda local na inscrição; a Apple não publica o valor em reais | https://developer.apple.com/support/purchase-activation/ | 2026-10-07 |
-| app-google-conta | Conta de desenvolvedor do Google Play: US$ 25, pagamento único | https://support.google.com/googleplay/android-developer/answer/6112435?hl=en | 2026-10-07 |
+| app-apple-conta | Conta de desenvolvedor da Apple: anuidade cobrada em moeda local na inscrição; a Apple não publica o valor em reais; o valor de hoje está na fonte, conferido na hora de falar com o aluno | https://developer.apple.com/support/purchase-activation/ | 2026-10-07 |
+| app-google-conta | Conta de desenvolvedor do Google Play: pagamento único; o valor de hoje está na fonte, conferido na hora de falar com o aluno | https://support.google.com/googleplay/android-developer/answer/6112435?hl=en | 2026-10-07 |
 | app-apple-ficha | Ficha da App Store: nome até 30 caracteres, subtítulo 30, texto promocional 170, palavras-chave 100 bytes (letra com acento conta 2), descrição 4000 | https://developer.apple.com/help/app-store-connect/reference/platform-version-information | 2026-10-07 |
 | app-google-ficha | Ficha do Google Play: título até 30 caracteres, descrição curta 80, descrição completa 4000 | https://support.google.com/googleplay/android-developer/answer/9859152?hl=en | 2026-10-07 |
 | app-google-metadados | Política de metadados do Google Play: título, ícone e nome do desenvolvedor sem emoji, emoticon ou caractere especial repetido, e sem CAIXA ALTA fora do nome da marca; nada de texto ou imagem que fale de desempenho ou ranking na loja ("App of the year", "#1", "Best of Play 20XX", "Popular", ícone de prêmio), de preço ou promoção ("10% off", "free for limited time only") ou de programa do Google Play ("Editor's choice", "New"); ícone sem símbolo enganoso, como falsa bolinha de notificação | https://support.google.com/googleplay/android-developer/answer/9898842?hl=en | 2026-10-07 |

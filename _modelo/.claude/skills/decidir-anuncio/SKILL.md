@@ -64,7 +64,7 @@ Entra no plano quem tem, ao mesmo tempo:
 - veredito válido do produto ou do tipo dele (Gate 0 da `/mercado-livre`)
 
 A margem projetada se calcula pela `precificacao.md`: preço na mediana, menos a
-comissão da categoria (Clássico; Premium é mais 5 pontos), menos o custo de
+comissão da categoria (Clássico; a do Premium é maior e sai da mesma API), menos o custo de
 envio, menos `imposto_pct` sobre o preço, menos o custo. A comissão exata sai
 da API que a `precificacao.md` cita: renove o token com
 `node .claude/skills/mercado-livre/scripts/lib/tokens.mjs ml` e use o

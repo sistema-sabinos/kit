@@ -82,6 +82,55 @@ test('alinhar troca o texto do whisper pelo do roteiro e devolve a pontuacao', (
   assert.deepEqual(j.map((p) => p.text.trim()), ['Olá,', 'mundo.'])
 }))
 
+// roda o alinhar.py com legendas fake do whisper e devolve [texto, startMs, endMs] de cada palavra
+function alinhar(d, caps, roteiro) {
+  const leg = join(d, 'leg.json'), fala = join(d, 'fala.txt'), sai = join(d, 'alinhado.json')
+  writeFileSync(leg, JSON.stringify(caps.map(([text, startMs, endMs]) => ({ text: ' ' + text, startMs, endMs }))))
+  writeFileSync(fala, roteiro, 'utf8')
+  const r = py('alinhar.py', [leg, fala, sai])
+  assert.equal(r.status, 0, semTraco(r.stderr))
+  return JSON.parse(readFileSync(sai, 'utf8')).map((c) => [c.text.trim(), c.startMs, c.endMs])
+}
+
+test('alinhar: preco falado ("oitenta e nove reais" contra "R$ 89") acende no comeco do numero e sem "reais" sobrando', () => comTemp((d) => {
+  // whisper por extenso: R$ e 89 acendem juntos no startMs de "oitenta", e o "reais" fica com o numero
+  const ext = alinhar(d, [['por', 0, 300], ['oitenta', 300, 700], ['e', 700, 800], ['nove', 800, 1100], ['reais', 1100, 1500]], 'por R$ 89')
+  assert.deepEqual(ext, [['por', 0, 300], ['R$', 300, 1500], ['89', 300, 1500]])
+  // whisper em algarismo ("89 reais"): o "reais" nao sobra e o tempo dele vai pro 89
+  const alg = alinhar(d, [['por', 0, 300], ['89', 300, 1100], ['reais', 1100, 1500]], 'por R$ 89')
+  assert.deepEqual(alg.map((p) => p[0]), ['por', 'R$', '89'])
+  assert.deepEqual(alg, [['por', 0, 300], ['R$', 300, 1500], ['89', 300, 1500]])
+  const com = alinhar(d, [['por', 0, 300], ['R$', 300, 500], ['89', 500, 1100], ['reais', 1100, 1500]], 'por R$ 89')
+  assert.deepEqual(com, [['por', 0, 300], ['R$', 300, 1500], ['89', 300, 1500]])
+  // whisper ja escreveu "R$ 89" (caso do render de demonstracao da 5.17): o 89 acende junto com o R$
+  const demo = alinhar(d, [['Comprei', 180, 770], ['por', 770, 1130], ['R$', 1130, 1320], ['89', 1320, 1980], ['no', 1980, 2200]], 'Comprei por R$ 89 no')
+  assert.deepEqual(demo.slice(2, 4), [['R$', 1130, 1980], ['89', 1130, 1980]])
+  // whisper errou tambem a palavra vizinha (mesmo bloco de troca): o preco ancora no "oitenta", sem dividir igual
+  const viz = alinhar(d, [['custa', 0, 300], ['so', 300, 500], ['oitenta', 500, 900], ['e', 900, 1000], ['nove', 1000, 1300], ['reais', 1300, 1700]], 'custa apenas R$ 89')
+  assert.deepEqual(viz, [['custa', 0, 300], ['apenas', 300, 500], ['R$', 500, 1700], ['89', 500, 1700]])
+  const pro = alinhar(d, [['pro', 0, 300], ['oitenta', 300, 700], ['e', 700, 800], ['nove', 800, 1100], ['reais', 1100, 1500]], 'por R$ 89')
+  assert.deepEqual(pro, [['por', 0, 300], ['R$', 300, 1500], ['89', 300, 1500]])
+  // quantidade falada antes do preco ("dois itens"): a ancora e o valor seguido de "reais", nao o primeiro numero
+  const qtd = alinhar(d, [['leve', 0, 400], ['dois', 400, 800], ['itens', 800, 1200], ['custando', 1200, 1600], ['oitenta', 1600, 2000], ['e', 2000, 2400], ['nove', 2400, 2800], ['reais', 2800, 3200]], 'compre duas unidades por R$ 89')
+  assert.deepEqual(qtd.slice(4), [['R$', 1600, 3200], ['89', 1600, 3200]])
+  assert.deepEqual(qtd[0], ['compre', 0, 400])
+  // whisper nao ouviu o preco (insert): R$ e 89 dividem a mesma metade do tempo da vizinha
+  const ins = alinhar(d, [['comprei', 0, 400], ['no', 400, 800], ['mercado', 800, 1200]], 'comprei por R$ 89 no mercado')
+  assert.deepEqual(ins.slice(0, 4), [['comprei', 0, 200], ['por', 200, 300], ['R$', 300, 400], ['89', 300, 400]])
+  // dois precos por extenso na mesma frase
+  const dois = alinhar(d, [['de', 0, 200], ['oitenta', 200, 600], ['e', 600, 700], ['nove', 700, 1000], ['por', 1000, 1200], ['cinquenta', 1200, 1700], ['e', 1700, 1800], ['nove', 1800, 2100]], 'de R$ 89 por R$ 59')
+  assert.deepEqual(dois.filter((p) => p[0] === '89' || p[0] === '59'), [['89', 200, 1000], ['59', 1200, 2100]])
+}))
+
+test('alinhar mantem como antes os casos sem R$ no roteiro', () => comTemp((d) => {
+  const W = (s) => s.split(' ').map((t, i) => [t, i * 400, i * 400 + 400])
+  assert.deepEqual(alinhar(d, W('oi Claudio tudo bem'), 'oi Claude tudo bem'), [['oi', 0, 400], ['Claude', 400, 800], ['tudo', 800, 1200], ['bem', 1200, 1600]])
+  // "reais" sem R$ no roteiro segue mantido (ele pode ter falado mesmo)
+  assert.deepEqual(alinhar(d, W('custa 10 reais hoje'), 'custa 10 hoje'), [['custa', 0, 400], ['10', 400, 800], ['reais', 800, 1200], ['hoje', 1200, 1600]])
+  assert.deepEqual(alinhar(d, W('eu a vi o mundo lindo'), 'eu vi o mundo'), [['eu', 0, 800], ['vi', 800, 1200], ['o', 1200, 1600], ['mundo', 1600, 2000], ['lindo', 2000, 2400]])
+  assert.deepEqual(alinhar(d, W('comprei no mercado'), 'comprei hoje no mercado'), [['comprei', 0, 200], ['hoje', 200, 400], ['no', 400, 800], ['mercado', 800, 1200]])
+}))
+
 test('paginas-legenda gera JSON com no maximo 3 palavras por pagina', () => comTemp((d) => {
   const leg = join(d, 'leg.json'), sai = join(d, 'paginas.json')
   const palavras = 'um dois tres quatro cinco seis sete'.split(' ')

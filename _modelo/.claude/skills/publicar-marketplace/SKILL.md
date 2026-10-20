@@ -181,7 +181,7 @@ depois de publicar, senão o anúncio fica no preço cheio.
 - Registro no órgão: <número, ou em branco; nunca "não se aplica">
 
 ## Envio e garantia
-- Mercado Envios: ativo · Frete grátis: <sim | não> (preço acima de R$ 79 obriga)
+- Mercado Envios: ativo · Frete grátis: <sim | não> (o simulador mostra se o preço já obriga; perto dos R$ 79, rodar dos dois lados)
 - Garantia: do vendedor, <prazo>
 
 ## Depois de publicar

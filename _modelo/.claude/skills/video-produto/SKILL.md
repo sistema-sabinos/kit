@@ -140,9 +140,7 @@ node .claude/skills/video-produto/scripts/video-produto.mjs --mlb=<MLB> --fase=2
 Os preços vêm da página https://ai.google.dev/gemini-api/docs/pricing (preço
 muda, confira no dia). O dry-run imprime, junto da estimativa, os modelos que a
 rodada vai usar (Veo, voz, transcrição e música): cada um tem a sua linha na
-tabela de preços, e é o preço dessa linha que você passa. A cotação do dólar do dia você confere na web e mostra o total em dólar e em real. Exemplo datado de como a conta
-fica: em 2026-10-04, 4 blocos custavam cerca de US$ 1,70 e 7 blocos cerca de
-US$ 2,95, somando clipes e música.
+tabela de preços, e é o preço dessa linha que você passa. A cotação do dólar do dia você confere na web e mostra o total em dólar e em real.
 
 Mostre também, sempre, a foto que vai pro Veo: a do campo `foto` do roteiro e,
 sem ela, a primeira foto do anúncio, que está em `coleta.json`. É ela que

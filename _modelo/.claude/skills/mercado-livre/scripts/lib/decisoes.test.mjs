@@ -4,7 +4,20 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { validarDecisao, prazoDe, diasDesde, decisoesVigentes, estadoDaDecisao, lerDecisoes, gravarDecisao } from './decisoes.mjs'
+import { validarDecisao, prazoDe, diasDesde, diaDaDecisao, decisoesVigentes, estadoDaDecisao, lerDecisoes, gravarDecisao } from './decisoes.mjs'
+import { dataLocal } from './pipeline.mjs'
+
+// troca o fuso so dentro de fn e devolve o antigo, mesmo se um assert falhar
+function noFuso(tz, fn) {
+  const antes = process.env.TZ
+  try {
+    process.env.TZ = tz
+    return fn()
+  } finally {
+    if (antes === undefined) delete process.env.TZ
+    else process.env.TZ = antes
+  }
+}
 
 const base = (extra = {}) => ({ ts: '2026-09-01T12:00:00.000Z', escopo: 'ads', alvo: { id: 10, nome: 'Campanha kits' }, decisao: 'nao_mexer', resumo: 'deixar aprender', motivo: 'pouco dado', baseline: { acos_7d: 0.1 }, ...extra })
 
@@ -36,8 +49,20 @@ test('prazoDe usa reavaliar_em, cai em 7 dias sem ele, e some quando permanente'
   assert.equal(prazoDe(base({ reavaliar_em: '2026-09-15' })), '2026-09-15')
   assert.equal(prazoDe(base()), '2026-09-08')
   assert.equal(prazoDe(base({ permanente: true })), null)
-  assert.equal(diasDesde('2026-09-01T23:00:00Z', '2026-09-04'), 3)
-  assert.equal(diasDesde('2026-09-05T00:00:00Z', '2026-09-04'), 0)
+  // diasDesde conta pelo dia local da decisao, entao o fuso fica fixo aqui
+  noFuso('America/Sao_Paulo', () => {
+    assert.equal(diasDesde('2026-09-01T23:00:00Z', '2026-09-04'), 3)
+    assert.equal(diasDesde('2026-09-05T00:00:00Z', '2026-09-04'), 0)
+  })
+})
+
+test('decidido em e o prazo saem no mesmo relogio: decisao das 22h no Brasil mostra 7 dias de prazo', () => {
+  noFuso('America/Sao_Paulo', () => {
+    const ts = '2026-10-20T01:00:00.000Z' // 19/10 as 22h em Sao Paulo
+    assert.equal(diaDaDecisao(ts), '2026-10-19')
+    assert.match(estadoDaDecisao(base({ ts }), {}, {}, '2026-10-21').motivo, /decidido em 2026-10-19, reavaliar em 2026-10-26/)
+    assert.equal(diasDesde(ts, '2026-10-21'), 2)
+  })
 })
 
 test('decisoesVigentes fica com a mais recente de cada alvo e respeita o escopo', () => {
@@ -79,4 +104,33 @@ test('lerDecisoes ignora linha quebrada e ata ausente, e gravarDecisao acrescent
   } finally {
     rmSync(pasta, { recursive: true, force: true })
   }
+})
+
+test('prazoDe conta 7 dias a partir do dia local: decisao das 22h no Brasil nao ganha um dia', () => {
+  noFuso('America/Sao_Paulo', () => {
+    const ts = '2026-10-20T01:00:00.000Z' // 19/10 as 22h em Sao Paulo
+    assert.equal(dataLocal(new Date(ts)), '2026-10-19', 'canario: o fuso pegou')
+    assert.equal(prazoDe(base({ ts })), '2026-10-26')
+  })
+})
+
+test('prazoDe soma dias de calendario: troca de horario de verao no meio nao tira nem poe um dia', () => {
+  noFuso('America/New_York', () => {
+    // fim do horario de verao em 01/11/2026 e inicio em 08/03/2026 nos EUA
+    assert.equal(prazoDe(base({ ts: '2026-10-26T00:30:00-04:00' })), '2026-11-02')
+    assert.equal(prazoDe(base({ ts: '2026-03-02T23:30:00-05:00' })), '2026-03-09')
+  })
+})
+
+test('estadoDaDecisao sem hoje usa o dia local, nao o UTC (o --listar chama assim)', () => {
+  // fuso escolhido pra que agora o dia local seja diferente do dia UTC, a qualquer hora
+  const tz = new Date().getUTCHours() < 12 ? 'Etc/GMT+12' : 'Etc/GMT-14'
+  noFuso(tz, () => {
+    const local = dataLocal()
+    const utc = new Date().toLocaleDateString('sv-SE', { timeZone: 'UTC' })
+    assert.notEqual(local, utc, 'canario: dia local e UTC diferentes neste fuso')
+    const prazo = local > utc ? local : utc
+    const esperado = local >= prazo ? 'vencida' : 'em_vigor'
+    assert.equal(estadoDaDecisao(base({ reavaliar_em: prazo })).estado, esperado)
+  })
 })

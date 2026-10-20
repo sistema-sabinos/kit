@@ -14,8 +14,8 @@
 // Dinheiro: o preco da geracao vem de quem chama (precoUsd, preco do dia). Uma
 // geracao, uma linha no registro de custos, gravada no desfecho: sucesso e 200 sem
 // audio gravam (o Lyria cobrou), erro de HTTP nao grava.
-// Modelo: descoberto no ListModels (o Pro, que faz varios minutos numa chamada so;
-// o clip trava em 30 s). `modelo` explicito tem prioridade (flag --modelo-musica).
+// Modelo: descoberto no ListModels (o lyria-3.5, musica inteira numa chamada so; sem ele,
+// o Pro; o clip trava em 30 s). `modelo` explicito tem prioridade (flag --modelo-musica).
 import fs from 'node:fs'
 import { carregarChave, escolherModelo } from './gemini.mjs'
 import { registrarCusto as registrarCustoPadrao } from '../../../configurar-video/scripts/lib/custos.mjs'
@@ -61,11 +61,18 @@ export function promptDeMusica(estilo, { segundos = 70 } = {}) {
   return `${escolhido.prompt} ${BASE} About ${Math.ceil(segundos)} seconds long.`
 }
 
+// Prefere o lyria-3.5, que o Google aponta como substituto do Pro preview (pagina de
+// descontinuados, 2026-10-12), pelo mesmo preco por musica (US$ 0,08 em 2026-10-19). Sem
+// ele na chave, cai no Pro. Duas buscas pra ordem ficar explicita, sem depender da versao.
 async function descobrirModelo() {
   try {
-    return await escolherModelo(/^lyria-.*pro/)
-  } catch (e) {
-    throw new Error(`nao achei modelo Lyria Pro na sua chave (${e.message}). Veja os nomes no ListModels e passe --modelo-musica=<nome>. Nada foi gerado nem cobrado.`)
+    return await escolherModelo(/^lyria-3\.5$/)
+  } catch {
+    try {
+      return await escolherModelo(/^lyria-.*pro/)
+    } catch (e) {
+      throw new Error(`nao achei modelo Lyria Pro nem lyria-3.5 na sua chave (${e.message}). Veja os nomes no ListModels e passe --modelo-musica=<nome>. Nada foi gerado nem cobrado.`)
+    }
   }
 }
 

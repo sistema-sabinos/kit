@@ -32,7 +32,7 @@ import path from 'path';
 import os from 'os';
 import https from 'https';
 import { baixarVideo, ehYoutube } from './baixar-video.mjs';
-import { linhaDeCusto, registrarCusto, tokensDaResposta } from './custo.mjs';
+import { linhaDeCusto, registrarCusto, tokensDaResposta, dataLocal } from './custo.mjs';
 
 // ---------------- chave ----------------
 function readKeyFrom(file) {
@@ -57,7 +57,7 @@ function loadApiKey() {
     'GEMINI_API_KEY não encontrada.\n' +
     'Essa skill usa a API do Gemini (paga, pré-paga). Pra ligar:\n' +
     '  1. Crie uma chave em https://aistudio.google.com\n' +
-    '  2. Compre o crédito inicial (mínimo US$ 10)\n' +
+    '  2. Compre o crédito inicial (o mínimo aparece na tela de compra)\n' +
     '  3. Salve no arquivo .env da raiz do projeto: GEMINI_API_KEY=<sua chave aqui>\n' +
     'O comando /conectar te guia nisso passo a passo.'
   );
@@ -242,7 +242,7 @@ async function main() {
   // --sem-registro: quem chamou anota o custo ele mesmo (o fiscal do /editar-video), pra nao contar em dobro
   let custo = null;
   if (j.usageMetadata) {
-    custo = linhaDeCusto({ modelo, uso: j.usageMetadata, contexto: `assistir-video ${alvo}`, hoje: new Date().toISOString().slice(0, 10), agora: new Date().toISOString() });
+    custo = linhaDeCusto({ modelo, uso: j.usageMetadata, contexto: `assistir-video ${alvo}`, hoje: dataLocal(), agora: new Date().toISOString() });
     if (!has('sem-registro')) try { registrarCusto(custo); } catch (e) { console.error(`[custo] chamada cobrada mas nao anotada em dados/custos.jsonl (${e.message}); anote a mao: ${JSON.stringify(custo)}`); }
   }
 
