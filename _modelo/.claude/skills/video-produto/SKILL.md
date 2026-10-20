@@ -14,7 +14,7 @@ O Mercado Livre deixa o vendedor subir um vídeo curto, vertical, chamado Clips.
 O gerador do próprio ML pede que você filme o produto na mão. Quem vende sem
 estoque em casa não consegue. Aqui o vídeo nasce de IA:
 
-- **Veo** (do Google) cria os clipes de 8 segundos a partir de uma foto do produto.
+- **Gemini Omni Flash** (do Google) cria os clipes de 8 segundos a partir de uma foto do produto.
 - **Gemini voz** lê a narração.
 - **Lyria** (do Google) cria a música de fundo. A música do vídeo do anúncio no
   Mercado Livre (Clips) é sempre gerada aqui, porque o ML recusa música de
@@ -71,7 +71,7 @@ pessoa ler.
 
 ### O que vai no roteiro
 
-- `produto`: descrição genérica, sem marca. Esse texto vai inteiro pro Veo, que
+- `produto`: descrição genérica, sem marca. Esse texto vai inteiro pro Omni, que
   barra marca de terceiro.
 - `voz`: nome de uma voz do Gemini, escolhida por esta lista (lista e jeito de
   cada voz conferidos em 2026-10-04 em
@@ -86,7 +86,7 @@ pessoa ler.
   (entendida) e Sulafat (calorosa). Combine com o produto: casa e cuidado pedem
   voz calorosa ou amigável, ferramenta e eletrônico pedem voz firme ou
   informativa, presente e moda pedem voz animada. A voz muda a duração da fala.
-- `foto`: caminho da imagem que vai pro Veo, a partir da pasta do projeto.
+- `foto`: caminho da imagem que vai pro Omni, a partir da pasta do projeto.
   Obrigatório quando a coleta veio de um concorrente (`--de-espionagem`): foto do
   fornecedor ou do seu produto, sem logo e sem texto. Sem `foto`, o script usa
   a primeira foto do anúncio. A fase 2 usa sempre a `foto` do roteiro; `--foto`
@@ -119,7 +119,7 @@ pessoa ler.
 - Pessoa adulta. Criança não aparece nem é citada.
 - Um vício de fala escrito no texto ("ó", "tipo", "viu") humaniza.
 - Na cena do bloco `pessoa`, deixe de fora objeto que costuma ter rótulo (pote,
-  caixa, lata). O Veo desenha texto inventado neles.
+  caixa, lata). A IA de vídeo desenha texto inventado neles.
 
 Todas as regras do ML estão em `referencias/regras-clips-ml.md`. O gate de
 conteúdo roda sozinho e reprova o que fura essas regras: reprovou, conserte o
@@ -134,17 +134,17 @@ real. Ele funciona antes do carimbo e roda sem gerar nem chamar nada pago:
 
 ```bash
 node .claude/skills/video-produto/scripts/video-produto.mjs --mlb=<MLB> --fase=2 --dry-run \
-  --preco-usd=<US$ por segundo do Veo> --preco-musica-usd=<US$ por música>
+  --preco-usd=<US$ por segundo do Gemini Omni Flash> --preco-musica-usd=<US$ por música>
 ```
 
 Os preços vêm da página https://ai.google.dev/gemini-api/docs/pricing (preço
 muda, confira no dia). O dry-run imprime, junto da estimativa, os modelos que a
-rodada vai usar (Veo, voz, transcrição e música): cada um tem a sua linha na
+rodada vai usar (Omni, voz, transcrição e música): cada um tem a sua linha na
 tabela de preços, e é o preço dessa linha que você passa. A cotação do dólar do dia você confere na web e mostra o total em dólar e em real.
 
-Mostre também, sempre, a foto que vai pro Veo: a do campo `foto` do roteiro e,
+Mostre também, sempre, a foto que vai pro Omni: a do campo `foto` do roteiro e,
 sem ela, a primeira foto do anúncio, que está em `coleta.json`. É ela que
-alimenta o Veo. O dry-run imprime a linha "foto que vai pro Veo"; é ela que você
+alimenta o Omni. O dry-run imprime a linha "foto que vai pro Omni"; é ela que você
 mostra. Na coleta de concorrente a foto é a do campo `foto`, do fornecedor ou do
 seu produto: foto de terceiro fere a regra do ML. O carimbo guarda essa foto, e
 trocar a imagem depois do sim derruba a aprovação.
@@ -173,7 +173,7 @@ depois do "pode ir" da pessoa:
 
 ```bash
 node .claude/skills/video-produto/scripts/video-produto.mjs --mlb=<MLB> --fase=2 \
-  --preco-usd=<US$ por segundo do Veo> --preco-musica-usd=<US$ por música> \
+  --preco-usd=<US$ por segundo do Gemini Omni Flash> --preco-musica-usd=<US$ por música> \
   --preco-tts-entrada=<US$ por milhão de tokens> --preco-tts-saida=<US$ por milhão de tokens> \
   --preco-transcricao-entrada=<US$ por milhão de tokens> --preco-transcricao-saida=<US$ por milhão de tokens> \
   --autorizado
@@ -188,8 +188,8 @@ folga de US$ 0,01 por bloco com algo faltando (a voz custa frações de centavo)
 O que ele faz sozinho:
 
 1. usa a imagem do campo `foto` aprovado no gate 1 (sem ela, baixa a foto
-   principal do anúncio) e ajusta pra vertical, completando com branco. Por isso
-   a foto de referência tem que ter fundo claro. Foto declarada que sumiu da
+   principal do anúncio). O Omni enche a tela vertical cortando as bordas, então
+   a foto boa é vertical ou tem fundo sobrando dos lados. Foto declarada que sumiu da
    pasta, ou `--foto=<imagem>` diferente dela, para antes de gastar;
 2. gera um clipe por bloco;
 3. mantém a mesma pessoa: o último quadro do primeiro bloco com pessoa vira a
@@ -207,11 +207,11 @@ fase 2 de novo gera só a narração. Nunca apague um clipe pra "destravar" outr
 coisa: isso custa o clipe de novo.
 
 Se a rodada anterior morreu no meio, o script avisa no começo qual operação do
-Veo ficou aberta. Ela pode ter sido cobrada: confira no painel do Google antes
+Omni ficou aberta. Ela pode ter sido cobrada: confira no painel do Google antes
 de refazer.
 
-Se o Veo devolver um clipe sem vídeo (bloqueio de conteúdo), a operação é
-cobrada mesmo assim. O script mostra o que conferir. A imagem de entrada precisa
+Se o Omni devolver um clipe sem vídeo (bloqueio de conteúdo), a geração pode
+ser cobrada mesmo assim. O script mostra o que conferir. A imagem de entrada precisa
 ser do produto, sem texto de venda, sem logo e sem marca de terceiro, com fundo
 claro. Prefira as fotos cruas do fornecedor às imagens da `/gerar-imagens`, que
 levam texto de venda. O teto é de 3 tentativas por vídeo, e quem conta é você

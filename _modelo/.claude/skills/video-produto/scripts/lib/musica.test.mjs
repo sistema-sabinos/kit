@@ -44,10 +44,11 @@ function instalarFetch({ modelos, ok = true, status = 200, json = AUDIO, texto =
   }
   return corpos
 }
+// Formato real do ListModels (chave de verdade, 2026-10-20), so os campos que importam.
 const LYRIA = [
-  { name: 'models/lyria-3-clip-preview', supportedGenerationMethods: ['generateContent'] },
-  { name: 'models/lyria-3-pro-preview', supportedGenerationMethods: ['generateContent'] },
-  { name: 'models/lyria-3.5', supportedGenerationMethods: ['generateContent'] },
+  { name: 'models/lyria-3-clip-preview', supportedGenerationMethods: ['generateContent', 'countTokens'] },
+  { name: 'models/lyria-3-pro-preview', supportedGenerationMethods: ['generateContent', 'countTokens'] },
+  { name: 'models/lyria-3.5', version: '3.5', displayName: 'Lyria 3.5', description: 'Music Generation model', supportedGenerationMethods: ['generateContent', 'countTokens'] },
 ]
 
 test('cada estilo diz pra que tipo de produto serve, senão a escolha vira chute', () => {
@@ -139,10 +140,39 @@ test('writeFileSync falhando nao perde a cobranca: a linha de sucesso sai antes'
   assert.match(linhas[0].contexto, /status=sucesso/)
 })
 
-test('sem modelo e sem Lyria no ListModels estoura mandando passar --modelo-musica, sem gravar', async () => {
-  instalarFetch({ modelos: [{ name: 'models/gemini-3-pro-preview', supportedGenerationMethods: ['generateContent'] }] })
-  await assert.rejects(() => gerarMusica({ estilo: 'calma', segundos: 60, saida: join(pasta, 'c.wav'), precoUsd: 0.08, registrarCusto: espiao }), /--modelo-musica/)
+// Decisao 3 da 5.20 (feita na 5.19): o filtro do Lyria nao depende do metodo que o
+// ListModels mostra, e lista sem Lyria cai no lyria-3.5 em vez de parar.
+test('sem Lyria no ListModels cai no lyria-3.5; se a chave nao tiver, o HTTP de erro manda passar --modelo-musica, sem gravar', async () => {
+  const corpos = instalarFetch({ modelos: [{ name: 'models/gemini-3-pro-preview', supportedGenerationMethods: ['generateContent'] }], ok: false, status: 404, texto: 'not found' })
+  await assert.rejects(() => gerarMusica({ estilo: 'calma', segundos: 60, saida: join(pasta, 'c.wav'), precoUsd: 0.08, registrarCusto: espiao }), /HTTP 404 com o modelo lyria-3\.5, nada cobrado.*--modelo-musica/)
+  assert.equal(corpos[0].model, 'lyria-3.5')
   assert.equal(linhas.length, 0)
+})
+
+test('Lyria listado sem generateContent (metodo da Interactions) continua aceito, nas duas ordens', async () => {
+  const semMetodo = [
+    { name: 'models/lyria-3-pro-preview', supportedGenerationMethods: ['countTokens'] },
+    { name: 'models/lyria-3.5', supportedGenerationMethods: [] },
+  ]
+  for (const modelos of [semMetodo, [...semMetodo].reverse()]) {
+    const corpos = instalarFetch({ modelos })
+    await gerarMusica({ estilo: 'calma', segundos: 60, saida: join(pasta, 'c.wav'), precoUsd: 0.08, registrarCusto: espiao })
+    assert.equal(corpos[0].model, 'lyria-3.5')
+  }
+  const corpos = instalarFetch({ modelos: [{ name: 'models/lyria-3-pro-preview' }] })
+  await gerarMusica({ estilo: 'calma', segundos: 60, saida: join(pasta, 'c.wav'), precoUsd: 0.08, registrarCusto: espiao })
+  assert.equal(corpos[0].model, 'lyria-3-pro-preview')
+})
+
+test('ListModels que falha (HTTP de erro) tambem cai no lyria-3.5', async () => {
+  const corpos = []
+  global.fetch = async (url, init) => {
+    if (String(url).includes('/models?key=')) return { ok: false, status: 500, json: async () => ({ error: { message: 'interno' } }) }
+    corpos.push(JSON.parse(init.body))
+    return { ok: true, status: 200, json: async () => AUDIO, text: async () => '' }
+  }
+  await gerarMusica({ estilo: 'calma', segundos: 60, saida: join(pasta, 'c.wav'), precoUsd: 0.08, registrarCusto: espiao })
+  assert.equal(corpos[0].model, 'lyria-3.5')
 })
 
 test('sem precoUsd nao chama nada', async () => {
@@ -169,19 +199,20 @@ test('ciclo completo falso (4 clipes, 4 TTS, 4 transcricoes, 1 musica) soma o qu
   const { mock } = await import('node:test')
   const registrar = (l) => registrarCustoReal(l, { raiz: pasta })
   const modelos = [
-    { name: 'models/veo-3.1-lite-generate-preview', supportedGenerationMethods: ['predictLongRunning'] },
+    { name: 'models/gemini-omni-1.1-flash', supportedGenerationMethods: ['generateContent', 'countTokens'] },
     { name: 'models/gemini-3-flash-preview-tts', supportedGenerationMethods: ['generateContent'] },
     { name: 'models/gemini-3-flash-preview', supportedGenerationMethods: ['generateContent'] },
     ...LYRIA,
   ]
   const audio = Buffer.alloc(4800).toString('base64')
-  global.fetch = async (url) => {
+  const video = Buffer.alloc(60_000, 7).toString('base64')
+  global.fetch = async (url, init = {}) => {
     const u = String(url)
-    const ok = (json) => ({ ok: true, status: 200, json: async () => json, text: async () => '', headers: { get: () => 'video/mp4' }, arrayBuffer: async () => new Uint8Array(60_000).buffer })
+    const ok = (json) => ({ ok: true, status: 200, json: async () => json, text: async () => '' })
     if (u.includes('/models?key=')) return ok({ models: modelos })
-    if (u.includes(':predictLongRunning')) return ok({ name: 'operations/ciclo-1' })
-    if (u.includes('/operations/ciclo-1')) return ok({ done: true, response: { generateVideoResponse: { generatedSamples: [{ video: { uri: 'https://example.com/video-fake.mp4' } }] } } })
-    if (u.includes('video-fake.mp4')) return ok({})
+    // a criacao do clipe e a musica vao pro mesmo /interactions: separa pelo modelo pedido
+    if (u.endsWith('/interactions') && JSON.parse(init.body).model.startsWith('gemini-omni')) return ok({ id: 'v1_ciclo-1', status: 'in_progress' })
+    if (u.endsWith('/interactions/v1_ciclo-1')) return ok({ id: 'v1_ciclo-1', status: 'completed', steps: [{ type: 'model_output', content: [{ type: 'video', mime_type: 'video/mp4', data: video }] }] })
     if (u.includes('-tts:generateContent')) return ok({ candidates: [{ content: { parts: [{ inlineData: { data: audio } }] } }], usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 1000 } })
     if (u.includes(':generateContent')) return ok({ candidates: [{ content: { parts: [{ text: 'fala' }] } }], usageMetadata: { promptTokenCount: 2000, candidatesTokenCount: 50 } })
     return ok(AUDIO)

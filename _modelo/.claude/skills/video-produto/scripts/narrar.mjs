@@ -39,8 +39,10 @@ export async function narrar(arg, opcoes = {}) {
   // O preco que a pessoa passa e o da linha do Flash TTS (o dry-run diz isso), entao
   // a voz sai do Flash TTS mesmo quando outra familia de TTS for mais nova. So sem
   // nenhum Flash TTS na chave cai em outro TTS; o nome escolhido vai no contexto do custo.
+  // O Flash-Lite TTS fica de fora: tem a mesma versao do Flash e outro preco, e o
+  // empate cairia na ordem da lista do Google.
   let modelo
-  try { modelo = await escolherModelo(/flash.*-tts/) } catch { modelo = await escolherModelo(/-tts/) }
+  try { modelo = await escolherModelo(/flash(?!-lite).*-tts/) } catch { modelo = await escolherModelo(/-tts/) }
   // O text vai SO com a fala; a direcao vai em speech_metadata.style, na mesma
   // part. A partir do Gemini 3.8 TTS o text e transcricao literal: direcao
   // misturada nele e lida em voz alta (aconteceu no teste pago da 3.13).
@@ -77,8 +79,9 @@ export async function transcrever(arquivoWav, { precos, registrarCusto = registr
   const key = carregarChave()
   // Flash: transcrever de volta uma fala de poucos segundos nao pede o modelo caro.
   // Fora os flash de voz, imagem e audio ao vivo, que tambem aceitam generateContent
-  // mas nao transcrevem.
-  const modelo = await escolherModelo(/-flash(?!.*(?:tts|image|live|audio))/)
+  // mas nao transcrevem. O Flash-Lite (mesma versao, outro preco) e o Omni (video)
+  // tambem ficam de fora.
+  const modelo = await escolherModelo(/^(?!gemini-omni-).*-flash(?!.*(?:tts|image|live|audio|lite))/)
   const b64 = fs.readFileSync(arquivoWav).toString('base64')
   const r = await fetch(`${API}/models/${modelo}:generateContent?key=${key}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },

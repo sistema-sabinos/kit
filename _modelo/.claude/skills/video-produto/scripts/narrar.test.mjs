@@ -210,6 +210,33 @@ test('transcrever com r.ok registra gemini-transcricao e usa modelo flash', asyn
   assert.ok(!urls.some((u) => u.includes('-pro-')), 'nao pode usar o Pro')
 })
 
+// N22 da 5.19: o Flash e o Flash-Lite 3.8 tem a mesma versao, e o desempate caia
+// na ordem da lista do Google. As duas ordens tem de dar o Flash.
+const ORDENS = (a) => [a, [...a].reverse()]
+
+test('narrar fica com o Flash TTS e nunca com o Flash-Lite TTS da mesma versao, nas duas ordens', async () => {
+  for (const nomes of ORDENS(['gemini-3.8-flash-lite-tts', 'gemini-3.8-flash-tts'])) {
+    urls.length = 0
+    fetchComModelos(nomes)
+    await narrar('Texto.', { ator: ATOR, saida: join(pasta, 'l.wav'), precos: PRECOS, registrarCusto: espiao })
+    assert.ok(urls.some((u) => u.includes('/gemini-3.8-flash-tts:generateContent')), `${nomes}: ${urls.join(' | ')}`)
+    assert.ok(!urls.some((u) => u.includes('flash-lite-tts:')), `${nomes}: usou o Lite`)
+  }
+})
+
+test('transcrever fica com o Flash e nunca com o Flash-Lite nem com o Omni, nas duas ordens', async () => {
+  for (const nomes of ORDENS(['gemini-3.8-flash-lite', 'gemini-omni-9-flash', 'gemini-3.8-flash'])) {
+    urls.length = 0
+    global.fetch = async (url) => {
+      urls.push(url)
+      if (url.includes('/models?key=')) return { ok: true, status: 200, json: async () => ({ models: nomes.map((n) => ({ name: `models/${n}`, supportedGenerationMethods: ['generateContent'] })) }) }
+      return { ok: true, status: 200, json: async () => comTexto('ola', { promptTokenCount: 1, candidatesTokenCount: 1 }) }
+    }
+    await transcrever(wavDeTeste(), { precos: PRECOS, registrarCusto: espiao })
+    assert.ok(urls.some((u) => u.includes('/gemini-3.8-flash:generateContent')), `${nomes}: ${urls.join(' | ')}`)
+  }
+})
+
 test('transcrever com r.ok mas sem texto registra (gastou) e estoura', async () => {
   instalarFetch({ json: { candidates: [{ content: { parts: [] } }], usageMetadata: { promptTokenCount: 2000, candidatesTokenCount: 0 } } })
   await assert.rejects(() => transcrever(wavDeTeste(), { precos: PRECOS, registrarCusto: espiao }), /transcricao nao voltou texto/)

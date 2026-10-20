@@ -189,14 +189,14 @@ test('validarEstruturaDoRoteiro recusa tipo de bloco que a fase 2 nao sabe trata
   assert.match(erros.join('\n'), /bloco 2.*pessoa ou produto/)
 })
 
-// o campo `produto` vai LITERAL dentro do prompt do Veo; a marca de terceiro que
+// o campo `produto` vai LITERAL dentro do prompt do Omni; a marca de terceiro que
 // vale e a que o proprio roteiro declara em marcasDeTerceiro, nao uma lista fixa.
 test('validarEstruturaDoRoteiro barra no campo produto a marca que o roteiro declarou como de terceiro', () => {
   const r = roteiroValido()
   r.produto = 'Kit 168 Caneta Estilo Marca Teste para colorir'
   const { ok, erros } = validarEstruturaDoRoteiro(r)
   assert.equal(ok, false)
-  assert.match(erros.join('\n'), /marca de terceiro.*prompt do Veo/s)
+  assert.match(erros.join('\n'), /marca de terceiro.*prompt do Omni/s)
 
   // sem marca declarada, nada a barrar nesse campo
   const livre = { ...roteiroValido(), marcasDeTerceiro: [] }
@@ -392,10 +392,19 @@ test('gate de voz pega bloco inteiro perdido, que a comparacao global aprovava',
   assert.ok(r.piores[0].faltando.includes('grossa'))
 })
 
+// As mensagens que o clipe.mjs do Omni solta caem no recado certo.
+test('explicarFalhaDoVeo reconhece as falhas do clipe do Omni', () => {
+  assert.match(explicarFalhaDoVeo(new Error('Omni terminou sem video (status completed): {"status":"completed"}')), /bloqueio de conteudo/)
+  assert.match(explicarFalhaDoVeo(new Error('Omni falhou (status failed): [{"message":"blocked by safety filters"}]')), /bloqueio de conteudo/)
+  assert.match(explicarFalhaDoVeo(new Error('Omni devolveu 4x a falha transitoria de audio (nenhuma cobrada). Ultima: []')), /falha transitoria do Omni/)
+  assert.match(explicarFalhaDoVeo(new Error('a sua chave nao enxerga o Gemini Omni Flash (nenhum modelo casa)')), /^\[clipe\]/)
+  assert.match(explicarFalhaDoVeo(new Error('Omni nao terminou o clipe em 10 minutos; a ultima resposta do Google foi erro: {"message":"The model is currently experiencing high demand"}')), /^\[gerador sobrecarregado\]/)
+})
+
 test('explicarFalhaDoVeo nao fantasia causa em erro comum nem casa dentro de palavra', () => {
-  assert.match(explicarFalhaDoVeo(new Error('fetch failed')), /^\[veo\] fetch failed/)
+  assert.match(explicarFalhaDoVeo(new Error('fetch failed')), /^\[clipe\] fetch failed/)
   for (const msg of ['training constraint violated', 'quota exceeded for this project', 'connect ETIMEDOUT', 'unblocked after retry', 'model safetynet warmup failed']) {
-    assert.match(explicarFalhaDoVeo(new Error(msg)), /^\[veo\]/, `"${msg}" nao e bloqueio de conteudo`)
+    assert.match(explicarFalhaDoVeo(new Error(msg)), /^\[clipe\]/, `"${msg}" nao e bloqueio de conteudo`)
   }
   for (const msg of ['{"promptFeedback":{"blockReason":"SAFETY"}}', 'PROHIBITED_CONTENT', 'request was blocked by the content filter']) {
     assert.match(explicarFalhaDoVeo(new Error(msg)), /marca de terceiro/i, `"${msg}" e bloqueio de conteudo`)
@@ -565,6 +574,27 @@ test('fase 3 autorizada mas sem os precos da transcricao sai 2', () => {
   const r = rodar([`--mlb=${MLB}`, '--fase=3', '--autorizado'])
   assert.equal(r.status, 2, r.stderr.slice(0, 300))
   assert.match(r.stderr, /--preco-transcricao-entrada/)
+})
+
+// Revisao do Codex na 5.19: o aviso de corte rodava antes de baixar a foto do anuncio
+// e calava justo na primeira geracao paga.
+test('fase 2 paga baixa a foto do anuncio e avisa do corte do Omni antes do primeiro clipe', async () => {
+  preparar(carimbado(roteiroValido()), { comMusica: false })
+  const quadrada = path.join(raiz, 'quadrada.png')
+  spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'testsrc=s=64x64', '-frames:v', '1', quadrada])
+  assert.ok(fs.existsSync(quadrada), 'o ffmpeg tinha que criar a foto do teste')
+  const fetchOriginal = global.fetch
+  global.fetch = async () => ({ ok: true, status: 200, arrayBuffer: async () => fs.readFileSync(quadrada) })
+  try {
+    const r = await chamar([`--mlb=${MLB}`, '--fase=2', ...PRECOS_AUTORIZADO], {
+      carregarConfiguracao: () => ({ limite_gasto_usd: 4 }),
+      gerarClipe: async () => { throw new Error('parou de proposito no primeiro clipe') },
+    })
+    assert.ok(fs.existsSync(path.join(pasta, 'referencia.jpg')), 'a foto do anuncio tinha que ter sido baixada')
+    const aviso = r.stderr.indexOf('Omni enche a tela vertical cortando as bordas')
+    assert.ok(aviso >= 0, r.stderr.slice(0, 600))
+    assert.ok(aviso < r.stderr.indexOf('parou de proposito'), 'o aviso vem antes do primeiro clipe')
+  } finally { global.fetch = fetchOriginal }
 })
 
 // --- repeticao e reaproveitamento -------------------------------------------
@@ -1257,7 +1287,7 @@ test('--de-espionagem com coleta.json ja existente avisa que usa a coleta que ja
   assert.doesNotMatch(de.stderr, /usando a coleta que ja existe/)
 })
 
-// Foto do concorrente nao vai pro Veo: no caminho da espionagem a foto e do
+// Foto do concorrente nao vai pro Omni: no caminho da espionagem a foto e do
 // fornecedor ou do proprio produto, declarada no roteiro e aprovada no gate 1.
 const prepararEspionagem = (roteiro) => {
   preparar(roteiro, { mlb: MLB_CONCORRENTE })
@@ -1281,9 +1311,9 @@ test('hashDoRoteiro inclui a foto declarada, e o carimbo cai quando o arquivo de
   assert.notEqual(hashDoRoteiro({ ...base, foto: fotoPropria('outra.jpg') }), hashDoRoteiro(comFoto))
 })
 
-test('roteiroParaMarkdown mostra a foto que vai pro Veo', () => {
+test('roteiroParaMarkdown mostra a foto que vai pro Omni', () => {
   const md = roteiroParaMarkdown({ ...roteiroValido(), foto: 'fotos/moedor.jpg' })
-  assert.match(md, /Foto que vai pro Veo: fotos\/moedor\.jpg/)
+  assert.match(md, /Foto que vai pro Omni: fotos\/moedor\.jpg/)
 })
 
 test('fase 1 da espionagem reprova roteiro sem foto propria declarada', () => {
@@ -1302,7 +1332,21 @@ test('fase 2 da espionagem sem --foto segue com roteiro.foto', () => {
   prepararEspionagem(carimbado({ ...roteiroValido(), foto: f }))
   const r = rodar([`--mlb=${MLB_CONCORRENTE}`, '--fase=2', '--dry-run'])
   assert.equal(r.status, 0, r.stderr)
-  assert.ok(r.stderr.includes(`foto que vai pro Veo: ${f}`), r.stderr)
+  assert.ok(r.stderr.includes(`foto que vai pro Omni: ${f}`), r.stderr)
+})
+
+// 5.19: sem o pad branco, o Omni enche a tela vertical cortando as bordas. O
+// dry-run avisa antes de gastar quando a foto nao e vertical.
+test('dry-run da fase 2 avisa que o Omni vai cortar foto quadrada, e cala com foto 9:16', () => {
+  // testsrc varia coluna a coluna: nao tem fundo liso sobrando dos lados pra cortar
+  for (const [nome, fonte, avisa] of [['quadrada.png', 'testsrc=s=64x64', true], ['vertical.png', 'color=c=red:s=36x64', false]]) {
+    const f = path.join(raiz, nome)
+    spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'lavfi', '-i', fonte, '-frames:v', '1', f])
+    prepararEspionagem(carimbado({ ...roteiroValido(), foto: f }))
+    const r = rodar([`--mlb=${MLB_CONCORRENTE}`, '--fase=2', '--dry-run'])
+    assert.equal(r.status, 0, r.stderr)
+    assert.equal(/Omni enche a tela vertical cortando as bordas/.test(r.stderr), avisa, `${nome}: ${r.stderr.slice(0, 400)}`)
+  }
 })
 
 test('fase 2 da espionagem com roteiro sem foto sai 2 e lembra que foto de terceiro fere a regra do ML', () => {
@@ -1326,7 +1370,7 @@ test('fase 2 de anuncio proprio usa a foto do roteiro', () => {
   const r = rodar([`--mlb=${MLB}`, '--fase=2', '--dry-run'])
   assert.equal(r.status, 0, r.stderr)
   assert.ok(r.stderr.length > 0)
-  const linha = r.stderr.split('\n').find((l) => l.includes('foto que vai pro Veo'))
+  const linha = r.stderr.split('\n').find((l) => l.includes('foto que vai pro Omni'))
   assert.ok(linha, r.stderr)
   assert.ok(linha.includes(f), linha)
   assert.doesNotMatch(linha, /referencia\.jpg/)
@@ -1337,7 +1381,7 @@ test('fase 2 de anuncio proprio sem foto no roteiro mostra a referencia do anunc
   fs.writeFileSync(path.join(pasta, 'referencia.jpg'), 'foto do anuncio')
   const r = rodar([`--mlb=${MLB}`, '--fase=2', '--dry-run'])
   assert.equal(r.status, 0, r.stderr)
-  assert.match(r.stderr, /foto que vai pro Veo: .*referencia\.jpg/)
+  assert.match(r.stderr, /foto que vai pro Omni: .*referencia\.jpg/)
 })
 
 test('fase 2 de anuncio proprio com --foto diferente de roteiro.foto sai 2', () => {
@@ -1386,7 +1430,7 @@ test('fase 1 de anuncio proprio recusa aprovar foto que nao existe', () => {
 test('SKILL.md diz que a fase 2 usa a foto do roteiro e que o dry-run mostra a linha da foto', () => {
   const skill = fs.readFileSync(fileURLToPath(new URL('../SKILL.md', import.meta.url)), 'utf8').replace(/\r?\n\s*/g, ' ')
   assert.ok(skill.includes('A fase 2 usa sempre a `foto` do roteiro; `--foto` só é aceito se for a mesma.'))
-  assert.ok(skill.includes('O dry-run imprime a linha "foto que vai pro Veo"; é ela que você mostra.'))
+  assert.ok(skill.includes('O dry-run imprime a linha "foto que vai pro Omni"; é ela que você mostra.'))
   assert.doesNotMatch(skill, /`--foto` é obrigatório/)
 })
 
@@ -1490,8 +1534,8 @@ test('o dry-run imprime os modelos que vai usar junto da estimativa', async () =
   })
   assert.equal(r.status, 0, r.stderr)
   const modelos = r.stderr.split('\n').find((l) => /modelos/i.test(l)) ?? ''
-  assert.match(modelos, /Veo/)
-  assert.match(modelos, /lite/)
+  assert.match(modelos, /Gemini Omni Flash/)
+  assert.doesNotMatch(modelos, /Veo|tier/)
   assert.match(modelos, /TTS/)
   assert.match(modelos, /transcri/i)
   assert.match(modelos, /Lyria/)

@@ -18,7 +18,7 @@ import { promisify } from 'node:util';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { dimensaoDaImagem, prepararImagem9x16, margensLateraisChapadas, repartirCorte } from './preparar-imagem.mjs';
+import { dimensaoDaImagem, prepararImagem9x16, margensLateraisChapadas, repartirCorte, omniVaiCortar } from './preparar-imagem.mjs';
 
 const run = promisify(execFile);
 
@@ -145,14 +145,16 @@ test('foto 3:4 COM margem sobrando é CORTADA, e o produto sai inteiro', async (
   assert.equal(await larguraDoProduto(arquivoSaida), 140, 'o produto tem que sair inteiro');
 });
 
-test('foto 3:4 SEM margem cai no pad antigo, sem cortar o produto', async () => {
-  const original = await dimensaoDaImagem(semMargem);
-  const arquivoSaida = await prepararImagem9x16(semMargem);
-  const saida = await dimensaoDaImagem(arquivoSaida);
+// 5.19: o Omni enche de rabisco a faixa branca do pad (teste pago de 2026-10-20).
+// Sem margem pra cortar, a foto vai ORIGINAL, sem arquivo novo e sem pad.
+test('foto 3:4 SEM margem vai original, sem pad, e o dry-run sabe que o Omni vai cortar', async () => {
+  assert.equal(await prepararImagem9x16(semMargem), semMargem, 'sem margem nao pode ganhar pad');
+  assert.equal(fs.existsSync(path.join(dir, 'sem-margem-9x16.png')), false, 'nenhum arquivo de pad nasce');
+  assert.equal(await omniVaiCortar(semMargem), true);
+});
 
-  assert.equal(saida.altura * 9, saida.largura * 16, 'proporção de saída precisa ser 9:16 exata');
-  assert.ok(saida.largura >= original.largura, 'não pode cortar largura quando o produto encosta na borda');
-  assert.ok(saida.altura >= original.altura, 'não pode cortar altura');
+test('omniVaiCortar e false pra foto ja 9:16 e pra foto cuja margem da pra cortar', async () => {
+  for (const foto of [vertical, comMargem, quadrada, paisagem]) assert.equal(await omniVaiCortar(foto), false, path.basename(foto));
 });
 
 test('quadrada 500x500 vira 9:16 exato com o produto inteiro', async () => {

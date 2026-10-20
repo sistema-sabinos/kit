@@ -1,5 +1,5 @@
 {
- "versao": "5.18",
+ "versao": "5.19",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -96,10 +96,10 @@
    "f9f6b2fc27cef282": "5.7"
   },
   ".claude/hooks/barrar-perigoso.mjs": {
-   "03e19e75385b235d": "5.18",
+   "03e19e75385b235d": "anterior-5.18",
    "0b5dfb2374e89b5e": "anterior-5.2",
    "1c53f9dc9f6d5234": "5.18",
-   "27d749e4d886a15a": "5.18",
+   "27d749e4d886a15a": "anterior-5.18",
    "2e04205877922f47": "anterior-5.16",
    "32b75db6997a3604": "5.2",
    "5c10d1994106faa7": "anterior-3.4",
@@ -439,9 +439,9 @@
   ".claude/skills/assistir-video/ver-video.mjs": {
    "051353134e5b8e3c": "4.1",
    "13507add02843971": "3.0",
-   "1aca80b436696076": "5.18",
+   "1aca80b436696076": "anterior-5.18",
    "74081d9a102988a7": "5.18",
-   "8342051d185ed088": "5.18",
+   "8342051d185ed088": "anterior-5.18",
    "8793b4ae74d0354b": "5.14",
    "af0b72edfe666262": "4.4",
    "e3bef37187fcaf2f": "anterior-3.0",
@@ -1041,7 +1041,7 @@
    "7525129bcb03d971": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/alinhar.py": {
-   "2c2905f46d452b3f": "5.18",
+   "2c2905f46d452b3f": "anterior-5.18",
    "95a9d2b48fc12534": "anterior-4.1",
    "c33e6cf4672f6e13": "4.1",
    "fe284cca349f6711": "5.18"
@@ -1836,7 +1836,7 @@
   },
   ".claude/skills/mercado-livre/scripts/lib/decisoes.mjs": {
    "12c4b25041705774": "3.6",
-   "6d893578f633dc72": "5.18",
+   "6d893578f633dc72": "anterior-5.18",
    "7cd47c67848338f8": "anterior-3.6",
    "94846bb4ba376851": "anterior-3.6",
    "cf4a7211bb9fb53c": "5.18",
@@ -2030,8 +2030,8 @@
    "70da136857b2ebee": "5.15",
    "81163950414e9cab": "5.18",
    "8661504aea8275b2": "anterior-5.14",
-   "97347cbdfde91c56": "5.18",
-   "a17386985ea39c2f": "5.18"
+   "97347cbdfde91c56": "anterior-5.18",
+   "a17386985ea39c2f": "anterior-5.18"
   },
   ".claude/skills/otimizar-pc/scripts/_comum.ps1": {
    "20d84191f769beae": "3.0",
@@ -2387,6 +2387,7 @@
    "b3e4d4d269e65b52": "anterior-4.1",
    "c084e63ee2b20f23": "anterior-4.1",
    "ddd77b1a354aac3b": "5.7",
+   "de3433d140d8d97c": "5.19",
    "f8f9c36fef96c79a": "anterior-4.1"
   },
   ".claude/skills/video-produto/referencias/advertencias-categoria.md": {
@@ -2405,6 +2406,7 @@
   },
   ".claude/skills/video-produto/scripts/clipe.mjs": {
    "0f90f026c5604b55": "anterior-4.1",
+   "2e0f29305eea2e64": "5.19",
    "62948f82b82ae903": "4.1",
    "7f5013ba60895af2": "anterior-4.1"
   },
@@ -2443,10 +2445,14 @@
    "6d54b46990bc572c": "4.1",
    "ba1f06c819e10e47": "anterior-4.1"
   },
+  ".claude/skills/video-produto/scripts/lib/fetch-timeout.mjs": {
+   "5580a5dce7142ef5": "5.19"
+  },
   ".claude/skills/video-produto/scripts/lib/gate.mjs": {
    "42a09fa72844fa42": "4.1"
   },
   ".claude/skills/video-produto/scripts/lib/gemini.mjs": {
+   "459045e6bd4a4388": "5.19",
    "b10f4f124546f1dd": "4.1"
   },
   ".claude/skills/video-produto/scripts/lib/legenda.mjs": {
@@ -2459,13 +2465,15 @@
    "41fd2df9e261c87b": "anterior-4.1",
    "764cf3dd638e2470": "4.1",
    "ad041c63e7172c8f": "5.18",
-   "c2eda5a74fc61163": "5.18"
+   "b6568c9fa30fc8a2": "5.19",
+   "c2eda5a74fc61163": "anterior-5.18"
   },
   ".claude/skills/video-produto/scripts/lib/normalizar.mjs": {
    "08adf1e78fc15e28": "4.1",
    "9efd9a81ca261971": "4.8"
   },
   ".claude/skills/video-produto/scripts/lib/preparar-imagem.mjs": {
+   "07e1ade134fc4a79": "5.19",
    "d0de87dff5a92079": "4.1"
   },
   ".claude/skills/video-produto/scripts/lib/silabas.mjs": {
@@ -2480,12 +2488,14 @@
   },
   ".claude/skills/video-produto/scripts/montar.mjs": {
    "600f086dd0aa38cd": "4.2",
-   "81147a5805541fff": "4.1"
+   "81147a5805541fff": "4.1",
+   "d8b61b396a5a84bc": "5.19"
   },
   ".claude/skills/video-produto/scripts/narrar.mjs": {
    "1473e929710f94c2": "anterior-4.1",
    "1991c70a454b044c": "4.1",
    "550f6fd2ef556c10": "anterior-4.1",
+   "7e0888d612ed6622": "5.19",
    "b5771700111eb732": "anterior-4.1",
    "dcbb3bc37f745cd0": "anterior-4.1"
   },
@@ -2494,14 +2504,15 @@
    "11de4ab6928e2561": "4.2",
    "214ff7f6639f4a85": "5.7",
    "237bd0120b47e68c": "5.15",
-   "4bb9b37c4a4650a1": "5.18",
+   "4bb9b37c4a4650a1": "anterior-5.18",
    "60aa56aee384b50a": "anterior-4.1",
    "6bfde41974ef4cdc": "4.1",
    "6d80c9e7941ed7f5": "4.8",
-   "7438d34526a8b9d1": "5.18",
+   "71a41da6000bd435": "5.19",
+   "7438d34526a8b9d1": "anterior-5.18",
    "83b4703dc16cb8da": "5.14",
    "8ddb3451a853a4dd": "anterior-5.14",
-   "9d30dc06fd38a964": "5.18",
+   "9d30dc06fd38a964": "anterior-5.18",
    "aa31084fcfbf985c": "anterior-5.14",
    "b7b938c98ed74917": "anterior-4.1",
    "be75abf74fb955da": "anterior-4.1",

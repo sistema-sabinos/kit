@@ -232,6 +232,7 @@ const OBRIGATORIOS = [
   '_modelo/.claude/skills/mercado-livre/scripts/lib/env.mjs',
   '_modelo/.claude/skills/mercado-livre/scripts/lib/tokens.mjs',
   '_modelo/.claude/skills/mercado-livre/scripts/lib/fetch-timeout.mjs',
+  '_modelo/.claude/skills/video-produto/scripts/lib/fetch-timeout.mjs',
   '_modelo/.claude/skills/mercado-livre/scripts/lib/config.mjs',
   '_modelo/.claude/skills/mercado-livre/scripts/lib/chrome.mjs',
   '_modelo/.claude/skills/mercado-livre/scripts/lib/ml-api.mjs',

@@ -64,14 +64,19 @@ export function promptDeMusica(estilo, { segundos = 70 } = {}) {
 // Prefere o lyria-3.5, que o Google aponta como substituto do Pro preview (pagina de
 // descontinuados, 2026-10-12), pelo mesmo preco por musica (US$ 0,08 em 2026-10-19). Sem
 // ele na chave, cai no Pro. Duas buscas pra ordem ficar explicita, sem depender da versao.
+// O Lyria fala pela Interactions API: o metodo que o ListModels mostra pra ele nao
+// entra na conta (null). Lista sem Lyria nenhum (ou que falhou) cai no lyria-3.5, e
+// se ele nao existir na chave a propria chamada volta erro de HTTP, sem cobrar.
+export const MODELO_MUSICA_PADRAO = 'lyria-3.5'
+
 async function descobrirModelo() {
   try {
-    return await escolherModelo(/^lyria-3\.5$/)
+    return await escolherModelo(/^lyria-3\.5$/, null)
   } catch {
     try {
-      return await escolherModelo(/^lyria-.*pro/)
-    } catch (e) {
-      throw new Error(`nao achei modelo Lyria Pro nem lyria-3.5 na sua chave (${e.message}). Veja os nomes no ListModels e passe --modelo-musica=<nome>. Nada foi gerado nem cobrado.`)
+      return await escolherModelo(/^lyria-.*pro/, null)
+    } catch {
+      return MODELO_MUSICA_PADRAO
     }
   }
 }
@@ -100,7 +105,7 @@ export async function gerarMusica({ estilo, segundos, saida, dryRun = false, pre
   })
 
   if (!r.ok) {
-    throw new Error(`Lyria devolveu HTTP ${r.status}, nada cobrado: ${(await r.text()).slice(0, 300)}`)
+    throw new Error(`Lyria devolveu HTTP ${r.status} com o modelo ${modeloUsado}, nada cobrado (se o modelo nao existe na sua chave, veja os nomes no ListModels e passe --modelo-musica=<nome>): ${(await r.text()).slice(0, 300)}`)
   }
 
   // 200 com corpo ilegivel: o Lyria cobrou, entao grava antes de estourar.

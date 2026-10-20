@@ -78,8 +78,10 @@ export function planejarDublagem(duracaoVideo, duracaoNarracao, { silencioFinal 
 // ERRADO, "imagem parada", quando a causa real é a emenda corrompida) pegam
 // isso de jeito nenhum. Se o travamento fosse menor que 2s, passava batido.
 //
-// Perfil canônico = o que o Veo entrega quando está tudo certo (ver
+// Perfil canônico = o que o gerador entrega quando está tudo certo (ver
 // a skill SKILL.md: "720x1280, 8,00s, h264 24fps, com áudio AAC estéreo 48kHz").
+// Era o Veo até a 5.18; o Omni Flash entregou exatamente isso nos dois clipes do
+// teste pago de 2026-10-20 (5.19).
 // Cada bloco é comparado direto contra esse alvo, não par a par entre si:
 // mais simples, determinístico, e garante que todo mundo bate com todo mundo
 // no fim (se A e C batem com o canônico, batem entre si por transitividade).

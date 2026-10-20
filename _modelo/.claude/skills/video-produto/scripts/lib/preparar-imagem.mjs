@@ -28,17 +28,6 @@ export async function dimensaoDaImagem(imagemPath) {
   return { largura: stream.width, altura: stream.height };
 }
 
-// Menor canvas 9:16 que CONTÉM a imagem original nos dois eixos, sem cortar
-// nada. largura = 9k, altura = 16k pra qualquer k inteiro, então a proporção
-// sai sempre EXATA (nunca fica "quase" 9:16 por causa de arredondamento).
-// k par garante largura par também (16k já é par sempre), que os encoders
-// de vídeo/imagem preferem.
-function calcularCanvas9x16(largura, altura) {
-  let k = Math.ceil(Math.max(largura / 9, altura / 16));
-  if ((9 * k) % 2 !== 0) k += 1;
-  return { larguraCanvas: 9 * k, alturaCanvas: 16 * k };
-}
-
 // Fundo chapado que sobra nas laterais. Mesma ideia do lib/bordas.mjs (que mede
 // topo e base num quadro de vídeo), virada 90 graus: uma coluna só conta como
 // margem se for uniforme de cima a baixo. É isso que diz quanto dá pra CORTAR
@@ -123,7 +112,14 @@ function nomeSaidaPadrao(imagemPath) {
 //   1. já é 9:16 -> devolve o caminho original, sem criar arquivo
 //   2. é mais larga que 9:16 e tem fundo chapado sobrando nas laterais ->
 //      CORTA a largura até 9:16, sem tocar no produto
-//   3. qualquer outro caso -> PAD branco, o comportamento antigo
+//   3. qualquer outro caso -> devolve o caminho original, sem pad
+//
+// O passo 3 mudou na 5.19, com a troca do Veo pelo Omni Flash. O Omni NAO
+// copia a faixa branca do pad: ele a enche de rabisco que parece texto borrado
+// (teste pago de 2026-10-20, 13% em cima e 13% embaixo), e o lib/bordas.mjs nao
+// pega, porque a faixa deixa de ser chapada. Com a foto original ele enche o
+// quadro 9:16 sozinho, cortando as bordas que sobram. O aviso do corte sai no
+// dry-run (omniVaiCortar).
 //
 // O passo 2 entrou em 2026-09-04. O pad resolvia a proporção e criava um
 // problema pior: o Veo copia a faixa branca pro vídeo, e o ML recusa vídeo com
@@ -154,8 +150,7 @@ export async function prepararImagem9x16(imagemPath, saida) {
   // sobra e a faixa nasce de novo, que é o defeito que este código existe pra
   // matar.
   //
-  // Aqui k NÃO é forçado a par, ao contrário do pad logo abaixo. O pad aumenta
-  // a imagem, então arredondar pra cima não custa nada; o corte tira pixel de
+  // Aqui k NÃO é forçado a par (o pad antigo forçava): o corte tira pixel de
   // verdade, e descer um k só pra deixar a dimensão par jogaria fora 16 linhas
   // à toa. Dimensão ímpar não incomoda ninguém aqui porque a saída é uma imagem
   // parada indo pra API, não um vídeo pra encoder.
@@ -181,12 +176,18 @@ export async function prepararImagem9x16(imagemPath, saida) {
     }
   }
 
-  const { larguraCanvas, alturaCanvas } = calcularCanvas9x16(largura, altura);
-  await run('ffmpeg', [
-    '-y', '-loglevel', 'error', '-i', imagemPath,
-    '-vf', `pad=${larguraCanvas}:${alturaCanvas}:(ow-iw)/2:(oh-ih)/2:white`,
-    arquivoSaida,
-  ]);
+  return imagemPath;
+}
 
-  return arquivoSaida;
+// true quando a foto vai inteira pro Omni sem ser 9:16, ou seja, quando ele vai
+// cortar as bordas pra encher o quadro vertical (e pode levar a ponta do produto).
+export async function omniVaiCortar(imagemPath) {
+  const { largura, altura } = await dimensaoDaImagem(imagemPath);
+  if (ehExatamente9x16(largura, altura)) return false;
+  const k = Math.floor(altura / 16);
+  if (k > 0 && 9 * k < largura) {
+    const margens = await margensLateraisChapadas(imagemPath);
+    if (repartirCorte(largura - 9 * k, margens.esquerda, margens.direita)) return false;
+  }
+  return true;
 }

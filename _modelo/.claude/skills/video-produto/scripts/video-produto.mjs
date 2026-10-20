@@ -38,7 +38,8 @@ import { coletarDeEspionagem } from './lib/de-espionagem.mjs'
 import { validarRoteiro, regexDeMarcas, MIN_BLOCOS, MAX_BLOCOS } from './lib/gate.mjs'
 import { validarBloco, contarSilabas } from './lib/silabas.mjs'
 import { promptDeClipe } from './lib/direcao.mjs'
-import { gerarClipe, tierDoBloco } from './clipe.mjs'
+import { gerarClipe } from './clipe.mjs'
+import { omniVaiCortar } from './lib/preparar-imagem.mjs'
 import { usd } from './lib/dinheiro.mjs'
 import { narrar, transcrever } from './narrar.mjs'
 import { montarVideo } from './montar.mjs'
@@ -78,7 +79,7 @@ const CAMINHO_CLI = '.claude/skills/video-produto/scripts/video-produto.mjs'
 export function validarEstruturaDoRoteiro(roteiro) {
   const erros = []
   if (!roteiro || typeof roteiro !== 'object') return { ok: false, erros: ['roteiro.json vazio ou nao e um objeto'] }
-  if (!roteiro.produto) erros.push('falta "produto" (o que o Veo tem que manter fiel a imagem de referencia)')
+  if (!roteiro.produto) erros.push('falta "produto" (o que o Omni tem que manter fiel a imagem de referencia)')
   else {
     // o `produto` nao e falado nem encenado, entao o validarRoteiro nao olha pra
     // ele, mas ele vai LITERALMENTE dentro do prompt do Veo. Titulo de anuncio
@@ -88,7 +89,7 @@ export function validarEstruturaDoRoteiro(roteiro) {
     const marcas = regexDeMarcas(roteiro.marcasDeTerceiro)
     const achou = marcas ? String(roteiro.produto).match(marcas) : null
     if (achou) {
-      erros.push(`"produto" tem marca de terceiro ("${achou[0]}") e esse campo vai inteiro dentro do prompt do Veo, que barra marca de terceiro. Descreva o produto sem marca nenhuma (ex: "moedor eletrico de cafe em inox")`)
+      erros.push(`"produto" tem marca de terceiro ("${achou[0]}") e esse campo vai inteiro dentro do prompt do Omni, que barra marca de terceiro. Descreva o produto sem marca nenhuma (ex: "moedor eletrico de cafe em inox")`)
     }
   }
   if (!roteiro.voz) erros.push('falta "voz" (nome de uma voz do Gemini TTS, ex.: Aoede, Kore, Gacrux; escolha pela lista de vozes descrita na SKILL.md)')
@@ -218,7 +219,7 @@ export function podeGastar(roteiro, { dryRun = false } = {}) {
       ok: false,
       motivo: [
         'roteiro sem aprovacao: o campo "aprovadoEm" nao esta no roteiro.json.',
-        `A fase paga gasta dinheiro de verdade (${nClipes} clipes de ${SEGUNDOS_POR_BLOCO}s no Veo, mais voz e musica, conta Gemini pre-paga),`,
+        `A fase paga gasta dinheiro de verdade (${nClipes} clipes de ${SEGUNDOS_POR_BLOCO}s no Omni, mais voz e musica, conta Gemini pre-paga),`,
         'entao ela nao roda antes do gate 1.',
         ...comoAprovar,
       ].join('\n'),
@@ -258,9 +259,9 @@ export function roteiroParaMarkdown(roteiro, { mlb = '' } = {}) {
     mlb ? `Anúncio: ${mlb}` : null,
     `Ator: ${roteiro.ator.quem}, ${roteiro.ator.idade} anos, em ${roteiro.ator.cenario}`,
     `Voz da narração: ${roteiro.voz}`,
-    `Voz única: ${roteiro.vozUnica === true ? 'sim (a narração cobre todos os blocos, e a pessoa aparece de boca fechada)' : 'não (nos blocos com pessoa vale a voz do Veo)'}`,
+    `Voz única: ${roteiro.vozUnica === true ? 'sim (a narração cobre todos os blocos, e a pessoa aparece de boca fechada)' : 'não (nos blocos com pessoa vale a voz do Omni)'}`,
     `Música: ${roteiro.musica?.estilo ?? 'sem estilo'}`,
-    roteiro.foto ? `Foto que vai pro Veo: ${roteiro.foto}` : null,
+    roteiro.foto ? `Foto que vai pro Omni: ${roteiro.foto}` : null,
     `Advertências na tela: ${(roteiro.advertencias ?? []).length ? roteiro.advertencias.join(' | ') : 'nenhuma'}`,
     marcas.length ? `Marcas que a fala não pode citar: ${marcas.join('; ')}` : null,
     // sem itens nao imprime a linha do kit: o gate ja reprova esse caso, e uma
@@ -275,7 +276,7 @@ export function roteiroParaMarkdown(roteiro, { mlb = '' } = {}) {
 
   roteiro.blocos.forEach((b, i) => {
     const quem = b.tipo === 'pessoa'
-      ? (roteiro.vozUnica === true ? 'pessoa em cena, voz da narração' : 'pessoa em cena, voz do Veo')
+      ? (roteiro.vozUnica === true ? 'pessoa em cena, voz da narração' : 'pessoa em cena, voz do Omni')
       : 'macro do produto, narração em off'
     linhas.push(
       `## Bloco ${i + 1}, ${b.etapa} (${quem})`,
@@ -444,10 +445,20 @@ export function explicarFalhaDoVeo(erro) {
   // conteudo, senao a pessoa e mandada cacar problema numa imagem que esta boa.
   if (/issue with the audio|falha transitoria de audio/i.test(msg)) {
     return [
-      '[falha transitoria do Veo] O gerador de audio dele engasgou e a geracao voltou sem video.',
+      '[falha transitoria do Omni] A geracao voltou sem video, com o aviso de que a tentativa nao foi cobrada.',
       'Nao e filtro de conteudo e NAO foi cobrada (a propria resposta diz "You have not been charged").',
       'O clipe.mjs ja repete sozinho ate 4 vezes; se chegou aqui, as 4 falharam seguidas.',
       'O conserto e esperar alguns minutos e rodar a mesma fase 2 de novo: os clipes que ja passaram ficam na pasta e nao sao refeitos.',
+    ].join('\n')
+  }
+
+  // Sobrecarga do lado do Google (teste pago da 5.19): nao e conteudo nem imagem.
+  if (/high demand/i.test(msg)) {
+    return [
+      '[gerador sobrecarregado] O Google respondeu que o modelo de video esta com muita demanda e a geracao caiu.',
+      'Nao e a imagem nem o roteiro. Espere alguns minutos e rode a mesma fase 2 de novo: os clipes que ja passaram ficam na pasta.',
+      'Se a geracao chegou a abrir, o registro de custos marca "cobranca incerta" e o painel do Google tira a duvida; se o erro veio na criacao (HTTP de erro), nada foi cobrado.',
+      `Detalhe cru da API: ${msg.slice(0, 300)}`,
     ].join('\n')
   }
 
@@ -469,12 +480,12 @@ export function explicarFalhaDoVeo(erro) {
 
   if (bloqueio.test(msg)) {
     return [
-      '[bloqueio de conteudo] O Veo aceitou o pedido, cobrou a operacao e devolveu SEM video.',
+      '[bloqueio de conteudo] O Omni aceitou o pedido e devolveu SEM video (a geracao pode ter sido cobrada).',
       'Causas comuns: marca de terceiro ou texto visivel na imagem de entrada, ou uma cena que se contradiz (ex.: pessoa que "fala" com a voz unica ligada).',
       '',
       'O que a "foto" do roteiro (e o --foto=, que so vale igual a ela) espera receber: imagem do PRODUTO, sem texto de venda,',
-      'sem logo e sem marca de terceiro, fundo claro e de preferencia ja vertical (a preparacao completa com branco pra',
-      'chegar em 9:16, o que so fica invisivel em fundo claro). As imagens da /gerar-imagens levam texto de venda:',
+      'sem logo e sem marca de terceiro, fundo claro e de preferencia ja vertical (o Omni enche a tela vertical cortando',
+      'as bordas da foto). As imagens da /gerar-imagens levam texto de venda:',
       'prefira as fotos cruas do fornecedor, ou uma imagem limpa feita so pra isso.',
       'Teto de 3 tentativas por video: se a terceira cair, a leitura da regra esta errada na raiz e insistir so gasta.',
       '',
@@ -487,7 +498,7 @@ export function explicarFalhaDoVeo(erro) {
     ].join('\n')
   }
 
-  return `[veo] ${msg}`
+  return `[clipe] ${msg}`
 }
 
 // A fase 1 salva coleta.json dentro de producao/<slug>/. As fases 2 e 3 acham a
@@ -514,16 +525,16 @@ const USO = [
   '',
   '  --fase=1              coleta (gratis). Roda de novo depois de escrever o roteiro.json pra validar e gerar o roteiro.md',
   '  --fase=1 --aprovar    carimba o gate 1 no roteiro.json (so depois de voce aprovar o texto)',
-  '  --fase=2              gera os clipes no Veo, a narracao e a musica (PAGO)',
+  '  --fase=2              gera os clipes no Omni, a narracao e a musica (PAGO)',
   '  --fase=3              emenda, legenda, gate tecnico e gate de voz (a transcricao e paga)',
   '',
   '  --dry-run             sem gastar API: na fase 2 so mostra os prompts e o custo; na fase 3 monta e pula o gate de voz (sai 3, "incompleto")',
   '  --autorizado          o "pode ir" da pessoa: sem ele, qualquer rodada paga para (sai 3) e mostra a estimativa',
-  '  --preco-usd=<US$/s>   preco do dia do clipe do Veo por segundo (obrigatorio na fase 2 fora do dry-run)',
+  '  --preco-usd=<US$/s>   preco do dia do clipe do Gemini Omni Flash por segundo (obrigatorio na fase 2 fora do dry-run)',
   '  --preco-musica-usd=<US$>               preco do dia de uma musica (obrigatorio se faltar a musica)',
   '  --preco-tts-entrada=<US$/Mtok> --preco-tts-saida=<US$/Mtok>                   precos do dia da voz',
   '  --preco-transcricao-entrada=<US$/Mtok> --preco-transcricao-saida=<US$/Mtok>   precos do dia da transcricao',
-  '  --foto=<caminho>      opcional: so aceito se for igual a "foto" do roteiro, que e a imagem aprovada no gate 1 e a que vai pro Veo (imagem nova entra em "foto" e passa pelo gate 1 de novo)',
+  '  --foto=<caminho>      opcional: so aceito se for igual a "foto" do roteiro, que e a imagem aprovada no gate 1 e a que vai pro Omni (imagem nova entra em "foto" e passa pelo gate 1 de novo)',
   '  --slug=<slug>         pasta do produto em vez do slug da coleta (obrigatorio com --de-espionagem: nome do seu produto, sem marca)',
   '  --producao=<pasta>    raiz das pastas de producao (padrao: producao)',
   '  --modelo-musica=<nome>  modelo de musica, se a descoberta automatica nao achar',
@@ -602,12 +613,11 @@ function limiteDeGasto(d) {
 // tabela de precos consultar. Os nomes exatos o script descobre pela chave na hora
 // de chamar; aqui vai a familia de cada um (as mesmas regras de escolha do codigo).
 function modelosDaRodada(roteiro) {
-  const tiers = [...new Set(roteiro.blocos.map((b) => tierDoBloco(b)))].join(', ')
   return [
     '[fase 2] modelos que a rodada vai usar (cada um tem a sua linha na tabela de precos):',
-    `Veo 3.1 tier ${tiers} (clipe, preco por segundo)`,
+    'Gemini Omni Flash (clipe, preco por segundo)',
     'Gemini Flash TTS (voz, preco por milhao de tokens)',
-    'Gemini Flash mais novo que a sua chave enxerga, o que nao e de voz, imagem nem audio ao vivo (transcricao, preco por milhao de tokens)',
+    'Gemini Flash mais novo que a sua chave enxerga, o que nao e de voz, imagem, audio ao vivo, Lite nem Omni (transcricao, preco por milhao de tokens)',
     'lyria-3.5, ou Lyria Pro se a chave nao tiver o 3.5 (musica, preco por musica)',
   ].join('; ') + '.'
 }
@@ -749,7 +759,7 @@ async function fase2({ mlb, base, slug, a, d, precos }) {
   // meio): o Google pode ter cobrado. Avisa no comeco e segue.
   const abertas = lerJson(path.join(pasta, '_operacoes-abertas.json')) ?? []
   for (const op of Array.isArray(abertas) ? abertas : []) {
-    console.error(`[aviso] a rodada anterior deixou a operacao ${op} aberta no Veo. Ela pode ter sido cobrada; confira no painel do Google antes de refazer.`)
+    console.error(`[aviso] a rodada anterior deixou a operacao ${op} aberta no Omni. Ela pode ter sido cobrada; confira no painel do Google antes de refazer.`)
   }
 
   const erros = conferirRoteiro(roteiro)
@@ -810,7 +820,7 @@ async function fase2({ mlb, base, slug, a, d, precos }) {
   if (dryRun) console.error(modelosDaRodada(roteiro))
   if (!dryRun) {
     const faltam = []
-    if (!precos.clipe) faltam.push('--preco-usd=<US$ por segundo do Veo>')
+    if (!precos.clipe) faltam.push('--preco-usd=<US$ por segundo do Gemini Omni Flash>')
     if (faltaMusica && !precos.musica) faltam.push('--preco-musica-usd=<US$ por musica>')
     if (narracoesFaltando && !(precos.ttsEntrada && precos.ttsSaida)) faltam.push('--preco-tts-entrada=<US$/Mtok> --preco-tts-saida=<US$/Mtok>')
     if (narracoesFaltando && !(precos.transcricaoEntrada && precos.transcricaoSaida)) faltam.push('--preco-transcricao-entrada=<US$/Mtok> --preco-transcricao-saida=<US$/Mtok>')
@@ -847,7 +857,7 @@ async function fase2({ mlb, base, slug, a, d, precos }) {
     console.error(`[fase 2] a estimativa nao saiu: falta ${faltam.join(' e ')}. Passe o preco do dia (https://ai.google.dev/gemini-api/docs/pricing) pra ver o custo.`)
   }
 
-  const custoPrevisto = precos.clipe ? `, ~${usd(clipesFaltando * SEGUNDOS_POR_BLOCO * precos.clipe)} de Veo` : ''
+  const custoPrevisto = precos.clipe ? `, ~${usd(clipesFaltando * SEGUNDOS_POR_BLOCO * precos.clipe)} de Omni` : ''
   console.error(`[fase 2] ${clipesFaltando} clipe(s) a gerar${custoPrevisto}${dryRun ? ' (DRY-RUN, nao gasta nada)' : ''}.`)
 
   // imagem de referencia: a foto do roteiro (o --foto, se veio, ja e igual a
@@ -855,7 +865,7 @@ async function fase2({ mlb, base, slug, a, d, precos }) {
   // gerar nao se baixa nada: a rodada pode ser so pra completar narracao de
   // bloco cujo clipe ja esta pago.
   const foto = fotoArg ?? roteiro.foto ?? path.join(pasta, 'referencia.jpg')
-  console.error(`[fase 2] foto que vai pro Veo: ${foto}`)
+  console.error(`[fase 2] foto que vai pro Omni: ${foto}`)
   if (clipesFaltando && !fs.existsSync(foto)) {
     if (a.arg('foto')) { console.error(`[fase 2] --foto=${foto} nao existe.`); return 1 }
     if (dryRun) {
@@ -869,6 +879,12 @@ async function fase2({ mlb, base, slug, a, d, precos }) {
       if (!r.ok) { console.error(`[fase 2] nao consegui baixar a foto de referencia (${url}): HTTP ${r.status}`); return 1 }
       fs.writeFileSync(foto, Buffer.from(await r.arrayBuffer()))
     }
+  }
+  // O Omni enche o quadro vertical cortando as bordas (o pad branco virava borda
+  // rabiscada, 5.19). Confere depois do download, pra valer tambem pra foto do
+  // anuncio baixada agora; nunca derruba a fase.
+  if (clipesFaltando && fs.existsSync(foto) && await omniVaiCortar(foto).catch(() => false)) {
+    console.error('[aviso] a foto nao esta em 9:16 e nao tem fundo liso sobrando dos lados pra cortar: o Omni enche a tela vertical cortando as bordas e pode cortar a ponta do produto. Prefira foto 9:16 ou com o produto centralizado e fundo sobrando em volta.')
   }
 
   // Consistencia do ator: o que importa e o PAPEL, nao a posicao. O primeiro
@@ -915,7 +931,7 @@ async function fase2({ mlb, base, slug, a, d, precos }) {
       try {
         r = await d.gerarClipe({
           prompt: promptDeClipe(bloco, { ator: roteiro.ator, produto: roteiro.produto, vozUnica: roteiro.vozUnica === true }),
-          imagemPath: referencia, segundos: SEGUNDOS_POR_BLOCO, saida, dryRun, tier: tierDoBloco(bloco),
+          imagemPath: referencia, segundos: SEGUNDOS_POR_BLOCO, saida, dryRun,
           precoUsdPorSegundo: precos.clipe, registrarCusto: d.registrarCusto, contexto, pastaVideo: pasta,
         })
       } catch (e) {
@@ -925,7 +941,7 @@ async function fase2({ mlb, base, slug, a, d, precos }) {
       }
       total += r.custoUsd
     } else if (precisaNarracao) {
-      console.error(`[fase 2] bloco ${i + 1}: o clipe ja esta pago e salvo, gerando so a narracao que faltou (US$ 0,00 de Veo)`)
+      console.error(`[fase 2] bloco ${i + 1}: o clipe ja esta pago e salvo, gerando so a narracao que faltou (US$ 0,00 de Omni)`)
     }
 
     // o frame so se extrai do clipe que existe (no dry-run o primeiro nem foi gerado)
