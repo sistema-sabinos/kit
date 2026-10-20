@@ -4,7 +4,7 @@
 //
 // uso: node preparar-public.mjs --slug <slug> [--tipo videov2|camadas]
 // Sai 1 se faltar algum arquivo, listando quais.
-import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, realpathSync } from 'node:fs'
 import { dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
@@ -44,7 +44,13 @@ export function textoDaPeca(pastaPeca, tipo) {
   return arquivos.map((a) => join(pastaPeca, a)).filter((p) => existsSync(p)).map((p) => readFileSync(p, 'utf8')).join('\n')
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const { values } = parseArgs({ options: { slug: { type: 'string' }, tipo: { type: 'string', default: 'videov2' } } })

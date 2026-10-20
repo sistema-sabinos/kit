@@ -6,7 +6,7 @@
 // aviso. A pessoa decide o aviso; o script nao corrige nada.
 // Uso: node atendimento.mjs validar [--catalogo dados/catalogo.csv]
 //      node atendimento.mjs conferir <rascunho.md> [--catalogo dados/catalogo.csv] [--hoje AAAA-MM-DD]
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, realpathSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { lerCsv } from '../../caixa/scripts/lib/csv.mjs'
@@ -146,6 +146,12 @@ export function executar(argv, log = console.log) {
   throw new Error('comando desconhecido; use validar ou conferir')
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+if (chamadoDireto()) {
   try { process.exitCode = executar(process.argv.slice(2)) } catch (e) { console.error(e.message); process.exit(2) }
 }

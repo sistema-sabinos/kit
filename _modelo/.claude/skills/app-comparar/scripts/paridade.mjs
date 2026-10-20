@@ -24,8 +24,8 @@
 // porque o PowerShell nao expande *.json); a nota geral vira 80% funcoes e 20% telas.
 // Saida: 0 ok; 1 nota geral abaixo do --minimo, ou alguma obrigatoria sem estar feita (sim)
 // quando vem --exigir-obrigatorias; 2 arquivo ruim ou coluna faltando.
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
-import { resolve, join } from 'node:path'
+import { readFileSync, readdirSync, statSync, existsSync, realpathSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { lerArgs, numero } from '../../app-estudar/scripts/lib/args.mjs'
 import { lerArquivoCsv } from '../../app-estudar/scripts/lib/csv.mjs'
@@ -223,7 +223,13 @@ export function principal(argv, escrever = console.log, avisar = console.error) 
   return minimo !== undefined && r.nota_geral < minimo ? 1 : 0
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     process.exitCode = principal(process.argv.slice(2))

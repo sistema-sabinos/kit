@@ -3,7 +3,7 @@
 // referencias/fatos.md, com fonte e data. Este script diz quais passaram do prazo pra
 // que a conversa confira na web antes de repassar ao aluno.
 // Uso: node fatos.mjs vencidos [--hoje AAAA-MM-DD] [--arquivo <caminho>]
-import { readFileSync } from 'node:fs'
+import { readFileSync, realpathSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -49,7 +49,13 @@ function hojeLocal() {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+if (chamadoDireto()) {
   const a = process.argv.slice(2)
   if (a[0] !== 'vencidos') {
     console.error('uso: node fatos.mjs vencidos [--hoje AAAA-MM-DD] [--arquivo <caminho>]')

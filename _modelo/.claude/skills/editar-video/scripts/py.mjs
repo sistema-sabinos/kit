@@ -6,7 +6,7 @@
 //
 // uso: node .claude/skills/editar-video/scripts/py.mjs <nome-do-script.py|.mjs> [argumentos...]
 // Saida: a do script. 2 = nome invalido. 3 = o motor ainda nao esta no _video (rodar /configurar-video).
-import { existsSync, mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync, realpathSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -54,7 +54,13 @@ export function rodarScript({ nome, args = [], raiz = RAIZ, base, plat = process
   return executar(process.execPath, [script, ...absolutos], { cwd: c.tmp, env: ambiente, stdio: 'inherit', encoding: 'utf8' })
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const [nome, ...args] = process.argv.slice(2)

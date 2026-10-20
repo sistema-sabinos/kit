@@ -3,7 +3,7 @@
 // (src/videos/*.tsx e *.dados.json). Diz se precisa instalar as bibliotecas: quando o lock mudou ou
 // quando falta a marca de um "npm ci" que terminou (instalar-motor.mjs), que a skill roda depois do sim do aluno.
 // Uso: node .claude/skills/configurar-video/scripts/sincronizar-motor.mjs
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, realpathSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { caminhos, oculto, pastaVideo } from './lib/pasta-video.mjs'
@@ -70,7 +70,13 @@ export function motorSincronizado({ origem, destino }) {
   return doKit.every((rel) => igual(join(origem, ...rel.split('/')), join(destino, ...rel.split('/'))))
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const aqui = fileURLToPath(new URL('.', import.meta.url))

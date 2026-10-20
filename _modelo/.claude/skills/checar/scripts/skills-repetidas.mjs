@@ -4,10 +4,10 @@
 // Imprime o nome de cada pasta de ~/.claude/skills/ que tem o mesmo nome de uma skill
 // deste projeto, separados por espaco, ou "nenhuma". A pessoal roda no lugar da do
 // projeto (doc de skills do Claude Code, "personal over project", conferida em 2026-10-08).
-import { readdirSync } from 'node:fs'
+import { readdirSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 
 const pastas = dir => {
   try { return readdirSync(dir, { withFileTypes: true }).filter(e => e.isDirectory()).map(e => e.name) } catch { return [] }
@@ -18,7 +18,13 @@ export function skillsRepetidas(projeto = '.', casa = homedir()) {
   return pastas(join(casa, '.claude', 'skills')).filter(n => doProjeto.has(n)).sort()
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+if (chamadoDireto()) {
   const r = skillsRepetidas()
   console.log(r.length ? r.join(' ') : 'nenhuma')
 }

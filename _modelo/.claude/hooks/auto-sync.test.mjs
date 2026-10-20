@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, readdirSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, readdirSync, copyFileSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -457,5 +457,27 @@ test('rodado como hook: sai com codigo 0 mesmo fora de repositorio', () => {
     const r = spawnSync(process.execPath, [SCRIPT], { cwd: dir, env: { ...process.env, CLAUDE_PROJECT_DIR: dir }, input: '{}', encoding: 'utf8' })
     assert.equal(r.status, 0)
     assert.equal(r.stderr, '')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// rodada 5.20 (decisao 9, N37): pela juncao ou link ate a pasta do hook, o auto-sync roda igual
+// ao caminho real. A opcao errada mostra o recado e sai 3 so quando o corpo roda; com a guarda
+// velha, pela juncao, saia 0 calado
+test('pela juncao ou link ate a pasta do hook, o auto-sync roda igual ao caminho real', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'auto-sync-juncao-'))
+  try {
+    const real = join(dir, 'real')
+    const ponte = join(dir, 'ponte')
+    mkdirSync(real)
+    copyFileSync(SCRIPT, join(real, 'auto-sync.mjs'))
+    // 'junction' vira juncao no Windows (a mesma do mklink /J) e e ignorado no Mac e no Linux
+    symlinkSync(real, ponte, 'junction')
+    for (const pasta of [real, ponte]) {
+      const r = spawnSync(process.execPath, [join(pasta, 'auto-sync.mjs'), '--conferi'], {
+        cwd: dir, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: dir },
+      })
+      assert.equal(r.status, 3, `por ${pasta === real ? 'caminho real' : 'juncao'}: saida ${r.status}`)
+      assert.match(r.stderr, /opcao desconhecida/)
+    }
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })

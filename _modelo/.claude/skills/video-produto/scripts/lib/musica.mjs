@@ -19,8 +19,11 @@
 import fs from 'node:fs'
 import { carregarChave, escolherModelo } from './gemini.mjs'
 import { registrarCusto as registrarCustoPadrao } from '../../../configurar-video/scripts/lib/custos.mjs'
+import { fetchComTimeout } from './fetch-timeout.mjs'
 
 const API = 'https://generativelanguage.googleapis.com/v1beta/interactions'
+// Prazo da geracao da musica: folgado, porque e geracao, mas com fim.
+const PRAZO_GERACAO_MS = 5 * 60_000
 
 // A base vale pra qualquer produto: a cama existe pra sustentar a locucao, nao pra
 // ser ouvida. Tudo que e "grande" (virada, climax, refrao, mudanca de dinamica)
@@ -98,11 +101,11 @@ export async function gerarMusica({ estilo, segundos, saida, dryRun = false, pre
     contexto: `${contexto} ${modeloUsado} status=${status}`.trim(),
   })
 
-  const r = await fetch(API, {
+  const r = await fetchComTimeout(API, {
     method: 'POST',
     headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
     body: JSON.stringify({ model: modeloUsado, input: prompt }),
-  })
+  }, { timeoutMs: PRAZO_GERACAO_MS })
 
   if (!r.ok) {
     throw new Error(`Lyria devolveu HTTP ${r.status} com o modelo ${modeloUsado}, nada cobrado (se o modelo nao existe na sua chave, veja os nomes no ListModels e passe --modelo-musica=<nome>): ${(await r.text()).slice(0, 300)}`)

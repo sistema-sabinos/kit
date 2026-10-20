@@ -9,9 +9,9 @@
 // sobe e um recado diz o que ficou. Sem internet fica quieto por um dia antes de avisar.
 // Sai sempre com codigo 0: hook de Stop que falha nao pode travar a conversa.
 import { spawnSync } from 'node:child_process'
-import { existsSync, readFileSync, writeFileSync, rmSync, mkdirSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync, rmSync, mkdirSync, readdirSync, statSync, realpathSync } from 'node:fs'
 import { join, basename } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 
 const REDE_MS = 60000
 // GitHub avisa acima de 50 MiB e recusa acima de 100 MiB (docs.github.com, "About large
@@ -328,7 +328,18 @@ function rodada(dir, agora, limiteBytes) {
   return falhaDeEnvio(dir, agora, dia, hora, envio.err)
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// rodada 5.20 (decisao 9, N37): o Node entrega o import.meta.url com o atalho resolvido e o
+// argv[1] do jeito que veio, entao com o projeto aberto por juncao ou link a guarda velha dava
+// false e o backup nao rodava, calado. Os dois lados passam pelo realpathSync
+function chamadoDireto() {
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])
+  } catch {
+    return false
+  }
+}
+
+if (chamadoDireto()) {
   const dir = process.env.CLAUDE_PROJECT_DIR || process.cwd()
   if (process.argv[2] === '--conferir') {
     // /syncar: lista o que nao pode subir do que ja esta preparado, sem commitar nada.

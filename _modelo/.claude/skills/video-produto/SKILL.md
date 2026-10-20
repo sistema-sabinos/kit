@@ -42,14 +42,26 @@ compradores. O MLB é o código do anúncio, tipo `MLB` seguido de números. Per
 de quem é o anúncio:
 
 - **De um concorrente** (o caso comum): o Mercado Livre não deixa ler anúncio de
-  outro vendedor pela API (dá erro 403). Então rode primeiro o
-  `/espionar-concorrente` do produto, que lê o anúncio pelo navegador (o Chrome
-  dedicado) e grava o arquivo `_raw-concorrentes-<produto>.json`. Depois rode o
-  `/video-produto` com `--de-espionagem=<esse arquivo>`, o `--mlb` do concorrente
-  escolhido dentro dele e `--slug=<nome do seu produto, sem marca>` (o título do
-  concorrente traz a marca dele). As perguntas só vêm dos anúncios que mais
-  vendem, então escolha um deles. As fotos desse anúncio são do concorrente e
-  não entram no vídeo: separe uma foto do fornecedor ou do seu produto.
+  outro vendedor pela API (dá erro 403). Então leia esse anúncio antes pelo
+  navegador (o Chrome dedicado, aberto e logado) com a `/espionar-concorrente` no
+  modo de um anúncio só. Basta o link ou o código do anúncio: não precisa de
+  fornecedor nem de pesquisa da categoria, e não custa nada.
+
+  ```bash
+  node .claude/skills/mercado-livre/scripts/abrir-chrome.mjs
+  node .claude/skills/espionar-concorrente/scripts/espionar.mjs --mlb <link ou código do anúncio>
+  ```
+
+  Ela grava `dados/concorrentes/_raw-concorrentes-<MLB>.json` e mostra, na última
+  linha, o comando da fase 1 já com esse caminho. Depois rode o `/video-produto`
+  com `--de-espionagem=<esse arquivo>`, o `--mlb` do concorrente e
+  `--slug=<nome do seu produto, sem marca>` (o título do concorrente traz a marca
+  dele). Se o produto já passou pela esteira do Mercado Livre, o arquivo da
+  espionagem de lá também serve
+  (`fornecedores/<f>/concorrentes/<categoria>/_raw-concorrentes-<produto>.json`);
+  nele as perguntas só vêm dos anúncios que mais vendem, então escolha um deles.
+  As fotos do anúncio são do concorrente e não entram no vídeo: separe uma foto
+  do fornecedor ou do seu produto.
 - **Seu**: vai direto, sem a espionagem, porque a API lê os anúncios da sua conta.
 
 As dúvidas que mais se repetem viram as cenas. "Borra?" vira a mão passando por

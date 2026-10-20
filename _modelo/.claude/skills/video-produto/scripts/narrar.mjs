@@ -13,8 +13,12 @@ import { pcmParaWav, extrairPcm, silencio, SILENCIO_FINAL } from './lib/wav.mjs'
 import { direcaoDeVoz } from './lib/direcao.mjs'
 import { carregarChave, escolherModelo } from './lib/gemini.mjs'
 import { registrarCusto as registrarCustoPadrao, custoPorTokens } from '../../configurar-video/scripts/lib/custos.mjs'
+import { fetchComTimeout } from './lib/fetch-timeout.mjs'
 
 const API = 'https://generativelanguage.googleapis.com/v1beta'
+// Prazo da geracao de voz e da transcricao: folgado, porque e geracao, mas com fim,
+// pra uma conexao presa nao deixar o aluno olhando a tela parada.
+const PRAZO_GERACAO_MS = 5 * 60_000
 
 function exigirPrecos(precos, quem) {
   if (!(precos?.entradaUsdMtok > 0) || !(precos?.saidaUsdMtok > 0)) {
@@ -47,7 +51,7 @@ export async function narrar(arg, opcoes = {}) {
   // part. A partir do Gemini 3.8 TTS o text e transcricao literal: direcao
   // misturada nele e lida em voz alta (aconteceu no teste pago da 3.13).
   // Formato da doc: https://ai.google.dev/gemini-api/docs/speech-generation
-  const r = await fetch(`${API}/models/${modelo}:generateContent?key=${key}`, {
+  const r = await fetchComTimeout(`${API}/models/${modelo}:generateContent?key=${key}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: texto, speech_metadata: { style: direcaoDeVoz(ator) } }] }],
@@ -56,7 +60,7 @@ export async function narrar(arg, opcoes = {}) {
         speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voz } } },
       },
     }),
-  })
+  }, { timeoutMs: PRAZO_GERACAO_MS })
   const j = await lerJson(r)
   if (!r.ok) throw new Error(`TTS devolveu HTTP ${r.status}, nada cobrado: ${JSON.stringify(j).slice(0, 300)}`)
   const b64 = j.candidates?.[0]?.content?.parts?.find((p) => p.inlineData)?.inlineData?.data
@@ -83,7 +87,7 @@ export async function transcrever(arquivoWav, { precos, registrarCusto = registr
   // tambem ficam de fora.
   const modelo = await escolherModelo(/^(?!gemini-omni-).*-flash(?!.*(?:tts|image|live|audio|lite))/)
   const b64 = fs.readFileSync(arquivoWav).toString('base64')
-  const r = await fetch(`${API}/models/${modelo}:generateContent?key=${key}`, {
+  const r = await fetchComTimeout(`${API}/models/${modelo}:generateContent?key=${key}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ parts: [
@@ -91,7 +95,7 @@ export async function transcrever(arquivoWav, { precos, registrarCusto = registr
         { inline_data: { mime_type: 'audio/wav', data: b64 } },
       ] }],
     }),
-  })
+  }, { timeoutMs: PRAZO_GERACAO_MS })
   const j = await lerJson(r)
   const texto = j.candidates?.[0]?.content?.parts?.map((p) => p.text).filter(Boolean).join(' ').trim()
   if (r.ok) cobrar({ registrarCusto, servico: 'gemini-transcricao', uso: j.usageMetadata, precos, contexto, modelo, status: texto ? 'sucesso' : 'sem_texto' })

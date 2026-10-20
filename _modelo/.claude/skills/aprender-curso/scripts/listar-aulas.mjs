@@ -5,7 +5,7 @@
 // Uso (da raiz do projeto):
 //   node .claude/skills/aprender-curso/scripts/listar-aulas.mjs "<link da playlist>" [--json]
 import { execFileSync } from 'node:child_process'
-import { resolve } from 'node:path'
+import { realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { ordenarAulas } from './lib/aulas.mjs'
 
@@ -22,8 +22,14 @@ export function lerPlaylist(url, { rodar = execFileSync } = {}) {
   }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
-if (ehCli) {
+function chamadoDireto() {
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])
+  } catch {
+    return false
+  }
+}
+if (chamadoDireto()) {
   const url = process.argv[2]
   if (!url || url.startsWith('--')) {
     console.error('Uso: node .claude/skills/aprender-curso/scripts/listar-aulas.mjs "<link da playlist>" [--json]')

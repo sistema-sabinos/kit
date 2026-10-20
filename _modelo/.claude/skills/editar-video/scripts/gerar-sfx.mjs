@@ -4,9 +4,9 @@
 //
 // uso: node gerar-sfx.mjs [--pasta <_video>/midia/biblioteca/sfx]
 // Sai 1 se o ffmpeg falhar, dizendo em qual som.
-import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync, realpathSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { caminhos, pastaVideo } from '../../configurar-video/scripts/lib/pasta-video.mjs'
@@ -79,7 +79,13 @@ export function gerarSfx({ pasta, executar = spawnSync }) {
   return { gerados: gerados.map((s) => s.arquivo), pulados, registro }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const { values } = parseArgs({ options: { pasta: { type: 'string' } } })

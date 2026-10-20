@@ -44,9 +44,11 @@ import { usd } from './lib/dinheiro.mjs'
 import { narrar, transcrever } from './narrar.mjs'
 import { montarVideo } from './montar.mjs'
 import { gerarMusica, ESTILOS } from './lib/musica.mjs'
+import { fetchComTimeout } from './lib/fetch-timeout.mjs'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
 import { carregarConfiguracao, PADROES } from '../../mercado-livre/scripts/lib/config.mjs'
 import { registrarCusto, estimar, liberarGasto } from '../../configurar-video/scripts/lib/custos.mjs'
+import { realpathSync } from 'node:fs'
 
 export const SEGUNDOS_POR_BLOCO = 8
 // folga de voz por bloco com artefato faltando, em dolar (ver o cabecalho)
@@ -874,7 +876,7 @@ async function fase2({ mlb, base, slug, a, d, precos }) {
       const url = (coleta.fotos ?? [])[0]
       if (!url) { console.error('[fase 2] o anuncio nao tem foto na coleta e nenhum --foto foi passado.'); return 1 }
       let r
-      try { r = await fetch(url) }
+      try { r = await fetchComTimeout(url, {}, { timeoutMs: 60_000 }) }
       catch (e) { console.error(`[fase 2] nao consegui baixar a foto de referencia (${url}): ${e.message}. Aponte uma imagem local com --foto=<caminho>.`); return 1 }
       if (!r.ok) { console.error(`[fase 2] nao consegui baixar a foto de referencia (${url}): HTTP ${r.status}`); return 1 }
       fs.writeFileSync(foto, Buffer.from(await r.arrayBuffer()))
@@ -1256,7 +1258,13 @@ export async function main(argv = process.argv.slice(2), deps = {}) {
   return fase3(ctx)
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   process.exitCode = await main()
 }

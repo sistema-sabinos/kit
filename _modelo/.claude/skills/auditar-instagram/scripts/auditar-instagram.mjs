@@ -5,11 +5,12 @@
 //   node ... --medir <pasta-em-producao>                                            resultado do post, 7 dias ou mais depois
 // Metricas conferidas na doc da Meta em 2026-10-04 (impressions saiu pra midia nova; views, reach, saved, shares,
 // total_interactions e as de Reels seguem validas). Sem versao no caminho: a Meta usa a do app do aluno.
-import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, realpathSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../midia-social/scripts/lib/raiz.mjs'
 import { lerConfig, exigir, gravarEnv } from '../../midia-social/scripts/lib/config.mjs'
+import { dataHoraLocal } from '../../midia-social/scripts/lib/hora.mjs'
 import { consultarPost } from '../../midia-social/scripts/lib/agendador-buffer.mjs'
 import { diasParaVencer, avisoDoToken, entraNaRegua, diasDesde, urlRenovar, codigoDoLink, idInstagramValido, secaoResultado } from './regua.mjs'
 
@@ -26,7 +27,7 @@ function cliente(token, fetchFn) {
     const u = new URL(API + caminho)
     for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v)
     u.searchParams.set('access_token', token)
-    const j = await (await fetchFn(u)).json()
+    const j = await (await fetchFn(u, { signal: AbortSignal.timeout(30_000) })).json()
     return j.error ? { erro: j.error.message } : j
   }
 }
@@ -121,7 +122,8 @@ export async function auditar({ fetchFn = fetch, agora = new Date(), raiz = RAIZ
     const leg = (p.caption || '').split('\n')[0].replace(/\|/g, '/').slice(0, 60)
     const skip = i.reels_skip_rate != null ? i.reels_skip_rate + '%' : ''
     const assist = i.ig_reels_avg_watch_time != null ? (i.ig_reels_avg_watch_time / 1000).toFixed(1) + 's' : ''
-    return `| ${p.timestamp.slice(0, 10)} | ${c.tipo} | ${c.multiplo ?? ''} | ${i.views ?? ''} | ${i.reach ?? ''} | ${c.er_alcance_pct ?? ''} | ${i.saved ?? ''} | ${i.shares ?? ''} | ${skip} | ${assist} | [${leg || 'sem legenda'}](${p.permalink}) |`
+    // o timestamp do Instagram vem em UTC: o dia sai pelo relogio do aluno
+    return `| ${dataHoraLocal(new Date(p.timestamp)).slice(0, 10)} | ${c.tipo} | ${c.multiplo ?? ''} | ${i.views ?? ''} | ${i.reach ?? ''} | ${c.er_alcance_pct ?? ''} | ${i.saved ?? ''} | ${i.shares ?? ''} | ${skip} | ${assist} | [${leg || 'sem legenda'}](${p.permalink}) |`
   })
   const fora = posts.length - naRegua.length
   const md = [
@@ -144,7 +146,7 @@ export async function auditar({ fetchFn = fetch, agora = new Date(), raiz = RAIZ
 export async function renovar({ fetchFn = fetch, agora = new Date(), raiz = RAIZ } = {}) {
   const { config, env } = lerConfig({ raiz })
   exigir({ config, env }, ['IG_ACCESS_TOKEN'])
-  const j = await (await fetchFn(urlRenovar(env.IG_ACCESS_TOKEN))).json()
+  const j = await (await fetchFn(urlRenovar(env.IG_ACCESS_TOKEN), { signal: AbortSignal.timeout(30_000) })).json()
   if (j.error || !j.access_token) throw new Error(`a Meta nao renovou o token: ${j.error?.message || 'sem detalhe'}. Gerar outro (secao "Instagram" do guia)`)
   const vence = hojeEm(new Date(agora.getTime() + (j.expires_in || 0) * 1000))
   // montado por pares: "NOME_DO_TOKEN: valor" escrito direto parece segredo pro Gate 1 do kit
@@ -184,7 +186,13 @@ export async function medir(pastaRel, { fetchFn = fetch, agora = new Date(), rai
   return metricas
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   const v = process.argv.slice(2)
   const i = v.indexOf('--medir')

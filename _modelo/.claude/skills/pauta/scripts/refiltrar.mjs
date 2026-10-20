@@ -2,8 +2,8 @@
 // Nao abre navegador e nao raspa nada. Junta varias levas num arquivo so (perfil repetido entra uma vez) e
 // separa carrossel de Reel.
 // Uso: node .claude/skills/pauta/scripts/refiltrar.mjs --dias 7 --piso 300 --tag 7dias aberto-2026-10-01 aberto-2026-10-02
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { basename, join, resolve } from 'node:path'
+import { existsSync, readFileSync, writeFileSync, realpathSync } from 'node:fs'
+import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { opcoes } from './lib/pagina.mjs'
 import { ranquear } from './lib/instagram-publico.mjs'
@@ -47,5 +47,11 @@ function main(argv) {
   console.error(`ok: inteligencia/base-ideias/${nome}, ${lista.length} posts de ${perfis.length} perfis`)
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) { try { main(process.argv.slice(2)) } catch (e) { console.error('ERRO:', e.message); process.exit(1) } }

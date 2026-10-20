@@ -10,7 +10,7 @@
 //   --teste     avisa mesmo sem problema e nao conta como a rodada do dia
 //   --agendado  so o agendador passa; liga a espera de boot e a espera de rede
 import { basename, join, resolve } from 'node:path'
-import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
+import { appendFileSync, mkdirSync, writeFileSync, realpathSync } from 'node:fs'
 import { promises as dnsPromises } from 'node:dns'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from './lib/raiz.mjs'
@@ -185,7 +185,13 @@ export async function rodarRobo({
   }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   const alvo = process.argv[2]
   if (!alvo || alvo.startsWith('--')) {

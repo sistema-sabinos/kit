@@ -24,9 +24,9 @@
 // mesmo nome em lugares diferentes. Pra agendar isso rodando sozinho todo dia, ver o README desta
 // pasta.
 
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, renameSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, renameSync, existsSync, statSync, realpathSync } from 'node:fs';
 import { join, basename, dirname, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import { createHash } from 'node:crypto';
 
@@ -111,7 +111,13 @@ export function backupEnv({ envPath, backupDir, minChaves = MIN_CHAVES_PADRAO, m
 }
 
 // Uso direto via linha de comando: node backup-env.mjs [caminho-do-.env]
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+if (chamadoDireto()) {
   const envPath = process.argv[2] || join(process.cwd(), '.env');
   const resultado = backupEnv({ envPath });
 

@@ -105,7 +105,7 @@ async function escolherModelo() {
   const pedido = flag('model', null);
   if (pedido) return pedido;
   try {
-    const r = await fetch(`${API}/models?key=${key}&pageSize=300`);
+    const r = await fetch(`${API}/models?key=${key}&pageSize=300`, { signal: AbortSignal.timeout(PRAZO_CURTO_MS) });
     const j = await r.json();
     const ids = (j.models || [])
       .filter((m) => (m.supportedGenerationMethods || []).includes('generateContent'))
@@ -130,6 +130,12 @@ async function escolherModelo() {
   return has('barato') ? 'gemini-flash-latest' : 'gemini-pro-latest';
 }
 
+// Prazos do fetch: o do Node so desiste aos 5 minutos, e uma conexao presa deixava a tela
+// parada. Curto pra listar, perguntar se ficou pronto e apagar; longo pro envio do video,
+// que pode ser grande. A analise em si vai pelo postarJson, com teto proprio de 30 minutos.
+const PRAZO_CURTO_MS = 30_000;
+const PRAZO_ENVIO_MS = 30 * 60 * 1000;
+
 // ---------------- upload de arquivo local (Files API) ----------------
 const MIMES = { '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.webm': 'video/webm', '.mkv': 'video/x-matroska', '.avi': 'video/x-msvideo', '.mpeg': 'video/mpeg', '.m4v': 'video/mp4' };
 
@@ -146,6 +152,7 @@ async function subirArquivo(arquivo) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ file: { display_name: path.basename(arquivo) } }),
+    signal: AbortSignal.timeout(PRAZO_CURTO_MS),
   });
   const uploadUrl = start.headers.get('x-goog-upload-url');
   if (!uploadUrl) throw new Error(`falha ao iniciar upload: HTTP ${start.status} ${(await start.text()).slice(0, 200)}`);
@@ -154,6 +161,7 @@ async function subirArquivo(arquivo) {
     method: 'POST',
     headers: { 'Content-Length': String(bytes), 'X-Goog-Upload-Offset': '0', 'X-Goog-Upload-Command': 'upload, finalize' },
     body: fs.readFileSync(arquivo),
+    signal: AbortSignal.timeout(PRAZO_ENVIO_MS),
   });
   const info = await up.json();
   if (!info.file) throw new Error(`falha no upload: ${JSON.stringify(info).slice(0, 300)}`);
@@ -161,7 +169,7 @@ async function subirArquivo(arquivo) {
 
   // o vídeo precisa ficar ACTIVE antes de dar pra analisar
   for (let i = 0; i < 90; i++) {
-    const r = await fetch(`${API}/${info.file.name}?key=${key}`);
+    const r = await fetch(`${API}/${info.file.name}?key=${key}`, { signal: AbortSignal.timeout(PRAZO_CURTO_MS) });
     const j = await r.json();
     if (j.state === 'ACTIVE') return { uri: j.uri, mime: j.mimeType || mime, name: j.name };
     if (j.state === 'FAILED') throw new Error('o Gemini não conseguiu processar o vídeo');
@@ -182,7 +190,7 @@ let nomeRemoto = null;
 // algo cai no meio (upload, processamento, chamada), porque o return pula o resto.
 async function faxina() {
   if (temporario) { try { fs.unlinkSync(temporario); } catch {} temporario = null; }
-  if (nomeRemoto) { const n = nomeRemoto; nomeRemoto = null; await fetch(`${API}/${n}?key=${key}`, { method: 'DELETE' }).catch(() => {}); }
+  if (nomeRemoto) { const n = nomeRemoto; nomeRemoto = null; await fetch(`${API}/${n}?key=${key}`, { method: 'DELETE', signal: AbortSignal.timeout(PRAZO_CURTO_MS) }).catch(() => {}); }
 }
 
 async function main() {

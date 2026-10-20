@@ -28,7 +28,17 @@
 // as well as Bash", e lista `command` como o campo de conteudo tanto de Bash quanto de
 // PowerShell. Este arquivo so precisa saber ler `tool_input.command`; quem decide se
 // o hook roda pra Bash, PowerShell ou as duas e o matcher no settings.json.
-import { pathToFileURL } from 'node:url'
+// rodada 5.20 (N11, doc conferida em 2026-10-20 em code.claude.com/docs/en/tools-reference):
+// a ferramenta Monitor "Runs a command in the background" e o nome da tabela e "the exact
+// strings you use in ... hook matchers", entao o matcher e `Bash|PowerShell|Monitor`. O
+// comando do Monitor vem no mesmo `command` (o `ws`, WebSocket, entra no lugar dele e nao
+// roda shell). A doc nao mostra o tool_input do Monitor no hook; o campo vem do schema dela.
+// rodada 5.20 (N6, N10): o git le o cwd que o Claude Code manda na entrada (campo cwd), pra
+// saber se o alvo do checkout e do restore e uma pasta
+import { realpathSync, statSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 // correcao 5 (terceira revisao): as duas correcoes anteriores tentaram listar quem E
 // executor de shell (bash -c, ssh, powershell -Command...) e tratar o resto como
@@ -157,6 +167,26 @@ function leitorDeEscritores(comando) {
 //    `vssadmin delete shadows` barra. Passam `vssadmin resize shadowstorage` (a doc avisa
 //    "Resizing the storage association may cause shadow copies to disappear"), `wmic
 //    shadowcopy delete` e o Delete() do Win32_ShadowCopy pelo PowerShell.
+// 6. Apagar por outro programa (rodada 5.20, N9) e uma classe aberta: barram as formas
+//    comuns (find -delete e -exec rm, xargs rm, node -e com rmSync/rmdirSync recursivo ou
+//    unlinkSync, python -c com rmtree/os.remove/os.rmdir/os.unlink, rimraf e del-cli pelo
+//    npx, [IO.Directory]::Delete com $true, [IO.File]::Delete, .Delete($true), .Delete() no
+//    bloco do ForEach e Clear-Content com curinga, -Recurse ou pipe). Passam perl, ruby, bun,
+//    deno, o pathlib do Python (.unlink(), .rmdir()), script gravado em arquivo e rodado
+//    depois, codigo mandado pela entrada (`python3 - <<EOF`, `node <<EOF`), o rm dentro de
+//    outro shell no find (`find . -exec sh -c 'rm "$1"' _ {} \;`), o .Delete() fora do pipe
+//    (`foreach ($f in ...) { $f.Delete() }`, `.ForEach({ $_.Delete() })`, `ForEach-Object
+//    Delete`), `rsync --delete`, `robocopy /MOV` e `/MOVE` (movem, a copia fica no destino) e
+//    o `/MIR` guardado num arquivo de /JOB. E o contrario: qualquer .Delete( no bloco do
+//    ForEach barra, seja qual for o objeto (`$api | % { $_.Delete(id) }`).
+// 7. Git (rodada 5.20, N6 e N10). `git checkout arquivo` sem `--` fica livre (nao da pra
+//    saber sem o git se a palavra e branch ou arquivo; pasta, ponto, curinga, `:/` e a lista
+//    que sai de $(...) ou do xargs barram). Passam alias (`git -c alias.x="reset --hard" x`),
+//    `git branch -D`, `git reflog expire`, `git gc --prune=now`, `git update-ref -d`, `git
+//    checkout-index -a -f` e o alvo lido de arquivo (`--pathspec-from-file`). A palavra "git"
+//    solta no meio dos argumentos de outro git abre a leitura de um git novo (`git reset git
+//    --hard` passa), e o cd so muda a pasta do git que vem depois dele no mesmo nivel (o cd de
+//    fora de um ( ) nao chega no git de dentro).
 function classificarTrechosEntreAspas(comando) {
   const RE_ASPAS = /"([^"]*)"|'([^']*)'/g
   const suspeitos = []
@@ -167,6 +197,11 @@ function classificarTrechosEntreAspas(comando) {
   // `irm x "|" iex` rodam de verdade, mas o limpo perde a opcao e os suspeitos perdem
   // o executavel, e nenhum dos dois pedacos casa sozinho (achado do Codex no plano).
   let desaspado = ''
+  // rodada 5.20 (N6): "marcado" e o desaspado em que cada trecho entre aspas vira uma palavra
+  // so (o espaco de dentro vira NUL), pra regra do git, que conta palavra (o git entre aspas de
+  // quem executa, `bash -c "git reset --hard"`, vai pelo suspeito, como o resto): no limpo,
+  // `git -C "Meus Projetos" reset --hard` virava `git -C  reset --hard`, e o -C comia o reset
+  let marcado = ''
   let ultimoIndice = 0
   let m
   const ehEscritorDeTexto = leitorDeEscritores(comando)
@@ -174,15 +209,22 @@ function classificarTrechosEntreAspas(comando) {
     const conteudo = m[1] !== undefined ? m[1] : m[2]
     limpo += comando.slice(ultimoIndice, m.index)
     desaspado += comando.slice(ultimoIndice, m.index)
+    marcado += comando.slice(ultimoIndice, m.index)
     ultimoIndice = RE_ASPAS.lastIndex
     const escritor = ehEscritorDeTexto(m.index)
     if (conteudo && !escritor) suspeitos.push(conteudo)
     if (!escritor) desaspado += conteudo
+    // dentro das aspas, parentese, chave, crase e separador sao texto (`git checkout -- "a (1).txt"`)
+    // aspas vazias viram a marca VAZIO: `git -C ""` mantem a pasta (git-scm.com/docs/git)
+    if (!escritor) marcado += conteudo ? conteudo.replace(/\s/g, NUL).replace(/[(){}`;&|]/g, '_') : VAZIO
   }
   limpo += comando.slice(ultimoIndice)
   desaspado += comando.slice(ultimoIndice)
-  return { limpo, suspeitos, desaspado }
+  marcado += comando.slice(ultimoIndice)
+  return { limpo, suspeitos, desaspado, marcado }
 }
+const NUL = String.fromCharCode(0)
+const VAZIO = String.fromCharCode(2)
 
 // usado so pelo rmPerigoso (ver comentario dele) pra dividir a linha em comandos; a
 // limpeza principal de aspas de todo o resto do arquivo e a classificarTrechosEntreAspas
@@ -208,9 +250,16 @@ function semTrechoEntreAspas(texto) {
 // as duas opcoes, e a letra procurada vai num lookahead antes do bloco de letras: o
 // [a-zA-Z]*r[a-zA-Z]* voltava letra por letra numa opcao comprida sem espaco no fim e
 // custava o quadrado dela. O bloco inteiro de letras continua tendo de terminar em espaco
+// rodada 5.20 (N5): o PowerShell aceita U+2013, U+2014 e U+2015 no lugar do hifen pra abrir
+// parametro. Medido em 2026-10-20 no pwsh 7.6.7 e no 5.1.26100.9711 (Remove-Item com o traco
+// apagou a pasta nos dois; U+2010, U+2011, U+2012 e U+2212 deram erro), e a especificacao da
+// linguagem (learn.microsoft.com/powershell/scripting/lang-spec/chapter-02) chama os quatro
+// de "dash". Vale nas regras do Remove-Item e apelidos, rm incluso (no bash, `rm` com traco
+// e nome de arquivo: barra a toa, do lado seguro)
+const TRACO = '[-' + String.fromCharCode(0x2013, 0x2014, 0x2015) + ']'
 const RE_RM = /\brm\b/gi
-const RE_RM_RECURSIVO = /\s(?:-(?=[a-zA-Z]*r)[a-zA-Z]+|--recursive)(?:\s|$)/gi
-const RE_RM_FORCADO = /\s(?:-(?=[a-zA-Z]*f)[a-zA-Z]+|--force)(?:\s|$)/gi
+const RE_RM_RECURSIVO = new RegExp(String.raw`\s(?:${TRACO}(?=[a-zA-Z]*r)[a-zA-Z]+|--recursive)(?:\s|$)`, 'gi')
+const RE_RM_FORCADO = new RegExp(String.raw`\s(?:${TRACO}(?=[a-zA-Z]*f)[a-zA-Z]+|--force)(?:\s|$)`, 'gi')
 
 // rodada 5.18 (decisao 1): o -WhatIf deixou de liberar qualquer comando. Ate a 5.17 ele
 // valia como simulacao, mas o teste olhava o comando inteiro: `ls -WhatIf; rm -rf pasta`
@@ -265,27 +314,277 @@ function rmPerigoso(comando) {
   return segmentos.some(seg => opcaoDepoisDaPalavra(seg, RE_RM, [RE_RM_RECURSIVO, RE_RM_FORCADO]))
 }
 
-// rodada 5.18 (chat 4, F1): git push, git clean e rd/rmdir eram (?=[^\n]*...) ou
-// [^\n]*... depois da palavra, que relia o resto da linha a cada palavra repetida (o mesmo
-// quadrado que o opcaoDepoisDaPalavra resolveu no Remove-Item). No git clean a letra vai num
-// lookahead antes do bloco, como no rm
-const RE_GIT_PUSH = /\bgit\s+push\b/g
-const RE_PUSH_FORCE = /--force(?!-with-lease)\b/g
-const RE_PUSH_F = /\s-f(?:\s|$)/g
-const RE_PUSH_MAIS = /\s\+\S/g
-function pushForcado(comando) {
-  return opcaoDepoisDaPalavra(comando, RE_GIT_PUSH, RE_PUSH_FORCE) ||
-    opcaoDepoisDaPalavra(comando, RE_GIT_PUSH, RE_PUSH_F) ||
-    opcaoDepoisDaPalavra(comando, RE_GIT_PUSH, RE_PUSH_MAIS)
+// rodada 5.20 (N12): Remove-Item, del e rd liam ate o fim da linha, e o -r, -Recurse ou /s de
+// um comando vizinho (`del velho.mp4; ffmpeg -i in.mp4 -r 30 out.mp4`) barrava o inofensivo.
+// Agora param no fim do comando: ;, &, &&, ||, | e quebra de linha (o & sozinho separa comando
+// no cmd). Separador dentro de parentese nao encerra (`Remove-Item (gci | select -First 1)
+// -Recurse` segue barrado): semSeparadorNoParentese troca por espaco o que esta dentro
+const FIM_DO_COMANDO = /[\n;|&]/g
+function semSeparadorNoParentese(texto) {
+  if (!texto.includes('(')) return texto
+  let fundo = 0
+  let saida = ''
+  for (const c of texto) {
+    if (c === '(') fundo++
+    else if (c === ')') fundo = Math.max(0, fundo - 1)
+    saida += fundo > 0 && (c === ';' || c === '|' || c === '&' || c === '\n') ? ' ' : c
+  }
+  return saida
 }
-const RE_GIT_CLEAN = /\bgit\s+clean\b/g
-const RE_CLEAN_F = /\s-(?=[fdxniqeX]*f)[fdxniqeX]+\b/g
-const RE_CLEAN_D = /\s-(?=[fdxniqeX]*d)[fdxniqeX]+\b/g
-function cleanPerigoso(comando) {
-  return opcaoDepoisDaPalavra(comando, RE_GIT_CLEAN, [RE_CLEAN_F, RE_CLEAN_D])
+
+// rodada 5.20 (N7): o cmd le a chave em qualquer ponto da palavra, colada no nome, na outra
+// chave ou no fim do alvo. Medido em 2026-10-20 no cmd real: `rd c/s/q` apagou a pasta c
+// inteira e `del d/s/q` apagou os arquivos das subpastas de d. Entao todo /s depois do rd ou
+// do del conta (o `del temp/s/a.txt` do PowerShell barra a toa, do lado seguro)
+function chavesS(texto) {
+  return [...texto.matchAll(/\/s(?!\w)/gi)].map(m => m.index)
+}
+// a palavra do comando: rd, del, Remove-Item e apelidos em posicao de comando, nunca dentro
+// de nome de arquivo (ri.mp4) ou de caminho (videos/del/in.mp4); a chave pode vir colada
+// (rd/s). Antes de ler: crase e ^ no fim da linha continuam o comando (PowerShell e cmd), e o
+// ^ do cmd e escape (`rd ^/s` roda rd /s, `r^d` roda rd), entao sai
+// (revisao comum do Codex) a barra invertida do nome qualificado pelo modulo vale
+// (`Microsoft.PowerShell.Management\Remove-Item`, about_Command_Precedence)
+const nomeDeComando = nomes => new RegExp(String.raw`(?<![\w\-.\/:])(?<!(?<!\.Management)\\)(?:${nomes})(?=[\s\/]|$)`, 'gi')
+const RE_RD = nomeDeComando('rmdir|rd')
+const RE_DEL = nomeDeComando('del|erase')
+const RE_REMOVE_ITEM = nomeDeComando('Remove-Item|ri|del|erase|rd|rmdir')
+function textoDoComando(comando) {
+  return semSeparadorNoParentese(comando.replace(/[`^]\r?\n/g, '  ').replace(/\^/g, ''))
 }
 function rdPerigoso(comando) {
-  return opcaoDepoisDaPalavra(comando, /\b(?:rmdir|rd)\b/gi, /\s\/s\b/gi)
+  const texto = textoDoComando(comando)
+  return opcaoDepoisDaPalavra(texto, RE_RD, { posicoes: chavesS(texto) }, FIM_DO_COMANDO)
+}
+
+// rodada 5.20 (N6, N10): as regras de git eram regex no limpo, com o verbo colado no "git"
+// (`git\s+reset\s+--hard`), e qualquer opcao no meio (`git -C pasta reset --hard`, `git reset
+// -q --hard`) soltava o comando. Agora le palavra por palavra no marcado: acha o git (pelo
+// nome, com caminho e .exe), tira as opcoes globais (git-scm.com/docs/git, conferido em
+// 2026-10-20; as longas aceitam o valor com = ou na palavra seguinte, medido no git 2.55) e
+// olha o verbo e o resto do comando. Cada palavra e lida uma vez: a leitura de um git para no
+// proximo git
+const GIT_COM_VALOR = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace', '--config-env',
+  '--attr-source', '--list-cmds', '--super-prefix'])
+const MOTIVO_HISTORICO = 'reescreve o historico do backup no GitHub'
+const MOTIVO_APAGA_REMOTO = 'apaga branch do backup no GitHub'
+const MOTIVO_SEM_SALVAR = 'joga fora o trabalho que ainda nao foi salvo'
+const MOTIVO_PASTA = 'descarta toda mudanca nao salva da pasta inteira'
+const MOTIVO_CLEAN = 'apaga arquivo e pasta fora do controle de versao, sem confirmacao'
+const MOTIVO_STASH = 'apaga pra sempre o trabalho guardado no stash'
+const MAX_PASTAS_CONFERIDAS = 1000
+
+function nomeDoPrograma(palavra) {
+  return palavra.replace(/^.*[\\\/]/, '').replace(/\.(?:exe|cmd)$/i, '').toLowerCase()
+}
+
+// letras de uma opcao curta agrupada (-fdx). Na letra que pede valor (-o do push, -e do
+// clean) o resto da palavra e o valor; pedeValor diz se o valor e a palavra seguinte
+function letrasCurtas(palavra, comValor = '') {
+  if (!/^-[A-Za-z0-9]/.test(palavra)) return { letras: '', pedeValor: false }
+  let letras = ''
+  for (let i = 1; i < palavra.length; i++) {
+    letras += palavra[i]
+    if (comValor.includes(palavra[i])) return { letras, pedeValor: i === palavra.length - 1 }
+  }
+  return { letras, pedeValor: false }
+}
+
+// opcao longa abreviada: o git aceita o comeco dela quando ele e unico (`git reset --har`
+// apaga igual, medido na revisao interna). Conta a partir de 4 caracteres, os dois tracos
+// inclusos; um comeco ambiguo o git recusa, e barrar ele nao custa nada
+function longa(a, nome) {
+  const op = a.split('=')[0]
+  return op.length >= 4 && op.startsWith('--') && nome.startsWith(op)
+}
+
+// pasta de casa escrita do jeito do shell (~, $HOME, $env:USERPROFILE, %USERPROFILE%)
+function expandir(p) {
+  return p.replace(/^(?:~|\$HOME|\$env:USERPROFILE|%USERPROFILE%)(?=[\\\/]|$)/i, () => homedir())
+}
+
+// alvo que pega a pasta inteira ou muitos arquivos: ponto, curinga, pathspec magico (:/ e a
+// raiz), terminado em barra, a lista que sai de outro comando ($(git ls-files -m), marca SUB),
+// caminho de rede (\\servidor, que o disco demora a responder) ou pasta que existe (relativa
+// ao cwd do comando). A conferencia no disco tem teto: passou dele, conta como pasta
+function alvoAmplo(alvo, dir, conta) {
+  const a = expandir(alvo.split(NUL).join(' '))
+  if (a === '.' || a === '..' || /[*?[]/.test(a) || a.startsWith(':') || /[\\\/]$/.test(a)) return true
+  if (a.includes(SUB) || /^[\\\/]{2}/.test(a)) return true
+  if (a === VAZIO || a.startsWith('-')) return false
+  if (++conta.n > MAX_PASTAS_CONFERIDAS) return true
+  try { return !!statSync(resolve(dir, a), { throwIfNoEntry: false })?.isDirectory() } catch { return false }
+}
+
+function gitPushPerigoso(resto) {
+  for (let j = 0; j < resto.length; j++) {
+    const a = resto[j]
+    if (a === '-o' || a === '--push-option' || a === '--repo' || a === '--receive-pack' || a === '--exec') { j++; continue }
+    if (longa(a, '--force')) return MOTIVO_HISTORICO
+    if (longa(a, '--delete') || longa(a, '--mirror') || longa(a, '--prune')) return MOTIVO_APAGA_REMOTO
+    const { letras, pedeValor } = letrasCurtas(a, 'o')
+    if (letras.includes('f')) return MOTIVO_HISTORICO
+    if (letras.includes('d')) return MOTIVO_APAGA_REMOTO
+    if (pedeValor) { j++; continue }
+    if (a.startsWith('+')) return MOTIVO_HISTORICO
+    // `git push origin :` sozinho empurra as branches de mesmo nome, nao apaga nada
+    if (a.startsWith(':') && a.length > 1) return MOTIVO_APAGA_REMOTO
+  }
+  return null
+}
+
+function gitCleanPerigoso(resto, semForca) {
+  let forca = semForca, apaga = false, simula = false
+  for (let j = 0; j < resto.length; j++) {
+    const a = resto[j]
+    if (a === '--') break
+    // a opcao negada (--no-dry-run) desfaz a anterior, e vale a ultima (gitcli, "negating options")
+    if (longa(a, '--force')) forca = true
+    else if (longa(a, '--no-force')) forca = semForca
+    else if (longa(a, '--dry-run')) simula = true
+    else if (longa(a, '--no-dry-run')) simula = false
+    else if (a === '-e' || a === '--exclude') j++
+    else if (!a.startsWith('--')) {
+      const { letras, pedeValor } = letrasCurtas(a, 'e')
+      if (letras.includes('f')) forca = true
+      if (/[dxX]/.test(letras)) apaga = true
+      if (letras.includes('n')) simula = true
+      if (pedeValor) j++
+    }
+  }
+  return forca && apaga && !simula ? MOTIVO_CLEAN : null
+}
+
+// checkout, restore e switch: separa opcao de alvo; depois do -- tudo e alvo. deFora: os alvos
+// chegam pelo xargs (`git diff --name-only | xargs git checkout --`), entao contam como amplos
+function gitDescartePerigoso(verbo, resto, dir, conta, deFora) {
+  const comValor = { checkout: 'bB', restore: 's', switch: 'cC' }[verbo]
+  const longasComValor = { checkout: ['--orphan'], restore: ['--source'], switch: ['--create', '--force-create', '--orphan'] }[verbo]
+  let forca = false, staged = false, worktree = false, depoisDoTraco = false
+  const alvos = []
+  for (let j = 0; j < resto.length; j++) {
+    const a = resto[j]
+    if (!depoisDoTraco && a.startsWith('-')) {
+      if (a === '--') { depoisDoTraco = true; continue }
+      if (!a.includes('=') && longasComValor.some(n => longa(a, n))) { j++; continue }
+      if (longa(a, '--force') || longa(a, '--discard-changes')) forca = true
+      else if (longa(a, '--staged')) staged = true
+      else if (longa(a, '--no-staged')) staged = false
+      else if (longa(a, '--worktree')) worktree = true
+      else if (longa(a, '--no-worktree')) worktree = false
+      else if (!a.startsWith('--')) {
+        const { letras, pedeValor } = letrasCurtas(a, comValor)
+        if (letras.includes('f')) forca = true
+        if (verbo === 'restore' && letras.includes('S')) staged = true
+        if (verbo === 'restore' && letras.includes('W')) worktree = true
+        if (pedeValor) j++
+      }
+      continue
+    }
+    // no checkout sem --, o primeiro alvo pode ser a branch ou o commit, mesmo vindo de $(...)
+    alvos.push(verbo === 'checkout' && !depoisDoTraco && alvos.length === 0 ? a.split(SUB).join('_') : a)
+  }
+  if (forca && verbo !== 'restore') return MOTIVO_SEM_SALVAR
+  if (verbo === 'switch') return null
+  // o restore so mexe no index com --staged sozinho; sem nada, ou com --worktree, mexe nos arquivos
+  if (verbo === 'restore' && staged && !worktree) return null
+  if (deFora) return MOTIVO_PASTA
+  return alvos.some(a => alvoAmplo(a, dir, conta)) ? MOTIVO_PASTA : null
+}
+
+// cd e -C repetidos tem teto: passou dele, a pasta para de mudar (cada um junta texto no
+// caminho, e milhares deles faziam o comando custar o quadrado)
+const MAX_MUDANCAS_DE_PASTA = 64
+function mudarPasta(conta, dir, alvo) {
+  if (alvo === VAZIO || ++conta.mudancas > MAX_MUDANCAS_DE_PASTA) return dir
+  return resolve(dir, expandir(alvo.split(NUL).join(' ')))
+}
+
+function lerGit(args, dir, conta, deFora) {
+  let i = 0
+  let semForca = false
+  while (i < args.length && args[i].startsWith('-')) {
+    const op = args[i]
+    const nome = op.split('=')[0]
+    let valor
+    if (GIT_COM_VALOR.has(op)) { valor = args[i + 1]; i += 2 } else { valor = op.slice(nome.length + 1); i++ }
+    if (valor === undefined) return null
+    if (op === '-C' || nome === '--work-tree') dir = mudarPasta(conta, dir, valor)
+    // valor vazio e zero tambem sao falso pro git (revisao final do Codex, 5.20); o --config-env
+    // tira o valor de uma variavel que a trava nao le, entao conta como sem forca
+    if (op === '-c' && /^clean\.requireforce=(?:false|no|off|0*)$/i.test(valor)) semForca = true
+    if (nome === '--config-env' && /^clean\.requireforce=/i.test(valor)) semForca = true
+  }
+  const verbo = args[i]
+  const resto = args.slice(i + 1)
+  if (verbo === 'push') return gitPushPerigoso(resto)
+  if (verbo === 'reset') return resto.some(a => longa(a, '--hard')) ? MOTIVO_SEM_SALVAR : null
+  if (verbo === 'clean') return gitCleanPerigoso(resto, semForca)
+  if (verbo === 'checkout' || verbo === 'restore' || verbo === 'switch') return gitDescartePerigoso(verbo, resto, dir, conta, deFora)
+  if (verbo === 'stash') {
+    const sub = resto.find(a => !a.startsWith('-'))
+    return sub === 'clear' || sub === 'drop' ? MOTIVO_STASH : null
+  }
+  return null
+}
+
+// divide o texto em comandos. O que esta dentro de $( ), ( ), { } (bloco do PowerShell) e
+// crase vira um comando a parte, e no lugar dele fica a marca SUB (a saida do comando de
+// dentro): `git push origin $(git branch --show-current) --force` le o --force no push, e
+// `Invoke-Command {git reset --hard}` le o git do bloco. Depois cada um divide no separador
+const SUB = String.fromCharCode(1)
+function comandosDoTexto(texto) {
+  const prontos = []
+  const pilha = ['']
+  let crase = false
+  for (const c of texto) {
+    const topo = pilha.length - 1
+    if (c === '(' || c === '{' || (c === '`' && !crase)) {
+      if (c === '`') crase = true
+      // a marca fica colada no que vem antes ($SUB, stash@SUB): no checkout, `$(git rev-parse
+      // x) -- a.txt` continua sendo um alvo so
+      pilha[topo] += SUB + ' '
+      pilha.push('')
+    } else if ((c === ')' || c === '}' || (c === '`' && crase)) && topo > 0) {
+      if (c === '`') crase = false
+      prontos.push(pilha.pop())
+    } else {
+      pilha[topo] += c
+    }
+  }
+  // um por um: o push(...pilha) com centenas de milhares de "(" abertos estourava a pilha do Node
+  for (const t of pilha) prontos.push(t)
+  return prontos.flatMap(t => t.split(/&&|\|\||[;&|\n]/))
+}
+
+// o cd de um comando anterior da mesma linha muda a pasta do git seguinte (`cd sub && git
+// checkout pasta`); o /d do cd do cmd e opcao
+const CDS = new Set(['cd', 'chdir', 'pushd', 'set-location', 'sl'])
+function gitPerigoso(texto, cwd) {
+  let dir = cwd
+  const conta = { n: 0, mudancas: 0 }
+  for (const seg of comandosDoTexto(texto)) {
+    const palavras = seg.match(/\S+/g)
+    if (!palavras) continue
+    if (CDS.has(nomeDoPrograma(palavras[0]))) {
+      const alvo = palavras.slice(1).find(p => !p.startsWith('-') && !/^\/d$/i.test(p))
+      if (alvo) dir = mudarPasta(conta, dir, alvo)
+      continue
+    }
+    let i = 0
+    let deFora = false
+    while (i < palavras.length) {
+      const nome = nomeDoPrograma(palavras[i])
+      if (nome === 'xargs') deFora = true
+      if (nome !== 'git') { i++; continue }
+      let fim = i + 1
+      while (fim < palavras.length && nomeDoPrograma(palavras[fim]) !== 'git') fim++
+      const motivo = lerGit(palavras.slice(i + 1, fim), dir, conta, deFora)
+      if (motivo) return motivo
+      i = fim
+    }
+  }
+  return null
 }
 // rodada 5.18 (chat 4, F1b): curl e wget com pipe pro shell eram [^\n]* depois da palavra,
 // o mesmo quadrado do git push
@@ -299,17 +598,109 @@ function wgetPipePerigoso(comando) {
 
 // correcao 7: Remove-Item e os apelidos oficiais dele que nao sao "rm" (ver comentario
 // da regra abaixo). So exige a ideia de recursivo (nunca -Force, doc na regra abaixo).
+const RE_OPCAO_RECURSE = new RegExp(String.raw`\s${TRACO}r(?:e(?:c(?:u(?:r(?:s(?:e)?)?)?)?)?)?\b`, 'gi')
 function removeItemPerigoso(comando) {
-  return opcaoDepoisDaPalavra(comando, /\b(?:Remove-Item|ri|del|erase|rd|rmdir)\b/gi,
-    /\s-r(?:e(?:c(?:u(?:r(?:s(?:e)?)?)?)?)?)?\b/gi)
+  return opcaoDepoisDaPalavra(textoDoComando(comando), RE_REMOVE_ITEM,
+    RE_OPCAO_RECURSE, FIM_DO_COMANDO)
 }
 
 // correcao 7: "erase" e sinonimo de "del" no cmd e aceita a mesma sintaxe (/s), doc da
 // Microsoft confirma os dois como apelido do mesmo Remove-Item; cobrir um so e deixar
 // o gemeo de fora era o buraco que esta rodada veio fechar
 function delPerigoso(comando) {
-  return opcaoDepoisDaPalavra(comando, /\b(?:del|erase)\b/gi, /\s\/s\b/gi)
+  const texto = textoDoComando(comando)
+  return opcaoDepoisDaPalavra(texto, RE_DEL, { posicoes: chavesS(texto) }, FIM_DO_COMANDO)
 }
+
+// rodada 5.20 (N8, doc conferida em 2026-10-20 em learn.microsoft.com/windows-server/
+// administration/windows-commands/robocopy): /PURGE "Deletes destination files and
+// directories that no longer exist in the source" e /MIR e o /E com o /PURGE. Barra sempre,
+// ate com o /L (so lista), como o -WhatIf desde a 5.18
+// le o desaspado (lista PERIGOS_NO_DESASPADO): a chave pode vir entre aspas ("/MIR"), e o
+// robocopy aceita o traco no lugar da barra (-MIR)
+function robocopyPerigoso(comando) {
+  return opcaoDepoisDaPalavra(comando, /(?<![\w\-.])robocopy(?:\.exe)?(?![\w\-.\/])/gi, /\s[\/-](?:mir|purge)(?!\w)/gi, FIM_DO_COMANDO)
+}
+
+// rodada 5.20 (N9): apagar por outro programa, as formas comuns (limite 6 no cabecalho).
+// find e xargs no limpo; o codigo do node -e e do python -c mora entre aspas, entao esses
+// dois leem o desaspado (lista PERIGOS_NO_DESASPADO). O codigo pode ter ;, | e quebra de
+// linha, entao o node e o python leem o comando ate o fim
+const NUNCA = /(?!)/g
+const RE_FIND = /(?<![\w\-.])find(?![\w\-.])/gi
+const RE_FIND_APAGA = /\s-(?:delete(?![\w\-])|(?:exec|execdir)\s+(?:\S*\/)?(?:rm|rmdir|unlink)(?![\w\-.]))/gi
+function findPerigoso(comando) {
+  return opcaoDepoisDaPalavra(comando, RE_FIND, RE_FIND_APAGA, FIM_DO_COMANDO)
+}
+// xargs so barra quando o programa que ele roda e o rm (pula as opcoes do xargs e o valor
+// delas): `xargs git rm` e `xargs grep -l rm` seguem livres
+const XARGS_COM_VALOR = /^-[IiLlnPdEsa]$/
+function xargsApaga(comando) {
+  for (const seg of comando.split(/&&|\|\||[;&|\n]/)) {
+    const p = seg.match(/\S+/g) || []
+    let i = p.findIndex(x => nomeDoPrograma(x) === 'xargs')
+    if (i < 0) continue
+    i++
+    while (i < p.length && (p[i].startsWith('-') || nomeDoPrograma(p[i]) === 'sudo')) i += XARGS_COM_VALOR.test(p[i]) ? 2 : 1
+    if (i < p.length && ['rm', 'rmdir', 'unlink'].includes(nomeDoPrograma(p[i]))) return true
+  }
+  return false
+}
+// node -e, -p e agrupado (-pe); o recursive tem de vir depois da chamada que apaga, no mesmo
+// comando do JavaScript (antes do ;): `fs.mkdirSync('out',{recursive:true}); fs.rmSync('a.txt')`
+// apaga um arquivo so e segue livre
+const RE_NODE = /(?<![\w\-.])node(?:\.exe)?(?=\s)/gi
+const RE_NODE_EVAL = /\s(?:-[a-zA-Z]*[ep][a-zA-Z]*|--eval|--print)(?=[\s=]|$)/g
+const RE_CHAMADA_RM = /\b(?:rmSync|rmdirSync|rm|rmdir)\s*\(/g
+function nodeApaga(comando) {
+  if (!opcaoDepoisDaPalavra(comando, RE_NODE, RE_NODE_EVAL, NUNCA)) return false
+  return /\bunlinkSync\b/.test(comando) || opcaoDepoisDaPalavra(comando, RE_CHAMADA_RM, /\brecursive\b/g, /;/g)
+}
+// python -c, agrupado (-Bc) ou colado no codigo (-c"...")
+const RE_PYTHON = /(?<![\w\-.])(?:python(?:3(?:\.\d+)?)?|py)(?:\.exe)?(?=\s)/gi
+function pythonApaga(comando) {
+  return opcaoDepoisDaPalavra(comando, RE_PYTHON, [/\s-[a-zA-Z]*c/g, /\b(?:rmtree|os\.remove|os\.rmdir|os\.unlink|os\.removedirs)\b/g], NUNCA)
+}
+// rimraf e del-cli so como programa: no comeco do pedaco ou depois de quem lanca pacote
+// (npx, pnpm dlx, npm exec, env, VAR=valor...), com ou sem versao (rimraf@5). `npm install
+// rimraf` instala, nao roda
+const LANCADORES = new Set(['npx', 'pnpx', 'bunx', 'pnpm', 'yarn', 'npm', 'bun', 'exec', 'dlx', 'x', 'sudo', 'env', 'cross-env'])
+function apagadorDePacote(comando) {
+  for (const { seg } of pedacosDeComando(comando)) {
+    for (const palavra of seg.match(/\S+/g) || []) {
+      const nome = nomeDoPrograma(palavra).replace(/@[^@\/]*$/, '')
+      if (nome === 'rimraf' || nome === 'del-cli') return true
+      if (!LANCADORES.has(nome) && !palavra.startsWith('-') && !/^\w+=/.test(palavra)) break
+    }
+  }
+  return false
+}
+// .NET pelo PowerShell: Directory.Delete com $true (recursivo), File.Delete e o .Delete($true)
+// do DirectoryInfo (Get-Item pasta). O .Delete() no bloco do ForEach vai pelo removeItemPipePerigoso
+const RE_DIRECTORY_DELETE = /\[(?:System\.)?IO\.Directory\]\s*::\s*Delete\b/gi
+const RE_FILE_DELETE = /\[(?:System\.)?IO\.File\]\s*::\s*Delete\b/i
+function dotnetApaga(comando) {
+  return RE_FILE_DELETE.test(comando) || /\.Delete\s*\(\s*\$true\s*\)/i.test(comando) ||
+    opcaoDepoisDaPalavra(comando, RE_DIRECTORY_DELETE, /\$true\b|,\s*1\s*\)/gi, FIM_DO_COMANDO)
+}
+// Clear-Content zera o arquivo (fica com 0 bytes). Um arquivo so, livre; com curinga, com
+// -Recurse ou recebendo a lista pelo pipe, zera varios de uma vez. Le o desaspado, porque o
+// curinga costuma vir no caminho entre aspas ("logs/*.log")
+const RE_CLEAR_CONTENT = /(?<![\w\-.])(?:Clear-Content|clc)(?![\w\-.])/gi
+function clearContentPerigoso(comando) {
+  return /\|\s*(?:Clear-Content|clc)(?![\w\-.])/i.test(comando) ||
+    opcaoDepoisDaPalavra(comando, RE_CLEAR_CONTENT, /[*?]/g, FIM_DO_COMANDO) ||
+    opcaoDepoisDaPalavra(comando, RE_CLEAR_CONTENT, RE_OPCAO_RECURSE, FIM_DO_COMANDO)
+}
+const MOTIVO_OUTRO_PROGRAMA = 'apaga pasta ou arquivo por outro programa, sem confirmacao'
+// regras que leem o desaspado (o que importa pode estar entre aspas); o texto de quem so
+// escreve (echo "...") ja saiu dele
+const PERIGOS_NO_DESASPADO = [
+  { teste: robocopyPerigoso, motivo: 'apaga do destino, pra sempre, tudo que nao existe na origem' },
+  { teste: nodeApaga, motivo: MOTIVO_OUTRO_PROGRAMA },
+  { teste: pythonApaga, motivo: MOTIVO_OUTRO_PROGRAMA },
+  { teste: clearContentPerigoso, motivo: 'apaga o conteudo de varios arquivos de uma vez' },
+]
 
 // correcao 7: a regra do pipe nao pode depender de um nome literal do lado esquerdo
 // (Get-ChildItem tem apelidos gci/dir/ls, e podia vir qualquer outro comando gerando a
@@ -319,7 +710,9 @@ function delPerigoso(comando) {
 // a cada chamada (cada trecho entre aspas chama o hook inteiro outra vez)
 const RE_ALIAS_REMOVE = /(?:Remove-Item|ri|del|erase|rd|rmdir|rm)/.source
 const RE_PIPE_REMOVE = new RegExp(String.raw`\|\s*${RE_ALIAS_REMOVE}\b`, 'i')
-const RE_REMOVE_NO_BLOCO = new RegExp(String.raw`\b${RE_ALIAS_REMOVE}\b`, 'gi')
+// rodada 5.20 (N9): o .Delete() do .NET no bloco (`gci -Recurse -File | % { $_.Delete() }`)
+// apaga item por item como o Remove-Item
+const RE_REMOVE_NO_BLOCO = new RegExp(String.raw`\b${RE_ALIAS_REMOVE}\b|\.Delete\s*\(`, 'gi')
 function removeItemPipePerigoso(comando) {
   // "%" nao e caractere de palavra, entao \b logo depois dele nunca casa (nem "{" nem
   // " " sao \w); o \b so faz sentido nas duas outras formas, que sao palavras de verdade.
@@ -668,24 +1061,13 @@ const PERIGOS_DISCO = [
 
 const PERIGOS = [
   { teste: rmPerigoso, motivo: 'apaga uma pasta inteira de uma vez' },
-  // --force-with-lease e a variante segura (nao sobrescreve o que outra pessoa subiu);
-  // barrar ela empurraria o aluno avancado a desligar a trava inteira, entao o
-  // lookahead negativo deixa exatamente essa variante passar. Empurrao forcado tambem se
-  // escreve com -f e com "+" na frente do nome da branch, sem --force (ver pushForcado)
-  { teste: pushForcado, motivo: 'reescreve o historico do backup no GitHub' },
-  { re: /\bgit\s+reset\s+--hard\b/, motivo: 'joga fora o trabalho que ainda nao foi salvo' },
-  // correcao 7 (quinta revisao): o que importa e o alvo ser a pasta inteira (.), com ou
-  // sem "--" e com ou sem revisao antes (`git checkout .`, `git checkout -- .` e
-  // `git checkout HEAD -- .` sao a mesma coisa pro resultado: joga fora tudo que nao foi
-  // salvo). Um arquivo so (git checkout -- arquivo.txt / git restore arquivo.txt / git
-  // checkout HEAD -- arquivo.txt) continua liberado, porque o alvo final nao e "."
-  { re: /\bgit\s+checkout\s+(?:\S+\s+)?(?:--\s+)?\.(?:\s|$)/, motivo: 'descarta toda mudanca nao salva da pasta inteira' },
-  { re: /\bgit\s+restore\s+(?:\S+\s+)?(?:--\s+)?\.(?:\s|$)/, motivo: 'descarta toda mudanca nao salva da pasta inteira' },
-  // git clean apaga arquivo e pasta fora do controle de versao; -f (forca) e -d (pastas)
-  // precisam estar juntos (combinados tipo -fdx ou separados) pra ser destrutivo, e o
-  // token so pode ter as letras de flag de verdade do git clean, senao "--dry-run"
-  // (que so simula, nao apaga nada) acusaria por ter "d" na palavra "dry"
-  { teste: cleanPerigoso, motivo: 'apaga arquivo e pasta fora do controle de versao, sem confirmacao' },
+  // as regras de git (push forcado ou apagando branch, reset --hard, checkout e restore na
+  // pasta inteira, checkout -f, switch --discard-changes, clean, stash clear e drop) moram no
+  // gitPerigoso, que le o marcado (ver ehPerigoso). --force-with-lease e a variante segura
+  // (nao sobrescreve o que outra pessoa subiu) e segue livre: barrar ela empurraria o aluno
+  // avancado a desligar a trava inteira. O git clean barra com -f (ou --force) junto de -d,
+  // -x ou -X, e o -n (--dry-run) so simula. Um arquivo so (git checkout -- arquivo.txt, git
+  // restore arquivo.txt) continua liberado
   // "sudo" no meio do pipe (curl ... | sudo bash) e o jeito mais comum de instalar
   // script de terceiro com privilegio elevado, e tem que continuar batendo. Flag i desde
   // a 5.2: `CURL x | SH` passava (o PowerShell nao liga pra maiuscula). Ver curlPipePerigoso
@@ -719,6 +1101,10 @@ const PERIGOS = [
   { teste: rdPerigoso, motivo: 'apaga uma pasta inteira de uma vez' },
   // del e erase com /s: ver delPerigoso
   { teste: delPerigoso, motivo: 'apaga arquivo de varias pastas de uma vez' },
+  { teste: findPerigoso, motivo: MOTIVO_OUTRO_PROGRAMA },
+  { teste: xargsApaga, motivo: MOTIVO_OUTRO_PROGRAMA },
+  { teste: apagadorDePacote, motivo: MOTIVO_OUTRO_PROGRAMA },
+  { teste: dotnetApaga, motivo: MOTIVO_OUTRO_PROGRAMA },
   ...PERIGOS_DISCO,
   ...PERIGOS_POWERSHELL,
 ]
@@ -731,9 +1117,35 @@ function testarPadroes(comando, lista = PERIGOS) {
   return null
 }
 
-export function ehPerigoso(comando) {
+// rodada 5.20 (N2): Start-Process com -ArgumentList em lista ('/c','rd','/s' ou /c,rd,/s,
+// com ou sem @( )) chegava picotado: o limpo perde o que esta entre aspas, cada suspeito tem
+// uma palavra so, e o desaspado fica com virgula no lugar do espaco. Aqui o trecho depois do
+// Start-Process (ate o fim do comando ou o proximo Start-Process) volta a ser uma linha so, com
+// espaco no lugar da virgula, e passa pelo ehPerigoso inteiro como mais um suspeito. Le o
+// desaspado, nao o comando cru, pra o texto de quem so escreve (echo "...") seguir livre.
+// O trecho e sempre mais curto que o comando (perde ao menos o nome), entao a recursao termina
+const RE_START_PROCESS = /(?<![\w\-.])(?:Start-Process|saps|start)(?![\w\-.])/gi
+// A lista pode vir quebrada em linhas (virgula no fim da linha, ou dentro do @( )): a quebra
+// depois da virgula e a de dentro do parentese nao encerram o comando
+function argumentosRemontados(desaspado) {
+  const texto = semSeparadorNoParentese(desaspado.replace(/,[ \t]*\r?\n/g, ', '))
+  const remontados = []
+  const inicios = [...texto.matchAll(RE_START_PROCESS)]
+  const fim = proximaDesde(texto, new RegExp(FIM_DO_COMANDO.source, 'g'))
+  inicios.forEach((m, k) => {
+    const comeco = m.index + m[0].length
+    const ate = Math.min(fim(comeco), k + 1 < inicios.length ? inicios[k + 1].index : texto.length)
+    const trecho = texto.slice(comeco, ate)
+    // lista com virgula ou dentro de @( ), que no PowerShell pode ter um item por linha sem virgula
+    if (/[,(]/.test(trecho)) remontados.push(trecho.replace(/@\(|[,()]/g, ' '))
+  })
+  return remontados
+}
+
+export function ehPerigoso(comando, opcoes = {}) {
   if (typeof comando !== 'string' || comando.length === 0) return null
-  const { limpo, suspeitos, desaspado } = classificarTrechosEntreAspas(comando)
+  const cwd = typeof opcoes.cwd === 'string' && opcoes.cwd ? opcoes.cwd : process.cwd()
+  const { limpo, suspeitos, desaspado, marcado } = classificarTrechosEntreAspas(comando)
   // menor 1: a limpeza de aspas vale pra todos os padroes, nao so pro rm, senao
   // escrever licao sobre qualquer outro comando perigoso continua barrado
   // (ex.: `echo "nunca rode chmod 777" >> licoes.md`).
@@ -743,19 +1155,32 @@ export function ehPerigoso(comando) {
   const emUmaLinha = desaspado.replace(/`?\r?\n\s*/g, ' ')
   // e tambem linha a linha: juntar tudo deixava um `-Command` da primeira linha encerrar a
   // leitura das opcoes e esconder o `powershell "-e"` da segunda (achado do Codex na final)
-  const motivo = testarPadroes(limpo) || testarPadroes(desaspado, PERIGOS_POWERSHELL) || testarPadroes(emUmaLinha, PERIGOS_POWERSHELL) || testarPadroes(desaspado, PERIGOS_SUBSHELL) || testarPadroes(desaspado, PERIGOS_DISCO)
+  const motivo = testarPadroes(limpo) || gitPerigoso(marcado, cwd) || testarPadroes(desaspado, PERIGOS_POWERSHELL) || testarPadroes(emUmaLinha, PERIGOS_POWERSHELL) || testarPadroes(desaspado, PERIGOS_SUBSHELL) || testarPadroes(desaspado, PERIGOS_DISCO) || testarPadroes(desaspado, PERIGOS_NO_DESASPADO)
   if (motivo) return motivo
   // correcao 5: todo trecho entre aspas que NAO veio de um escritor de texto conhecido
   // e comando de verdade em potencial, e testa nele mesmo, recursivo (o texto extraido
-  // e sempre mais curto que o original, entao a recursao termina).
-  for (const suspeito of suspeitos) {
-    const motivoSuspeito = ehPerigoso(suspeito)
+  // e sempre mais curto que o original, entao a recursao termina). O suspeito repetido e
+  // lido uma vez so (rodada 5.20: o Start-Process remontado soma um suspeito por chamada)
+  for (const suspeito of new Set([...suspeitos, ...argumentosRemontados(desaspado)])) {
+    const motivoSuspeito = ehPerigoso(suspeito, { cwd })
     if (motivoSuspeito) return motivoSuspeito
   }
   return null
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// rodada 5.20 (decisao 9, N37): o Node entrega o import.meta.url com o atalho resolvido e o
+// argv[1] do jeito que veio. Com o projeto aberto por uma juncao ou um link, as duas formas
+// velhas da guarda davam false e a trava saia 0 calada, sem ler nada. Os dois lados passam
+// pelo realpathSync; se ele falha, a guarda nao roda
+function chamadoDireto() {
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])
+  } catch {
+    return false
+  }
+}
+
+if (chamadoDireto()) {
   let bruto = ''
   process.stdin.setEncoding('utf8')
   process.stdin.on('data', pedaco => { bruto += pedaco })
@@ -765,7 +1190,13 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     // nao entende a entrada viraria pedra no sapato e seria desligada pelo aluno.
     try { entrada = JSON.parse(bruto || '{}') } catch { process.exit(0) }
     const comando = entrada && entrada.tool_input && entrada.tool_input.command
-    const motivo = ehPerigoso(comando)
+    // rodada 5.20 (revisao interna): erro na leitura do comando saia 1, e o Claude Code deixa
+    // rodar o que o hook nao barrou com 2. A trava leu a entrada e nao conseguiu julgar o
+    // comando, entao barra: o recado diz que foi a trava que falhou
+    let motivo
+    try { motivo = ehPerigoso(comando, { cwd: entrada && entrada.cwd }) } catch {
+      motivo = 'a trava nao conseguiu ler este comando (erro dentro dela); quebre o comando em partes menores'
+    }
     if (!motivo) process.exit(0)
     process.stderr.write(
       `Um comando foi barrado antes de rodar, porque ${motivo}.\n` +

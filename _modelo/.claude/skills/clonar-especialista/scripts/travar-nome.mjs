@@ -5,8 +5,8 @@
 // Uso (da raiz do projeto):
 //   node .claude/skills/clonar-especialista/scripts/travar-nome.mjs <pasta-do-conselheiro>
 // Sai 0 com "sem o nome: ..." ou "nome liberado pelo aluno"; sai 1 com cada ocorrencia.
-import { existsSync, readFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { existsSync, readFileSync, realpathSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { acharNome, partesDoNome } from './lib/nome.mjs'
 
@@ -30,8 +30,14 @@ export function travarNome(pasta) {
   return { codigo: 1, linhas: [...linhas, `ocorrencias: ${linhas.length}`] }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
-if (ehCli) {
+function chamadoDireto() {
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])
+  } catch {
+    return false
+  }
+}
+if (chamadoDireto()) {
   const pasta = process.argv[2]
   if (!pasta) {
     console.error('Uso: node .claude/skills/clonar-especialista/scripts/travar-nome.mjs <pasta-do-conselheiro>')

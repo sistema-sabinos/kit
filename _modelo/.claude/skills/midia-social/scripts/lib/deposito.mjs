@@ -8,6 +8,9 @@ import { basename, extname } from 'node:path'
 import { exigir } from './config.mjs'
 
 export const TETO_CLOUDINARY = 100 * 1024 * 1024
+// Prazo do envio do video: longo (arquivo grande, internet lenta), mas com fim, pra conexao
+// presa nao deixar a postagem parada sem aviso.
+const PRAZO_UPLOAD_MS = 15 * 60_000
 
 const sha256 = d => createHash('sha256').update(d).digest('hex')
 const hmac = (k, d) => createHmac('sha256', k).update(d).digest()
@@ -31,7 +34,7 @@ export async function subirCloudinary(env, arquivo, chave, { fetchFn = fetch, ag
   form.set('timestamp', String(params.timestamp))
   form.set('api_key', env.CLOUDINARY_API_KEY)
   form.set('signature', assinaturaCloudinary(params, env.CLOUDINARY_API_SECRET))
-  const r = await fetchFn(`https://api.cloudinary.com/v1_1/${env.CLOUDINARY_CLOUD_NAME}/${tipo}/upload`, { method: 'POST', body: form })
+  const r = await fetchFn(`https://api.cloudinary.com/v1_1/${env.CLOUDINARY_CLOUD_NAME}/${tipo}/upload`, { method: 'POST', body: form, signal: AbortSignal.timeout(PRAZO_UPLOAD_MS) })
   const j = await r.json()
   if (!r.ok || !j.secure_url) throw new Error(`Cloudinary recusou (HTTP ${r.status}): ${j.error?.message || 'sem detalhe'}`)
   return j.secure_url
@@ -59,6 +62,7 @@ export async function subirR2(env, arquivo, chave, { fetchFn = fetch, agora = ne
     method: 'PUT',
     headers: { Authorization: `AWS4-HMAC-SHA256 Credential=${ak}/${escopo}, SignedHeaders=${assinados}, Signature=${assinatura}`, 'x-amz-date': amz, 'x-amz-content-sha256': hash, 'Content-Type': contentType },
     body,
+    signal: AbortSignal.timeout(PRAZO_UPLOAD_MS),
   })
   if (r.status !== 200) throw new Error(`R2 HTTP ${r.status}: ${(await r.text()).slice(0, 300)}`)
   return `${env.R2_URL_PUBLICA.replace(/\/+$/, '')}/${caminho}`

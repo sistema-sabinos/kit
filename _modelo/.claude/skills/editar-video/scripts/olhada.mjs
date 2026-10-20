@@ -6,7 +6,7 @@
 //
 // uso: node olhada.mjs --slug <slug>
 // Saida 3 = motor nao configurado ou desatualizado (rodar /configurar-video). Saida 1 = qualquer outra falha.
-import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, realpathSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -99,7 +99,13 @@ export function olhada({ slug, raiz = RAIZ, base, motorKit = MOTOR_KIT, executar
   }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const { values: v } = parseArgs({ options: { slug: { type: 'string' } } })

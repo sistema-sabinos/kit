@@ -17,6 +17,7 @@ import { randomBytes } from 'node:crypto'
 import { lerArquivoCsv, gravarArquivoCsv } from './lib/csv.mjs'
 import { centavos, reais, paraCsv } from './lib/dinheiro.mjs'
 import { dataValida, hojeLocal, diasEntre, lerArquivoFatos, vencidos } from './lib/fatos.mjs'
+import { realpathSync } from 'node:fs'
 
 const AQUI = dirname(fileURLToPath(import.meta.url))
 export const COL_PEDIDOS = ['id', 'data', 'cliente', 'item', 'valor', 'entrega', 'situacao']
@@ -238,6 +239,12 @@ export function executar(argv, log = console.log) {
   }
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+if (chamadoDireto()) {
   try { executar(process.argv.slice(2)) } catch (e) { console.error(e.message); process.exit(1) }
 }

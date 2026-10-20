@@ -12,8 +12,7 @@
 // Conta: tudo em caractere como gente conta (emoji feito de pedacos vale 1), menos as
 // palavras-chave da App Store, que a Apple conta em byte (letra com acento vale 2).
 // Saida: 0 sem erro (aviso pode ter); 1 algum erro; 2 arquivo ruim ou uso errado.
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { readFileSync, realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { lerArgs } from '../../app-estudar/scripts/lib/args.mjs'
 import { dobrar, escapar } from '../../app-estudar/scripts/lib/texto.mjs'
@@ -159,7 +158,13 @@ export function principal(argv, escrever = console.log, avisar = console.error) 
   return lista.some(i => i.nivel === 'erro') ? 1 : 0
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     process.exitCode = principal(process.argv.slice(2))

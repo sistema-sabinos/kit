@@ -6,9 +6,9 @@
 // Codex logado por chave de API fica de fora: ali cada imagem e cobrada.
 // Uso: node .claude/skills/gerar-imagens/scripts/motor.mjs
 import { spawnSync } from 'node:child_process'
-import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { lerEnv } from '../../mercado-livre/scripts/lib/env.mjs'
+import { realpathSync } from 'node:fs'
 
 export function escolherDegrau({ codex, env }) {
   if (codex.logado) return { degrau: 'codex', motivo: 'Codex logado com a conta do ChatGPT: gera o cenario sem cobranca por imagem dentro da cota do plano; se voce comprou creditos avulsos do Codex, passar do limite do plano gasta esses creditos' }
@@ -26,7 +26,13 @@ export function detectarCodex(executar = spawnSync) {
   return lerStatusCodex(executar('codex', ['login', 'status'], { encoding: 'utf8', timeout: 20000, shell: process.platform === 'win32' }))
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   const codex = detectarCodex()
   const env = lerEnv()

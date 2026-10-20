@@ -24,6 +24,8 @@ async function apiFetch(endpoint, options = {}) {
   const res = await fetch(`${BASE}${endpoint}`, {
     ...options,
     headers: { Authorization: `Bearer ${API_KEY}`, "Content-Type": "application/json", ...options.headers },
+    // prazo: conexao presa vira erro em 60 s, em vez de deixar a tela parada
+    signal: AbortSignal.timeout(60_000),
   });
   if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
   return res.json();
@@ -39,7 +41,7 @@ async function uploadImage(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   const contentType = [".jpg", ".jpeg"].includes(ext) ? "image/jpeg" : "image/png";
   const body = fs.readFileSync(filePath);
-  const res = await fetch(upload_url, { method: "PUT", headers: { "Content-Type": contentType }, body });
+  const res = await fetch(upload_url, { method: "PUT", headers: { "Content-Type": contentType }, body, signal: AbortSignal.timeout(5 * 60_000) });
   if (!res.ok) throw new Error(`Upload ${res.status}: ${await res.text()}`);
   return media_url;
 }

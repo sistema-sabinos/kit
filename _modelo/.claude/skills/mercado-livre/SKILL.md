@@ -240,15 +240,19 @@ ler `dados/pipeline/<slug>/status.json` e continuar da etapa atual:
      Com ele, despachar `ml-designer` no modo GERAR dizendo "gasto autorizado:
      US$ X, preço por imagem Y". Sem ele, despachar dizendo "sem gasto:
      zero-ia".
-   - `codex`: dizer uma vez à pessoa "o Codex não cobra por imagem dentro da
-     cota do seu plano; se você comprou créditos avulsos do Codex, passar do
-     limite do plano gasta esses créditos" e despachar no modo GERAR.
+   - `codex`: contar as fotos de clima do `mapa_fotos`, dizer à pessoa "vão N
+     imagens pelo Codex; ele não cobra por imagem dentro da cota do seu plano,
+     e se você comprou créditos avulsos do Codex, passar do limite do plano
+     gasta esses créditos" e esperar o "pode ir". Com ele, despachar
+     `ml-designer` no modo GERAR dizendo "Codex autorizado". Sem ele, despachar
+     dizendo "sem gasto: zero-ia".
    - `zero-ia`: despachar no modo GERAR.
 3. Gate de imagens: abrir a prancha que o `ml-designer` gerou
    (`anuncios/<slug>/imagens/prancha.html`) e esperar 'aprova tudo' ou 'refaz a
    N'. Reprovou alguma: `ml-designer` no modo REFAZER com o comentário literal.
    Refazer no Gemini é gasto novo: estimativa e "pode ir" de novo, e o
-   despacho leva "gasto autorizado" outra vez. Aprovou: `ml-designer` no modo
+   despacho leva "gasto autorizado" outra vez. No Codex, o aviso e o "pode ir"
+   de novo, e o despacho leva "Codex autorizado" outra vez. Aprovou: `ml-designer` no modo
    ENTREGAR.
 4. Auditoria: despachar `ml-auditor`. Reprovado: despachar a correção pra quem a
    falha aponta e auditar de novo. Aprovado: seguir.
@@ -277,8 +281,11 @@ perto de publicar sem bloqueio e propor continuar ele.
 - Recibo, nunca despejo: repassar só o recibo dos agentes.
 - Gates invioláveis: decisão (etapa 4) e aprovação de imagens nunca são pulados,
   mesmo que a pessoa diga "roda tudo". Nesses dois pontos, parar e apresentar.
-- Custo: antes de qualquer gasto acima de `limite_gasto_usd` da configuração,
-  mostrar a estimativa e esperar o "pode ir". O padrão do pacote é custo zero.
+- Custo: antes de todo gasto, mesmo pequeno e dentro do teto, mostrar a
+  estimativa e esperar o "pode ir" da pessoa naquele momento. O
+  `limite_gasto_usd` da configuração é uma trava a mais: lote que passa dele
+  para, e a saída é dividir o lote ou combinar subir o teto. O padrão do pacote
+  é custo zero.
 - Bloqueio declarado: agente que reporta bloqueio (sem foto, dado faltando do
   fornecedor, Chrome fechado) grava em `status.json` em `bloqueios`; avisar e
   seguir pra outro produto se houver.

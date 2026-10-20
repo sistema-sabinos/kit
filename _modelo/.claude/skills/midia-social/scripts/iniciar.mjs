@@ -1,8 +1,8 @@
 // Primeira configuracao do pacote: grava _contexto/midia-social.md e cria as gavetas do aluno a partir dos moldes.
 // Nunca sobrescreve: o que o aluno ja preencheu fica, e o que falta e criado.
 // Uso: node .claude/skills/midia-social/scripts/iniciar.mjs --modo loja|pessoal --perfil <nome> [--ritmo 3]
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs'
-import { join, dirname, relative, resolve } from 'node:path'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, statSync, realpathSync } from 'node:fs'
+import { join, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from './lib/raiz.mjs'
 
@@ -63,7 +63,13 @@ export function iniciar({ raiz = RAIZ, modo, perfil, ritmo = 3, moldes = MOLDES 
   return { criados, mantidos }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   const v = process.argv.slice(2)
   const op = n => { const i = v.indexOf(`--${n}`); return i >= 0 ? v[i + 1] : undefined }

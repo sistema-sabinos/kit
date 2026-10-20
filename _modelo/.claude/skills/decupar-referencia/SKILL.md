@@ -45,7 +45,8 @@ Roda sem IA paga, so com ferramentas do computador:
 3. **Cortes:** `ffmpeg -i <video> -vf "select='gt(scene,0.06)',showinfo" -f null -` (os tempos saem
    nas linhas `pts_time`).
 4. **Som:** `silencedetect` pros silencios e `ebur128` pro volume (ler o bloco `Summary`).
-5. **Fala:** `python .claude/skills/pauta/scripts/transcrever.py <video>` (gratis, no computador). Pra
+5. **Fala:** `python .claude/skills/pauta/scripts/transcrever.py <video>` (gratis, no computador; a
+   lingua o whisper detecta sozinho e anota na primeira linha do `.txt`, como `lingua: en`). Pra
    Reel coletado, `python .claude/skills/pauta/scripts/transcrever.py <perfil>` transcreve a pasta
    `videos/` do perfil.
 6. **Numeros do post:** curtidas e comentarios pela descricao da pagina publica, e a data pelo codigo

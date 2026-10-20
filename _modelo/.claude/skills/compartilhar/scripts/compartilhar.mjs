@@ -8,9 +8,9 @@
 //     caminho que sai da pasta (../) ou absoluto (E:/, /Users/) num texto dela (.md, script,
 //     configuracao), ou link quebrado: tudo que falha fora do projeto (sai 1 se achou)
 //   erro de uso sai 3, pra nunca se confundir com o 2 de "achou segredo"
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, realpathSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 import { lerDecisoes, alvosDe, varrerSegredos, dataLocal } from '../../faxina/scripts/faxina.mjs'
 
 const eol = txt => ((txt.match(/\r\n/g) || []).length * 2 > (txt.match(/\n/g) || []).length ? '\r\n' : '\n')
@@ -101,7 +101,13 @@ export function conferir(pasta) {
   return fora
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+if (chamadoDireto()) {
   const [cmd, pasta, etiqueta] = process.argv.slice(2)
   if (!pasta || !existsSync(pasta)) { console.error('uso: compartilhar.mjs varrer|decisoes|conferir <pasta> [etiqueta]'); process.exitCode = 3 }
   else if (cmd === 'varrer') {

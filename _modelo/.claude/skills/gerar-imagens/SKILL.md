@@ -70,10 +70,12 @@ as imagens finais em `anuncios/<slug>/imagens/NN-papel.jpg`, na ordem do mapa.
 3. **Cenários** (só degrau `codex` ou `gemini`): um `anuncios/<slug>/cenarios/cenas.json`
    com todas as fotos de clima do mapa, cada uma com a descrição do lugar nas
    cores do estilo, e UMA chamada só (em lote gasta menos cota).
-   Codex: antes do lote, a pessoa ouve uma vez "o Codex não cobra por imagem
-   dentro da cota do seu plano; se você comprou créditos avulsos do Codex,
-   passar do limite do plano gasta esses créditos" (na `/mercado-livre`, quem
-   diz é a conversa principal, antes do despacho).
+   Codex, só depois do "pode ir" desta rodada: antes do lote, a pessoa ouve
+   quantas imagens vão e "o Codex não cobra por imagem dentro da cota do seu
+   plano; se você comprou créditos avulsos do Codex, passar do limite do plano
+   gasta esses créditos", e diz o "pode ir". Na `/mercado-livre`, quem pergunta
+   é a conversa principal, antes do despacho, que traz "Codex autorizado"; sem
+   essa linha, seguir no `zero-ia`.
    `node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau codex --cenas anuncios/<slug>/cenarios/cenas.json`
    Gemini, só depois do "pode ir" desta rodada (sem ele, nunca `--autorizado`):
    `--degrau gemini --preco-usd <preço do dia> --contexto "designer <slug>" --autorizado`.
@@ -91,6 +93,10 @@ as imagens finais em `anuncios/<slug>/imagens/NN-papel.jpg`, na ordem do mapa.
      o `limite_gasto_usd` em `_contexto/mercado-livre.md`.
    - Saída 3 falando de "pode ir": faltou a autorização. Parar e pedir; no
      `ml-designer`, seguir no `zero-ia` e dizer no recibo.
+   - Saída 3 com `parou` no JSON: a chave liberou um modelo de imagem mais caro
+     que o `--preco-usd` da estimativa, e nada foi gerado. Conferir na web o
+     preço do modelo citado, refazer a estimativa e pedir o "pode ir" de novo;
+     no `ml-designer`, seguir no `zero-ia` e dizer no recibo.
 4. **Foto de clima**: `compor-cena.mjs --cena <cenario.png>` (ou `--fundo` com a
    cor do estilo no `zero-ia`), produto em `--escala 0.55` e `--linha 0.85` como
    ponto de partida. Cenario escuro e borda clara em volta do produto: refazer o
@@ -126,16 +132,17 @@ Abrir cada imagem (Read) e conferir, refazendo sozinho o que falhar:
    `open "<caminho>"`. Dizer: "Abri as fotos no navegador. Responde aqui:
    aprova tudo, ou refaz a 3 e diz o que mudar."
 4. Refazer só as citadas, com o mesmo nome de arquivo, e gerar a prancha de
-   novo. Nunca refazer o conjunto por causa de uma. Refazer no Gemini é gasto
-   novo: estimativa e "pode ir" de novo antes (no `ml-designer`, vindos no
-   despacho).
+   novo. Nunca refazer o conjunto por causa de uma. Refazer no Gemini ou no
+   Codex é gasto novo: estimativa (ou o aviso do Codex) e "pode ir" de novo
+   antes (no `ml-designer`, vindos no despacho).
 5. Aprovou: `aprovado_pelo_usuario: true`, cada imagem `aprovada: true`, e a
    esteira segue pra auditoria.
 
 ## Custo
 
 Codex: sem cobrança por imagem dentro da cota do plano; se você comprou
-créditos avulsos do Codex, passar do limite do plano gasta esses créditos. O
+créditos avulsos do Codex, passar do limite do plano gasta esses créditos, e
+por isso o lote pelo Codex também espera o "pode ir". O
 recibo diz quantos cenários foram pelo Codex. Gemini: cada imagem vira
 uma linha em `dados/custos.jsonl` (o script grava sozinho) e o total aparece na
 prancha. Recorte, composição, peça e prancha: sempre zero.

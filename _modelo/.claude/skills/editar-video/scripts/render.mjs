@@ -5,7 +5,7 @@
 // uso: node render.mjs --slug <slug> --tipo videov2|camadas [--musica biblioteca/musica/...] [--musica-db -3] [--duck-ratio 2] [--sem-densidade]
 // No videov2 confere antes a densidade (densidade.mjs) e para se a edicao estiver parada demais.
 // Saida 3 = motor nao configurado ou desatualizado (rodar /configurar-video). Saida 1 = qualquer outra falha.
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync, realpathSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -137,7 +137,13 @@ export function lerArgumentos(argv) {
   return { slug: v.slug, tipo: v.tipo, musica: v.musica, musicaDb: Number(v['musica-db']), duckRatio: Number(v['duck-ratio']), semDensidade: v['sem-densidade'] }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const r = render(lerArgumentos(process.argv.slice(2)))

@@ -20,10 +20,10 @@
 // o bloco do custo de envio mostra dois valores e o que vale e o segundo (depois do desconto). Se
 // o Mercado Livre mudar a pagina, os seletores de simularNaPagina sao o que precisa de ajuste; a
 // leitura do resumo e da categoria e por texto e aguenta mais.
-import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { conectar } from '../../mercado-livre/scripts/lib/chrome.mjs'
 import { carregarConfiguracao, exigir } from '../../mercado-livre/scripts/lib/config.mjs'
+import { realpathSync } from 'node:fs'
 
 export const URL_SIMULADOR = 'https://www.mercadolivre.com.br/simulador-de-custos'
 
@@ -298,7 +298,13 @@ export function impostoPctOuRecado(carregar = () => exigir(carregarConfiguracao(
   }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   let browser = null
   try {

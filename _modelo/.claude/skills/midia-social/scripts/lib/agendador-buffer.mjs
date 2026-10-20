@@ -16,7 +16,8 @@ const DUVIDA = {
 async function gql(chave, query, variables, { fetchFn = fetch, escrita = null } = {}) {
   let r
   try {
-    r = await fetchFn(API, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${chave}` }, body: JSON.stringify({ query, variables }) })
+    // Prazo de 60 s: conexao presa vira erro (e, na escrita, a mensagem de conferir no Buffer).
+    r = await fetchFn(API, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${chave}` }, body: JSON.stringify({ query, variables }), signal: AbortSignal.timeout(60_000) })
   } catch (e) {
     if (escrita) throw new ErroIncerto(DUVIDA[escrita](`a conexao caiu (${e.message})`))
     throw e

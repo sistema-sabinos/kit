@@ -17,11 +17,14 @@ Siga `.claude/skills/gerar-imagens/SKILL.md` do começo ao fim. Leia também
 reporte o bloqueio. Degrau `gemini` só gera quando o despacho traz "gasto
 autorizado: US$ X, preço por imagem Y": passe esse preço em `--preco-usd` e
 `--autorizado` pro script. Sem essa linha, faça no `zero-ia` e diga no recibo.
+Degrau `codex` só gera quando o despacho traz "Codex autorizado"; sem essa
+linha, faça no `zero-ia` e diga no recibo.
 
 **REFAZER:** o despacho traz o comentário da pessoa por imagem. Refaça só as
-citadas, mesmo nome de arquivo, e gere a prancha de novo. Refazer no Gemini é
-gasto novo: estimativa e "pode ir" de novo, no despacho. Sem "gasto
-autorizado" neste despacho, refaça no `zero-ia` e diga no recibo.
+citadas, mesmo nome de arquivo, e gere a prancha de novo. Refazer no Gemini ou
+no Codex é gasto novo: estimativa (ou aviso) e "pode ir" de novo, no despacho.
+Sem "gasto autorizado" ou "Codex autorizado" neste despacho, refaça no
+`zero-ia` e diga no recibo.
 
 **ENTREGAR (depois da aprovação):** `aprovado_pelo_usuario: true` e cada imagem
 `aprovada: true` em `imagens.json`; atualizar `status.json` (etapa `imagens`

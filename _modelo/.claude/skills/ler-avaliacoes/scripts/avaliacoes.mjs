@@ -10,7 +10,7 @@
 // Peso de cada avaliacao: nota 1 vale 1, nota 5 vale 0,2, sem nota 0,6; mais velha que --meses
 // vale metade. Tema de reclamacao so conta nota 1 a 3 ou sem nota. Tema com menos de 3 avaliacoes ou de uma fonte so fica marcado como pouca prova.
 // Saida: 0 ok; 2 entrada ruim (arquivo, coluna, tema ou flag).
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, realpathSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { dobrar, limpar, suspeitos } from './lib/texto.mjs'
@@ -329,7 +329,13 @@ export function principal(argv, escrever = s => process.stdout.write(s)) {
   return 0
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try { process.exitCode = principal(process.argv.slice(2)) } catch (e) { console.error(e.message); process.exitCode = 2 }
 }

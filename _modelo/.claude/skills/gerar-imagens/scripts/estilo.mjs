@@ -5,8 +5,8 @@
 // Uso: node .claude/skills/gerar-imagens/scripts/estilo.mjs --slug <slug>
 // Saida 0: { categoria, estilo, cores, letras }. Saida 2: categoria sem estilo, com as
 // linhas que existem. Saida 1: erro de uso ou de arquivo.
-import { existsSync, readFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { existsSync, readFileSync, realpathSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
 import { lerEstilos } from './lib/estilos-md.mjs'
@@ -68,7 +68,13 @@ export function resolverEstilo({ slug, raiz = RAIZ, estilos = lerEstilos() }) {
   return { codigo: 0, saida: JSON.stringify({ categoria, estilo: linha.estilo, cores, letras: { titulo: e.titulo, texto: e.texto } }) }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const r = resolverEstilo({ slug: lerArgs(process.argv.slice(2)).slug })

@@ -5,8 +5,9 @@ description: >
   preço, vendas, fotos, ficha técnica, descrição, avaliações reais lidas da página do
   anúncio e as perguntas que os clientes fazem. Gera o briefing comparativo, o
   vocabulário dos títulos e os atributos que todo mundo preenche. É a etapa 3 da esteira
-  e roda sobre a pesquisa da categoria; pedido avulso de um produto vai pela
-  `/engenharia-reversa`. Custo zero. Use quando o usuário
+  e roda sobre a pesquisa da categoria. Também lê um anúncio só, pelo link ou pelo
+  código, sem fornecedor nem pesquisa (é o que a /video-produto usa); estudo avulso de
+  um produto, campeão contra fraco, vai pela `/engenharia-reversa`. Custo zero. Use quando o usuário
   chamar /espionar-concorrente, disser "analisa os concorrentes do [produto]", "como
   estão anunciando [produto]", "o que os clientes perguntam de [produto]", ou quando a
   /mercado-livre despachar o agente ml-espiao.
@@ -28,7 +29,8 @@ roda é o agente `ml-espiao`.
 
 ## Dependências
 
-- `fornecedores/<f>/_raw-pesquisa-<categoria>.json` (a `/pesquisar-tendencia` rodou nessa categoria)
+- `fornecedores/<f>/_raw-pesquisa-<categoria>.json` (a `/pesquisar-tendencia` rodou nessa
+  categoria), menos no modo de um anúncio só, que dispensa a pesquisa
 - Chrome dedicado aberto e logado
 - `.claude/skills/mercado-livre/referencias/navegador.md`, os cuidados com o
   Chrome dedicado: ler antes de clicar ou navegar
@@ -39,9 +41,32 @@ roda é o agente `ml-espiao`.
 ### 0. Sem a pesquisa da categoria
 
 Sem `fornecedores/<f>/_raw-pesquisa-<categoria>.json`: dizer que esta skill é a
-etapa 3 da esteira e oferecer dois caminhos: `/mercado-livre <categoria>` (a
-esteira inteira) ou `/engenharia-reversa <termo>` (avulsa, campeão contra fraco do
-mesmo produto, sem fornecedor).
+etapa 3 da esteira e oferecer três caminhos: `/mercado-livre <categoria>` (a
+esteira inteira); o pedido avulso de um produto vai pela `/engenharia-reversa`
+(`/engenharia-reversa <termo>`, campeão contra fraco do mesmo produto, sem
+fornecedor); e o modo de um anúncio só, logo abaixo, quando a pessoa já tem o
+anúncio do concorrente em mãos (o caso da `/video-produto`).
+
+### Modo de um anúncio só
+
+Pra quem só quer as perguntas e opiniões de um anúncio de concorrente, por
+exemplo pra fazer o vídeo na `/video-produto`. Basta o link ou o código do
+anúncio (`MLB` seguido de números). Não precisa de fornecedor, categoria nem
+pesquisa, e não custa nada.
+
+```bash
+node .claude/skills/mercado-livre/scripts/abrir-chrome.mjs
+node .claude/skills/espionar-concorrente/scripts/espionar.mjs --mlb <link ou código do anúncio>
+```
+
+Lê esse anúncio, todas as opiniões (até 100) e as perguntas dele, no mesmo
+ritmo de gente da coleta normal, e grava
+`dados/concorrentes/_raw-concorrentes-<MLB>.json`. Não mexe no vocabulário, nos
+atributos nem no arquivo da categoria. A última linha que ele mostra é o
+comando da fase 1 da `/video-produto` já com esse arquivo; falta só trocar o
+`--slug` pelo nome do produto da pessoa, sem marca. Código de produto de
+catálogo (`MLBU`) não abre sozinho: peça o link da página do anúncio. O mesmo
+arquivo serve pra `/ler-avaliacoes --de-espionagem`.
 
 ### 1. O que espionar
 

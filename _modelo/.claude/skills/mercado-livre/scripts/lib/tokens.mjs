@@ -2,10 +2,10 @@
 // Token de acesso do Mercado Livre e do Bling, com renovacao automatica.
 // Le o .env do projeto; se o token vence em menos de 5 minutos, troca o refresh_token por
 // um novo e grava de volta (data em ISO). Uso direto: node tokens.mjs ml|bling
-import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { lerEnv, gravarEnv, CAMINHO_ENV } from './env.mjs'
 import { fetchComTimeout } from './fetch-timeout.mjs'
+import { realpathSync } from 'node:fs'
 
 export const MARGEM_MS = 5 * 60 * 1000
 export const URL_TOKEN_ML = 'https://api.mercadolibre.com/oauth/token'
@@ -108,7 +108,13 @@ export function resumoDoToken(servico, env) {
   return `token do ${servico} valido ate ${env[chavesDe(servico).expira]}`
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     await token(process.argv[2])

@@ -15,7 +15,7 @@
 //   node .claude/skills/clonar-especialista/scripts/instalar.mjs <pasta-do-conselheiro>
 //   node .claude/skills/clonar-especialista/scripts/instalar.mjs --carimbar <pasta-do-conselheiro>
 //   node .claude/skills/clonar-especialista/scripts/instalar.mjs --faltando <pasta-mae>/agentes
-import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
 import { homedir } from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -50,8 +50,11 @@ export function instalar(pasta, casa = homedir()) {
   if (!ehMestra(pasta, casa)) {
     return { codigo: 1, linhas: [`nao instalei: so a copia-mestra em <pasta-mae>/agentes/${apelido} ou em ~/.claude/conselheiros/${apelido} instala, e ${resolve(pasta)} fica fora das duas`] }
   }
-  const med = medirPersona(pasta)
+  // copia-mestra carimbada antes da 5.20 nao tem a conferencia de cada resposta; mexer nela muda
+  // o carimbo, entao ela reinstala como esta e o aviso diz como ganhar o passo
+  const med = medirPersona(pasta, { conferencia: false })
   if (med.codigo) return { codigo: 1, linhas: ['persona reprovada no medir-persona, nada instalado:', ...med.linhas] }
+  const semConferencia = medirPersona(pasta).codigo !== 0
   const cit = conferirPasta(pasta, { persona: true })
   if (cit.codigo) return { codigo: 1, linhas: ['citacoes reprovadas no conferir-citacoes, nada instalado:', ...cit.linhas] }
   const nome = travarNome(pasta)
@@ -75,7 +78,8 @@ export function instalar(pasta, casa = homedir()) {
   if (existsSync(join(pasta, 'fichas'))) cpSync(join(pasta, 'fichas'), join(d.skill, 'fichas'), { recursive: true })
   mkdirSync(join(casa, '.claude', 'agents'), { recursive: true })
   copyFileSync(join(pasta, 'agente.md'), d.agente)
-  return { codigo: 0, linhas: [`instalado: ${d.skill}`, `instalado: ${d.agente}`, 'abra uma conversa nova pra ele aparecer'] }
+  const aviso = semConferencia ? ['AVISO: conselheiro de antes da 5.20, sem a conferencia das citacoes a cada resposta; pra ganhar, refaca pela /clonar-especialista a partir do Passo 7 (esqueleto e molde novos), com o Passo 8 e a bateria'] : []
+  return { codigo: 0, linhas: [`instalado: ${d.skill}`, `instalado: ${d.agente}`, ...aviso, 'abra uma conversa nova pra ele aparecer'] }
 }
 
 // Fim do Passo 9: grava "Persona: <carimbo>" no fim do ultimo bloco de prova/resultado.md (o fim
@@ -139,8 +143,14 @@ export function faltando(dirAgentes, casa = homedir()) {
     .sort()
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
-if (ehCli) {
+function chamadoDireto() {
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])
+  } catch {
+    return false
+  }
+}
+if (chamadoDireto()) {
   const args = process.argv.slice(2)
   if (args[0] === '--carimbar' && args[1]) {
     const r = carimbar(args[1])

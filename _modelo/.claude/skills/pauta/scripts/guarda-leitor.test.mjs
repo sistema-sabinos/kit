@@ -47,6 +47,26 @@ test('o hook de verdade sai 0 na pasta de saida e 2 no resto, com motivo', () =>
   assert.equal(rodar({ tool_input: {} }).status, 2, 'sem caminho barra')
 })
 
+// rodada 5.20 (decisao 9, N37): chamado por uma juncao ou link ate a pasta do script, barra
+// igual ao caminho real (com a guarda velha, pela juncao, saia 0 e deixava gravar)
+test('pela juncao ou link ate a pasta do script, a trava barra igual ao caminho real', () => {
+  const pasta = mkdtempSync(join(tmpdir(), 'guarda-juncao-'))
+  try {
+    const real = join(pasta, 'real')
+    const ponte = join(pasta, 'ponte')
+    mkdirSync(real)
+    writeFileSync(join(real, 'guarda-leitor.mjs'), readFileSync(SCRIPT))
+    // 'junction' vira juncao no Windows (a mesma do mklink /J) e e ignorado no Mac e no Linux
+    symlinkSync(real, ponte, 'junction')
+    const entrada = JSON.stringify({ tool_name: 'Write', tool_input: { file_path: '.claude/skills/pauta/scripts/radar.mjs' } })
+    for (const p of [real, ponte]) {
+      const r = spawnSync(process.execPath, [join(p, 'guarda-leitor.mjs')], { input: entrada, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: RAIZ } })
+      assert.equal(r.status, 2, `por ${p === real ? 'caminho real' : 'juncao'}: saida ${r.status}`)
+      assert.match(r.stderr, /Gravacao barrada/)
+    }
+  } finally { rmSync(pasta, { recursive: true, force: true }) }
+})
+
 test('mutante: sem a checagem de pasta, o script deixa passar o radar.mjs', async () => {
   const fonte = readFileSync(SCRIPT, 'utf8')
   const trecho = 'return PASTAS.some(p => rel.startsWith(p) && rel.length > p.length)'

@@ -6,8 +6,8 @@
 // Uso:
 //   node .claude/skills/pauta/scripts/garimpo.mjs --sementes a,b --dias 4 --posts 9 --teto 18 --piso 300 [--tag x]
 //   node .claude/skills/pauta/scripts/garimpo.mjs --perfis a,b,c --dias 4        (pula a descoberta)
-import { writeFileSync, mkdirSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { writeFileSync, mkdirSync, realpathSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../midia-social/scripts/lib/raiz.mjs'
 import { abrirPagina, ogDaPagina, opcoes, lista } from './lib/pagina.mjs'
@@ -83,5 +83,11 @@ async function main(argv) {
   console.error(`\nok: inteligencia/base-ideias/aberto-${hoje}.md com ${rank.length} posts na janela de ${dias} dias`)
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) main(process.argv.slice(2)).catch(e => { console.error('ERRO:', e.message); process.exitCode = 1 })

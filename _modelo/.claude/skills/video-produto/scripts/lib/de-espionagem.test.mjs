@@ -94,6 +94,40 @@ test('sem perguntas lidas, avisa qual anuncio escolher e como ler as perguntas',
   assert.ok(c.avisos.some((a) => /perguntas/.test(a) && /espionar-concorrente/.test(a)), c.avisos.join(' | '))
 })
 
+test('bruto do modo avulso sem perguntas avisa que a pagina nao tinha o link, sem mandar pedir mais perguntas', () => {
+  const b = { ...bruto(), avulso: true, categoria: '' }
+  delete b.anuncios[0].perguntas
+  const c = coletaDeEspionagem(b, MLB)
+  assert.ok(c.avisos.length, 'canario: veio aviso')
+  const aviso = c.avisos.find((a) => /perguntas/.test(a))
+  assert.match(aviso, /Ver todas as perguntas/)
+  assert.doesNotMatch(aviso, /mais perguntas/)
+})
+
+test('bruto do modo avulso com erro manda ler de novo com --mlb, sem --retomar nem outro anuncio', () => {
+  const b = { ...bruto(), avulso: true, categoria: '' }
+  b.anuncios = [{ ...b.anuncios[0], perguntas: undefined, perguntas_erro: 'timeout' }]
+  const aviso = coletaDeEspionagem(b, MLB).avisos.find((a) => /perguntas/.test(a))
+  assert.ok(aviso, 'canario: veio aviso de perguntas')
+  assert.match(aviso, new RegExp(`timeout[\\s\\S]*--mlb ${MLB}`))
+  assert.doesNotMatch(aviso, /--retomar|outro anuncio/)
+
+  b.anuncios = [{ id: MLB, erro: 'pagina: timeout' }]
+  let msg = ''
+  try { coletaDeEspionagem(b, MLB) } catch (e) { msg = e.message }
+  assert.ok(msg, 'canario: deu erro')
+  assert.match(msg, new RegExp(`--mlb ${MLB}`))
+  assert.doesNotMatch(msg, /--retomar|outro anuncio/)
+})
+
+test('bruto da esteira com erro nas perguntas segue mandando --retomar', () => {
+  const b = bruto()
+  b.anuncios[0] = { ...b.anuncios[0], perguntas: undefined, perguntas_erro: 'timeout' }
+  const aviso = coletaDeEspionagem(b, MLB).avisos.find((a) => /perguntas/.test(a))
+  assert.ok(aviso, 'canario: veio aviso de perguntas')
+  assert.match(aviso, /--retomar/)
+})
+
 test('avaliacoes com erro viram aviso, nao derrubam a coleta', () => {
   const b = bruto()
   b.anuncios[0].avaliacoes = { erro: 'HTTP 403' }

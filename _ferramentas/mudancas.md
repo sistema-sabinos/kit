@@ -62,7 +62,7 @@
 **O que é:** liga a trava que barra comando destrutivo (apagar pasta inteira, reescrever histórico do Git, rodar script baixado direto).
 **Por quê:** um comando digitado errado apaga semanas de trabalho, e a trava para isso antes de rodar.
 **Te afeta se:** o arquivo `.claude/hooks/barrar-perigoso.mjs` existe no projeto e o `.claude/settings.json` não cita `barrar-perigoso`.
-**Como aplicar:** acrescentar no `settings.json`, dentro de `hooks`, o bloco `PreToolUse` igual ao do `_modelo/.claude/settings.json` do kit (matcher `Bash|PowerShell`), sem mexer no resto.
+**Como aplicar:** acrescentar no `settings.json`, dentro de `hooks`, o bloco `PreToolUse` igual ao do `_modelo/.claude/settings.json` do kit (matcher `Bash|PowerShell|Monitor`), sem mexer no resto.
 **Como testar:** o `settings.json` é JSON válido (`node -e "JSON.parse(require('fs').readFileSync('.claude/settings.json','utf8'))"`) e `echo '{"tool_name":"Bash","tool_input":{"command":"ls"}}' | node .claude/hooks/barrar-perigoso.mjs` sai com código 0 (a trava roda e deixa passar comando inofensivo). Avisar que a trava vale a partir da próxima conversa.
 
 ## regra-trava
@@ -615,3 +615,27 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto tem `.claude/skills/editar-video/` e ainda não tem `.claude/skills/editar-video/scripts/gerar-sfx.mjs`.
 **Como aplicar:** o `/atualizar-sabinos` traz a skill nova; depois rode `/configurar-video` uma vez, porque o motor de vídeo mudou.
 **Como testar:** `node .claude/skills/editar-video/scripts/gerar-sfx.mjs` termina dizendo quantos efeitos gerou e quantos já existiam, e nunca troca um som que já estava na pasta.
+
+## trava-no-monitor
+
+**O que é:** a trava que barra comando destrutivo passa a olhar também a ferramenta Monitor, a que o assistente usa pra deixar um comando rodando em segundo plano e vigiar o que ele mostra.
+**Por quê:** o Monitor roda comando de terminal como o Bash e o PowerShell, mas a trava só era chamada pras duas. Um comando que apaga pasta, mandado pelo Monitor, passava sem a trava olhar.
+**Te afeta se:** o `.claude/settings.json` do projeto cita `barrar-perigoso` e o `matcher` desse bloco não tem `Monitor`.
+**Como aplicar:** no bloco `PreToolUse` do `.claude/settings.json` que chama o `barrar-perigoso.mjs`, acrescentar `|Monitor` no fim do `matcher` (fica `Bash|PowerShell|Monitor`), sem mexer no resto. Mostrar o antes e o depois.
+**Como testar:** o `settings.json` é JSON válido (`node -e "JSON.parse(require('fs').readFileSync('.claude/settings.json','utf8'))"`), o `matcher` do bloco mostra `Monitor`, e `echo '{"tool_name":"Monitor","tool_input":{"command":"rm -rf pasta-de-teste"}}' | node .claude/hooks/barrar-perigoso.mjs` sai com código 2 (a trava barra o comando do Monitor). Avisar que a trava vale a partir da próxima conversa.
+
+## agents-mentor-conferencia
+
+**O que é:** a linha dos cursos estudados, no `AGENTS.md` do projeto, passa a mandar a pergunta pelo passo de orientar da `/aprender-curso`, que confere as citações do mentor no texto das aulas antes de mostrar a resposta.
+**Por quê:** com a linha antiga, a IA que lia o `mentor.md` direto pelo `AGENTS.md` respondia sem conferir se a aula diz mesmo o que a resposta cita.
+**Te afeta se:** a seção "Estrutura de pastas" do `AGENTS.md` do projeto tem a linha que começa com `- inteligencia/cursos/:` e essa linha não cita `--resposta`.
+**Como aplicar:** trocar essa linha pela do passo 5 da `.claude/skills/aprender-curso/SKILL.md` (a que termina em "antes de mostrar)"). Mostrar o antes e o depois.
+**Como testar:** a linha que começa com `- inteligencia/cursos/:` aparece uma vez no `AGENTS.md` e cita `conferir-citacoes.mjs --resposta`.
+
+## gitignore-rascunho-conselheiro
+
+**O que é:** o backup do projeto passa a deixar de fora o rascunho que o conselheiro grava pra conferir as citações (`inteligencia/conselheiros/<apelido>/resposta.md`).
+**Por quê:** o rascunho é sobrescrito a cada resposta, inclusive antes da correção, e cada versão ia parar no histórico do GitHub.
+**Te afeta se:** a primeira linha do `.gitignore` do projeto que não é comentário nem vazia é `*` (o fechado) e falta a linha `**/inteligencia/conselheiros/*/resposta.md`.
+**Como aplicar:** no `.gitignore` do projeto, no fim do bloco "Bloqueio de proposito", acrescentar as linhas `# rascunho da resposta do conselheiro, sobrescrito a cada resposta: fica so neste computador` e `**/inteligencia/conselheiros/*/resposta.md`. Mostrar o antes e o depois. Se `git ls-files ":(glob)**/inteligencia/conselheiros/*/resposta.md"` listar arquivo, ele já está no backup: tirar do índice só com o sim da pessoa (`git rm --cached` em cada um), o que mantém o arquivo no computador.
+**Como testar:** `git check-ignore -v inteligencia/conselheiros/x/resposta.md` aponta a linha nova.

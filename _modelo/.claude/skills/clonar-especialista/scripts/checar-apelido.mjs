@@ -8,8 +8,8 @@
 // Uso (da raiz do projeto):
 //   node .claude/skills/clonar-especialista/scripts/checar-apelido.mjs <apelido> [--atualizar]
 // Sai 0 com "livre: <apelido>" ou "atualizar: <apelido>"; sai 1 com o motivo.
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { existsSync, readFileSync, readdirSync, realpathSync } from 'node:fs'
+import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { acharPastaMae, pastaMestra } from './lib/pasta-mae.mjs'
@@ -49,8 +49,14 @@ export function checarApelido(apelido, { projeto = '.', casa = homedir(), atuali
   return { codigo: 0, linha: `atualizar: ${apelido}` }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
-if (ehCli) {
+function chamadoDireto() {
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])
+  } catch {
+    return false
+  }
+}
+if (chamadoDireto()) {
   const args = process.argv.slice(2)
   const r = checarApelido(args.find(a => !a.startsWith('--')), { atualizar: args.includes('--atualizar') })
   console.log(r.linha)

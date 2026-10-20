@@ -49,6 +49,7 @@ Nada é baixado pra dentro do projeto.
    Chamar de `<tmp>`.
 2. Baixar a versão marcada (troque `<v>` pelo número do Passo 1):
    `curl -fsSL -o "<tmp>/sabinos-<v>.zip" https://github.com/sistema-sabinos/kit/archive/refs/tags/v<v>.zip`
+   Sem internet ou erro: explicar em português o que aconteceu e parar.
 3. Descompactar: no Windows `"C:/Windows/System32/tar.exe" -xf "<tmp>/sabinos-<v>.zip" -C "<tmp>"`, no Mac `unzip -q -o "<tmp>/sabinos-<v>.zip" -d "<tmp>"`.
    No Windows vai o caminho completo porque, no terminal do Git, o `tar` comum é
    outro programa e não abre zip.
@@ -118,7 +119,7 @@ registrar.
    `/atualizar-kit` lá. Se algo ficou estranho, é só pedir
    'desfaz a atualização' que eu volto tudo como estava. Esse processo fechou,
    abre uma conversa nova." O download fica na pasta temporária do computador
-   (uns 2 MB) e pode ser apagado à mão quando quiser.
+   (uns 10 MB, o zip e a pasta aberta) e pode ser apagado à mão quando quiser.
 
 ## Desfazer
 

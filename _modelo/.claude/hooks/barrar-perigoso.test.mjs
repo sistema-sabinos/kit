@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert'
 import { ehPerigoso } from './barrar-perigoso.mjs'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -1168,5 +1168,259 @@ test('5.18 chat4 (F1b): escritor de texto, curl com pipe, iex e <( barram e libe
 test('5.18 chat4 (F1): opcao que termina em espaco nao esconde a opcao seguinte', () => {
   for (const cmd of ['x -rm -r -f alvo', 'ls -rm -r -f pasta']) {
     assert.ok(ehPerigoso(cmd), `deveria barrar: ${cmd}`)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// Rodada 5.20, chat 1 (decisoes 6, 7 e 9): git com opcao no meio (N6), outras formas de jogar
+// fora trabalho nao salvo e de apagar o backup (N10), rd/del com chave colada (N7), travessao
+// no lugar do hifen (N5), -ArgumentList em lista (N2), robocopy /MIR (N8), apagar por outro
+// programa (N9), Monitor no matcher (N11), fim do comando no Remove-Item/del/rd (N12) e a
+// guarda que quebrava por juncao (N37)
+// ---------------------------------------------------------------------------
+
+const barra = String.fromCharCode(92)
+const deveBarrar = casos => { for (const cmd of casos) assert.ok(ehPerigoso(cmd), `deveria barrar: ${cmd}`) }
+const devePassar = casos => { for (const cmd of casos) assert.strictEqual(ehPerigoso(cmd), null, `nao deveria barrar: ${cmd}`) }
+
+test('5.20 (N6): opcao global entre o git e o verbo nao solta o comando', () => {
+  deveBarrar([
+    'git -C ~/projeto reset --hard HEAD~5', 'git -C ~/projeto clean -fdx', 'git -C ~/projeto checkout -- .',
+    'git -C ~/projeto push --force', 'git -C "Meus Projetos" reset --hard', 'git --git-dir .git --work-tree . reset --hard',
+    'git --git-dir=.git reset --hard', 'git -c core.x=y -P reset --hard', 'git --no-pager -c a=b push -f',
+    'git --literal-pathspecs --bare reset --hard', '"C:' + barra + 'Program Files' + barra + 'Git' + barra + 'cmd' + barra + 'git.exe" reset --hard',
+    '/usr/bin/git -C x push origin +main',
+  ])
+  devePassar(['git -C x status', 'git -C x log', 'git -C "Meus Projetos" status', 'git --no-pager log --oneline'])
+})
+
+test('5.20 (N6): --hard em qualquer posicao e git clean com -x, -X ou --force', () => {
+  deveBarrar([
+    'git reset -q --hard', 'git reset HEAD~1 --hard', 'git clean --force -d', 'git clean -d --force -x', 'git clean -fx',
+    'git clean -X -f', 'git clean -f -x', 'git -c clean.requireForce=false clean -d',
+    // revisao interna: opcao longa abreviada (o git aceita o comeco unico), git dentro de bloco
+    // do PowerShell e opcao depois de $(...)
+    'git reset --har', 'git reset --ha HEAD', 'git clean --forc -d', 'Invoke-Command {git reset --hard}',
+    '$null = if ($true) {git reset --hard}', 'git reset $(git merge-base main HEAD) --hard',
+    // revisao comum do Codex: a opcao negada desfaz a anterior (vale a ultima)
+    'git clean -fd -n --no-dry-run',
+  ])
+  devePassar(['git reset --soft HEAD~1', 'git reset arquivo.txt', 'git clean -f', 'git clean -fd -n', 'git clean -fdx --dry-run',
+    'git clean -e .env -f'])
+})
+
+test('5.20 (revisao final): clean.requireForce vazio, zero ou pelo --config-env tambem tira a exigencia do -f', () => {
+  deveBarrar(['git -c clean.requireForce= clean -d', 'git -c clean.requireForce=00 clean -d',
+    'git --config-env=clean.requireForce=X clean -d', 'git --config-env clean.requireForce=X clean -d'])
+  devePassar(['git -c clean.requireForce=true clean -d', 'git -c clean.requireForce clean -d',
+    'git -c clean.requireForce= clean -n -d'])
+})
+
+test('5.20 (N10): push que apaga branch do backup e descarte por outras formas', () => {
+  deveBarrar([
+    'git push origin --delete main', 'git push origin :main', 'git push --mirror', 'git push -d origin x', 'git push --prune origin',
+    'git push -uf origin main', 'git checkout -f', 'git checkout --force main', 'git switch --discard-changes main',
+    'git switch -f main', 'git restore --staged --worktree .', 'git restore -s HEAD -SW .', 'git restore -W .',
+    'git checkout -- *', 'git checkout HEAD -- *', 'git checkout -- :/', 'git checkout -q -- src/', 'git restore "*.md"',
+    'git checkout -q --ours .', 'git stash clear', 'git stash drop', 'git stash drop stash@{0}',
+    // revisao interna
+    'git push --mirro origin', 'git push --delet origin x', 'git push origin $(git branch --show-current) --force',
+    'git push origin (git branch --show-current) --force', 'git push origin `git branch --show-current` --force',
+    '1..1 | ForEach-Object {git push -f}', 'git checkout --forc main', 'git switch --discard main',
+    'git restore --worktre --staged .', 'git diff --name-only | xargs git checkout --', 'git ls-files -m | xargs git restore',
+    'git checkout -- $(git ls-files -m)', 'git restore $(git diff --name-only)',
+    'git restore --staged --no-staged .',
+  ])
+  devePassar([
+    'git checkout main', 'git checkout -- a.txt', 'git push origin main', 'git push --force-with-lease',
+    'git push --force-with-lease --force-if-includes origin main', 'git checkout -b novo', 'git restore --staged .',
+    'git restore --staged arquivo.txt', 'git switch main', 'git switch -c novo', 'git stash', 'git stash pop', 'git stash list',
+    'git commit -m "git reset --hard e git push --force"', 'git push origin :', 'git checkout $(git rev-parse HEAD~1) -- arquivo.txt',
+    'git checkout -- "a (1).txt"', 'git ls-files --deleted | xargs git rm',
+  ])
+})
+
+test('5.20 (N10): pasta existente como alvo barra, pelo cwd da entrada, pelo -C e pelo cd do comando', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'trava-git-'))
+  try {
+    mkdirSync(join(dir, 'pasta'))
+    writeFileSync(join(dir, 'a.txt'), 'x')
+    assert.ok(ehPerigoso('git checkout pasta', { cwd: dir }), 'pasta que existe no cwd deveria barrar')
+    assert.ok(ehPerigoso('git restore -- pasta', { cwd: dir }), 'restore na pasta deveria barrar')
+    assert.ok(ehPerigoso(`git -C "${dir}" checkout -- pasta`), 'pasta relativa ao -C deveria barrar')
+    assert.ok(ehPerigoso(`cd "${dir}" && git checkout pasta`), 'pasta relativa ao cd do comando deveria barrar')
+    assert.ok(ehPerigoso(`cd /d "${dir}" && git checkout pasta`, { cwd: tmpdir() }), 'o /d do cd do cmd e opcao')
+    assert.ok(ehPerigoso(`git --work-tree="${dir}" checkout -- pasta`, { cwd: tmpdir() }), 'pasta relativa ao --work-tree deveria barrar')
+    assert.ok(ehPerigoso('git -C "" restore pasta', { cwd: dir }), 'o -C "" mantem a pasta do cwd')
+    assert.strictEqual(ehPerigoso('git checkout -- a.txt', { cwd: dir }), null, 'arquivo avulso continua livre')
+    assert.strictEqual(ehPerigoso('git checkout nao-existe', { cwd: dir }), null, 'branch (nome que nao e pasta) continua livre')
+    // o hook de verdade le o cwd que o Claude Code manda na entrada
+    const hook = fileURLToPath(new URL('./barrar-perigoso.mjs', import.meta.url))
+    const rodar = command => spawnSync(process.execPath, [hook], {
+      input: JSON.stringify({ tool_name: 'Bash', cwd: dir, tool_input: { command } }), encoding: 'utf8',
+    }).status
+    assert.strictEqual(rodar('git checkout pasta'), 2)
+    assert.strictEqual(rodar('git checkout nao-existe'), 0)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('5.20 (N7): rd e del com a chave colada no nome ou na outra chave', () => {
+  // o cmd le o /s em qualquer ponto da palavra (rd c/s/q apagou a pasta c no cmd real), entao
+  // o caminho com /s no meio barra tambem, do lado seguro
+  deveBarrar(['cmd /c rd/s/q C:' + barra + 'Users' + barra + 'a', 'cmd /c rd /q/s x', 'cmd /c rmdir /q/s pasta',
+    'cmd /c del /q/s *.md', 'cmd /c del/s/q *.md', 'del/f/s/q x', 'erase/s x', 'RD/S/Q x', 'rd c/s/q', 'rmdir pasta/S/Q',
+    'del h' + barra + '*.txt/s/q', 'del temp/s/a.txt', 'cmd /c "rd ^/s /q a"', 'cmd /c "r^d /s /q g"'])
+  devePassar(['rd pasta', 'del a.txt', 'rd /q vazia', 'del /q /f a.txt', 'del temp/source/a.txt'])
+})
+
+test('5.20 (N5): travessao no lugar do hifen abre parametro no PowerShell e barra', () => {
+  // U+2013, U+2014 e U+2015 (os tres que o PowerShell 7.6.7 e o 5.1 aceitam, medido em 2026-10-20)
+  for (const codigo of [0x2013, 0x2014, 0x2015]) {
+    const t = String.fromCharCode(codigo)
+    deveBarrar([`Remove-Item x/Doc ${t}Recurse ${t}Force`, `rm x ${t}Recurse ${t}Force`, `ri x ${t}r`,
+      `rd pasta ${t}Recurse`, `Clear-Content x ${t}Recurse`])
+  }
+  // U+2010 e U+2212 dao erro no PowerShell (nao abrem parametro): continuam livres
+  for (const codigo of [0x2010, 0x2212]) devePassar([`Remove-Item x ${String.fromCharCode(codigo)}Recurse`])
+})
+
+test('5.20 (N2): Start-Process com -ArgumentList em lista barra o que a lista roda', () => {
+  deveBarrar([
+    "Start-Process cmd -ArgumentList '/c','rd','/s','/q','x'", 'Start-Process cmd -ArgumentList /c,rd,/s,/q,x',
+    "Start-Process vssadmin -ArgumentList 'delete','shadows','/all'",
+    "Start-Process pwsh -ArgumentList '-c','Remove-Item','-Recurse','x'",
+    'Start-Process vssadmin -ArgumentList "delete","shadows","/all","/quiet" -Verb RunAs -Wait',
+    'Start-Process powershell -ArgumentList "-NoProfile","-Command","Remove-Item","-Recurse","x" -Verb RunAs',
+    "saps cmd -ArgumentList @('/c','rd','/s','x')", "start cmd '/c','rd','/s','x'",
+    // a lista quebrada em linhas: virgula no fim da linha, ou um item por linha dentro do @( )
+    "Start-Process cmd -ArgumentList '/c','rd',\n  '/s','/q','e' -Wait", "Start-Process cmd -ArgumentList @(\n'/c'\n'rd'\n'/s'\n'/q'\n'f'\n) -Wait",
+  ])
+  devePassar(['Start-Process notepad -ArgumentList x', "Start-Process pwsh -ArgumentList '-NoProfile','-File','x.ps1' -Verb RunAs",
+    'echo "Start-Process cmd -ArgumentList /c,rd,/s,/q,x" >> licoes.md'])
+})
+
+test('5.20 (N8): robocopy com /MIR ou /PURGE barra sempre', () => {
+  deveBarrar(['robocopy vazia Users/a/Documentos /MIR', 'robocopy a b /purge', 'robocopy "a b" x /E /MIR /L',
+    'cmd /c "robocopy a b /mir"', 'robocopy.exe a b /PURGE /NOCOPY', 'robocopy src dst "/MIR" /NJH', 'robocopy src dst -MIR'])
+  devePassar(['robocopy a b /E', 'robocopy a b /E /XO', 'echo "nunca rode robocopy /MIR" >> licoes.md', 'robocopy a b /E; ls /mir'])
+})
+
+test('5.20 (N9): apagar por outro programa, nas formas comuns', () => {
+  deveBarrar([
+    'find ~ -type f -delete', 'find . -delete', "find . -name '*.tmp' -exec rm {} ;", 'find . -execdir /bin/rm {} +',
+    'find . -name "*.log" | xargs rm', 'find . -print0 | xargs -0 rm -f',
+    'node -e "require(\'fs\').rmSync(process.env.HOME,{recursive:true,force:true})"',
+    'node --eval "fs.rmdirSync(p, { recursive: true })"', 'node -e "fs.unlinkSync(\'a\')"',
+    'python -c "import shutil; shutil.rmtree(\'Users/a/Documentos\')"', 'python3 -c "import os; os.remove(\'a\')"',
+    'py -c "import os; os.rmdir(\'x\')"', 'npx rimraf ~/projeto', 'rimraf dist', 'npx -y del-cli dist', 'pnpm dlx rimraf dist',
+    "[System.IO.Directory]::Delete('x', $true)", "[IO.Directory]::Delete('x', 1)", "[IO.File]::Delete('a.txt')",
+    '(Get-Item x).Delete($true)', 'gci x -Recurse -File | % { $_.Delete() }', 'Clear-Content -Path ./*.md',
+    'Get-ChildItem -Recurse -File | Clear-Content', 'clc pasta/*',
+    // revisao interna: codigo em varias linhas, opcao agrupada ou colada, caminho entre aspas,
+    // versao no npx, variavel antes, separador colado no -delete, xargs rodando o rm
+    "python -c \"\nimport shutil\nshutil.rmtree('build')\n\"", "node -e \"\nconst fs = require('fs')\nfs.rmSync('dist', { recursive: true })\n\"",
+    'node -pe "require(\'fs\').rmSync(\'dist\',{recursive:true})"', 'python -c"import shutil;shutil.rmtree(\'x\')"',
+    'python -Bc "import shutil;shutil.rmtree(\'x\')"', 'Clear-Content "C:' + barra + 'logs' + barra + '*.log"', 'npx rimraf@5 dist',
+    'npx del-cli@6 dist', 'NODE_ENV=x npx rimraf dist', "find . -name '*.tmp' -delete; echo ok", 'find . -delete&& echo ok',
+    'find . -name "*.log" | xargs -I {} rm {}',
+  ])
+  // usos legitimos do kit: o rmSync sem recursive (checar/SKILL.md tira o link .agents/skills)
+  // e o rmdirSync de pasta vazia
+  devePassar([
+    'node -e "require(\'fs\').rmSync(\'.agents/skills\')"', 'node -e "require(\'fs\').rmdirSync(\'x\')"', 'find . -name "*.md"',
+    'Clear-Content log.txt', 'python -c "print(1)"', 'npm install rimraf', 'npm i -D rimraf del-cli', 'node script.mjs rimraf',
+    "[IO.Directory]::Delete('vazia')", 'grep -rn "find . -delete" licoes.md',
+    'git ls-files -z --deleted | xargs -0 git rm --cached', 'docker ps -aq | xargs docker rm', 'find . -name "*.md" | xargs grep -l rm',
+    `node -e "fs.mkdirSync('out',{recursive:true}); fs.rmSync('out/velho.txt')"`,
+  ])
+})
+
+test('5.20 (N12): Remove-Item, del e rd param no fim do comando, mas nao no fim do parentese', () => {
+  devePassar([
+    'Remove-Item a.txt; Get-ChildItem -Recurse', 'Remove-Item temp.txt; Get-ChildItem . -Recurse -Filter *.mp4',
+    'del velho.mp4; ffmpeg -i in.mp4 -r 30 out.mp4', 'del temp.txt; dir /s /b *.mp4', 'rd vazia && Get-ChildItem -Recurse -Filter *.md',
+    'Remove-Item a.txt | Out-Null; ls -r', 'del a.txt || dir /s',
+    // o & sozinho separa comando no cmd, e o nome dentro de arquivo ou caminho nao e o comando
+    'del velho.mp4 & ffmpeg -i in.mp4 -r 30 out.mp4', 'rd vazia & dir /s', 'ffmpeg -i ri.mp4 -r 30 out.mp4',
+    'ffmpeg -i videos/del/in.mp4 -r 30 out.mp4',
+  ])
+  deveBarrar(['Remove-Item x -Recurse; ls', 'ls; Remove-Item x -Recurse', 'Remove-Item (gci | select -First 1) -Recurse',
+    'Remove-Item $(Get-X; "y") -Recurse', 'Get-ChildItem | Remove-Item -Recurse', 'del (dir) /s',
+    // crase no fim da linha continua o comando do PowerShell; o nome qualificado pelo modulo vale
+    'Remove-Item d `\n  -Recurse', 'Microsoft.PowerShell.Management' + barra + 'Remove-Item x -Recurse'])
+})
+
+test('5.20 (N11): o settings.json do projeto liga a trava pro Monitor, e o hook barra o comando dele', () => {
+  const settings = JSON.parse(readFileSync(new URL('../settings.json', import.meta.url), 'utf8'))
+  const blocos = settings.hooks.PreToolUse.filter(b => b.hooks.some(h => h.command.includes('barrar-perigoso')))
+  assert.strictEqual(blocos.length, 1, 'um bloco PreToolUse chama a trava')
+  const ferramentas = blocos[0].matcher.split(/[|,]/).map(s => s.trim())
+  for (const nome of ['Bash', 'PowerShell', 'Monitor']) assert.ok(ferramentas.includes(nome), `matcher sem ${nome}: ${blocos[0].matcher}`)
+  // a entrada do Monitor no formato do schema da ferramenta: o comando vem em command
+  const hook = fileURLToPath(new URL('./barrar-perigoso.mjs', import.meta.url))
+  const rodar = tool_input => spawnSync(process.execPath, [hook], {
+    input: JSON.stringify({ tool_name: 'Monitor', tool_input }), encoding: 'utf8',
+  }).status
+  assert.strictEqual(rodar({ command: 'rm -rf ~/projeto', description: 'x', timeout_ms: 1000 }), 2)
+  assert.strictEqual(rodar({ command: 'tail -f log.txt', description: 'x', timeout_ms: 1000 }), 0)
+  assert.strictEqual(rodar({ ws: { url: 'wss://x' }, description: 'x', timeout_ms: 1000 }), 0)
+})
+
+test('5.20 (N37): pela juncao ou link ate a pasta do hook, a trava barra igual ao caminho real', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'trava-juncao-'))
+  try {
+    const real = join(dir, 'real')
+    const ponte = join(dir, 'ponte')
+    mkdirSync(real)
+    copyFileSync(fileURLToPath(new URL('./barrar-perigoso.mjs', import.meta.url)), join(real, 'barrar-perigoso.mjs'))
+    // 'junction' vira juncao no Windows (a mesma do mklink /J) e e ignorado no Mac e no Linux
+    symlinkSync(real, ponte, 'junction')
+    const entrada = JSON.stringify({ tool_name: 'Bash', tool_input: { command: 'rm -rf ~/projeto' } })
+    for (const pasta of [real, ponte]) {
+      const r = spawnSync(process.execPath, [join(pasta, 'barrar-perigoso.mjs')], { input: entrada, encoding: 'utf8' })
+      assert.strictEqual(r.status, 2, `por ${pasta === real ? 'caminho real' : 'juncao'}: saida ${r.status}`)
+      assert.match(r.stderr, /foi barrado/)
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('5.20: as regras novas com a entrada gigante terminam em tempo linear', () => {
+  // mesmo molde dos testes da 5.18: processo a parte, teto de 30 s, e a entrada termina num
+  // format D: que outra regra barra (saida 2 prova que leu tudo). Medido em 2026-10-20: cada
+  // caso levou de 0,3 s a 2 s
+  const hook = fileURLToPath(new URL('./barrar-perigoso.mjs', import.meta.url))
+  const t = String.fromCharCode(0x2013)
+  const casos = [
+    ['git -C', 'git -C x '.repeat(100000) + '; format D:', 2],
+    ['git reset', 'git reset '.repeat(100000) + '; format D:', 2],
+    ['rd com chaves', 'rd ' + '/q'.repeat(100000) + '; format D:', 2],
+    ['del com cadeia', 'del ' + '/q/x '.repeat(100000) + '; format D:', 2],
+    ['Remove-Item com traco', ('Remove-Item ' + t + 'x ').repeat(100000) + '; format D:', 2],
+    ['robocopy', 'robocopy '.repeat(100000) + '; format D:', 2],
+    ['find', 'find -exec '.repeat(100000) + '; format D:', 2],
+    ['xargs', 'xargs ' + 'a/'.repeat(100000) + '; format D:', 2],
+    ['node', 'node -e '.repeat(100000), 0],
+    ['python', 'python -c '.repeat(100000), 0],
+    ['npx', 'npx '.repeat(100000) + '; format D:', 2],
+    ['Directory.Delete', '[IO.Directory]::Delete( '.repeat(100000) + '; format D:', 2],
+    ['Clear-Content', 'Clear-Content '.repeat(100000) + '; format D:', 2],
+    ['Start-Process igual', "Start-Process x -ArgumentList 'a','b' ".repeat(50000), 0],
+    ['parentese', '('.repeat(100000) + 'Remove-Item x' + ')'.repeat(100000), 0],
+    // revisao interna: cd e -C repetidos juntavam texto no caminho a cada volta
+    ['cd repetido', 'cd a;'.repeat(50000) + 'git status', 0],
+    ['-C repetido', 'git ' + '-C a '.repeat(50000) + 'status', 0],
+    ['$( aninhado', '$('.repeat(50000) + 'git status' + ')'.repeat(50000), 0],
+    ['git git', 'git '.repeat(100000) + '; format D:', 2],
+  ]
+  for (const [nome, command, saida] of casos) {
+    const r = spawnSync(process.execPath, [hook], {
+      input: JSON.stringify({ tool_input: { command } }), encoding: 'utf8', timeout: 30000,
+    })
+    assert.ok(!r.error, `${nome}: o hook nao terminou no teto de 30 s (${r.error && r.error.code})`)
+    assert.strictEqual(r.status, saida, `${nome}: saida ${r.status} em vez de ${saida} (${r.stderr})`)
   }
 })

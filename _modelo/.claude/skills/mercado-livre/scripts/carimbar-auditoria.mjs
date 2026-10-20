@@ -5,10 +5,11 @@
 // rebaixar anuncio ja cadastrado ou publicado).
 // Uso, da raiz do projeto: node .claude/skills/mercado-livre/scripts/carimbar-auditoria.mjs <slug>
 // Saida: 0 carimbado; 1 sem auditoria aprovada ou slug faltando.
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from './lib/raiz.mjs'
 import { lerJson, gravarJson, carimbosDoAnuncio } from './lib/pipeline.mjs'
+import { realpathSync } from 'node:fs'
 
 export function carimbar(slug, raiz = RAIZ) {
   if (!slug) throw new Error('uso: carimbar-auditoria.mjs <slug>')
@@ -28,7 +29,13 @@ export function carimbar(slug, raiz = RAIZ) {
   return auditoria.carimbos
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const c = carimbar(process.argv[2])

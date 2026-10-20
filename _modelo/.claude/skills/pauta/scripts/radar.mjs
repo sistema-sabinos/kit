@@ -2,8 +2,8 @@
 // e os assuntos do dia no X no Brasil (trends24). Uma fonte caindo nao derruba as outras: vira aviso.
 // Tendencia de busca do Mercado Livre e da /pesquisar-tendencia, nao daqui. Fontes conferidas ao vivo em 2026-10-04.
 // Uso: node .claude/skills/pauta/scripts/radar.mjs --termos "fone bluetooth,caixa de som"
-import { mkdirSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { mkdirSync, writeFileSync, realpathSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../midia-social/scripts/lib/raiz.mjs'
 import { opcoes } from './lib/pagina.mjs'
@@ -42,7 +42,7 @@ export function lerTrends24(html, conta) {
 }
 
 async function texto(fetchFn, url) {
-  const r = await fetchFn(url, { headers: UA })
+  const r = await fetchFn(url, { headers: UA, signal: AbortSignal.timeout(30_000) })
   // corpo do erro sem ler segura a conexao aberta e, sem o process.exit, o processo nao termina
   if (!r.ok) { await r.body?.cancel(); throw new Error(`HTTP ${r.status}`) }
   return r.text()
@@ -81,5 +81,11 @@ async function main(argv) {
   console.log(`ok: ${arq}`)
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) main(process.argv.slice(2)).catch(e => { console.error('ERRO:', e.message); process.exitCode = 1 })

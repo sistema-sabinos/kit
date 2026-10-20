@@ -10,7 +10,7 @@
 //   proximos   (DAS, declaracao anual e teto, completo)
 //   alertas    (so o que esta perto: DAS em 5 dias, declaracao em 30, teto a partir de 70%)
 //   vencidos   (fatos com mais de 60 dias, pra conferir na web)
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, realpathSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { carregar, resumoPeriodo } from '../../caixa/scripts/caixa.mjs'
@@ -192,6 +192,12 @@ export function executar(argv, log = console.log) {
   for (const l of linhas) log(l)
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+if (chamadoDireto()) {
   try { executar(process.argv.slice(2)) } catch (e) { console.error(e.message); process.exit(1) }
 }

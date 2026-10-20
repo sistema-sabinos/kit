@@ -1,7 +1,8 @@
 """Transcreve videos ja baixados, no computador e de graca.
 
 Usa o mesmo motor da /transcribe (faster-whisper); a /transcribe baixa por URL, e aqui o video ja esta
-no disco. Pula o que ja tem transcricao.
+no disco. Pula o que ja tem transcricao. A lingua o whisper descobre sozinho (video de referencia
+gringo nao vira portugues inventado) e vai na primeira linha do .txt: "lingua: en".
 
 Uso (da raiz do projeto):
   python .claude/skills/pauta/scripts/transcrever.py <perfil> [--modelo small]
@@ -43,9 +44,9 @@ def main():
             continue
         alvo.parent.mkdir(parents=True, exist_ok=True)
         whisper = whisper or WhisperModel(modelo, device="auto", compute_type="int8")
-        segmentos, _ = whisper.transcribe(str(video), language="pt")
+        segmentos, info = whisper.transcribe(str(video))
         texto = " ".join(s.text.strip() for s in segmentos).strip()
-        alvo.write_text(texto or "sem fala", encoding="utf-8")
+        alvo.write_text(f"lingua: {info.language}\n\n{texto or 'sem fala'}", encoding="utf-8")
         print(f"ok: {alvo}")
 
 

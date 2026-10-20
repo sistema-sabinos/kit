@@ -81,6 +81,19 @@ test('o login do YouTube vai e volta do .env', () => {
   assert.throws(() => tokenDoEnv({}), /auth/)
 })
 
+test('videos mostra o dia de publicacao no relogio do aluno: 22h em Sao Paulo segue no mesmo dia', () => {
+  const url = new URL('./yt.mjs', import.meta.url).href
+  const video = { id: 'v1', snippet: { title: 'T', publishedAt: '2026-10-20T01:00:00Z' }, status: { privacyStatus: 'public' }, statistics: {} }
+  const codigo = `const { linhaDoVideo } = await import(${JSON.stringify(url)}); console.log(new Date('2026-10-20T01:00:00Z').getHours() + '|' + linhaDoVideo(${JSON.stringify(video)}))`
+  const r = spawnSync(process.execPath, ['--input-type=module', '-e', codigo], { encoding: 'utf8', env: { ...process.env, TZ: 'America/Sao_Paulo' } })
+  assert.equal(r.status, 0, r.stderr)
+  assert.ok(r.stdout.trim().length > 0, 'canario: a sonda respondeu')
+  const [hora, linha] = r.stdout.trim().split('|')
+  assert.equal(hora, '22', 'canario: o fuso de Sao Paulo pegou na sonda')
+  assert.match(linha, /^\[v1\] T/)
+  assert.match(linha, /  2026-10-19  privacidade: public/)
+})
+
 test('comando vazio ou inexistente lista os comandos antes de pedir login', () => {
   const script = fileURLToPath(new URL('./yt.mjs', import.meta.url))
   for (const args of [[], ['ajuda']]) {

@@ -5,7 +5,6 @@
 import { readdirSync, statSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { exigir } from '../../midia-social/scripts/lib/config.mjs'
-import { dataHoraLocal } from '../../midia-social/scripts/lib/hora.mjs'
 
 export const REDES = ['instagram', 'tiktok', 'youtube']
 const MAX_SLIDES = 10
@@ -19,6 +18,14 @@ export function utcDeBrasilia(quando) {
   const local = new Date(Date.UTC(a, me - 1, d, h, mi))
   if (local.getUTCFullYear() !== a || local.getUTCMonth() !== me - 1 || local.getUTCDate() !== d || h > 23 || mi > 59) throw new Error(`a data ${quando} nao existe`)
   return new Date(local.getTime() + 3 * 3600e3).toISOString()
+}
+
+// Volta do instante pro relogio de Brasilia, "AAAA-MM-DD HH:MM". O Historico usa este relogio e
+// nao o do computador: em Manaus ou Rio Branco a hora do computador nao bate com a tabela.
+export function horaDeBrasilia(d = new Date()) {
+  const b = new Date(d.getTime() - 3 * 3600e3)
+  const p = n => String(n).padStart(2, '0')
+  return `${b.getUTCFullYear()}-${p(b.getUTCMonth() + 1)}-${p(b.getUTCDate())} ${p(b.getUTCHours())}:${p(b.getUTCMinutes())}`
 }
 
 export function brasiliaParaUTC(quando, agora = new Date()) {
@@ -124,7 +131,7 @@ export function linhasValidas(texto) {
 export const idsValidosAgora = texto => linhasValidas(texto).map(l => l.id).filter(id => id !== '?')
 
 export function gravarPublicacao(textoAntigo, { linhas, evento, agora = new Date() }) {
-  const carimbo = dataHoraLocal(agora)
+  const carimbo = horaDeBrasilia(agora)
   const historicoAntigo = ((/## Historico\r?\n([\s\S]*)$/.exec(String(textoAntigo)) || [])[1] || '').trim()
   const ids = linhas.map(l => l.id).filter(id => id !== '?')
   const valido = linhas.length
@@ -134,7 +141,7 @@ export function gravarPublicacao(textoAntigo, { linhas, evento, agora = new Date
       linhas.some(l => l.status === 'incerto') ? 'Linha "incerto": o post pode ter entrado no Buffer. O proximo --confirmar confere sozinho.' : '',
     ].filter(Boolean).join('\n')
     : 'nada agendado'
-  const historico = [historicoAntigo, `- ${carimbo}: ${evento}`].filter(Boolean).join('\n')
+  const historico = [historicoAntigo, `- ${carimbo} (Brasilia): ${evento}`].filter(Boolean).join('\n')
   return `# Publicacao\n\n## VALIDO AGORA\n\n${valido}\n\n## Historico\n\n${historico}\n`
 }
 

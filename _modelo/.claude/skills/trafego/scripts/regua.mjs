@@ -10,8 +10,7 @@
  *   node regua.mjs --dados dados/trafego/conta-2026-09-18.json --regua _contexto/trafego.md
  *   node regua.mjs --dados ... --regua ... --json      (só o JSON, pra outra ferramenta ler)
  */
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { quadroDe } from './faixas.mjs';
 
@@ -112,7 +111,13 @@ function arg(nome) {
 
 // `fileURLToPath`, nunca `.pathname`: no Windows o pathname volta com barra
 // sobrando (`/E:/...`) e a comparação nunca casa. Lição registrada no licoes.md.
-const ehCLI = Boolean(process.argv[1]) && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]); } catch { return false; }
+}
+
+const ehCLI = chamadoDireto();
 if (ehCLI) {
   try {
     const caminhoRegua = arg('regua') ?? '_contexto/trafego.md';

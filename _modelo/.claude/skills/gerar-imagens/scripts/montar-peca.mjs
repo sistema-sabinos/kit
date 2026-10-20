@@ -5,7 +5,7 @@
 // O HTML abre por file://, entao imagem com caminho relativo funciona. Letra: so
 // as embutidas (Manrope, Fredoka, Lora), pelo nome e peso, sem caminho; outra
 // letra, ou uma que nao carregou, para a peca com aviso.
-import { existsSync } from 'node:fs'
+import { existsSync, realpathSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { fotografar } from './lib/render.mjs'
@@ -20,7 +20,13 @@ export async function montarPeca({ html, out, largura = 1200, altura = largura, 
   return { ok: true, out, largura, altura, custo_usd: 0 }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const a = lerArgs(process.argv.slice(2))

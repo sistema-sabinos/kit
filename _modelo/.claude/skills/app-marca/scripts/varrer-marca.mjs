@@ -18,7 +18,7 @@
 // --incluir-planejamento varre o planejamento tambem.
 // Saida: 0 limpo; 1 achou alguma coisa; 2 nada pra procurar, pasta ou config ruim, ou alguma
 // pasta ou arquivo que nao deu pra ler (listado no aviso; a varredura ficou incompleta).
-import { readdirSync, readFileSync, statSync, openSync, readSync, closeSync, existsSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync, openSync, readSync, closeSync, existsSync, realpathSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { lerArgs } from '../../app-estudar/scripts/lib/args.mjs'
@@ -233,7 +233,13 @@ export function principal(argv, escrever = console.log, avisar = console.error, 
   return achados.length ? 1 : 0
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     process.exitCode = principal(process.argv.slice(2))

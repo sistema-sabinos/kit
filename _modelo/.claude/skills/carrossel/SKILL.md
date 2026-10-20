@@ -137,7 +137,7 @@ Cada carrossel é uma pasta `producao/<slug>/`, com `<slug>` no formato `AAAA-MM
    - **Links normais (artigos, blogs, docs):** tentar WebFetch direto. Se falhar ou retornar pouco conteúdo, usar Jina Reader: prefixar a URL com `https://r.jina.ai/` (ex: `https://r.jina.ai/https://exemplo.com/artigo`)
    - **Links do X/Twitter (x.com ou twitter.com):** substituir o domínio por `api.fxtwitter.com` e usar WebFetch (ex: `https://x.com/user/status/123` vira `https://api.fxtwitter.com/user/status/123`). Funciona também pra `x.com/i/status/ID`. Retorna texto, mídia e links do tweet sem precisar de login
    - **Links do Instagram:** WebFetch não funciona. Avisar o usuário pra copiar o texto do post e colar direto
-   - **Links de YouTube:** se tiver a skill `/yt-transcript` ou `/transcribe`, usar. Se não, tentar WebFetch na página
+   - **Links de YouTube:** usar a `/transcribe`, que tenta antes a legenda pronta, de graça. Se ela falhar, tentar WebFetch na página
 4. **Se o usuário mencionar algo que tu não conhece ou não tem certeza do que é** (nome de produto, ferramenta, evento, pessoa, termo técnico): pesquisar antes de escrever. Usar WebSearch, WebFetch ou qualquer ferramenta disponível. Nunca chutar, corrigir o usuário ou assumir que ele errou. Se ele citou uma ferramenta ou termo que tu não conhece, vai atrás pra descobrir o que é. O usuário sabe do que tá falando, tu é que pode não saber
 5. Definir o ângulo do carrossel: educacional, oportunidade, contrário, provocativo ou inspiracional
 
@@ -294,7 +294,7 @@ Se o usuário quiser imagens mas não tiver nenhuma, oferecer gerar por IA. A op
 Gera imagens direto por URL, sem API key:
 
 ```bash
-curl -L "https://image.pollinations.ai/prompt/modern%20office%20desk%20minimal%20clean?width=1080&height=720&nologo=true" -o imagens/foto-01.jpg
+curl -L "https://image.pollinations.ai/prompt/modern%20office%20desk%20minimal%20clean?width=1080&height=720&nologo=true" --create-dirs -o producao/<slug>/imagens/foto-01.jpg
 ```
 
 - Grátis e sem cadastro quando esta skill foi escrita, com fila mais lenta pra quem não tem conta. Regra de serviço grátis muda: se a chamada falhar ou pedir chave, conferir a página oficial do Pollinations antes de dizer que é grátis

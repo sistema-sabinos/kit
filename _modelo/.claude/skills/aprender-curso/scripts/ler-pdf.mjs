@@ -4,8 +4,8 @@
 // Uso (da raiz do projeto):
 //   node .claude/skills/aprender-curso/scripts/ler-pdf.mjs <arquivo.pdf> [--medir]
 import { spawnSync } from 'node:child_process'
-import { existsSync, writeFileSync } from 'node:fs'
-import { basename, dirname, extname, join, resolve } from 'node:path'
+import { existsSync, realpathSync, writeFileSync } from 'node:fs'
+import { basename, dirname, extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { cortarPaginas, marcarPaginas, medir, veredito, tokensEstimados } from './lib/paginas.mjs'
 
@@ -71,8 +71,14 @@ export function lerPdf(pdf, { medir: soMedir = false, rodar = rodarPadrao, exist
   return { codigo: 0, linhas, erro: null, arquivo }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
-if (ehCli) {
+function chamadoDireto() {
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])
+  } catch {
+    return false
+  }
+}
+if (chamadoDireto()) {
   const pdf = process.argv[2]
   if (!pdf || pdf.startsWith('--')) {
     console.error('Uso: node .claude/skills/aprender-curso/scripts/ler-pdf.mjs <arquivo.pdf> [--medir]')

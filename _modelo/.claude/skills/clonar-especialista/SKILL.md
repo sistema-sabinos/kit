@@ -256,3 +256,4 @@ processo: sugerir conversa nova.
 - Vida pessoal (família, saúde, endereço) não entra, mesmo publicada.
 - Número que envelhece citado pela pessoa (taxa, preço, regra de plataforma) se confere na
   internet antes de aconselhar com ele.
+- Toda resposta do conselheiro confere as citações (`--persona --resposta`, item 7 do esqueleto); o `medir-persona` cobra.

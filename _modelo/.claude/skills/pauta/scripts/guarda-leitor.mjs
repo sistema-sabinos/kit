@@ -9,7 +9,7 @@
 // Saida: 0 deixa gravar; 2 barra, com o motivo no stderr.
 import { existsSync, realpathSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 
 export const PASTAS = ['inteligencia/base-ideias/', 'producao/_pauta/']
 
@@ -38,7 +38,18 @@ export function podeGravar(raiz, caminho) {
   return PASTAS.some(p => rel.startsWith(p) && rel.length > p.length)
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// rodada 5.20 (decisao 9, N37): o Node entrega o import.meta.url com o atalho resolvido e o
+// argv[1] do jeito que veio; com o projeto aberto por juncao ou link a guarda velha dava false,
+// e a trava saia 0 calada, deixando gravar. Os dois lados passam pelo realpathSync
+function chamadoDireto() {
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])
+  } catch {
+    return false
+  }
+}
+
+if (chamadoDireto()) {
   let bruto = ''
   process.stdin.setEncoding('utf8')
   process.stdin.on('data', p => { bruto += p })

@@ -4,8 +4,8 @@
 // real entrar na capa e nos cenarios sem a IA redesenhar o rotulo.
 // Uso: node .claude/skills/gerar-imagens/scripts/recortar-fundo.mjs --in <foto.jpg> --out <recorte.png> [--limiar 242] [--feather 2]
 // Embalagem branca pede limiar alto (ex.: 248): limiar baixo come tampa e rotulo.
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { existsSync, readFileSync, writeFileSync, mkdirSync, realpathSync } from 'node:fs'
+import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { comPagina } from './lib/render.mjs'
 import { lerArgs, numero } from './lib/args.mjs'
@@ -78,7 +78,13 @@ export async function recortarArquivo({ entrada, saida, limiar = 242, feather = 
   return { ok: true, out: saida, limiar, transparente_pct: pct, aviso: avisoDoRecorte(pct), custo_usd: 0 }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const a = lerArgs(process.argv.slice(2))

@@ -10,11 +10,11 @@
 //   node .claude/skills/mercado-livre/scripts/autorizar.mjs --bling <codigo ou URL de retorno inteira>
 //   node .claude/skills/mercado-livre/scripts/autorizar.mjs --ml --ouvir [porta]   receptor local em http://127.0.0.1:<porta>/callback (padrao 8765)
 import { createServer } from 'node:http'
-import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { lerEnv, gravarEnv, CAMINHO_ENV } from './lib/env.mjs'
 import { chavesDe, patchDeToken, URL_TOKEN_ML, URL_TOKEN_BLING } from './lib/tokens.mjs'
 import { fetchComTimeout } from './lib/fetch-timeout.mjs'
+import { realpathSync } from 'node:fs'
 
 export const URL_AUTORIZA_ML = 'https://auth.mercadolivre.com.br/authorization'
 export const URL_AUTORIZA_BLING = 'https://www.bling.com.br/Api/v3/oauth/authorize'
@@ -88,7 +88,13 @@ export function ouvirCallback({ porta = 8765, aoReceber, aoErro = e => { throw e
   return servidor
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   const a = process.argv.slice(2)
   const servico = a.includes('--ml') ? 'ml' : a.includes('--bling') ? 'bling' : null

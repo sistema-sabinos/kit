@@ -4,8 +4,8 @@
 // Uso: node .claude/skills/configurar-video/scripts/medir-maquina.mjs
 import os from 'node:os'
 import { spawnSync } from 'node:child_process'
-import { statfsSync, mkdirSync, writeFileSync, existsSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { statfsSync, mkdirSync, writeFileSync, existsSync, realpathSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { pastaVideo, caminhos } from './lib/pasta-video.mjs'
 import { BYTES_MODELO } from './conferir.mjs'
@@ -51,7 +51,13 @@ export function decidir({ sistema, memoriaGb, discoLivreGb, gpus, temModeloProfu
 
 function existente(p) { let d = p; while (!existsSync(d)) d = dirname(d); return d }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   const c = caminhos(pastaVideo())
   const s = statfsSync(existente(c.base))

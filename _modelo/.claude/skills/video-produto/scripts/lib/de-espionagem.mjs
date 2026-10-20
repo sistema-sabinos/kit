@@ -57,13 +57,20 @@ export function coletaDeEspionagem(bruto, mlb) {
     const ids = lista.map((x) => x?.id).filter(Boolean).join(', ')
     throw new Error(`o anuncio ${mlb} nao esta nesse arquivo. Os que estao: ${ids || 'nenhum'}. Passe um deles em --mlb.`)
   }
+  // no modo avulso (--mlb) o arquivo tem um anuncio so e o --retomar nao vale: o jeito e ler de novo
+  const refazer = bruto.avulso
+    ? `Rode a /espionar-concorrente de novo com --mlb ${mlb}`
+    : 'Rode a /espionar-concorrente de novo com --retomar, ou escolha outro anuncio do arquivo'
   if (a.erro) {
-    throw new Error(`a espionagem nao conseguiu ler o anuncio ${mlb} (${a.erro}). Rode a /espionar-concorrente de novo (com --retomar) ou escolha outro anuncio do arquivo.`)
+    throw new Error(`a espionagem nao conseguiu ler o anuncio ${mlb} (${a.erro}). ${refazer}.`)
   }
 
   const avisos = []
   if (!a.perguntas && a.perguntas_erro) {
-    avisos.push(`perguntas: a pagina deu erro ao ler as perguntas desse anuncio (${a.perguntas_erro}). Rode a /espionar-concorrente de novo com --retomar, ou escolha outro anuncio do arquivo`)
+    avisos.push(`perguntas: a pagina deu erro ao ler as perguntas desse anuncio (${a.perguntas_erro}). ${refazer}`)
+  } else if (!a.perguntas && bruto.avulso) {
+    // no modo avulso (--mlb) a aba sempre e lida quando existe: sem ela, a pagina nao tinha o link
+    avisos.push('perguntas: a pagina desse anuncio nao mostrou o link "Ver todas as perguntas" (pode ser que ninguem perguntou ainda). Confira a pagina do anuncio, ou escolha um anuncio que tenha perguntas')
   } else if (!a.perguntas) {
     avisos.push(`perguntas: a espionagem so le as perguntas dos anuncios que mais vendem e esse ficou sem. Rode a /espionar-concorrente de novo com mais perguntas, ou escolha outro anuncio do arquivo`)
   }
@@ -98,7 +105,7 @@ export function coletaDeEspionagem(bruto, mlb) {
 export function coletarDeEspionagem(caminho, mlb) {
   let texto
   try { texto = fs.readFileSync(caminho, 'utf8') } catch {
-    throw new Error(`nao achei o arquivo ${caminho}. Passe o caminho do _raw-concorrentes-*.json que a /espionar-concorrente gravou.`)
+    throw new Error(`nao achei o arquivo ${caminho}. Passe o caminho do _raw-concorrentes-*.json que a /espionar-concorrente gravou (no modo avulso, com --mlb, ele fica em dados/concorrentes/).`)
   }
   let bruto
   try { bruto = JSON.parse(texto) } catch {

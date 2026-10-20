@@ -2,10 +2,10 @@
 // Gate 1 barra as letras seguidas de 6 ou mais digitos em qualquer arquivo do kit.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { argumentos, idDoAnuncio, escolherTopo, urlParaAbrir, vendidosDe, vendedorDe, perguntasDoTexto, palavrasDoTitulo, vocabulario, textoDoVocabulario, atributosConsensuais, fotosUnicas, avaliacoesDaPagina, dataDaPagina, dataRelativa, espionar, recalcularArquivos, acharProduto, mesclarAnuncios, oQueFaltaEspionar, pontoDePartida, limparFundo, somaAlertas } from './espionar.mjs'
+import { argumentos, idDoAnuncio, escolherTopo, urlParaAbrir, vendidosDe, vendedorDe, perguntasDoTexto, palavrasDoTitulo, vocabulario, textoDoVocabulario, atributosConsensuais, fotosUnicas, avaliacoesDaPagina, dataDaPagina, dataRelativa, espionar, recalcularArquivos, acharProduto, mesclarAnuncios, oQueFaltaEspionar, pontoDePartida, limparFundo, somaAlertas, itemAvulso, arquivoAvulso, espionarAvulso, resumoAvulso } from './espionar.mjs'
 
 const L = 'MLB'
 const id = n => L + n
@@ -31,6 +31,14 @@ test('idDoAnuncio le o codigo no caminho, na query do patrocinado, e devolve nul
   assert.equal(idDoAnuncio(`https://www.mercadolivre.com.br/bala/up/${L}U9876543210`), `${L}U9876543210`)
   assert.equal(idDoAnuncio(`https://click1.mercadolivre.com.br/mclics/x?f=item_id:${id('5555555')}`), id('5555555'))
   assert.equal(idDoAnuncio('https://exemplo.com'), null)
+})
+
+test('idDoAnuncio na pagina de catalogo pega o anuncio do item_id, nao o produto do caminho', () => {
+  // revisao comum do Codex na 5.20: o item_id= era ignorado e o modo avulso gravava o codigo do catalogo
+  const url = `https://www.mercadolivre.com.br/garrafa/p/${id('11111111')}?item_id=${id('7770001')}`
+  assert.equal(idDoAnuncio(url), id('7770001'))
+  assert.equal(itemAvulso(url).id, id('7770001'))
+  assert.equal(idDoAnuncio(`https://www.mercadolivre.com.br/garrafa/p/${id('11111111')}?x=1&item_id%3D${id('7770001')}`), id('7770001'))
 })
 
 test('escolherTopo pega organicos na ordem da busca e completa com patrocinado', () => {
@@ -528,4 +536,58 @@ test('limparFundo limpa texto, chave e lista e deixa numero e nulo como estao', 
   const conta = { tag: 0, bidi: 0 }
   assert.deepEqual(limparFundo({ ['a' + cp(0xe0041)]: [1, null, 'b' + cp(0x202a)] }, conta), { a: [1, null, 'b'] })
   assert.deepEqual(conta, { tag: 1, bidi: 1 })
+})
+
+test('itemAvulso aceita o link ou o codigo, e link de fora do Mercado Livre so empresta o codigo', () => {
+  const link = `https://produto.mercadolivre.com.br/${L}-7770001-garrafa`
+  assert.deepEqual(itemAvulso(link), { id: id('7770001'), url: link })
+  assert.deepEqual(itemAvulso(id('7770001')), { id: id('7770001'), url: `https://produto.mercadolivre.com.br/${L}-7770001` })
+  assert.deepEqual(itemAvulso(`${L}-7770001`), { id: id('7770001'), url: `https://produto.mercadolivre.com.br/${L}-7770001` })
+  assert.equal(itemAvulso(`https://exemplo.invalido/${L}-7770001`).url, `https://produto.mercadolivre.com.br/${L}-7770001`)
+  assert.throws(() => itemAvulso('garrafa termica'), /link do anuncio ou do codigo/)
+  assert.throws(() => itemAvulso(`${L}U7770001`), /catalogo/)
+})
+
+test('itemAvulso so abre o link quando o endereco termina no dominio do Mercado Livre', () => {
+  const certo = `https://produto.mercadolivre.com.br/${L}-7770001`
+  for (const golpe of [
+    `https://mercadolivre.com.golpe.example/${L}-7770001-x`,
+    `https://naoemercadolivre.com/${L}-7770001`,
+    `https://produto.mercadolivre.com.br@golpe.example/${L}-7770001`,
+    `http://produto.mercadolivre.com.br/${L}-7770001`,
+  ]) assert.equal(itemAvulso(golpe).url, certo, golpe)
+  const ok = `https://www.mercadolivre.com.br/garrafa/p/x?item_id=${L}7770001`
+  assert.equal(itemAvulso(ok).url, ok)
+})
+
+test('argumentos com --mlb entra no modo avulso e recusa misturar com a esteira', () => {
+  assert.deepEqual(argumentos(['--mlb', id('7770001')]), { avulso: true, item: { id: id('7770001'), url: `https://produto.mercadolivre.com.br/${L}-7770001` } })
+  assert.throws(() => argumentos(['--mlb', id('7770001'), '--fornecedor', 'f']), /nao combina/)
+})
+
+test('espionarAvulso grava o bruto de um anuncio em dados/concorrentes, sem tocar em fornecedores/', async () => {
+  const raiz = mkdtempSync(join(tmpdir(), 'avulso-'))
+  try {
+    const item = itemAvulso(id('7770001'))
+    const perguntas = []
+    const { arquivo, anuncio } = await espionarAvulso({
+      item, raiz, hoje: '2026-10-20', dormir: async () => {},
+      lerAnuncio: async () => ({ titulo: 'Garrafa Exemplo', subtitulo: '+50 vendidos', fotos: [], atributos: {}, link_perguntas: 'q1', avaliacoes_pagina: { comentarios: [] } }),
+      lerAvaliacoes: async () => ({}),
+      lerPerguntas: async link => { perguntas.push(link); return ABA },
+    })
+    assert.equal(arquivo, arquivoAvulso(raiz, id('7770001')))
+    assert.equal(arquivo, join(raiz, 'dados', 'concorrentes', `_raw-concorrentes-${id('7770001')}.json`))
+    const bruto = JSON.parse(readFileSync(arquivo, 'utf8'))
+    assert.equal(bruto.avulso, true)
+    assert.equal(bruto.produto, 'Garrafa Exemplo')
+    assert.deepEqual(bruto.anuncios.map(a => a.id), [id('7770001')])
+    assert.deepEqual(perguntas, ['q1'], 'a aba de perguntas do anuncio avulso e lida')
+    assert.match(bruto.anuncios[0].perguntas, /glúten/)
+    assert.deepEqual(readdirSync(raiz), ['dados'])
+    assert.equal(resumoAvulso(raiz, arquivo, anuncio)[1], `dados/concorrentes/_raw-concorrentes-${id('7770001')}.json`)
+    assert.throws(() => resumoAvulso(raiz, arquivo, { ...anuncio, erro: 'pagina: timeout' }), /nao consegui ler/)
+  } finally {
+    rmSync(raiz, { recursive: true, force: true })
+  }
 })

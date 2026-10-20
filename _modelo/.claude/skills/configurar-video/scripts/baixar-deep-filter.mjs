@@ -2,13 +2,14 @@
 // So Windows x64 e Mac (arm64 e x64) tem programa pronto. Em outro sistema a voz vai pelo filtro afftdn do
 // ffmpeg, que limpa menos mas funciona, e o script sai 0.
 // Uso: node .claude/skills/configurar-video/scripts/baixar-deep-filter.mjs
-import { chmodSync, existsSync, mkdirSync, renameSync, rmSync, statSync, createWriteStream, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { chmodSync, existsSync, mkdirSync, renameSync, rmSync, statSync, createWriteStream, writeFileSync, realpathSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { exe } from './lib/plataforma.mjs'
 import { caminhos, pastaVideo } from './lib/pasta-video.mjs'
+import { fetchComTimeout } from '../../mercado-livre/scripts/lib/fetch-timeout.mjs'
 
 const BASE_URL = 'https://github.com/Rikorose/DeepFilterNet/releases/download/v0.5.6/'
 export const URLS = {
@@ -17,8 +18,11 @@ export const URLS = {
   'darwin-x64': BASE_URL + 'deep-filter-0.5.6-x86_64-apple-darwin',
 }
 const MINIMO = 1024 * 1024
+// Prazo do download inteiro: o programa e grande e a internet do aluno pode ser lenta,
+// entao o prazo e longo, mas com fim, pra conexao presa nao pendurar a instalacao.
+const PRAZO_DOWNLOAD_MS = 15 * 60_000
 
-export async function baixarDeepFilter({ base, plat = process.platform, arch = process.arch, buscar = fetch, avisar = console.log } = {}) {
+export async function baixarDeepFilter({ base, plat = process.platform, arch = process.arch, buscar = fetchComTimeout, avisar = console.log } = {}) {
   const url = URLS[`${plat}-${arch}`]
   if (!url) {
     avisar('Nao ha o limpador de voz DeepFilterNet pronto pra este computador. A voz vai pelo filtro afftdn do ffmpeg: limpa um pouco menos, mas funciona.')
@@ -31,7 +35,7 @@ export async function baixarDeepFilter({ base, plat = process.platform, arch = p
   mkdirSync(pasta, { recursive: true })
   const parcial = alvo + '.parte'
   try {
-    const r = await buscar(url)
+    const r = await buscar(url, {}, { timeoutMs: PRAZO_DOWNLOAD_MS })
     // corpo do erro sem ler segura a conexao aberta e, sem o process.exit, o processo nao termina
     if (r && !r.ok) await r.body?.cancel()
     if (!r || !r.ok) throw new Error(`o download de ${url} falhou (status ${r ? r.status : 'sem resposta'}). Confira a internet e rode de novo.`)
@@ -47,7 +51,13 @@ export async function baixarDeepFilter({ base, plat = process.platform, arch = p
   return { baixou: true, suportado: true, caminho: alvo }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const r = await baixarDeepFilter({ base: pastaVideo() })

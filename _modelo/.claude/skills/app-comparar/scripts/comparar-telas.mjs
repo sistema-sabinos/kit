@@ -22,8 +22,7 @@
 // duas tem. Diferenca de altura aparece no relatorio.
 // Saida: 0 ok; 1 nota abaixo do --minimo; 2 arquivo que nao existe, nao e PNG, e entrelacado
 // ou esta corrompido, ou flag com valor ruim.
-import { writeFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { writeFileSync, realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { lerArgs, numero } from '../../app-estudar/scripts/lib/args.mjs'
 import { lerPng, gravarPng } from './lib/png.mjs'
@@ -304,7 +303,13 @@ export function principal(argv, escrever = console.log, avisar = console.error) 
   return opcoes.minimo !== undefined && relatorio.nota < opcoes.minimo ? 1 : 0
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     process.exitCode = principal(process.argv.slice(2))

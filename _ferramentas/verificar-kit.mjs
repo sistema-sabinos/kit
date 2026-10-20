@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // Gates de qualidade do kit SabinOS (pasta-mae + _modelo). Nenhum zip sai com gate vermelho.
 // Uso: node verificar-kit.mjs <caminho-do-kit>
-import { readFileSync, readdirSync, statSync, existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import { readFileSync, readdirSync, lstatSync, existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, realpathSync } from 'node:fs'
 import { join, relative, dirname, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
-import { pathToFileURL, fileURLToPath } from 'node:url'
+import { fileURLToPath } from 'node:url'
 import { hashArquivo, ignorado, componenteDe } from './atualizar-projeto.mjs'
 // a mesma lista de cara de chave do backup automatico do aluno: o zip nunca sai com o que
 // o backup dele seguraria
@@ -138,6 +138,46 @@ export function contrasteNoTexto(txt, html = false) {
   // o trecho sai da linha original, sem a mascara de x
   const linhas = t.split('\n')
   return contrasteR1(semCitado(t)).map(o => ({ linha: o.linha, trecho: linhas[o.linha - 1].trim().slice(0, 120) }))
+}
+
+// Gate 9 (gate humano do gasto): o teto limite_gasto_usd e trava a mais, e o "pode ir" vale pra
+// todo gasto. Paragrafo ou item de lista que liga o "pode ir" a gasto "acima de" teto deixa a IA
+// gastar calada abaixo dele (a /mercado-livre dizia isso ate a 5.19). Devolve a linha de cada um.
+export function podeIrSoAcimaDoTeto(txt) {
+  return blocos(txt).filter(({ texto: t }) => {
+    // bloco que ja diz a regra pra todo gasto pode falar do teto como trava a mais
+    const todoGasto = /\btodo gasto\b|mesmo (?:[\p{L} ]+ e )?(?:dentro|abaixo) do teto/iu.test(t)
+    return !todoGasto && /gastos? acima d[eo] (?:`?limite_gasto_usd`?|teto|limite)/i.test(t) && /pode ir/i.test(t)
+  }).map(b => b.ini)
+}
+
+// Gate 9 (Codex avulso): passar da cota do plano gasta o credito avulso que a pessoa comprou, e
+// ate a 5.19 a /mercado-livre e a /gerar-imagens so avisavam e geravam. Paragrafo ou item que fala
+// do credito avulso tem de pedir o "pode ir" ali mesmo (decisao da 5.20, chat 5).
+export function codexAvulsoSemPodeIr(txt) {
+  return blocos(txt).filter(({ texto: t }) => /cr[eé]ditos? avulsos?/i.test(t) && !/pode ir/i.test(t)).map(b => b.ini)
+}
+
+// Paragrafo ou item de lista, com a linha onde comeca. Linha de tabela e cerca de codigo sao bloco
+// proprio: nao grudam no paragrafo vizinho
+function blocos(txt) {
+  const saida = []
+  let bloco = [], ini = 0
+  const fechar = () => {
+    if (bloco.length) saida.push({ ini, texto: bloco.join(' ') })
+    bloco = []
+  }
+  const sozinha = l => /^\s*(?:\||```)/.test(l)
+  let anterior = ''
+  String(txt).split(/\r?\n/).forEach((l, i) => {
+    if (!l.trim() || /^\s*(?:[-*]|\d+\.)\s/.test(l) || sozinha(l) || sozinha(anterior)) fechar()
+    anterior = l
+    if (!l.trim()) return
+    if (!bloco.length) ini = i + 1
+    bloco.push(l.trim())
+  })
+  fechar()
+  return saida
 }
 
 // Detectores de conteudo do Gate 1 sobre um texto: devolve o detalhe de cada achado.
@@ -283,11 +323,12 @@ function ehSoPonteiroClaude(txt) {
 
 // Gate 9: o matcher de um hook PreToolUse e lista de nome exato de ferramenta separada
 // por "|" ou "," (doc oficial, code.claude.com/docs/en/hooks, 2026-09-21), entao cobrir
-// as duas ferramentas e ter "Bash" E "PowerShell" na lista, em qualquer ordem.
-function matcherCobreBashEPowerShell(matcher) {
-  if (typeof matcher !== 'string') return false
-  const partes = matcher.split(/[|,]/).map(s => s.trim())
-  return partes.includes('Bash') && partes.includes('PowerShell')
+// as ferramentas e ter cada nome na lista, em qualquer ordem. O Monitor (comando em segundo
+// plano) entrou na 5.20 (N11): sem ele, rm -rf mandado pelo Monitor passava pela trava.
+const MATCHER_DA_TRAVA = ['Bash', 'PowerShell', 'Monitor']
+function faltaNoMatcher(matcher) {
+  const partes = typeof matcher === 'string' ? matcher.split(/[|,]/).map(s => s.trim()) : []
+  return MATCHER_DA_TRAVA.filter(n => !partes.includes(n))
 }
 
 // Gate 11: quais destes arquivos o .gitignore do _modelo (ou da pasta-mae) deixa fora do backup do aluno.
@@ -317,17 +358,27 @@ export function foraDoBackup(dirModelo, rels) {
 // (pasta com _contexto/, menos o _modelo) e backup _kit-anterior-* sao do aluno e nunca vao no zip.
 // A _video tambem: nasce no /configurar-video (motor copiado, whisper, python) e o gitignore da
 // pasta-mae a deixa fora do backup, entao varrer ela deixava o Gate 11 vermelho pra quem ja edita video.
+// O agentes/ tambem: a /clonar-especialista grava ali o conselheiro, com citacao literal do
+// especialista nas fichas e o material bruto em fontes/, fora do backup de proposito.
 function ehDoAluno(dir, nome) {
-  if (/^_kit-anterior-/.test(nome) || nome === '_video') return true
+  if (/^_kit-anterior-/.test(nome) || nome === '_video' || nome === 'agentes') return true
   return nome !== '_modelo' && existsSync(join(dir, nome, '_contexto'))
 }
 
+const ehLink = caminho => { try { return lstatSync(caminho).isSymbolicLink() } catch { return false } }
+
+// Link e juncao ficam fora de vez: o kit nunca leva um, e seguir faria o verificador ler a
+// pasta de outro lugar (a ponte .agents/skills do /setup acendia Gate 1 e 11 na pasta-mae).
+// O .agents sai inteiro so quando o skills dele e a ponte; .agents de verdade segue proibido.
 function listar(dir, base = dir, acc = []) {
   for (const nome of readdirSync(dir)) {
     if (nome === '.git' || nome === 'node_modules') continue
     if (dir === base && ehDoAluno(dir, nome)) continue
     const caminho = join(dir, nome)
-    if (statSync(caminho).isDirectory()) listar(caminho, base, acc)
+    if (dir === base && nome === '.agents' && ehLink(join(caminho, 'skills'))) continue
+    const tipo = lstatSync(caminho)
+    if (tipo.isSymbolicLink()) continue
+    if (tipo.isDirectory()) listar(caminho, base, acc)
     else acc.push(relative(base, caminho).replace(/\\/g, '/'))
   }
   return acc
@@ -339,9 +390,10 @@ function ehTexto(rel) {
 
 // Gate 1 le tambem .ts e .tsx (o motor de video guarda nome em codigo de tela, e o /app-testar
 // traz testes .spec.ts). O ehTexto fica como esta porque o Gate 12 usa ele, e .ts/.tsx guardam
-// travessao de tela.
+// travessao de tela. Le ainda .html, .csv, .svg, .css e arquivo sem extensao (VERSAO, .gitignore):
+// fixtures/ guarda pagina de terceiro capturada, justo onde nome de loja e id entrariam calados.
 function ehTextoGate1(rel) {
-  return ehTexto(rel) || /\.(ts|tsx)$/i.test(rel)
+  return ehTexto(rel) || /\.(ts|tsx|html|csv|svg|css)$/i.test(rel) || /(^|\/)\.?[^/.]+$/.test(rel)
 }
 
 const CACHE_ESPACADO = new Map()
@@ -633,13 +685,21 @@ export function rodarGates(dirKit, opcoes = {}) {
         (entrada.hooks || []).some(h => typeof h.command === 'string' && h.command.includes('barrar-perigoso')))
       if (!entradaComBarreira) {
         falhas.push({ gate: 9, arquivo: rel, detalhe: 'hooks.PreToolUse sem o barrar-perigoso' })
-      } else if (!matcherCobreBashEPowerShell(entradaComBarreira.matcher)) {
+      } else if (faltaNoMatcher(entradaComBarreira.matcher).length) {
         // menor 2 (revisao pos-revisao): so conferir que ALGUM PreToolUse cita o hook nao
-        // prova que ele roda pras duas ferramentas. Se o matcher voltar a ser so "Bash",
+        // prova que ele roda pras tres ferramentas. Se o matcher voltar a ser so "Bash",
         // a trava do PowerShell morre em silencio e a suite/gates continuavam verdes.
-        falhas.push({ gate: 9, arquivo: rel, detalhe: 'hooks.PreToolUse: matcher do barrar-perigoso nao cobre Bash e PowerShell juntos' })
+        falhas.push({ gate: 9, arquivo: rel, detalhe: `hooks.PreToolUse: matcher do barrar-perigoso nao cobre ${MATCHER_DA_TRAVA.join(', ')} (falta ${faltaNoMatcher(entradaComBarreira.matcher).join(', ')})` })
       }
     }
+  }
+  for (const rel of arquivos) {
+    if (!rel.endsWith('.md')) continue
+    const texto = readFileSync(join(dirKit, rel), 'utf8')
+    for (const linha of podeIrSoAcimaDoTeto(texto))
+      falhas.push({ gate: 9, arquivo: rel, detalhe: `linha ${linha}: "pode ir" so pra gasto acima do teto; todo gasto pede o "pode ir" na hora, e o limite_gasto_usd e trava a mais` })
+    for (const linha of codexAvulsoSemPodeIr(texto))
+      falhas.push({ gate: 9, arquivo: rel, detalhe: `linha ${linha}: credito avulso do Codex sem o "pode ir" no mesmo trecho; passar da cota gasta dinheiro, e o lote espera o "pode ir" na hora` })
   }
 
   // Gate 10: atualizador. So roda quando o kit declara componentes (o kit de verdade
@@ -834,7 +894,13 @@ const NOMES = {
   14: 'Terminal e da IA', 15: 'Frase de contraste (regra 1)',
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// fui chamado direto? O Node entrega o import.meta.url com link e juncao resolvidos e o argv
+// como veio; os dois lados pelo realpathSync, senao chamado por atalho nao roda e sai 0 calado
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+if (chamadoDireto()) {
   const dir = process.argv[2] || resolve(dirname(fileURLToPath(import.meta.url)), '..')
   const { falhas, avisos, total, naoRodou = [] } = rodarGates(dir)
   console.log(`Kit: ${dir} (${total} arquivos)\n`)

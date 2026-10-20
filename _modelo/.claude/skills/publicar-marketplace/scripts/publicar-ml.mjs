@@ -11,8 +11,8 @@
 //        depois que a pessoa ativou no painel: le o anuncio e marca publicado
 // Saida: 0 deu certo; 2 esse produto vai pelo checklist manual (plano B); 1 pendencia ou erro.
 // Formato da API conferido na conta real em 2026-09-30 (ver lib/montar-item.mjs).
-import { existsSync, readFileSync, statSync, rmSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { existsSync, readFileSync, statSync, rmSync, realpathSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
 import { lerJson, gravarJson, dataLocal, conferirAuditoria, marcaDaFicha, marcaNoTitulo } from '../../mercado-livre/scripts/lib/pipeline.mjs'
@@ -375,7 +375,13 @@ export async function criarApi() {
   }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const a = argumentos(process.argv.slice(2))

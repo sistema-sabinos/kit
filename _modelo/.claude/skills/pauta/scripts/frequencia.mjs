@@ -2,11 +2,11 @@
 // a data de cada post da grade pelo codigo do link. Os fixados antigos vem no topo da grade e distorcem o
 // ritmo: quem le a saida tira da conta o post com data fora da janela dos outros.
 // Uso: node .claude/skills/pauta/scripts/frequencia.mjs --perfis a,b,c
-import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { abrirPagina, ogDaPagina, opcoes, lista } from './lib/pagina.mjs'
 import { gradeDosLinks, seguidoresDoOg, ritmo } from './lib/instagram-publico.mjs'
 import { dataHoraLocal } from '../../midia-social/scripts/lib/hora.mjs'
+import { realpathSync } from 'node:fs'
 
 const USO = 'uso: node .claude/skills/pauta/scripts/frequencia.mjs --perfis a,b,c'
 
@@ -33,5 +33,11 @@ async function main(argv) {
   console.log('\nJSON:' + JSON.stringify(saida))
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) main(process.argv.slice(2)).catch(e => { console.error('ERRO:', e.message); process.exitCode = 1 })

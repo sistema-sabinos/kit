@@ -76,6 +76,9 @@ def download_audio(url: str, output_dir: str) -> tuple[str, dict]:
         "no_warnings": True,
         # sem isso a barra de progresso sai no stdout, junto com a transcricao
         "noprogress": True,
+        # link de aula copiado de dentro da playlist (&list=) baixaria a playlist inteira e depois
+        # procuraria o .wav com o id da playlist, que nao existe
+        "noplaylist": True,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -105,6 +108,14 @@ def transcribe_audio(audio_path: str, model_size: str) -> tuple[list, dict]:
 
 
 def main():
+    # o Windows abre o stdout em cp1252 quando a saida vai pra um pipe (o caso da IA): o acento chega
+    # estragado e a nota musical ou o emoji do Whisper derrubam o script depois da transcricao
+    for fluxo in (sys.stdout, sys.stderr):
+        try:
+            fluxo.reconfigure(encoding="utf-8")
+        except (AttributeError, OSError):
+            pass
+
     if len(sys.argv) < 2:
         print("Usage: python3 transcribe_url.py <url> [--model medium] [--timestamps]")
         sys.exit(1)

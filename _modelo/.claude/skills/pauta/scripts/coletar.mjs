@@ -2,8 +2,8 @@
 // Grava em inteligencia/base-ideias/<perfil>/: posts.json, videos/<codigo>.mp4 (H.264, com audio) e
 // slides/<codigo>/slide-NN.jpg. Retoma: o que ja tem arquivo no disco nao baixa de novo, so atualiza os numeros.
 // Uso: node .claude/skills/pauta/scripts/coletar.mjs --perfil <perfil> --reels <c1,c2> --posts <c3,c4>
-import { existsSync, mkdirSync, readFileSync, writeFileSync, statSync, renameSync, unlinkSync } from 'node:fs'
-import { join, relative, resolve } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, writeFileSync, statSync, renameSync, unlinkSync, realpathSync } from 'node:fs'
+import { join, relative } from 'node:path'
 import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
@@ -248,5 +248,11 @@ async function main(argv) {
   console.log(JSON.stringify({ perfil, total: resultado.length, ok, falhas: resultado.filter(r => !r.arquivo).map(r => `${r.codigo}: ${r.erro}`), ...(alerta ? { alerta } : {}) }))
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) main(process.argv.slice(2)).catch(e => { console.error('ERRO:', e.message); process.exitCode = 1 })

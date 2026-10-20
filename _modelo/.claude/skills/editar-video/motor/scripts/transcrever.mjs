@@ -5,7 +5,7 @@
 // A pasta do whisper vem da variavel WHISPER_DIR (obrigatoria). O idioma e o portugues; WHISPER_IDIOMA troca.
 // Este script nunca troca de pasta de trabalho (chdir): o Remotion grava um "tmp" na pasta de onde ele roda.
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, rmSync, writeFileSync, realpathSync } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -70,7 +70,13 @@ export async function transcrever({ audio, saida, modelo, whisperDir, idioma = '
   }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const a = lerArgumentos(process.argv.slice(2))

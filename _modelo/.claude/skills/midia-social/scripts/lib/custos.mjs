@@ -3,8 +3,8 @@
 // mercado-livre/referencias/contratos.md, secao 8), com os tokens de brinde quando houver.
 // Em dolar porque e assim que o Google cobra: reais dependeriam do cambio do dia.
 // Uso: node .claude/skills/midia-social/scripts/lib/custos.mjs --servico "gemini (pauta)" --usd 0,03 [--tokens 18000] [--contexto "..."]
-import { appendFileSync, mkdirSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { appendFileSync, mkdirSync, realpathSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from './raiz.mjs'
 
@@ -31,7 +31,13 @@ export function argumentos(v) {
   return a
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try { console.log('registrado:', JSON.stringify(registrarCusto(argumentos(process.argv.slice(2))))) }
   catch (e) { console.error('ERRO:', e.message); process.exit(1) }

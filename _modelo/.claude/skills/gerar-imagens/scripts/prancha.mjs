@@ -2,7 +2,7 @@
 // aprovar ou reprovar de uma vez. Mora na mesma pasta das imagens.
 // Uso: node .claude/skills/gerar-imagens/scripts/prancha.mjs --imagens dados/pipeline/<slug>/imagens.json
 // Grava anuncios/<slug>/imagens/prancha.html e imprime o caminho.
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync, mkdirSync, realpathSync } from 'node:fs'
 import { basename, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { lerArgs } from './lib/args.mjs'
@@ -45,7 +45,13 @@ ${cartoes}
   return { html, faltando }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const a = lerArgs(process.argv.slice(2))

@@ -120,8 +120,10 @@ Se não veio link nem arquivo, pedir pro usuário.
 1. **Se for link do YouTube**, tentar antes a legenda pronta, que sai na hora e de graça:
 
 ```bash
-yt-dlp --skip-download --write-auto-subs --write-subs --sub-langs "pt.*" --sub-format vtt "<url>"
+yt-dlp --no-playlist --skip-download --write-auto-subs --write-subs --sub-langs "pt.*" --sub-format vtt "<url>"
 ```
+
+Link copiado de dentro de uma playlist (com `&list=`): o `--no-playlist` pega só o vídeo do link, e o script faz o mesmo.
 
 Se o vídeo tiver legenda, entregar o texto dela e parar aqui. Se não tiver legenda, ou se o YouTube responder com erro `429` (bloqueio por excesso de pedidos), seguir pros passos abaixo.
 

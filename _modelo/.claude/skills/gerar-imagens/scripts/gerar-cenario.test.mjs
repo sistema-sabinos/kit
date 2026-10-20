@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempSync, writeFileSync, rmSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { REGRAS, montarPrompt, cotaEstourou, escolherModeloImagem, estimar, viaCodex, viaGemini } from './gerar-cenario.mjs'
+import { REGRAS, montarPrompt, cotaEstourou, escolherModeloImagem, erroSemModelo, avisoDePreco, PRECO_IMAGEM, PRAZO_LISTA_MS, PRAZO_GERAR_MS, estimar, viaCodex, viaGemini } from './gerar-cenario.mjs'
 import { CAMINHO_ENV } from '../../mercado-livre/scripts/lib/env.mjs'
 import { CAMINHO_CONFIG } from '../../mercado-livre/scripts/lib/config.mjs'
 
@@ -49,8 +49,92 @@ test('cotaEstourou reconhece limite de uso e ignora erro comum', () => {
 test('escolherModeloImagem prefere o flash de imagem mais novo e estavel', () => {
   const ids = ['gemini-2.5-flash-image', 'gemini-3-pro-image-preview', 'gemini-3.1-flash-image-preview', 'gemini-3.1-flash-image', 'gemini-2.5-pro', 'imagen-4.0-generate-001']
   assert.equal(escolherModeloImagem(ids), 'gemini-3.1-flash-image')
-  assert.equal(escolherModeloImagem(['gemini-3-pro-image-preview', 'gemini-2.5-pro']), 'gemini-3-pro-image-preview')
   assert.equal(escolherModeloImagem(['gemini-2.5-pro']), null)
+})
+
+test('escolherModeloImagem so escolhe modelo com preco na tabela', () => {
+  // revisao comum do Codex na 5.20: preview fora da tabela passava pela trava de preco e gerava
+  assert.equal(escolherModeloImagem(['gemini-3.1-flash-image-preview']), null)
+  assert.equal(escolherModeloImagem(['gemini-3-pro-image-preview', 'gemini-2.5-pro']), null)
+  assert.equal(escolherModeloImagem(['gemini-nano-banana-2.2', 'gemini-3.1-flash-image']), 'gemini-3.1-flash-image', 'versao nova sem preco fica de fora, a reserva com preco vale')
+  assert.equal(escolherModeloImagem(['gemini-3-pro-image-preview'], { 'gemini-3-pro-image-preview': { usd: 0.1 } }), 'gemini-3-pro-image-preview', 'canario: com preco na tabela, entra')
+})
+
+test('escolherModeloImagem prefere o nano-banana ao nome antigo nas duas ordens, e o antigo fica de reserva', () => {
+  const novo = 'gemini-nano-banana-2.1'
+  const antigo = 'gemini-3.1-flash-image'
+  assert.equal(escolherModeloImagem([antigo, novo]), novo)
+  assert.equal(escolherModeloImagem([novo, antigo]), novo)
+  assert.equal(escolherModeloImagem([antigo, 'gemini-3.1-flash-lite-image']), antigo, 'so com o antigo, o antigo segue valendo')
+  assert.equal(escolherModeloImagem([novo, 'gemini-2.5-pro']), novo, 'so com o novo, o novo vale')
+  const familia = Object.fromEntries(['gemini-nano-banana-2.1', 'gemini-nano-banana-3-preview', 'gemini-nano-banana-2'].map(id => [id, { usd: 0.03 }]))
+  assert.equal(escolherModeloImagem(Object.keys(familia), familia), 'gemini-nano-banana-3-preview', 'a versao mais nova da familia vai na frente')
+})
+
+test('erroSemModelo: lista sem modelo de imagem fala de faturamento; modelo de imagem de nome desconhecido manda atualizar o kit', () => {
+  const semImagem = erroSemModelo(['gemini-2.5-pro', 'gemini-3.7-flash'])
+  assert.ok(semImagem.length > 0, 'mensagem vazia')
+  assert.ok(semImagem.includes('faturamento') && !semImagem.includes('/atualizar-sabinos'), semImagem)
+  const desconhecido = erroSemModelo(['gemini-2.5-pro', 'gemini-9-ultra-image-gen'])
+  assert.ok(desconhecido.includes('/atualizar-sabinos') && desconhecido.includes('gemini-9-ultra-image-gen'), desconhecido)
+  assert.ok(!desconhecido.includes('faturamento'), desconhecido)
+})
+
+test('erroSemModelo: chave que so lista o lite nao manda atualizar o kit, que continua deixando o lite de fora', () => {
+  const lite = 'gemini-3.1-flash-lite-image'
+  assert.equal(escolherModeloImagem([lite]), null, 'canario: o lite segue fora da escolha')
+  const so = erroSemModelo(['gemini-2.5-pro', lite])
+  assert.ok(so.length > 0, 'mensagem vazia')
+  assert.ok(so.includes(lite) && so.includes('faturamento'), so)
+  assert.ok(!so.includes('/atualizar-sabinos'), so)
+  const misto = erroSemModelo([lite, 'gemini-9-ultra-image-gen'])
+  assert.ok(misto.includes('/atualizar-sabinos') && !misto.includes(lite), misto)
+})
+
+test('viaGemini para antes de gastar quando o --preco-usd fica abaixo do preco do modelo que a chave libera', async () => {
+  const precoBaixo = PRECO_IMAGEM['gemini-nano-banana-2.1'].usd
+  assert.ok(precoBaixo < PRECO_IMAGEM['gemini-3.1-flash-image'].usd, 'canario: o modelo de reserva custa mais')
+  const { buscar, urls } = geminiFalso({ respostas: [comImagem, comImagem] })
+  const custos = []
+  const gravados = []
+  const r = await viaGemini(cenas, { chave: 'k', precoUsd: precoBaixo, contexto: 'x', buscar, gravar: (p) => gravados.push(p), registrarCusto: (c) => custos.push(c), esperar: async () => {} })
+  assert.ok(urls.length > 0, 'canario: a lista de modelos foi pedida')
+  assert.ok(r.parou && r.parou.includes('gemini-3.1-flash-image') && r.parou.includes('--preco-usd'), String(r.parou))
+  assert.equal(urls.filter(u => u.includes(':generateContent')).length, 0, 'gerou imagem com o preco errado')
+  assert.deepEqual([custos.length, gravados.length, r.custo_usd], [0, 0, 0])
+  assert.deepEqual(r.geradas, [])
+})
+
+test('viaGemini sem modelo que case: a mensagem segue o motivo', async () => {
+  const comLista = (models) => async (url) => {
+    if (url.includes('/models?')) return { status: 200, json: async () => ({ models }) }
+    throw new Error('nao devia gerar sem modelo')
+  }
+  const base = { chave: 'k', precoUsd: 0.07, contexto: 'x', gravar: () => {}, registrarCusto: () => {}, esperar: async () => {} }
+  await assert.rejects(viaGemini(cenas, { ...base, buscar: comLista([{ name: 'models/gemini-2.5-pro', supportedGenerationMethods: ['generateContent'] }]) }), /faturamento/)
+  await assert.rejects(viaGemini(cenas, { ...base, buscar: comLista([{ name: 'models/gemini-nano-cereja-1', supportedGenerationMethods: ['generateContent'] }, { name: 'models/gemini-9-flash-image-x', supportedGenerationMethods: ['generateContent'] }]) }), /atualizar-sabinos/)
+})
+
+test('viaGemini passa prazo curto na lista de modelos e longo na geracao', async () => {
+  const prazos = []
+  const { buscar } = geminiFalso({ respostas: [comImagem] })
+  const espiao = async (url, op, extra) => { prazos.push([url.includes('/models?') ? 'lista' : 'gerar', extra?.timeoutMs]); return buscar(url, op) }
+  await viaGemini([cenas[0]], { chave: 'k', precoUsd: 0.07, contexto: 'x', buscar: espiao, gravar: () => {}, registrarCusto: () => {}, esperar: async () => {} })
+  assert.deepEqual(prazos, [['lista', PRAZO_LISTA_MS], ['gerar', PRAZO_GERAR_MS]])
+  assert.equal(PRAZO_LISTA_MS, 30000)
+  assert.ok(PRAZO_GERAR_MS > PRAZO_LISTA_MS)
+})
+
+test('avisoDePreco: avisa so quando o preco passado fica abaixo do preco do modelo escolhido', () => {
+  const tabela = { 'modelo-a': { usd: 0.067, conferido_em: '2026-10-20' } }
+  const aviso = avisoDePreco('modelo-a', 0.03, tabela)
+  assert.ok(aviso && aviso.includes('modelo-a') && aviso.includes('2026-10-20'), String(aviso))
+  assert.equal(avisoDePreco('modelo-a', 0.067, tabela), null)
+  assert.equal(avisoDePreco('modelo-fora', 0.001, tabela), null)
+  for (const [id, p] of Object.entries(PRECO_IMAGEM)) {
+    assert.equal(escolherModeloImagem([id]), id, `${id} da tabela de preco nao e escolhido pelo script`)
+    assert.ok(p.usd > 0 && /^\d{4}-\d{2}-\d{2}$/.test(p.conferido_em), id)
+  }
 })
 
 test('estimar soma e confere o limite de gasto', () => {
@@ -115,7 +199,7 @@ test('viaGemini: escolhe o modelo pela lista, grava, registra custo por imagem',
   const { buscar, urls } = geminiFalso({ respostas: [comImagem, comImagem] })
   const gravados = []
   const custos = []
-  const r = await viaGemini(cenas, { chave: 'k', precoUsd: 0.05, contexto: 'designer kit', buscar, gravar: (p, b) => gravados.push([p, b.toString()]), registrarCusto: (c) => custos.push(c), esperar: async () => {} })
+  const r = await viaGemini(cenas, { chave: 'k', precoUsd: 0.07, contexto: 'designer kit', buscar, gravar: (p, b) => gravados.push([p, b.toString()]), registrarCusto: (c) => custos.push(c), esperar: async () => {} })
   assert.equal(r.modelo, 'gemini-3.1-flash-image')
   assert.ok(urls[1].includes('models/gemini-3.1-flash-image:generateContent'))
   assert.equal(gravados.length, 2)
@@ -123,7 +207,7 @@ test('viaGemini: escolhe o modelo pela lista, grava, registra custo por imagem',
   assert.equal(custos.length, 2)
   assert.deepEqual(Object.keys(custos[0]).sort(), ['contexto', 'em', 'servico', 'usd'])
   assert.equal(custos[0].servico, 'gemini-imagem')
-  assert.equal(r.custo_usd, 0.1)
+  assert.equal(r.custo_usd, 0.14)
 })
 
 test('viaGemini: 429 espera e tenta de novo; resposta sem imagem nao cobra', async () => {
@@ -131,7 +215,7 @@ test('viaGemini: 429 espera e tenta de novo; resposta sem imagem nao cobra', asy
   const { buscar } = geminiFalso({ respostas: [{ status: 429, corpo: {} }, comImagem, semImagem] })
   const esperas = []
   const custos = []
-  const r = await viaGemini(cenas, { chave: 'k', precoUsd: 0.05, contexto: 'x', buscar, gravar: () => {}, registrarCusto: (c) => custos.push(c), esperar: async (ms) => esperas.push(ms) })
+  const r = await viaGemini(cenas, { chave: 'k', precoUsd: 0.07, contexto: 'x', buscar, gravar: () => {}, registrarCusto: (c) => custos.push(c), esperar: async (ms) => esperas.push(ms) })
   assert.equal(esperas.length, 1)
   assert.deepEqual(r.geradas, [cenas[0].out])
   assert.deepEqual(r.faltaram, [cenas[1].out])
@@ -145,7 +229,7 @@ test('viaCodex e viaGemini levam o uso de video ate o prompt', async () => {
   const corpos = []
   const { buscar } = geminiFalso({ respostas: [comImagem, comImagem] })
   const espiao = async (url, op) => { if (op?.body) corpos.push(op.body); return buscar(url, op) }
-  await viaGemini(cenas, { chave: 'k', precoUsd: 0.05, contexto: 'x', uso: 'video', buscar: espiao, gravar: () => {}, registrarCusto: () => {}, esperar: async () => {} })
+  await viaGemini(cenas, { chave: 'k', precoUsd: 0.07, contexto: 'x', uso: 'video', buscar: espiao, gravar: () => {}, registrarCusto: () => {}, esperar: async () => {} })
   assert.equal(corpos.length, 2, 'canario: o Gemini falso recebeu as duas cenas')
   assert.ok(corpos.every(c => c.includes('fundo verde')), 'viaGemini')
 })
@@ -155,7 +239,7 @@ test('item 14: cenario de video pede imagem vertical 9:16 no Gemini e no prompt;
     const corpos = []
     const { buscar } = geminiFalso({ respostas: [comImagem] })
     const espiao = async (url, op) => { if (op?.body) corpos.push(JSON.parse(op.body)); return buscar(url, op) }
-    await viaGemini([cenas[0]], { chave: 'k', precoUsd: 0.05, contexto: 'x', uso, buscar: espiao, gravar: () => {}, registrarCusto: () => {}, esperar: async () => {} })
+    await viaGemini([cenas[0]], { chave: 'k', precoUsd: 0.07, contexto: 'x', uso, buscar: espiao, gravar: () => {}, registrarCusto: () => {}, esperar: async () => {} })
     assert.equal(corpos.length, 1, 'canario: o Gemini falso recebeu a cena')
     return corpos[0].generationConfig?.imageConfig?.aspectRatio
   }
@@ -179,7 +263,7 @@ test('viaGemini: erro no meio do lote nao perde o que ja foi gerado e pago, e a 
   const erros = []
   console.error = (...a) => erros.push(a.join(' '))
   try {
-    const r = await viaGemini(cenas, { chave: 'k', precoUsd: 0.05, contexto: 'x', buscar, gravar: () => {}, registrarCusto: (c) => custos.push(c), esperar: async () => {} })
+    const r = await viaGemini(cenas, { chave: 'k', precoUsd: 0.07, contexto: 'x', buscar, gravar: () => {}, registrarCusto: (c) => custos.push(c), esperar: async () => {} })
     assert.deepEqual(r.geradas, [cenas[0].out])
     assert.deepEqual(r.faltaram, [cenas[1].out])
     assert.equal(custos.length, 1)
@@ -197,7 +281,7 @@ test('viaGemini: falha ao registrar o custo nao devolve a imagem ja gerada e pag
   console.error = (...a) => erros.push(a.join(' '))
   try {
     const r = await viaGemini(cenas, {
-      chave: 'k', precoUsd: 0.05, contexto: 'x', buscar,
+      chave: 'k', precoUsd: 0.07, contexto: 'x', buscar,
       gravar: (p, b) => gravados.push([p, b.toString()]),
       registrarCusto: () => { throw new Error('disco cheio') },
       esperar: async () => {},
@@ -205,7 +289,7 @@ test('viaGemini: falha ao registrar o custo nao devolve a imagem ja gerada e pag
     assert.deepEqual(r.geradas, [cenas[0].out, cenas[1].out])
     assert.deepEqual(r.faltaram, [])
     assert.equal(gravados.length, 2)
-    assert.equal(r.custo_usd, 0.1)
+    assert.equal(r.custo_usd, 0.14)
     assert.ok(erros.some(l => l.includes(cenas[0].out) && l.includes('disco cheio')))
   } finally {
     console.error = original
@@ -220,7 +304,7 @@ test('viaGemini: resposta paga que nao consegue ser salva ainda registra o custo
   console.error = (...a) => erros.push(a.join(' '))
   try {
     const r = await viaGemini(cenas, {
-      chave: 'k', precoUsd: 0.05, contexto: 'x', buscar,
+      chave: 'k', precoUsd: 0.07, contexto: 'x', buscar,
       gravar: (p) => { if (p === cenas[0].out) throw new Error('sem permissao na pasta') },
       registrarCusto: (c) => custos.push(c),
       esperar: async () => {},
@@ -228,7 +312,7 @@ test('viaGemini: resposta paga que nao consegue ser salva ainda registra o custo
     assert.deepEqual(r.faltaram, [cenas[0].out])
     assert.deepEqual(r.geradas, [cenas[1].out])
     assert.equal(custos.length, 2)
-    assert.equal(r.custo_usd, 0.1)
+    assert.equal(r.custo_usd, 0.14)
     assert.ok(erros.some(l => l.includes(cenas[0].out) && l.includes('paga') && l.includes('sem permissao na pasta')))
   } finally {
     console.error = original
@@ -242,7 +326,7 @@ test('viaGemini: resposta fora do 200 fala o status e a mensagem da API', async 
   const erros = []
   console.error = (...a) => erros.push(a.join(' '))
   try {
-    const r = await viaGemini(cenas, { chave: 'k', precoUsd: 0.05, contexto: 'x', buscar, gravar: () => {}, registrarCusto: () => {}, esperar: async () => {} })
+    const r = await viaGemini(cenas, { chave: 'k', precoUsd: 0.07, contexto: 'x', buscar, gravar: () => {}, registrarCusto: () => {}, esperar: async () => {} })
     assert.deepEqual(r.faltaram, [cenas[0].out, cenas[1].out])
     assert.ok(erros.length > 0, 'nenhuma linha de erro saiu')
     assert.ok(erros.some(l => l.includes(`[gemini] ${cenas[0].out}: HTTP 403`) && l.includes('API key not valid')))

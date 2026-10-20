@@ -6,7 +6,7 @@
 //   --escala  altura do produto como fracao da altura da imagem
 //   --linha   altura (0 a 1) onde a base do produto encosta
 //   --x       centro do produto na horizontal (0 a 1)
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { fotografar } from './lib/render.mjs'
@@ -53,7 +53,13 @@ export async function comporCena({ cena, fundo, produto, out, largura = 1200, al
   return { ok: true, out, custo_usd: 0 }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const a = lerArgs(process.argv.slice(2))

@@ -8,8 +8,8 @@
 //   node avisar.mjs --descobrir-chat     lista as conversas que mandaram mensagem pro bot
 //   node avisar.mjs --gravar-chat <id>   grava TELEGRAM_CHAT_ID no .env
 //   node avisar.mjs --teste              manda uma mensagem de teste
-import { mkdirSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { mkdirSync, writeFileSync, realpathSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { fetchComTimeout } from './lib/fetch-timeout.mjs'
 import { RAIZ } from './lib/raiz.mjs'
@@ -86,7 +86,13 @@ export async function descobrirChats(token, fetch = fetchComTimeout) {
   return [...vistos.values()]
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   const [cmd, arg] = process.argv.slice(2)
   const env = lerEnv()

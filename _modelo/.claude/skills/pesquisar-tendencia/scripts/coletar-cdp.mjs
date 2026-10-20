@@ -15,7 +15,7 @@
 // A rota /products/<id>/items foi confirmada com token em 2026-10-04 (preco, listing_type_id,
 // shipping e official_store_id em todos os itens). Se o Mercado Livre mudar a pagina,
 // extrairCards e o clique do "Seguinte" sao o que precisa de ajuste.
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, realpathSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
@@ -218,7 +218,13 @@ export function oQueFalta(existente, produtos, hoje) {
   return { aColetar, puladas: produtos.length - aColetar.length }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   let browser = null
   try {

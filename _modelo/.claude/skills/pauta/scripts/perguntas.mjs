@@ -2,8 +2,8 @@
 // No modo loja, a /pauta cruza esses assuntos com o formato que funcionou nos perfis. Sem o pacote ou sem
 // briefing, devolve lista vazia e a pauta segue so com os perfis.
 // Uso: node .claude/skills/pauta/scripts/perguntas.mjs
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { existsSync, readdirSync, readFileSync, statSync, realpathSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../midia-social/scripts/lib/raiz.mjs'
 
@@ -36,7 +36,13 @@ export function juntarPerguntas(raiz = RAIZ) {
   return out
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   const todas = juntarPerguntas()
   if (!todas.length) console.log('nenhuma pergunta coletada: rodar /espionar-concorrente num produto, ou seguir so com os perfis')

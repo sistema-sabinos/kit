@@ -8,10 +8,10 @@
 //   node atualizar-projeto.mjs conferir <projeto> [--kit <kit>]
 //   node atualizar-projeto.mjs registrar <projeto> <id-da-mudanca> aplicada|recusada
 //   node atualizar-projeto.mjs desfazer <projeto> [--backup <antes-...>]
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, copyFileSync, rmSync, rmdirSync, renameSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, copyFileSync, rmSync, rmdirSync, renameSync, realpathSync } from 'node:fs'
 import { join, dirname, resolve, relative, sep } from 'node:path'
 import { createHash } from 'node:crypto'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 
 // data do relogio da pessoa: em UTC, 22h no Brasil ja e o dia seguinte
 const diaLocal = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -363,7 +363,13 @@ function principal(argv) {
   } else throw new Error(`comando desconhecido: ${cmd}`)
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+if (chamadoDireto()) {
   try { principal(process.argv.slice(2)) } catch (e) {
     console.error(`erro: ${e.message}`)
     process.exit(1)

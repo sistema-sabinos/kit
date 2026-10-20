@@ -14,8 +14,7 @@
 // Limiares (WCAG 2.2): texto normal AA 4,5 e AAA 7; texto grande AA 3 e AAA 4,5; ui 3.
 // Saida: 0 todos os pares passam no AA; 1 algum par reprova ou cita cor que nao existe;
 // 2 arquivo ruim, par que nao da pra ler na lista "pairs" ou nada pra checar.
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { readFileSync, realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { lerArgs } from '../../app-estudar/scripts/lib/args.mjs'
 import { dobrar } from '../../app-estudar/scripts/lib/texto.mjs'
@@ -171,7 +170,13 @@ export function principal(argv, escrever = console.log, avisar = console.error) 
   return linhas.some(reprova) ? 1 : 0
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     process.exitCode = principal(process.argv.slice(2))

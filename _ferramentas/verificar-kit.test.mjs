@@ -1,11 +1,11 @@
 import { test } from 'node:test'
 import assert from 'node:assert'
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, readdirSync, statSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, readdirSync, statSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname, resolve, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
-import { rodarGates, carregarProibidos, foraDoBackup } from './verificar-kit.mjs'
+import { rodarGates, carregarProibidos, foraDoBackup, podeIrSoAcimaDoTeto, codexAvulsoSemPodeIr } from './verificar-kit.mjs'
 import { hashArquivo } from './atualizar-projeto.mjs'
 
 // dois testes leem a lista real, que so existe na _kits; num clone publico eles pulam
@@ -88,6 +88,32 @@ test('gate 1 le .ts e .tsx, e o gate 12 continua sem ler', () => {
       assert.ok(falhas.some(f => f.gate === 1 && f.arquivo.endsWith(arquivo)), `gate 1 devia ler ${arquivo}`)
     }
     assert.deepEqual(falhas.filter(f => f.gate === 12), [], 'gate 12 nao le .tsx (texto de tela fica como veio)')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// pagina de terceiro capturada (fixtures/), planilha, imagem vetorial, estilo e arquivo sem
+// extensao passavam sem leitura: uma captura da conta de origem sairia no zip com o gate verde
+test('gate 1 le fixture .html, .csv, .svg, .css e arquivo sem extensao', () => {
+  const dir = kitFalso()
+  try {
+    const real = readFileSync(fileURLToPath(new URL('../_modelo/.claude/skills/espionar-concorrente/scripts/fixtures/opinioes-real-2026-10-12.html', import.meta.url)), 'utf8')
+    const meio = Math.floor(real.length / 2)
+    const novos = {
+      'fixtures/pagina.html': real.slice(0, meio) + ' termo-secreto-exemplo ' + real.slice(meio),
+      'dados/lista.csv': 'loja;preco\ntermo-secreto-exemplo;10\n',
+      'img/selo.svg': '<svg><text>termo-secreto-exemplo</text></svg>\n',
+      'motor/estilo.css': '/* termo-secreto-exemplo */\n',
+      'NOTAS': 'termo-secreto-exemplo\n',
+      'pasta/.gitignore': '# termo-secreto-exemplo\n',
+    }
+    for (const [rel, txt] of Object.entries(novos)) {
+      mkdirSync(join(dir, dirname(rel)), { recursive: true })
+      writeFileSync(join(dir, rel), txt)
+    }
+    const { falhas } = rodarGates(dir, { proibidos: TERMOS })
+    for (const rel of Object.keys(novos)) {
+      assert.ok(falhas.some(f => f.gate === 1 && f.arquivo === rel && /termo-secreto-exemplo/.test(f.detalhe)), `gate 1 devia ler ${rel}`)
+    }
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
@@ -359,6 +385,17 @@ test('gate que nao rodou inteiro vem em naoRodou, e a linha de comando nunca diz
     const cli = spawnSync(process.execPath, [fileURLToPath(new URL('./verificar-kit.mjs', import.meta.url)), dir], { encoding: 'utf8' })
     assert.match(cli.stdout, /n\/a +Gate 7: Empacotamento do zip: sem zip ao lado do kit/)
     assert.match(cli.stdout, /\nResultado: \d+ verdes, \d+ com falha, \d+ sem rodar inteiro/)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// a ponte .agents/skills e a pasta-mae atras de link chamam o script por um caminho que nao e
+// o real; a guarda velha comparava o real com o argv cru, nao rodava nada e saia 0 calada
+test('chamado por juncao, o verificador roda igual', () => {
+  const dir = kitFalso()
+  try {
+    symlinkSync(dirname(fileURLToPath(import.meta.url)), join(dir, 'atalho'), 'junction')
+    const cli = spawnSync(process.execPath, [join(dir, 'atalho', 'verificar-kit.mjs'), join(dir, '.claude')], { encoding: 'utf8' })
+    assert.match(cli.stdout, /\nResultado: \d+ verdes/, `saida vazia pela juncao (status ${cli.status}): ${cli.stderr}`)
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
@@ -915,14 +952,14 @@ test('gate 9 acusa matcher que voltou a ser so Bash (perde a trava do PowerShell
       hooks: { PreToolUse: [{ matcher: 'Bash', hooks: [{ type: 'command', command: 'node barrar-perigoso.mjs' }] }] },
     }))
     const { falhas } = rodarGates(dir)
-    assert.ok(falhas.some(f => f.gate === 9 && f.arquivo === '_modelo/.claude/settings.json' && /matcher.*nao cobre Bash e PowerShell/.test(f.detalhe)),
+    assert.ok(falhas.some(f => f.gate === 9 && f.arquivo === '_modelo/.claude/settings.json' && /matcher.*falta PowerShell, Monitor/.test(f.detalhe)),
       'matcher so com Bash tem que acusar falha no gate 9')
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
 })
 
-test('gate 9 aceita o _modelo completo, com ask, deny e hook', () => {
+test('gate 9 acusa matcher sem o Monitor (rm -rf em segundo plano passava pela trava, 5.20)', () => {
   const dir = kitFalso()
   try {
     mkdirSync(join(dir, '_modelo/.claude/hooks'), { recursive: true })
@@ -932,7 +969,68 @@ test('gate 9 aceita o _modelo completo, com ask, deny e hook', () => {
       hooks: { PreToolUse: [{ matcher: 'Bash|PowerShell', hooks: [{ type: 'command', command: 'node barrar-perigoso.mjs' }] }] },
     }))
     const { falhas } = rodarGates(dir)
-    const doModelo = falhas.filter(f => f.gate === 9 && f.arquivo === '_modelo/.claude/settings.json')
+    const doMatcher = falhas.filter(f => f.gate === 9 && /matcher/.test(f.detalhe))
+    assert.equal(doMatcher.length, 1, JSON.stringify(falhas.filter(f => f.gate === 9)))
+    assert.match(doMatcher[0].detalhe, /falta Monitor\)$/)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+// o texto da /mercado-livre ate a 5.19: lido ao pe da letra, gasto abaixo do teto dispensava o "pode ir"
+test('gate 9 acusa "pode ir" so pra gasto acima do teto, e o texto novo da /mercado-livre passa', () => {
+  const velho = '- Custo: antes de qualquer gasto acima de `limite_gasto_usd` da configuração,\r\n  mostrar a estimativa e esperar o "pode ir". O padrão do pacote é custo zero.\r\n'
+  assert.deepEqual(podeIrSoAcimaDoTeto('# Regras\n\n- Estado primeiro.\n' + velho), [4], 'canario: o texto velho tem que casar')
+  assert.deepEqual(podeIrSoAcimaDoTeto('Passou do teto: dividir o lote.\n\nAntes do gasto, esperar o "pode ir".\n'), [], 'teto e "pode ir" em paragrafos separados passam')
+  assert.deepEqual(podeIrSoAcimaDoTeto('Antes de gastos acima do limite, esperar o "pode ir".\n'), [1], 'variante no plural e com "limite" casa')
+  assert.deepEqual(podeIrSoAcimaDoTeto('Antes de todo gasto, esperar o "pode ir". Gasto acima do teto deve ser bloqueado.\n'), [], 'regra pra todo gasto com o teto de trava a mais passa (achado do Codex)')
+  assert.deepEqual(podeIrSoAcimaDoTeto('Mesmo pequeno e dentro do teto, esperar o "pode ir"; gasto acima do teto para.\n'), [], '"mesmo dentro do teto" passa')
+  const tabela = '| a | b |\n|---|---|\n| 3 | gasto acima do teto para |\n| 1 | sem o "pode ir" nada roda |\n'
+  assert.deepEqual(podeIrSoAcimaDoTeto(tabela), [], 'linhas de tabela sem relacao nao grudam')
+  assert.deepEqual(podeIrSoAcimaDoTeto('```\ngasto acima do teto\n```\nDepois, o "pode ir".\n'), [], 'cerca de codigo nao gruda na prosa')
+  const real = readFileSync(fileURLToPath(new URL('../_modelo/.claude/skills/mercado-livre/SKILL.md', import.meta.url)), 'utf8')
+  assert.match(real, /pode ir/, 'canario: a skill real fala do "pode ir"')
+  assert.deepEqual(podeIrSoAcimaDoTeto(real), [])
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo/.claude/skills/x'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/.claude/skills/x/SKILL.md'), '---\nname: x\ndescription: x\n---\n\n' + velho)
+    const { falhas } = rodarGates(dir, { proibidos: [] })
+    assert.ok(falhas.some(f => f.gate === 9 && f.arquivo === '_modelo/.claude/skills/x/SKILL.md' && /linha 6:/.test(f.detalhe)), JSON.stringify(falhas.filter(f => f.gate === 9)))
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// o texto da /mercado-livre ate a 5.19: avisava do credito avulso do Codex e ja despachava
+test('gate 9 acusa credito avulso do Codex sem o "pode ir", e os textos novos passam', () => {
+  const velho = '   - `codex`: dizer uma vez à pessoa "o Codex não cobra por imagem dentro da\r\n     cota do seu plano; se você comprou créditos avulsos do Codex, passar do\r\n     limite do plano gasta esses créditos" e despachar no modo GERAR.\r\n'
+  assert.deepEqual(codexAvulsoSemPodeIr('# Passos\n\n' + velho), [3], 'canario: o texto velho tem que casar')
+  assert.deepEqual(codexAvulsoSemPodeIr('Passar da cota gasta o crédito avulso.\n\nDepois, o "pode ir".\n'), [1], 'o "pode ir" de outro paragrafo nao vale')
+  assert.deepEqual(codexAvulsoSemPodeIr('- Codex: passar da cota gasta créditos avulsos; esperar o "pode ir".\n'), [])
+  for (const skill of ['mercado-livre', 'gerar-imagens', 'editar-video']) {
+    const real = readFileSync(fileURLToPath(new URL(`../_modelo/.claude/skills/${skill}/SKILL.md`, import.meta.url)), 'utf8')
+    assert.match(real, /cr[eé]ditos\s+avulsos/,`canario: a ${skill} fala do credito avulso`)
+    assert.deepEqual(codexAvulsoSemPodeIr(real), [], skill)
+  }
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo/.claude/skills/x'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/.claude/skills/x/SKILL.md'), '---\nname: x\ndescription: x\n---\n\n' + velho)
+    const { falhas } = rodarGates(dir, { proibidos: [] })
+    assert.ok(falhas.some(f => f.gate === 9 && f.arquivo === '_modelo/.claude/skills/x/SKILL.md' && /linha 6:.*avulso/.test(f.detalhe)), JSON.stringify(falhas.filter(f => f.gate === 9)))
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('gate 9 aceita o _modelo completo, com ask, deny e hook', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo/.claude/hooks'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/.claude/hooks/barrar-perigoso.mjs'), 'export function ehPerigoso() { return null }\n')
+    writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify({
+      permissions: { ask: ['Read(./.env)', 'Read(./.env.*)'], deny: ['Read(./secrets/**)', 'Read(./.secrets/**)'] },
+      hooks: { PreToolUse: [{ matcher: 'Bash|PowerShell|Monitor', hooks: [{ type: 'command', command: 'node barrar-perigoso.mjs' }] }] },
+    }))
+    const { falhas } = rodarGates(dir)
+    const doModelo =falhas.filter(f => f.gate === 9 && f.arquivo === '_modelo/.claude/settings.json')
     assert.strictEqual(doModelo.length, 0, 'com ask, deny e hook, o gate 9 fica quieto')
   } finally {
     rmSync(dir, { recursive: true, force: true })

@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { instalar, faltando, carimbar } from './instalar.mjs'
-import { SECOES, RODAPE } from './medir-persona.mjs'
+import { SECOES, RODAPE, CONFERENCIA } from './medir-persona.mjs'
 import { carimboPersona } from './lib/carimbo.mjs'
 import { ehMestra } from './lib/pasta-mae.mjs'
 import { montarBateria } from './montar-bateria.mjs'
@@ -16,8 +16,8 @@ import { montarBateria } from './montar-bateria.mjs'
 const SCRIPT = fileURLToPath(new URL('./instalar.mjs', import.meta.url))
 const CRLF = String.fromCharCode(13, 10)
 const skill = (a, cita = '(fonte 1, p. 1)') => ['---', `name: ${a}`, 'description: Conselheiro.', 'origem: clonar-especialista', '---',
-  ...SECOES.flatMap(s => [s, `Regra ${cita}.`]), RODAPE].join(CRLF)
-const agente = a => ['---', `name: ${a}`, 'description: Delega.', 'tools: Read', `skills: [${a}]`, 'origem: clonar-especialista', '---', 'x'].join(CRLF)
+  ...SECOES.flatMap(s => [s, `Regra ${cita}.`]), `Confiro com conferir-citacoes.mjs ~/.claude/skills/${a} ${CONFERENCIA} r.md`, RODAPE].join(CRLF)
+const agente = a => ['---', `name: ${a}`, 'description: Delega.', 'tools: Read, Bash, Write', `skills: [${a}]`, 'origem: clonar-especialista', '---', 'x'].join(CRLF)
 
 // inventario com a coleta completa (as condicoes do medir-coleta ok): 8 feitas e 1 de prova
 const fonte = (n, camada, etiqueta, status, novos) => `| ${n} | ${camada} | x | en | 2020 | fonte ${n} | ${etiqueta} | ${status} | 10 | ${novos} |`
@@ -88,6 +88,29 @@ test('instala skill, fichas e agente, sem levar inventario', () => {
     assert.ok(existsSync(join(c.casa, '.claude', 'skills', 'mentor-x', 'fichas', '01-livro.md')))
     assert.ok(existsSync(join(c.casa, '.claude', 'agents', 'mentor-x.md')))
     assert.ok(!existsSync(join(c.casa, '.claude', 'skills', 'mentor-x', 'inventario.md')), 'inventario tem o nome real e fica so na copia-mestra')
+    assert.ok(!r.linhas.some(l => l.startsWith('AVISO')), r.linhas.join('\n'))
+  } finally { rmSync(c.raiz, { recursive: true, force: true }) }
+})
+
+// Copia-mestra carimbada antes da 5.20 (sem o item 7 e com o agente so de leitura): o carimbo
+// antigo vale, e mexer nela pra ganhar o passo mudaria o carimbo. Reinstala com aviso.
+test('copia-mestra de antes da 5.20 reinstala sem a conferencia, com aviso de como ganhar', () => {
+  const c = cenario()
+  try {
+    const antiga = readFileSync(join(c.mestra, 'SKILL.md'), 'utf8').replace(/^Confiro com conferir-citacoes[^\r\n]*\r\n/m, '')
+    assert.ok(!antiga.includes(CONFERENCIA), 'canario: o passo saiu da persona antiga')
+    writeFileSync(join(c.mestra, 'SKILL.md'), antiga)
+    writeFileSync(join(c.mestra, 'agente.md'), agente(c.apelido).replace('tools: Read, Bash, Write', 'tools: Read'))
+    // carimbo como o carimbar de antes da 5.20 gravava: sem cobrar a conferencia
+    const f = join(c.mestra, 'prova', 'resultado.md')
+    writeFileSync(f, readFileSync(f, 'utf8').replace(/^Persona: [0-9a-f]{64}/m, `Persona: ${carimboPersona(c.mestra)}`))
+    const r = instalar(c.mestra, c.casa)
+    assert.ok(r.linhas.length > 0, 'saida veio vazia')
+    assert.equal(r.codigo, 0, r.linhas.join('\n'))
+    assert.ok(existsSync(join(c.casa, '.claude', 'agents', 'mentor-x.md')))
+    assert.ok(r.linhas.some(l => /^AVISO: conselheiro de antes da 5\.20, sem a conferencia/.test(l)), r.linhas.join('\n'))
+    // carimbar de novo (rodada nova) cobra a conferencia: persona nova nasce com ela
+    assert.notEqual(carimbar(c.mestra).codigo, 0)
   } finally { rmSync(c.raiz, { recursive: true, force: true }) }
 })
 

@@ -3,10 +3,10 @@
 // API da skill mercado-livre. Se um pedaco falhar (opiniao some em anuncio sem
 // venda), segue sem ele e deixa o aviso na lista.
 import { fileURLToPath } from 'node:url'
-import { resolve } from 'node:path'
 import { normalizarAnuncio } from './lib/normalizar.mjs'
 import { tokenMl } from '../../mercado-livre/scripts/lib/tokens.mjs'
 import { mlGet } from '../../mercado-livre/scripts/lib/ml-api.mjs'
+import { realpathSync } from 'node:fs'
 
 // Busca um endpoint e, se falhar, devolve objeto vazio (pra nao derrubar os
 // outros 3), mas registra o aviso pra quem chamou saber que faltou pedaco.
@@ -44,7 +44,13 @@ export async function coletar(mlb, { token, mlGetFn = mlGet } = {}) {
   return { ...normalizarAnuncio({ item, descricao, perguntas, reviews }), avisos }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   const mlb = process.argv[2]
   if (!mlb) { console.error('uso: node coletar.mjs <MLB do anuncio>'); process.exit(2) }

@@ -2,9 +2,9 @@
 // sistema de quem esta rodando. So le: nao instala nada. Sai 0 se tudo esta pronto
 // e 1 se falta algo, pra quem chama (a skill) saber o que mostrar ao aluno.
 import { spawnSync } from 'node:child_process'
-import { existsSync, statSync } from 'node:fs'
+import { existsSync, statSync, realpathSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join, resolve, sep } from 'node:path'
+import { join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { python, exe } from './lib/plataforma.mjs'
 import { caminhos, pastaVideo, lerJsonSe } from './lib/pasta-video.mjs'
@@ -89,7 +89,13 @@ export function conferir({ plat = process.platform, arch = process.arch, base, e
   return out
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   const r = conferir({ base: pastaVideo() })
   console.log(JSON.stringify(r, null, 2))

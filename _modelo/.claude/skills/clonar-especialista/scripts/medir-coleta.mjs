@@ -7,8 +7,8 @@
 // intacta), sem aceite do aluno.
 // Uso (da raiz do projeto):
 //   node .claude/skills/clonar-especialista/scripts/medir-coleta.mjs <pasta-do-conselheiro>
-import { readFileSync, readdirSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { readFileSync, readdirSync, realpathSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const COLUNAS = ['n', 'camada', 'tipo', 'idioma', 'ano', 'fonte', 'etiqueta', 'status', 'itens', 'novos']
@@ -99,8 +99,14 @@ export function medirColeta(pasta) {
   return { codigo: ok ? 0 : 1, linhas: saida }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
-if (ehCli) {
+function chamadoDireto() {
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])
+  } catch {
+    return false
+  }
+}
+if (chamadoDireto()) {
   const pasta = process.argv[2]
   if (!pasta) {
     console.error('Uso: node .claude/skills/clonar-especialista/scripts/medir-coleta.mjs <pasta-do-conselheiro>')

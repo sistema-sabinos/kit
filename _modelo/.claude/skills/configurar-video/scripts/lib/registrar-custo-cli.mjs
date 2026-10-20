@@ -2,9 +2,9 @@
 // gravar a cobranca no mesmo dados/custos.jsonl. So avisa se a gravacao falhar: a cobranca
 // ja aconteceu e quem chamou nao pode parar por causa do registro, entao sai 0 sempre.
 // Uso: node registrar-custo-cli.mjs --servico X --usd 0.05 --contexto "texto" [--raiz <pasta>]
-import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { registrarCusto } from './custos.mjs'
+import { realpathSync } from 'node:fs'
 
 export function lerArgumentos(argv) {
   const a = {}
@@ -14,7 +14,13 @@ export function lerArgumentos(argv) {
   return a
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   const a = lerArgumentos(process.argv.slice(2))
   const usd = Number(a.usd)

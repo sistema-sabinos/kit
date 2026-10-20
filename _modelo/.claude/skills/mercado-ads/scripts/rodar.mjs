@@ -5,8 +5,8 @@
 //   node .claude/skills/mercado-ads/scripts/rodar.mjs [--dias 30]     raio-X: snapshot + relatorios/ads-<data>.md
 //   node .claude/skills/mercado-ads/scripts/rodar.mjs --anunciante    setup de uma vez: grava ML_ADVERTISER_ID no .env
 //   node .claude/skills/mercado-ads/scripts/rodar.mjs --promocoes     campanhas de desconto abertas pra conta, com prazo
-import { mkdirSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { mkdirSync, writeFileSync, realpathSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
 import { lerEnv, gravarEnv } from '../../mercado-livre/scripts/lib/env.mjs'
@@ -31,7 +31,13 @@ export function linhasDePromocao(resultados) {
   return (resultados || []).map(p => `${p.id ?? '?'} | ${p.type ?? '?'} | ${p.status ?? '?'} | ${p.name ?? ''} | adesao ate ${String(p.deadline_date ?? p.finish_date ?? '?').slice(0, 10)}`)
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const a = argumentos(process.argv.slice(2))

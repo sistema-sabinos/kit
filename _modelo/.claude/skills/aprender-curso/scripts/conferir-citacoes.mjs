@@ -6,13 +6,16 @@
 // Modo --resposta: o mentor grava o rascunho da resposta num arquivo, o script confere todas as
 // citacoes dele como acima e sorteia N (padrao 3) pra imprimir, de cada uma, a linha do mentor e
 // o trecho da aula em volta da marca. Quem compara o sentido e a IA, sem custo; o script so
-// sorteia e entrega. --semente fixa o sorteio (teste).
+// sorteia e entrega. --semente fixa o sorteio (teste). Resposta com dois cursos: um rascunho por
+// curso e uma rodada por pasta; citacao que nao casa com a pasta sai 1 com AVISO de outro curso.
 // Uso (da raiz do projeto):
 //   node .claude/skills/aprender-curso/scripts/conferir-citacoes.mjs inteligencia/cursos/<nome>
 //   node .claude/skills/aprender-curso/scripts/conferir-citacoes.mjs <pasta-do-conselheiro> --persona
 //   node .claude/skills/aprender-curso/scripts/conferir-citacoes.mjs inteligencia/cursos/<nome> --resposta <arquivo> [--amostra N]
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+//   node .claude/skills/aprender-curso/scripts/conferir-citacoes.mjs ~/.claude/skills/<apelido> --persona --resposta <arquivo>
+import { existsSync, readFileSync, readdirSync, realpathSync } from 'node:fs'
+import { join } from 'node:path'
+import { homedir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { citacoesDe } from './lib/citacoes.mjs'
 
@@ -21,6 +24,9 @@ const MODOS = {
   persona: { arquivo: 'SKILL.md', pasta: 'fichas', rotulo: 'fonte' },
 }
 const JANELA = 2
+// A citacao nao diz de qual curso e: uma certa do curso B, no rascunho do A, falha aqui e seria
+// "corrigida" (apagada). O aviso manda separar por curso.
+const OUTRO_CURSO = 'AVISO: citacao que nao casa com esta pasta pode ser de outro curso. Dois cursos na resposta: um rascunho por curso, so com as citacoes dele, e o script uma vez por pasta; citacao certa de outro curso muda de rascunho, nunca se apaga.'
 
 function lerArquivos(dir, modo) {
   const dirArquivos = join(dir, modo.pasta)
@@ -77,7 +83,11 @@ export function sortearResposta(dir, arquivo, { persona = false, amostra = 3, se
   const arquivos = lerArquivos(dir, modo)
   const r = checarTexto(texto, 'texto da resposta', modo, arquivos)
   if (r.aviso) return { codigo: 1, linhas: [r.aviso] }
-  if (r.problemas.length) return { codigo: 1, linhas: [...r.problemas, `problemas: ${r.problemas.length}`] }
+  if (r.problemas.length) {
+    const linhas = [...r.problemas, `problemas: ${r.problemas.length}`]
+    if (!persona && r.problemas.some(p => !p.startsWith('citacao fora do formato'))) linhas.push(OUTRO_CURSO)
+    return { codigo: 1, linhas }
+  }
   const sorteio = gerador(semente)
   const indices = r.citacoes.map((_, i) => i)
   for (let i = indices.length - 1; i > 0; i--) {
@@ -102,8 +112,14 @@ export function sortearResposta(dir, arquivo, { persona = false, amostra = 3, se
   return { codigo: 0, linhas: saida }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
-if (ehCli) {
+function chamadoDireto() {
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])
+  } catch {
+    return false
+  }
+}
+if (chamadoDireto()) {
   const args = process.argv.slice(2)
   const valor = nome => (args.includes(nome) ? args[args.indexOf(nome) + 1] : undefined)
   const comValor = new Set(['--resposta', '--amostra', '--semente'].map(valor))
@@ -113,15 +129,17 @@ if (ehCli) {
     process.exit(1)
   }
   const persona = args.includes('--persona')
-  const resposta = valor('--resposta')
+  // ~ sem o shell expandir (aspas, PowerShell 5.1): a persona mora em ~/.claude/skills/<apelido>
+  const casa = p => (p && (p === '~' || p.startsWith('~/')) ? join(homedir(), p.slice(1)) : p)
+  const resposta = casa(valor('--resposta'))
   // --resposta sem caminho nao pode cair no modo normal e sair verde como se tivesse conferido o rascunho
   if (args.includes('--resposta') && (!resposta || resposta.startsWith('--'))) {
     console.log('AVISO: --resposta precisa do caminho do arquivo do rascunho')
     process.exit(1)
   }
   const r = resposta
-    ? sortearResposta(dir, resposta, { persona, amostra: Number(valor('--amostra') ?? 3), semente: valor('--semente') })
-    : conferirPasta(dir, { persona })
+    ? sortearResposta(casa(dir), resposta, { persona, amostra: Number(valor('--amostra') ?? 3), semente: valor('--semente') })
+    : conferirPasta(casa(dir), { persona })
   for (const l of r.linhas) console.log(l)
   process.exit(r.codigo)
 }

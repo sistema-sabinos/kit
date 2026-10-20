@@ -22,6 +22,10 @@ const TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN;
 const USER_ID = process.env.INSTAGRAM_USER_ID;
 const IMGBB_KEY = process.env.IMGBB_API_KEY;
 const GRAPH = graph();
+// Prazos de cada chamada: conexao presa vira erro, em vez de deixar a tela parada.
+// Curto pras chamadas da Meta, longo pro envio da imagem.
+const PRAZO_MS = 30_000;
+const PRAZO_ENVIO_MS = 5 * 60_000;
 
 // Troca as linhas NOME=valor do .env, mantendo o resto e o final de linha do arquivo.
 function gravarEnv(arquivo, trocar, apagar = []) {
@@ -40,7 +44,7 @@ async function configurar({ env = process.env, fetchFn = fetch, envPath = path.j
   if (faltam.length) throw new Error(`faltam no .env: ${faltam.join(", ")}`);
   const g = graph(env);
   const pedir = async (url, oQue) => {
-    const json = await (await fetchFn(url)).json();
+    const json = await (await fetchFn(url, { signal: AbortSignal.timeout(PRAZO_MS) })).json();
     if (json.error) throw new Error(`a Meta recusou ${oQue}: ${json.error.message}`);
     return json;
   };
@@ -82,7 +86,7 @@ async function configurar({ env = process.env, fetchFn = fetch, envPath = path.j
 async function uploadToImgbb(filePath) {
   const b64 = fs.readFileSync(filePath, "base64");
   const body = new URLSearchParams({ key: IMGBB_KEY, image: b64, name: path.basename(filePath, path.extname(filePath)) });
-  const res = await fetch("https://api.imgbb.com/1/upload", { method: "POST", body });
+  const res = await fetch("https://api.imgbb.com/1/upload", { method: "POST", body, signal: AbortSignal.timeout(PRAZO_ENVIO_MS) });
   const json = await res.json();
   if (!json.success) throw new Error(`imgbb: ${JSON.stringify(json)}`);
   return json.data.url;
@@ -90,7 +94,7 @@ async function uploadToImgbb(filePath) {
 
 async function createContainer(imageUrl) {
   const params = new URLSearchParams({ image_url: imageUrl, is_carousel_item: "true", access_token: TOKEN });
-  const res = await fetch(`${GRAPH}/${USER_ID}/media`, { method: "POST", body: params });
+  const res = await fetch(`${GRAPH}/${USER_ID}/media`, { method: "POST", body: params, signal: AbortSignal.timeout(PRAZO_MS) });
   const json = await res.json();
   if (json.error) throw new Error(`Container: ${json.error.message}`);
   return json.id;
@@ -99,7 +103,7 @@ async function createContainer(imageUrl) {
 async function pollStatus(containerId, timeoutMs = 60000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    const res = await fetch(`${GRAPH}/${containerId}?fields=status_code&access_token=${TOKEN}`);
+    const res = await fetch(`${GRAPH}/${containerId}?fields=status_code&access_token=${TOKEN}`, { signal: AbortSignal.timeout(PRAZO_MS) });
     const json = await res.json();
     if (json.status_code === "FINISHED") return;
     if (json.status_code === "ERROR") throw new Error(`Container ${containerId} com erro`);
@@ -115,7 +119,7 @@ async function createCarousel(containerIds, caption) {
     caption,
     access_token: TOKEN,
   });
-  const res = await fetch(`${GRAPH}/${USER_ID}/media`, { method: "POST", body: params });
+  const res = await fetch(`${GRAPH}/${USER_ID}/media`, { method: "POST", body: params, signal: AbortSignal.timeout(PRAZO_MS) });
   const json = await res.json();
   if (json.error) throw new Error(`Carousel: ${json.error.message}`);
   return json.id;
@@ -123,14 +127,14 @@ async function createCarousel(containerIds, caption) {
 
 async function publish(carouselId) {
   const params = new URLSearchParams({ creation_id: carouselId, access_token: TOKEN });
-  const res = await fetch(`${GRAPH}/${USER_ID}/media_publish`, { method: "POST", body: params });
+  const res = await fetch(`${GRAPH}/${USER_ID}/media_publish`, { method: "POST", body: params, signal: AbortSignal.timeout(PRAZO_MS) });
   const json = await res.json();
   if (json.error) throw new Error(`Publish: ${json.error.message}`);
   return json.id;
 }
 
 async function getPermalink(mediaId) {
-  const res = await fetch(`${GRAPH}/${mediaId}?fields=permalink&access_token=${TOKEN}`);
+  const res = await fetch(`${GRAPH}/${mediaId}?fields=permalink&access_token=${TOKEN}`, { signal: AbortSignal.timeout(PRAZO_MS) });
   const json = await res.json();
   return json.permalink || "";
 }

@@ -62,12 +62,14 @@ Avisar uma vez que `p. N` e a pagina do PDF, que pode nao bater com o numero imp
 
 ### 2. Tirar o texto e a data de cada aula (gratis)
 
-Uma aula por vez, gravando em `inteligencia/cursos/<nome>/fontes/`:
-1. **Data da aula:** `yt-dlp --skip-download --print "%(upload_date)s" "<link da aula>"` (sai
+Uma aula por vez, gravando em `inteligencia/cursos/<nome>/fontes/`. Link de aula copiado de dentro
+da playlist vem com `&list=`: o `--no-playlist` pega so a aula. A playlist inteira so passa pelo
+`listar-aulas.mjs` do passo 1, quando o pedido e o curso.
+1. **Data da aula:** `yt-dlp --no-playlist --skip-download --print "%(upload_date)s" "<link da aula>"` (sai
    AAAAMMDD). E ela que data os numeros do curso, entao nunca pular.
 2. **Legenda do YouTube**, pedindo a trilha original primeiro (a trilha `pt` comum pode ser traducao
    automatica de outra lingua):
-   `yt-dlp --skip-download --write-auto-subs --sub-langs "pt-orig" --sub-format vtt -o "inteligencia/cursos/<nome>/fontes/%(id)s.%(ext)s" "<link>"`.
+   `yt-dlp --no-playlist --skip-download --write-auto-subs --sub-langs "pt-orig" --sub-format vtt -o "inteligencia/cursos/<nome>/fontes/%(id)s.%(ext)s" "<link>"`.
    Sem `pt-orig`, repetir com `--write-subs --sub-langs "pt"`. Depois limpar, que a legenda
    automatica repete cada frase tres vezes:
    `node .claude/skills/aprender-curso/scripts/limpar-legenda.mjs "inteligencia/cursos/<nome>/fontes/<id>.<lingua>.vtt"` (grava o
@@ -197,8 +199,9 @@ pode afirmar o que a aula nao diz. Tudo isso antes do passo 5.
 
 ### 5. Deixar o mentor achavel e fechar
 
-- Acrescentar, uma vez, na secao "Estrutura de pastas" do `AGENTS.md` do projeto:
-  `- inteligencia/cursos/: cursos estudados pelo /aprender-curso; pergunta sobre o assunto de um deles passa pelo mentor.md dele`.
+- Acrescentar, uma vez, na secao "Estrutura de pastas" do `AGENTS.md` do projeto (a linha antiga,
+  que parava em "mentor.md dele", se troca por esta):
+  `- inteligencia/cursos/: cursos estudados pelo /aprender-curso; pergunta sobre o assunto de um deles passa pelo mentor.md dele, seguindo a fase 2 da /aprender-curso (confere as citacoes com o conferir-citacoes.mjs --resposta antes de mostrar)`.
 - Fechar com 5 linhas pra pessoa, em linguagem simples (`_contexto/preferencias.md`): 1) o mais
   valioso que o curso ensina; 2) o caminho que ele recomenda (livro sem metodo, como romance: dizer
   isso); 3) os numeros que ja precisam ser
@@ -225,6 +228,11 @@ Quando a pessoa pedir orientacao num assunto que tem curso estudado (`inteligenc
    e uma citacao que nao existe na aula ou esta fora do formato; corrigir e rodar de novo. `AVISO`
    de nenhuma citacao: resposta que usa o curso cita de onde veio (item 3). Resposta toda fora do
    curso (item 6) nao cita e nao passa por aqui.
+   Resposta com dois cursos: a citacao nao diz de qual curso e, entao um rascunho por curso (o
+   `inteligencia/cursos/<nome>/fontes/resposta.md` de cada um, so com as frases e citacoes dele) e o
+   script uma vez por pasta.
+   `AVISO` de outro curso: a citacao que nao casou pode ser do outro; ela muda de rascunho, nunca
+   se apaga. A linha pra pessoa soma as rodadas.
    Fechar a resposta com uma linha curta pra pessoa, com os numeros que o script deu (`sorteadas: 3
    de 7`): "Conferi 3 de 7 citacoes no texto das aulas: batem." Se precisou corrigir: "Conferi 3 de
    7 citacoes no texto das aulas e corrigi 1 que nao batia."
@@ -241,7 +249,7 @@ Quando a pessoa pedir orientacao num assunto que tem curso estudado (`inteligenc
 7. Curso que briga com regra deste projeto: a regra daqui ganha, e o mentor avisa da diferenca.
 
 Dois cursos sobre o mesmo assunto e conselhos diferentes: mostrar os dois lados com a fonte de cada
-um, e deixar a decisao com a pessoa.
+um, conferidos um curso por vez (item 4), e deixar a decisao com a pessoa.
 
 ## Regras
 

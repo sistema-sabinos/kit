@@ -7,11 +7,17 @@
 //   node ... canal | videos [n] | relatorio [dias] | comentarios <video_id> [n]
 //   node ... atualizar <video_id> [--titulo "..."] [--descricao arquivo.txt] [--tags "a,b"] [--confirmar]
 import { createServer } from 'node:http'
-import { readFileSync } from 'node:fs'
+import { readFileSync, realpathSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { randomBytes } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { lerConfig, gravarEnv } from '../../midia-social/scripts/lib/config.mjs'
+import { dataHoraLocal } from '../../midia-social/scripts/lib/hora.mjs'
+
+// Prazo por pedido: aqui so ha login, listagem e troca de titulo, nada de upload. Pelo
+// AbortSignal.timeout e nao pelo fetchComTimeout, que mora no pacote do Mercado Livre, e o
+// pacote de midia social nao depende dele.
+const PRAZO_MS = 30_000
 
 const DATA = 'https://www.googleapis.com/youtube/v3'
 const ANALYTICS = 'https://youtubeanalytics.googleapis.com/v2'
@@ -25,7 +31,7 @@ export function urlDeAutorizacao({ clientId, redirect, estado }) {
 }
 
 async function postarToken(campos, { fetchFn, agora }) {
-  const r = await fetchFn('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(campos) })
+  const r = await fetchFn('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(campos), signal: AbortSignal.timeout(PRAZO_MS) })
   const j = await r.json()
   if (!r.ok || !j.access_token) throw new Error(`o Google recusou o login (${j.error || r.status}): rodar de novo o auth (${GUIA})`)
   return { ...j, vence_em: new Date(agora.getTime() + (j.expires_in || 0) * 1000).toISOString() }
@@ -103,10 +109,17 @@ export function tokenDoEnv(env) {
 async function api(pedido, { token, fetchFn = fetch, metodo = 'GET', corpo } = {}) {
   const u = new URL(pedido.base + pedido.caminho)
   for (const [k, v] of Object.entries(pedido.params)) u.searchParams.set(k, v)
-  const r = await fetchFn(u, { method: metodo, headers: { Authorization: `Bearer ${token.access_token}`, ...(corpo ? { 'Content-Type': 'application/json' } : {}) }, body: corpo ? JSON.stringify(corpo) : undefined })
+  const r = await fetchFn(u, { method: metodo, headers: { Authorization: `Bearer ${token.access_token}`, ...(corpo ? { 'Content-Type': 'application/json' } : {}) }, body: corpo ? JSON.stringify(corpo) : undefined, signal: AbortSignal.timeout(PRAZO_MS) })
   const j = await r.json()
   if (j.error) throw new Error(`YouTube: ${j.error.message}${/quota/i.test(j.error.message) ? ' (cota do dia acabou: esperar a virada, meia-noite no horario do Pacifico)' : ''}`)
   return j
+}
+
+// O publishedAt vem do YouTube em UTC: das 21h a meia-noite no Brasil o UTC ja virou o dia,
+// entao a data sai pelo relogio do aluno.
+export function linhaDoVideo(x) {
+  const s = x.statistics || {}
+  return `[${x.id}] ${x.snippet.title}\n  ${dataHoraLocal(new Date(x.snippet.publishedAt)).slice(0, 10)}  privacidade: ${x.status.privacyStatus}  visualizacoes: ${s.viewCount || 0}  curtidas: ${s.likeCount || 0}  comentarios: ${s.commentCount || 0}`
 }
 
 async function tokenDoProjeto() {
@@ -165,10 +178,7 @@ async function main(v) {
     const ids = (itens.items || []).map(i => i.contentDetails.videoId)
     if (!ids.length) { console.log('nenhum video no canal ainda'); return }
     const vids = await api({ base: DATA, caminho: '/videos', params: { part: 'snippet,statistics,status', id: ids.join(',') } }, { token })
-    for (const x of vids.items || []) {
-      const s = x.statistics || {}
-      console.log(`[${x.id}] ${x.snippet.title}\n  ${x.snippet.publishedAt.slice(0, 10)}  privacidade: ${x.status.privacyStatus}  visualizacoes: ${s.viewCount || 0}  curtidas: ${s.likeCount || 0}  comentarios: ${s.commentCount || 0}`)
-    }
+    for (const x of vids.items || []) console.log(linhaDoVideo(x))
   } else if (comando === 'relatorio') {
     const [geral, top] = pedidosDoComando('relatorio', args)
     const g = await api(geral, { token })
@@ -200,12 +210,18 @@ async function main(v) {
     try {
       await api({ base: DATA, caminho: '/videos', params: { part: 'snippet' } }, { token, metodo: 'PUT', corpo: corpoDaAtualizacao(id, atual, novo) })
     } catch (e) {
-      if (/fetch failed|network/i.test(e.message)) throw new Error('a conexao caiu durante a gravacao: conferir no YouTube Studio antes de repetir')
+      if (e.name === 'TimeoutError' || /fetch failed|network/i.test(e.message)) throw new Error('a conexao caiu durante a gravacao: conferir no YouTube Studio antes de repetir')
       throw e
     }
     console.log('atualizado')
   } else pedidosDoComando(comando, args)
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) main(process.argv.slice(2)).catch(e => { console.error('ERRO:', e.message); process.exitCode = 1 })

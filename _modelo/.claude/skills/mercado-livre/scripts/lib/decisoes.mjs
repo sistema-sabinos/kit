@@ -10,8 +10,8 @@
 // Uso direto, da raiz do projeto:
 //   node .claude/skills/mercado-livre/scripts/lib/decisoes.mjs --gravar <arquivo.json>   grava a decisao do arquivo
 //   node .claude/skills/mercado-livre/scripts/lib/decisoes.mjs --listar [ads|conta]       mostra a que vale por alvo
-import { appendFileSync, readFileSync, mkdirSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { appendFileSync, readFileSync, mkdirSync, realpathSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from './raiz.mjs'
 import { dataLocal } from './pipeline.mjs'
@@ -136,7 +136,13 @@ export function gravarDecisao(d, arquivo = ARQUIVO_ATA) {
   return d
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const [acao, valor] = process.argv.slice(2)

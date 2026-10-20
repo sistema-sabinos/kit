@@ -2,7 +2,7 @@
 // Rodar: node --test conferir-citacoes.test.mjs
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
@@ -206,7 +206,7 @@ test('resposta com marca que nao existe na aula sai 1 e nao sorteia', () => {
     const r = rodarResposta(dir, '--semente', '1')
     assert.ok(r.stdout.length > 0, 'saida veio vazia')
     assert.equal(r.status, 1)
-    assert.deepEqual(r.stdout.trim().split(/\r?\n/), ['aula 1 sem a marca [9:59]', 'problemas: 1'])
+    assert.deepEqual(r.stdout.trim().split(/\r?\n/).filter(l => !l.startsWith('AVISO')), ['aula 1 sem a marca [9:59]', 'problemas: 1'])
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
@@ -234,4 +234,102 @@ test('CLI --persona sem SKILL.md sai 1 com aviso', () => {
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
+})
+
+// P1 da 5.20: o conselheiro instalado confere a resposta do dia a dia contra as fichas dele.
+const rodarPersonaResposta = (dir, arq, ...extra) =>
+  spawnSync(process.execPath, [SCRIPT, dir, '--persona', '--resposta', arq, ...extra], { encoding: 'utf8' })
+
+test('persona com resposta: confere o rascunho contra fichas/ e devolve o trecho da ficha', () => {
+  const dir = persona({ skill: 'x (fonte 1, p. 17)', fichas: { '01-livro.md': ['antes', '[p. 17] brinde antes do pedido', 'depois'].join(CRLF) } })
+  const arq = join(dir, 'r.md')
+  writeFileSync(arq, 'Manda um brinde antes de pedir (fonte 1, p. 17).')
+  try {
+    const r = rodarPersonaResposta(dir, arq, '--amostra', '1')
+    assert.ok(r.stdout.length > 0, 'saida veio vazia')
+    assert.equal(r.status, 0, r.stdout + r.stderr)
+    assert.deepEqual(r.stdout.trim().split(/\r?\n/), [
+      '--- 1 de 1: (fonte 1, p. 17)',
+      'resposta: Manda um brinde antes de pedir (fonte 1, p. 17).',
+      'fichas/01-livro.md:',
+      '  antes',
+      '  [p. 17] brinde antes do pedido',
+      '  depois',
+      '  ...',
+      'sorteadas: 1 de 1',
+    ])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('persona com resposta que cita ficha inexistente sai 1 sem sortear', () => {
+  const dir = persona({ skill: 'x (fonte 1, p. 17)', fichas: { '01-livro.md': '[p. 17] y' } })
+  const arq = join(dir, 'r.md')
+  writeFileSync(arq, 'A (fonte 1, p. 17). B (fonte 9, 1:00).')
+  try {
+    const r = rodarPersonaResposta(dir, arq)
+    assert.ok(r.stdout.length > 0, 'saida veio vazia')
+    assert.equal(r.status, 1, r.stdout + r.stderr)
+    assert.deepEqual(r.stdout.trim().split(/\r?\n/), ['fonte 9 nao existe em fichas/', 'problemas: 1'])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+// N1 da 5.20: a citacao nao diz de qual curso e. A certa do curso B, no rascunho do A, sai 1 com
+// o aviso de outro curso (em vez de mandar "corrigir"), e um rascunho por curso passa nos dois.
+test('dois cursos: citacao do curso B no rascunho do A sai 1 com aviso de outro curso', () => {
+  const a = curso({ mentor: 'x (aula 1, 1:00)', aulas: { '01-a.md': '[1:00] curso A: frete gratis sempre' } })
+  const b = curso({ mentor: 'x (aula 3, 7:00)', aulas: { '03-b.md': '[7:00] curso B: nunca de frete gratis' } })
+  try {
+    writeFileSync(join(a, 'resposta.md'), ['Curso A: frete gratis sempre (aula 1, 1:00).', 'Curso B: nunca (aula 3, 7:00).'].join(CRLF))
+    const misturada = rodarResposta(a)
+    assert.ok(misturada.stdout.length > 0, 'saida veio vazia')
+    assert.notEqual(misturada.status, 0, misturada.stdout)
+    const linhas = misturada.stdout.trim().split(/\r?\n/)
+    assert.deepEqual(linhas.slice(0, 2), ['aula 3 nao existe em aulas/', 'problemas: 1'])
+    assert.match(linhas[2] ?? '', /^AVISO: citacao que nao casa com esta pasta pode ser de outro curso\..* um rascunho por curso.* nunca se apaga\.$/)
+    assert.doesNotMatch(misturada.stdout, /sorteadas:/)
+    writeFileSync(join(a, 'resposta.md'), 'Curso A: frete gratis sempre (aula 1, 1:00).')
+    writeFileSync(join(b, 'resposta.md'), 'Curso B: nunca (aula 3, 7:00).')
+    for (const dir of [a, b]) {
+      const r = rodarResposta(dir)
+      assert.equal(r.status, 0, r.stdout + r.stderr)
+      assert.match(r.stdout, /^sorteadas: 1 de 1$/m)
+    }
+  } finally {
+    rmSync(a, { recursive: true, force: true })
+    rmSync(b, { recursive: true, force: true })
+  }
+})
+
+// O esqueleto da persona manda rodar com ~/.claude/skills/<apelido>; aspas no Bash ou o
+// PowerShell 5.1 entregam o ~ cru, e sem expandir aqui o script nao acharia a pasta.
+test('CLI expande o ~ do caminho quando o shell nao expandiu', () => {
+  const casa = mkdtempSync(join(tmpdir(), 'conferir-casa-'))
+  try {
+    const dir = join(casa, '.claude', 'skills', 'mentor-x')
+    mkdirSync(join(dir, 'fichas'), { recursive: true })
+    writeFileSync(join(dir, 'SKILL.md'), 'x (fonte 1, 2:00)')
+    writeFileSync(join(dir, 'fichas', '01-a.md'), '[2:00] y')
+    const r = spawnSync(process.execPath, [SCRIPT, '~/.claude/skills/mentor-x', '--persona'], {
+      encoding: 'utf8', env: { ...process.env, HOME: casa, USERPROFILE: casa },
+    })
+    assert.ok(r.stdout.length > 0, 'saida veio vazia')
+    assert.equal(r.status, 0, r.stdout + r.stderr)
+    assert.equal(r.stdout.trim(), 'conferidas: 1')
+  } finally {
+    rmSync(casa, { recursive: true, force: true })
+  }
+})
+
+// P1 da 5.20: a IA que le o mentor.md direto pelo AGENTS do projeto, sem carregar a skill, tambem
+// fica sabendo da conferencia.
+test('linha que vai pro AGENTS do projeto cita a fase 2 e o --resposta', () => {
+  const t = readFileSync(fileURLToPath(new URL('../SKILL.md', import.meta.url)), 'utf8')
+  const linhas = t.match(/`- inteligencia\/cursos\/:[^`]*`/g) ?? []
+  assert.equal(linhas.length, 1, `linhas do AGENTS achadas: ${linhas.length}`)
+  assert.match(linhas[0], /seguindo a fase 2 da \/aprender-curso/)
+  assert.match(linhas[0], /conferir-citacoes\.mjs --resposta/)
 })

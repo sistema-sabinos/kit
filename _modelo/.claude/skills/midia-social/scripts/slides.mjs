@@ -3,7 +3,7 @@
 // instalado, o mesmo jeito do render do gerar-imagens: nenhum navegador baixado, nada pago.
 // Uso (da raiz do projeto):
 //   node .claude/skills/midia-social/scripts/slides.mjs --pasta producao/<slug> [--so 01] [--916]
-import { existsSync, readdirSync, mkdirSync, unlinkSync } from 'node:fs'
+import { existsSync, readdirSync, mkdirSync, unlinkSync, realpathSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { pathToFileURL, fileURLToPath } from 'node:url'
 import { RAIZ } from './lib/raiz.mjs'
@@ -69,7 +69,13 @@ export async function gerarSlides({ pasta, so, vertical = false, raiz = RAIZ, ca
   return 0
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   gerarSlides(lerArgs(process.argv.slice(2)))
     .then(codigo => { process.exitCode = codigo })

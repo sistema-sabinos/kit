@@ -8,8 +8,8 @@
 //   node .claude/skills/engenharia-reversa/scripts/rx.mjs --termo "<busca>" --ver --sim    (gasta)
 // A rodada gratis grava tudo em dados/engenharia-reversa/<termo>/; o --ver trabalha so sobre
 // o que ja esta la. Saida: 0 ok; 1 falhou; 2 uso errado; 3 parou antes de gastar.
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
-import { join, resolve, extname } from 'node:path'
+import { existsSync, mkdirSync, writeFileSync, realpathSync } from 'node:fs'
+import { join, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
 import { conectar } from '../../mercado-livre/scripts/lib/chrome.mjs'
@@ -169,7 +169,13 @@ async function baixarFoto(url, arquivo) {
   writeFileSync(arquivo, Buffer.from(await r.arrayBuffer()))
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   let a
   try { a = argumentos(process.argv.slice(2)) } catch (e) { console.error(e.message); process.exit(2) }

@@ -8,6 +8,7 @@
 import { readFileSync, appendFileSync, mkdirSync } from 'node:fs'
 import { extname, join } from 'node:path'
 import { RAIZ } from '../../../mercado-livre/scripts/lib/raiz.mjs'
+import { fetchComTimeout } from '../../../mercado-livre/scripts/lib/fetch-timeout.mjs'
 
 const API = 'https://generativelanguage.googleapis.com/v1beta'
 
@@ -42,8 +43,8 @@ export function escolherFlash(ids) {
   return lista.length ? lista[0].id : null
 }
 
-export async function descobrirModelo(chave, { buscar = fetch } = {}) {
-  const r = await buscar(`${API}/models?key=${chave}&pageSize=300`)
+export async function descobrirModelo(chave, { buscar = fetchComTimeout } = {}) {
+  const r = await buscar(`${API}/models?key=${chave}&pageSize=300`, {}, { timeoutMs: 30_000 })
   if (!r.ok) throw new Error(`o Gemini recusou a chave (${r.status}). Confira a GEMINI_API_KEY no .env e o faturamento no aistudio.google.com`)
   const j = await r.json()
   const ids = (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace(/^models\//, ''))
@@ -92,8 +93,9 @@ export function validarFicha(f) {
 
 const MIMES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' }
 
-async function chamarGemini({ modelo, chave, corpo, buscar = fetch }) {
-  const r = await buscar(`${API}/models/${modelo}:generateContent?key=${chave}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
+async function chamarGemini({ modelo, chave, corpo, buscar = fetchComTimeout }) {
+  // Prazo longo: e geracao (leitura da foto), mas com fim, pra conexao presa nao parar a rodada.
+  const r = await buscar(`${API}/models/${modelo}:generateContent?key=${chave}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) }, { timeoutMs: 3 * 60_000 })
   if (!r.ok) throw new Error(`Gemini ${r.status}: ${(await r.text()).slice(0, 200)}`)
   return r.json()
 }

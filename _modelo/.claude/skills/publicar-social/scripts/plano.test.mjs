@@ -135,14 +135,15 @@ test('gravarPublicacao reescreve o VALIDO AGORA a partir das linhas e acumula o 
   for (const ev of ['agendado instagram p1', 'tiktok incerto', 'apagado instagram p1']) assert.ok(t3.includes(ev), ev)
 })
 
-test('gravarPublicacao carimba o historico na hora local do aluno, nao em UTC', async () => {
+test('gravarPublicacao carimba o historico na hora de Brasilia com o rotulo, igual a tabela, mesmo com o computador em Manaus', async () => {
   const { spawnSync } = await import('node:child_process')
   const url = new URL('./plano.mjs', import.meta.url).href
-  const codigo = `const { gravarPublicacao } = await import(${JSON.stringify(url)}); console.log(gravarPublicacao('', { linhas: [], evento: 'ev', agora: new Date('2026-10-20T01:30:00Z') }))`
-  const r = spawnSync(process.execPath, ['--input-type=module', '-e', codigo], { encoding: 'utf8', env: { ...process.env, TZ: 'America/Sao_Paulo' } })
+  const codigo = `const { gravarPublicacao } = await import(${JSON.stringify(url)}); console.log('hora ' + new Date('2026-10-20T01:30:00Z').getHours()); console.log(gravarPublicacao('', { linhas: [], evento: 'ev', agora: new Date('2026-10-20T01:30:00Z') }))`
+  const r = spawnSync(process.execPath, ['--input-type=module', '-e', codigo], { encoding: 'utf8', env: { ...process.env, TZ: 'America/Manaus' } })
   assert.equal(r.status, 0, r.stderr)
   assert.ok(r.stdout.includes('## Historico'), 'canario: a sonda devolveu o registro')
-  assert.match(r.stdout, /^- 2026-10-19 22:30: ev$/m)
+  assert.match(r.stdout, /^hora 21$/m, 'canario: o fuso de Manaus pegou na sonda')
+  assert.match(r.stdout, /^- 2026-10-19 22:30 \(Brasilia\): ev$/m)
   assert.ok(!r.stdout.includes('UTC'))
 })
 

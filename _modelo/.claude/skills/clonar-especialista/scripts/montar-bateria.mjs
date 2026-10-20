@@ -17,8 +17,8 @@
 // livre com 6 caracteres ou mais na pergunta (sem maiuscula nem acento) tambem vaza.
 // Uso (da raiz do projeto):
 //   node .claude/skills/clonar-especialista/scripts/montar-bateria.mjs <pasta-do-conselheiro> <rodada>
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { existsSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const CABECALHO = /^## P(\d+) (prova|isca|constancia|constancia-b|mudanca|negocio)[ \t]*$/
@@ -86,8 +86,14 @@ export function montarBateria(pasta, rodada) {
   return { codigo: 0, linhas: [`perguntas: ${perguntas.length} em ${rel}`] }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
-if (ehCli) {
+function chamadoDireto() {
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])
+  } catch {
+    return false
+  }
+}
+if (chamadoDireto()) {
   const [pasta, rodada] = process.argv.slice(2)
   if (!pasta || !/^[1-9]\d*$/.test(rodada ?? '')) {
     console.log('Uso: node .claude/skills/clonar-especialista/scripts/montar-bateria.mjs <pasta-do-conselheiro> <rodada> (rodada = 1, 2, 3..., conta toda vez que a bateria roda; nao e o Volta: do placar)')

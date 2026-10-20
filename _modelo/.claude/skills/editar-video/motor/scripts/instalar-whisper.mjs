@@ -3,7 +3,7 @@
 //
 // uso: node instalar-whisper.mjs [--modelo small|medium]
 // O Remotion baixa o zip na pasta de onde o comando roda; o instalador troca pra pasta-mae do whisper antes, entao a pasta do projeto pode ter espaco.
-import { existsSync, mkdirSync, statSync } from 'node:fs'
+import { existsSync, mkdirSync, statSync, realpathSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -57,7 +57,13 @@ export async function instalar({ modelo, whisperDir: dir, carregar = () => impor
   }
 }
 
-const ehCli = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+// Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
+// com o atalho e o import.meta.url já resolvido, e a comparação crua dava falso calado.
+function chamadoDireto() {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]) } catch { return false }
+}
+
+const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const { modelo } = lerArgumentos(process.argv.slice(2))

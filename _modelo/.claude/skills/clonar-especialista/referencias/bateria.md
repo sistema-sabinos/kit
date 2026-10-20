@@ -39,7 +39,8 @@ perguntas (`vazou gabarito`). No mesmo `## P<n>`, basta o valor ter 6 caracteres
 diferença de maiúscula e acento (`posição esperada: recusar.` com a pergunta `Dica: recusar.`).
 
 O conselheiro recebe o TEXTO das perguntas colado no prompt, nunca um caminho, com a ordem de não
-abrir `prova/`, `fontes/` nem `inventario.md`, e não grava arquivo nenhum: quem roda a bateria (a
+abrir `prova/`, `fontes/` nem `inventario.md`, e não roda a conferência do item 7 do "Como respondo"
+(a persona ainda não está instalada, e a bateria mede a resposta como sai). Ele não grava arquivo nenhum: quem roda a bateria (a
 conversa principal) salva as respostas dele em `prova/respostas-v<rodada>.md`, e as da constância
 também. O juiz recebe o gabarito e as respostas.
 
