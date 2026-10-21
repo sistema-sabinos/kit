@@ -33,10 +33,6 @@ export function carregarExcecoes(caminho = CAMINHO_PROIBIDOS) {
 export const termoDoAchado = (detalhe) => detalhe.match(/^termo proibido: (.+?)(?: \(com espaco, pontuacao ou acento\))?$/)?.[1] ?? null
 // termos permitidos: nome do produto (sabinos) nao pode acusar falso positivo do mesmo nome sem o "s" final
 const PERMITIDOS = [/sabinos/gi, /sabinos\.zip/gi]
-// o teste do detector precisa CONTER exemplos sinteticos de segredo e de termo (inclusive o
-// nome do produto sem o "s", no teste do PERMITIDOS) pra provar que o gate acusa; auto-referencia estrutural,
-// sem vazamento, por isso os dois arquivos do gate ficam fora da varredura de conteudo
-const ISENTOS_CONTEUDO = ['_ferramentas/verificar-kit.mjs', '_ferramentas/verificar-kit.test.mjs']
 const RE_MLB = /\bMLB\d{6,}\b/
 const RE_SEGREDO = /(API_KEY|ACCESS_TOKEN|REFRESH_TOKEN|CLIENT_SECRET|BOT_TOKEN|_SECRET|_PASS|_PASSWORD)\s*[:=]\s*['"]?([A-Za-z0-9._\-]{8,})/g
 // valor que e placeholder ou leitura de variavel, nao chave real
@@ -369,13 +365,26 @@ const ehLink = caminho => { try { return lstatSync(caminho).isSymbolicLink() } c
 
 // Link e juncao ficam fora de vez: o kit nunca leva um, e seguir faria o verificador ler a
 // pasta de outro lugar (a ponte .agents/skills do /setup acendia Gate 1 e 11 na pasta-mae).
-// O .agents sai inteiro so quando o skills dele e a ponte; .agents de verdade segue proibido.
+// O .agents sai inteiro so quando o skills dele e a ponte: link, ou copia (quem nao consegue
+// criar link copia a pasta), e a copia so conta quando o .agents tem so o skills e cada filho
+// dele tem nome e tipo (pasta ou arquivo) de entrada do .claude/skills. Qualquer outra coisa ali
+// segue proibida: arquivo com nome de skill nao e copia (revisao do Codex na 5.21).
+const ehPasta = caminho => { try { return lstatSync(caminho).isDirectory() } catch { return false } }
+function ehPonteEmCopia(base, agents) {
+  const entradas = readdirSync(agents)
+  if (entradas.length !== 1 || entradas[0] !== 'skills') return false
+  const skills = join(agents, 'skills')
+  if (!ehPasta(skills) || !ehPasta(join(base, '.claude', 'skills'))) return false
+  const origem = join(base, '.claude', 'skills')
+  const nomes = new Set(readdirSync(origem))
+  return readdirSync(skills).every(n => nomes.has(n) && ehPasta(join(skills, n)) === ehPasta(join(origem, n)))
+}
 function listar(dir, base = dir, acc = []) {
   for (const nome of readdirSync(dir)) {
     if (nome === '.git' || nome === 'node_modules') continue
     if (dir === base && ehDoAluno(dir, nome)) continue
     const caminho = join(dir, nome)
-    if (dir === base && nome === '.agents' && ehLink(join(caminho, 'skills'))) continue
+    if (dir === base && nome === '.agents' && (ehLink(join(caminho, 'skills')) || (ehPasta(caminho) && ehPonteEmCopia(base, caminho)))) continue
     const tipo = lstatSync(caminho)
     if (tipo.isSymbolicLink()) continue
     if (tipo.isDirectory()) listar(caminho, base, acc)
@@ -432,7 +441,6 @@ export function rodarGates(dirKit, opcoes = {}) {
   // Gate 1: vazamento de informacao nossa
   for (const rel of arquivos) {
     if (!ehTextoGate1(rel)) continue
-    if (ISENTOS_CONTEUDO.includes(rel)) continue
     const txt = readFileSync(join(dirKit, rel), 'utf8')
     const permitidos = EXCECOES[rel] ?? []
     for (const detalhe of vazamentosNoTexto(txt, PROIBIDOS)) {
@@ -760,6 +768,9 @@ export function rodarGates(dirKit, opcoes = {}) {
   // Gate 11: backup do aluno. O .gitignore do _modelo nega tudo e libera por tipo, entao
   // arquivo do kit de tipo fora da lista nasceria fora do backup de todo projeto, calado.
   // Sem git a conferencia nao roda: vira naoRodou (uma entrada so), nunca ok com aviso.
+  // Arquivo proibido (.env) fica fora do backup de proposito e quem acusa e o Gate 1: aqui o
+  // pedido de liberar no .gitignore empurrava a chave pro backup.
+  const proibidoNoBackup = r => PROIBIDOS_ARQUIVOS.includes(r.split('/').pop())
   const semGit11 = qual => {
     if (!naoRodou.some(n => n.gate === 11)) naoRodou.push({ gate: 11, motivo: `git nao encontrado: ${qual} nao foi conferido; instalar o git e rodar de novo` })
   }
@@ -767,7 +778,7 @@ export function rodarGates(dirKit, opcoes = {}) {
     const doModelo = arquivos.filter(r => r.startsWith('_modelo/')).map(r => r.slice('_modelo/'.length))
     const fora = foraDoBackup(join(dirKit, '_modelo'), doModelo)
     if (fora === null) semGit11('o backup do aluno')
-    else for (const r of fora) falhas.push({ gate: 11, arquivo: `_modelo/${r}`, detalhe: 'fora do backup do aluno: liberar o tipo ou o caminho no _modelo/.gitignore' })
+    else for (const r of fora) if (!proibidoNoBackup(r)) falhas.push({ gate: 11, arquivo: `_modelo/${r}`, detalhe: 'fora do backup do aluno: liberar o tipo ou o caminho no _modelo/.gitignore' })
   }
   // O .gitignore da pasta-mae tambem e fechado por padrao: arquivo do kit fora do _modelo/
   // que ele deixa fora some do repositorio da pasta-mae do aluno, calado.
@@ -779,7 +790,7 @@ export function rodarGates(dirKit, opcoes = {}) {
     if (primeira !== '*') falhas.push({ gate: 11, arquivo: '.gitignore', detalhe: "é o antigo (aberto); seguir o passo 'Arquivos misturados da pasta-mãe' do .claude/skills/atualizar-kit/SKILL.md" })
     const fora = foraDoBackup(dirKit, arquivos.filter(r => !r.startsWith('_modelo/')))
     if (fora === null) semGit11('o .gitignore da pasta-mae')
-    else for (const r of fora) falhas.push({ gate: 11, arquivo: r, detalhe: 'fora do repositorio da pasta-mae: liberar o tipo ou o caminho no .gitignore da pasta-mae' })
+    else for (const r of fora) if (!proibidoNoBackup(r)) falhas.push({ gate: 11, arquivo: r, detalhe: 'fora do repositorio da pasta-mae: liberar o tipo ou o caminho no .gitignore da pasta-mae' })
   }
 
   // Gate 12: travessao (U+2014 e U+2013) em qualquer texto do kit. O bem-vindo e os guias

@@ -13,6 +13,7 @@ import { lerEnv, gravarEnv } from '../../mercado-livre/scripts/lib/env.mjs'
 import { tokenMl } from '../../mercado-livre/scripts/lib/tokens.mjs'
 import { mlGet } from '../../mercado-livre/scripts/lib/ml-api.mjs'
 import { lerDecisoes } from '../../mercado-livre/scripts/lib/decisoes.mjs'
+import { dataLocal } from '../../mercado-livre/scripts/lib/pipeline.mjs'
 import { coletar, descobrirAnunciante, PASTA_SNAPSHOTS } from './ads.mjs'
 import { carregarFreio } from './estrategia.mjs'
 import { diagnosticar } from './diagnosticar.mjs'
@@ -26,9 +27,20 @@ export function argumentos(argv) {
   return { acao: 'raio-x', dias }
 }
 
+// Dia do prazo no relogio do aluno. O ML manda o prazo em UTC ('2026-09-30T01:00:00Z'), que no
+// Brasil ainda e dia 29 as 22h: cortar o texto mostrava um dia a mais de prazo. Data pura
+// (AAAA-MM-DD) fica como veio, porque o new Date leria meia-noite UTC e cairia no dia anterior;
+// '?' e data invalida tambem ficam como vieram.
+export function diaDoPrazo(valor) {
+  const s = String(valor ?? '?')
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+  const d = new Date(s)
+  return Number.isNaN(d.getTime()) ? s : dataLocal(d)
+}
+
 // Uma linha por campanha de desconto; `candidate` e o que a conta pode entrar e ainda nao entrou.
 export function linhasDePromocao(resultados) {
-  return (resultados || []).map(p => `${p.id ?? '?'} | ${p.type ?? '?'} | ${p.status ?? '?'} | ${p.name ?? ''} | adesao ate ${String(p.deadline_date ?? p.finish_date ?? '?').slice(0, 10)}`)
+  return (resultados || []).map(p => `${p.id ?? '?'} | ${p.type ?? '?'} | ${p.status ?? '?'} | ${p.name ?? ''} | adesao ate ${diaDoPrazo(p.deadline_date ?? p.finish_date)}`)
 }
 
 // Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem

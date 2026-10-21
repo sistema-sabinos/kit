@@ -1,6 +1,7 @@
 // Testes do raio-X do Mercado Ads: regras aplicadas ao snapshot e cruzadas com a ata.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { diagnosticar, acos7d } from './diagnosticar.mjs'
 import { argumentos, linhasDePromocao } from './rodar.mjs'
 import { PADROES } from './estrategia.mjs'
@@ -65,6 +66,30 @@ test('rodar: argumentos e linhas de promocao', () => {
   assert.deepEqual(argumentos([]), { acao: 'raio-x', dias: 30 })
   assert.deepEqual(argumentos(['--promocoes']), { acao: 'promocoes' })
   assert.throws(() => argumentos(['--dias', '200']), /1 a 90/)
-  assert.deepEqual(linhasDePromocao([{ id: 'P1', type: 'SMART', status: 'candidate', name: 'Semana', deadline_date: '2026-09-30T00:00:00Z' }]), ['P1 | SMART | candidate | Semana | adesao ate 2026-09-30'])
   assert.deepEqual(linhasDePromocao(undefined), [])
+})
+
+// O prazo tem de sair no dia do relogio do aluno, nunca no do UTC. A sonda roda num processo
+// filho com o fuso de Sao Paulo fixo, pra o teste valer em qualquer maquina.
+const URL_RODAR = new URL('./rodar.mjs', import.meta.url).href
+
+test('prazo da promocao sai no dia de Sao Paulo, nao no do UTC', () => {
+  const codigo = `const { linhasDePromocao, diaDoPrazo } = await import(${JSON.stringify(URL_RODAR)})
+    const linha = p => linhasDePromocao([{ id: 'P1', type: 'SMART', status: 'candidate', name: 'Semana', ...p }])[0]
+    console.log(JSON.stringify({
+      hora: new Date('2026-09-30T01:00:00Z').getHours(),
+      z: linha({ deadline_date: '2026-09-30T01:00:00Z' }),
+      menos3: diaDoPrazo('2026-09-30T23:59:00.000-03:00'),
+      puro: diaDoPrazo('2026-09-30'),
+      semPrazo: linha({}),
+    }))`
+  const r = spawnSync(process.execPath, ['--input-type=module', '-e', codigo], { encoding: 'utf8', env: { ...process.env, TZ: 'America/Sao_Paulo' } })
+  assert.equal(r.status, 0, 'sonda falhou: ' + r.stderr)
+  assert.ok(r.stdout.trim().length > 0, 'canario: a sonda respondeu')
+  const s = JSON.parse(r.stdout)
+  assert.equal(s.hora, 22, 'canario: o fuso de Sao Paulo pegou na sonda')
+  assert.equal(s.z, 'P1 | SMART | candidate | Semana | adesao ate 2026-09-29')
+  assert.equal(s.menos3, '2026-09-30')
+  assert.equal(s.puro, '2026-09-30')
+  assert.equal(s.semPrazo, 'P1 | SMART | candidate | Semana | adesao ate ?')
 })

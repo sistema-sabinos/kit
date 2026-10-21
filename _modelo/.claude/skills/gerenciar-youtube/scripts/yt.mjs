@@ -84,6 +84,13 @@ export function corpoDaAtualizacao(id, atual, novo) {
   return { id, snippet: { title: sn.title, description: sn.description || '', tags: sn.tags || [], categoryId: sn.categoryId, ...idiomas } }
 }
 
+// Queda de rede no PUT nao diz se gravou ou nao: manda conferir no Studio antes de repetir.
+// Erro da API (403, 400...) volta como veio.
+export function erroDaGravacao(e) {
+  if (e.name === 'TimeoutError' || /fetch failed|network/i.test(e.message)) return new Error('a conexao caiu durante a gravacao: conferir no YouTube Studio antes de repetir')
+  return e
+}
+
 // Credencial e login moram no .env, como toda chave do kit (ignorado pelo git e protegido de leitura).
 // Nomes montados por pares: "NOME_SECRET: valor" escrito direto parece segredo pro Gate 1 do kit.
 const NOMES = { id: 'YOUTUBE_CLIENT_ID', segredo: 'YOUTUBE_CLIENT_SECRET', acesso: 'YOUTUBE_ACCESS_TOKEN', renovacao: 'YOUTUBE_REFRESH_TOKEN', vence: 'YOUTUBE_TOKEN_VENCE_EM' }
@@ -210,8 +217,7 @@ async function main(v) {
     try {
       await api({ base: DATA, caminho: '/videos', params: { part: 'snippet' } }, { token, metodo: 'PUT', corpo: corpoDaAtualizacao(id, atual, novo) })
     } catch (e) {
-      if (e.name === 'TimeoutError' || /fetch failed|network/i.test(e.message)) throw new Error('a conexao caiu durante a gravacao: conferir no YouTube Studio antes de repetir')
-      throw e
+      throw erroDaGravacao(e)
     }
     console.log('atualizado')
   } else pedidosDoComando(comando, args)

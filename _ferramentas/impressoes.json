@@ -1,5 +1,5 @@
 {
- "versao": "5.20",
+ "versao": "5.21",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -99,7 +99,7 @@
   },
   ".claude/hooks/barrar-perigoso.mjs": {
    "03e19e75385b235d": "anterior-5.18",
-   "095d1b6ce7660932": "5.20",
+   "095d1b6ce7660932": "anterior-5.20",
    "0b5dfb2374e89b5e": "anterior-5.2",
    "1c53f9dc9f6d5234": "5.18",
    "27d749e4d886a15a": "anterior-5.18",
@@ -112,11 +112,12 @@
    "6d228326dc602827": "anterior-5.2",
    "7e2f5249847a016e": "anterior-5.14",
    "80c28918c3dbcf24": "anterior-3.4",
+   "87378536fb81af2e": "5.21",
    "8c4478be9a1cbfa3": "anterior-5.2",
    "92b524d2230c73d0": "5.20",
    "97d787854e560346": "anterior-3.4",
    "9ac027150d098274": "5.14",
-   "a04e48ec15d76695": "5.20",
+   "a04e48ec15d76695": "anterior-5.20",
    "b9a2703d4bb40fdc": "3.4",
    "c12c233da6d843a0": "5.17",
    "c18cb4d20ca7ec60": "anterior-3.4",
@@ -385,6 +386,9 @@
    "02b4e9f444c47b41": "5.7",
    "4090923d056c8d33": "anterior-5.5",
    "4af78733fb10454b": "anterior-5.5",
+   "53cdb8c614fdfb1e": "5.21",
+   "614bde27d9739849": "5.21",
+   "6ce8c8bd1722f26d": "5.21",
    "7ba07f801f2bf7d2": "5.20",
    "979525ec9f2f9014": "5.11",
    "a1eae2489d4d088a": "5.5",
@@ -397,6 +401,8 @@
   },
   ".claude/skills/aprender-curso/scripts/conferir-citacoes.mjs": {
    "616745c618284b53": "5.5",
+   "724bd270df68b749": "5.21",
+   "806f7fc7ae3cc245": "5.21",
    "b4261882eccafd57": "5.18",
    "d9f4a1b152f038a0": "5.20",
    "f91bc863814dc516": "5.11"
@@ -408,9 +414,12 @@
    "ccf35f8a7d74c970": "5.20"
   },
   ".claude/skills/aprender-curso/scripts/lib/aulas.mjs": {
-   "ad8f4783a344c3f8": "4.1"
+   "5dad2925700383a1": "5.21",
+   "ad8f4783a344c3f8": "4.1",
+   "f91422e0bc031632": "5.21"
   },
   ".claude/skills/aprender-curso/scripts/lib/citacoes.mjs": {
+   "2f60a46b27dfb090": "5.21",
    "6bc81aa382336609": "5.11",
    "e60dbb84917cee72": "5.5"
   },
@@ -429,8 +438,11 @@
   ".claude/skills/aprender-curso/scripts/listar-aulas.mjs": {
    "03b7a99af11a1630": "5.20",
    "1e8b749907227bb9": "5.7",
+   "1f96490e8d83933f": "5.21",
    "266e4aa547a956d9": "5.11",
-   "e39bc94607a74937": "4.1"
+   "5883ffe6b06e8827": "5.21",
+   "e39bc94607a74937": "4.1",
+   "f07a7badca18783f": "5.21"
   },
   ".claude/skills/assistir-video/SKILL.md": {
    "2dd20161ca456395": "anterior-3.0",
@@ -555,7 +567,7 @@
   ".claude/skills/auditar-instagram/scripts/auditar-instagram.mjs": {
    "408cdc4e35bf7506": "anterior-4.1",
    "533d847dfe2be388": "4.1",
-   "6ddecd9ec06f230b": "5.20",
+   "6ddecd9ec06f230b": "anterior-5.20",
    "bddb4329acd2d22e": "5.20",
    "f28701b9e795154f": "5.7"
   },
@@ -954,7 +966,7 @@
    "211c5302004213e1": "5.12",
    "436c2ace58f53e57": "5.20",
    "57ffbef09c575970": "4.1",
-   "800638a7f578e3ca": "5.20",
+   "800638a7f578e3ca": "anterior-5.20",
    "8d6ce3ecca5513ab": "anterior-5.12"
   },
   ".claude/skills/configurar-video/scripts/baixar-midia.mjs": {
@@ -1406,7 +1418,7 @@
    "559a1233a63e7e78": "anterior-5.12",
    "69004ec1c5eb2d73": "anterior-3.7",
    "696925452d05899a": "anterior-5.7",
-   "77635594e3a74ff2": "5.20",
+   "77635594e3a74ff2": "anterior-5.20",
    "87e1ce07f40d12a4": "anterior-5.7",
    "9ae5a6be02812e52": "anterior-3.6",
    "ae734dffef0d8596": "4.1",
@@ -1414,7 +1426,7 @@
    "bdb9eb9312b8509c": "5.7",
    "c375b93cc3691952": "anterior-4.1",
    "cc5bd9ba0be2b15f": "anterior-3.6",
-   "d14338153fdc3b24": "5.20",
+   "d14338153fdc3b24": "anterior-5.20",
    "d926994dec5817be": "3.7",
    "dd4f1b3ff10100d7": "5.1",
    "deb336201ed77f7a": "3.6",
@@ -1474,8 +1486,8 @@
    "4d9613bd46433985": "3.9",
    "774bba6bf16360f2": "anterior-3.9",
    "79b208a3578ac0d1": "anterior-3.9",
-   "886a75eb4476f53b": "5.20",
-   "99f4ac93536dc9a7": "5.20",
+   "886a75eb4476f53b": "anterior-5.20",
+   "99f4ac93536dc9a7": "anterior-5.20",
    "a6dc78d3410b70d1": "5.20",
    "ac8bada3addd88f0": "5.14",
    "aca9a1b563156ddb": "5.11",
@@ -1523,10 +1535,11 @@
    "122fb92a0205d93f": "anterior-3.9",
    "1bb39c0b68783194": "5.20",
    "22f39f97b7384ac7": "3.9",
+   "2811540d929d0f4c": "5.21",
    "4b87267b5e5f9c96": "anterior-3.9",
-   "4c973bd7eaed6b6a": "5.20",
+   "4c973bd7eaed6b6a": "anterior-5.20",
    "6d45de1dc1e8eb40": "anterior-3.9",
-   "890378d2a20f4a8a": "5.20",
+   "890378d2a20f4a8a": "anterior-5.20",
    "935589122a28b89a": "anterior-3.9",
    "a96f0c6787fedef5": "5.7",
    "e7afe7d353e59e65": "5.15"
@@ -1583,7 +1596,8 @@
    "0170c67dcfe4caf0": "5.14",
    "1887a96b177f9194": "4.1",
    "2ea250408038c976": "anterior-4.1",
-   "c147ad6e625d3f7c": "5.20",
+   "549a90f5826b4087": "5.21",
+   "c147ad6e625d3f7c": "anterior-5.20",
    "c2cb822caba43b66": "5.20",
    "cb9300ab8a00fb46": "5.12"
   },
@@ -1804,6 +1818,7 @@
   },
   ".claude/skills/mercado-ads/scripts/rodar.mjs": {
    "308ebaa8e16dcfab": "3.6",
+   "5b0c9c1a9c18e6db": "5.21",
    "6b588e7e0254297e": "5.20"
   },
   ".claude/skills/mercado-livre/SKILL.md": {
@@ -1812,7 +1827,7 @@
    "12528baa824325ba": "anterior-3.9",
    "1330610a1516b64b": "3.9",
    "246e4d8b0a7c0484": "4.1",
-   "283a94d85291780b": "5.20",
+   "283a94d85291780b": "anterior-5.20",
    "2a433ba29c96fdd3": "anterior-4.9",
    "3d3284bc731bccdd": "3.7",
    "510b3ef18a0bda57": "5.20",
@@ -2244,7 +2259,7 @@
   ".claude/skills/pauta/scripts/guarda-leitor.mjs": {
    "3c82f5e17cd3d6d3": "5.2",
    "591f7d525d2d7e91": "anterior-5.2",
-   "a3c71c9334ab260a": "5.20",
+   "a3c71c9334ab260a": "anterior-5.20",
    "afa899fb9245fe10": "5.20"
   },
   ".claude/skills/pauta/scripts/lib/instagram-publico.mjs": {
@@ -2261,7 +2276,7 @@
    "c713b16838df901b": "5.20"
   },
   ".claude/skills/pauta/scripts/radar.mjs": {
-   "177fd5371b5947e1": "5.20",
+   "177fd5371b5947e1": "anterior-5.20",
    "4e827fc855872c21": "5.20",
    "5301d86f1cb7babf": "4.1",
    "8a727833bac37f3e": "5.12",
@@ -2626,7 +2641,7 @@
   ".claude/skills/video-produto/scripts/video-produto.mjs": {
    "0d329c10050860b3": "anterior-4.1",
    "11de4ab6928e2561": "4.2",
-   "1b4e67843aa01b7d": "5.20",
+   "1b4e67843aa01b7d": "anterior-5.20",
    "214ff7f6639f4a85": "5.7",
    "237bd0120b47e68c": "5.15",
    "4bb9b37c4a4650a1": "anterior-5.18",

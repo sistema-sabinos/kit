@@ -277,30 +277,177 @@ test('persona com resposta que cita ficha inexistente sai 1 sem sortear', () => 
   }
 })
 
-// N1 da 5.20: a citacao nao diz de qual curso e. A certa do curso B, no rascunho do A, sai 1 com
-// o aviso de outro curso (em vez de mandar "corrigir"), e um rascunho por curso passa nos dois.
-test('dois cursos: citacao do curso B no rascunho do A sai 1 com aviso de outro curso', () => {
-  const a = curso({ mentor: 'x (aula 1, 1:00)', aulas: { '01-a.md': '[1:00] curso A: frete gratis sempre' } })
-  const b = curso({ mentor: 'x (aula 3, 7:00)', aulas: { '03-b.md': '[7:00] curso B: nunca de frete gratis' } })
+// Pasta inteligencia/cursos de mentira: { <curso>: { autor, aulas: { nome: texto } } }; autor null
+// grava o curso.md sem a linha "Autor:".
+function pastaCursos(def) {
+  const raiz = mkdtempSync(join(tmpdir(), 'conferir-cursos-'))
+  for (const [nome, c] of Object.entries(def)) {
+    mkdirSync(join(raiz, nome, 'aulas'), { recursive: true })
+    writeFileSync(join(raiz, nome, 'curso.md'), [c.autor == null ? '# Curso' : `Autor: ${c.autor}`, `Fonte: playlist de ${nome}`].join(CRLF))
+    for (const [arq, texto] of Object.entries(c.aulas ?? {})) writeFileSync(join(raiz, nome, 'aulas', arq), texto)
+  }
+  return raiz
+}
+const rodarCursos = (raiz, ...extra) => spawnSync(process.execPath, [SCRIPT, raiz, '--cursos', ...extra], { encoding: 'utf8' })
+
+// N1 da 5.20: a citacao de um curso so nao diz de qual curso e. A certa do curso B, no rascunho do A,
+// sai 1 com o aviso de outro curso (em vez de mandar "corrigir"); com o curso na citacao e --cursos,
+// a mesma resposta passa numa rodada so.
+test('dois cursos: citacao do curso B no rascunho do A sai 1 com aviso, e com o curso na citacao passa por --cursos', () => {
+  const raiz = pastaCursos({
+    a: { autor: 'Ana', aulas: { '01-a.md': '[1:00] curso A: frete gratis sempre' } },
+    b: { autor: 'Bia', aulas: { '03-b.md': '[7:00] curso B: nunca de frete gratis' } },
+  })
+  const a = join(raiz, 'a')
   try {
+    writeFileSync(join(a, 'mentor.md'), 'x (aula 1, 1:00)')
     writeFileSync(join(a, 'resposta.md'), ['Curso A: frete gratis sempre (aula 1, 1:00).', 'Curso B: nunca (aula 3, 7:00).'].join(CRLF))
     const misturada = rodarResposta(a)
     assert.ok(misturada.stdout.length > 0, 'saida veio vazia')
     assert.notEqual(misturada.status, 0, misturada.stdout)
     const linhas = misturada.stdout.trim().split(/\r?\n/)
     assert.deepEqual(linhas.slice(0, 2), ['aula 3 nao existe em aulas/', 'problemas: 1'])
-    assert.match(linhas[2] ?? '', /^AVISO: citacao que nao casa com esta pasta pode ser de outro curso\..* um rascunho por curso.* nunca se apaga\.$/)
+    assert.match(linhas[2] ?? '', /^AVISO: citacao que nao casa com esta pasta pode ser de outro curso\. .*\(aula N, marca, <curso>\).* com a pasta inteligencia\/cursos e --cursos; .* nunca se apaga\.$/)
     assert.doesNotMatch(misturada.stdout, /sorteadas:/)
-    writeFileSync(join(a, 'resposta.md'), 'Curso A: frete gratis sempre (aula 1, 1:00).')
-    writeFileSync(join(b, 'resposta.md'), 'Curso B: nunca (aula 3, 7:00).')
-    for (const dir of [a, b]) {
-      const r = rodarResposta(dir)
-      assert.equal(r.status, 0, r.stdout + r.stderr)
-      assert.match(r.stdout, /^sorteadas: 1 de 1$/m)
-    }
+    const resp = join(raiz, 'resposta.md')
+    writeFileSync(resp, ['Curso A: frete gratis sempre (aula 1, 1:00, a).', 'Curso B: nunca (aula 3, 7:00, b).'].join(CRLF))
+    const r = rodarCursos(raiz, '--resposta', resp, '--amostra', '2')
+    assert.equal(r.status, 0, r.stdout + r.stderr)
+    assert.match(r.stdout, /^a\/aulas\/01-a\.md:$/m)
+    assert.match(r.stdout, /^b\/aulas\/03-b\.md:$/m)
+    assert.match(r.stdout, /^sorteadas: 2 de 2$/m)
   } finally {
-    rmSync(a, { recursive: true, force: true })
-    rmSync(b, { recursive: true, force: true })
+    rmSync(raiz, { recursive: true, force: true })
+  }
+})
+
+// 5.21, tarefa 3.3 e item 8 (5.20 chat 3a): so o curso dentro da citacao separa a aula 1 [1:00] do
+// curso a da aula 1 [1:00] do curso b.
+const OPOSTOS = {
+  a: { autor: 'Ana', aulas: { '01-frete.md': ['antes', '[1:00] curso a: frete gratis sempre', 'depois'].join(CRLF) } },
+  b: { autor: 'Bia', aulas: { '01-frete.md': ['antes', '[1:00] curso b: nunca de frete gratis', 'depois'].join(CRLF) } },
+}
+
+test('cursos 1: mesma aula e marca em dois cursos, o trecho sai do curso citado', () => {
+  const raiz = pastaCursos(OPOSTOS)
+  try {
+    const resp = join(raiz, 'resposta.md')
+    writeFileSync(resp, 'Frete gratis nao compensa (aula 1, 1:00, b).')
+    const r = rodarCursos(raiz, '--resposta', resp)
+    assert.ok(r.stdout.length > 0, 'saida veio vazia')
+    assert.equal(r.status, 0, r.stdout + r.stderr)
+    assert.deepEqual(r.stdout.trim().split(/\r?\n/), [
+      '--- 1 de 1: (aula 1, 1:00, b)',
+      'resposta: Frete gratis nao compensa (aula 1, 1:00, b).',
+      'b/aulas/01-frete.md:',
+      '  antes',
+      '  [1:00] curso b: nunca de frete gratis',
+      '  depois',
+      '  ...',
+      'sorteadas: 1 de 1',
+    ])
+    assert.doesNotMatch(r.stdout, /curso a:/)
+  } finally {
+    rmSync(raiz, { recursive: true, force: true })
+  }
+})
+
+test('cursos 2: o curso citado sem a marca sai 1 dizendo o curso, mesmo com a marca no outro', () => {
+  const raiz = pastaCursos({ ...OPOSTOS, b: { autor: 'Bia', aulas: { '01-frete.md': '[2:00] curso b: outra coisa' } } })
+  try {
+    const resp = join(raiz, 'resposta.md')
+    writeFileSync(resp, 'Frete gratis nao compensa (aula 1, 1:00, b). Sem curso (aula 1, 1:00). Curso que nao ha (aula 1, 1:00, z).')
+    const r = rodarCursos(raiz, '--resposta', resp)
+    assert.ok(r.stdout.length > 0, 'saida veio vazia')
+    assert.equal(r.status, 1, r.stdout + r.stderr)
+    const nome = raiz.split(/[\\/]/).pop()
+    const linhas = r.stdout.trim().split(/\r?\n/)
+    assert.deepEqual(linhas.slice(0, 2), ['citacao sem o curso: (aula 1, 1:00)', 'aula 1 sem a marca [1:00] em b'])
+    assert.ok(linhas[2].startsWith('curso z nao existe em ') && linhas[2].endsWith(nome + '/'), linhas[2])
+    assert.deepEqual(linhas.slice(3), ['problemas: 3'])
+    assert.doesNotMatch(r.stdout, /sorteadas:|outro curso/)
+  } finally {
+    rmSync(raiz, { recursive: true, force: true })
+  }
+})
+
+test('cursos 3: --tema reprova consenso de um autor so, fonte unica com 2 cursos e curso sem Autor', () => {
+  const aula = { '01-x.md': '[1:00] fala' }
+  const raiz = pastaCursos({ a: { autor: 'Ana', aulas: aula }, b: { autor: 'ANA ', aulas: aula }, c: { autor: 'Caio', aulas: aula }, d: { autor: null, aulas: aula } })
+  const tema = join(raiz, 'tema.md')
+  const montar = linhas => writeFileSync(tema, ['# Frete', '## Cursos cruzados', '- a: Ana', ...linhas].join(CRLF))
+  try {
+    // passa: consenso e divergencia com autores diferentes, fonte unica com 1 curso
+    montar(['## Consenso', '- frete conta (aula 1, 1:00, a) (aula 1, 1:00, c)', '## Divergências', '- prazo (aula 1, 1:00, a) contra (aula 1, 1:00, c)', '## FONTE UNICA', '- so ele diz (aula 1, 1:00, c)', '## Lacunas', '- nada sobre imposto'])
+    const ok = rodarCursos(raiz, '--tema', tema)
+    assert.equal(ok.status, 0, ok.stdout + ok.stderr)
+    assert.equal(ok.stdout.trim(), 'conferidas: 5')
+    // consenso com os cursos a e b, os dois da Ana (maiuscula e espaco nao mudam o autor)
+    montar(['## Consenso', '- frete conta (aula 1, 1:00, a) (aula 1, 1:00, b)'])
+    const um = rodarCursos(raiz, '--tema', tema)
+    assert.ok(um.stdout.length > 0, 'saida veio vazia')
+    assert.equal(um.status, 1, um.stdout)
+    assert.deepEqual(um.stdout.trim().split(/\r?\n/), ['consenso com um autor so (linha 5): Ana, ANA', 'problemas: 1'])
+    // cabecalho com acento e maiuscula ainda e a secao de divergencias
+    montar(['## DIVERGÊNCIAS', '- prazo (aula 1, 1:00, a) contra (aula 1, 1:00, b)'])
+    const div = rodarCursos(raiz, '--tema', tema)
+    assert.equal(div.status, 1, div.stdout)
+    assert.deepEqual(div.stdout.trim().split(/\r?\n/), ['divergencia com um autor so (linha 5): Ana, ANA', 'problemas: 1'])
+    montar(['## Fonte unica', '- so um diz (aula 1, 1:00, a) (aula 1, 1:00, c)'])
+    const dois = rodarCursos(raiz, '--tema', tema)
+    assert.ok(dois.stdout.length > 0, 'saida veio vazia')
+    assert.equal(dois.status, 1, dois.stdout)
+    assert.deepEqual(dois.stdout.trim().split(/\r?\n/), ['fonte unica com 2 cursos (linha 5): a, c', 'problemas: 1'])
+    montar(['## Consenso', '- frete conta (aula 1, 1:00, a) (aula 1, 1:00, d)'])
+    const semAutor = rodarCursos(raiz, '--tema', tema)
+    assert.ok(semAutor.stdout.length > 0, 'saida veio vazia')
+    assert.equal(semAutor.status, 1, semAutor.stdout)
+    assert.deepEqual(semAutor.stdout.trim().split(/\r?\n/), ['sem a linha "Autor:" no curso.md de d', 'problemas: 1'])
+    // item com outro marcador ou recuado, e cabecalho com sufixo, seguem com a regra da secao
+    montar(['## Consenso:', '* frete conta (aula 1, 1:00, a) (aula 1, 1:00, b)', '1. prazo (aula 1, 1:00, a)', '## Fonte unica (menos confirmado)', '  - dois (aula 1, 1:00, a) (aula 1, 1:00, c)', '- sem citacao nenhuma'])
+    const marcadores = rodarCursos(raiz, '--tema', tema)
+    assert.ok(marcadores.stdout.length > 0, 'saida veio vazia')
+    assert.equal(marcadores.status, 1, marcadores.stdout)
+    assert.deepEqual(marcadores.stdout.trim().split(/\r?\n/), [
+      'consenso com um autor so (linha 5): Ana, ANA', 'consenso com um autor so (linha 6): Ana',
+      'fonte unica com 2 cursos (linha 8): a, c', 'fonte unica sem citacao com curso (linha 9)', 'problemas: 4',
+    ])
+    // a pasta depois das flags: o caminho do --tema nunca vira a pasta
+    montar(['## Consenso', '- frete conta (aula 1, 1:00, a) (aula 1, 1:00, c)'])
+    const depois = spawnSync(process.execPath, [SCRIPT, '--cursos', '--tema', tema, raiz], { encoding: 'utf8' })
+    assert.equal(depois.status, 0, depois.stdout + depois.stderr)
+    assert.equal(depois.stdout.trim(), 'conferidas: 2')
+    montar(['## Outra coisa', '- texto (aula 1, 1:00, a)'])
+    const semSecao = rodarCursos(raiz, '--tema', tema)
+    assert.equal(semSecao.status, 1, semSecao.stdout)
+    assert.match(semSecao.stdout, /^AVISO: nenhuma das secoes Consenso, Divergencias ou Fonte unica/)
+  } finally {
+    rmSync(raiz, { recursive: true, force: true })
+  }
+})
+
+test('cursos 4: --persona com --cursos, --tema sem --cursos e --cursos sozinho saem 1 com AVISO', () => {
+  const raiz = pastaCursos(OPOSTOS)
+  try {
+    const tema = join(raiz, 'tema.md')
+    writeFileSync(tema, '## Consenso\n- x (aula 1, 1:00, a) (aula 1, 1:00, b)')
+    const casos = [
+      [[raiz, '--cursos', '--persona', '--tema', tema], /^AVISO: --cursos nao vale com --persona/],
+      [[raiz, '--tema', tema], /^AVISO: --tema so vale com --cursos/],
+      [[raiz, '--cursos'], /^AVISO: --cursos precisa de --tema <arquivo> ou --resposta <arquivo>/],
+      [[raiz, '--cursos', '--tema'], /^AVISO: --tema precisa do caminho/],
+    ]
+    for (const [args, aviso] of casos) {
+      const r = spawnSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf8' })
+      assert.ok(r.stdout.length > 0, 'saida veio vazia: ' + args.join(' '))
+      assert.equal(r.status, 1, r.stdout + r.stderr)
+      assert.match(r.stdout, aviso)
+      assert.doesNotMatch(r.stdout, /conferidas:|sorteadas:/)
+    }
+    // canario: o mesmo tema com --cursos passa
+    assert.equal(rodarCursos(raiz, '--tema', tema).status, 0)
+  } finally {
+    rmSync(raiz, { recursive: true, force: true })
   }
 })
 

@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempSync, writeFileSync, rmSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { REGRAS, montarPrompt, cotaEstourou, escolherModeloImagem, erroSemModelo, avisoDePreco, PRECO_IMAGEM, PRAZO_LISTA_MS, PRAZO_GERAR_MS, estimar, viaCodex, viaGemini } from './gerar-cenario.mjs'
+import { REGRAS, montarPrompt, cotaEstourou, escolherModeloImagem, erroSemModelo, avisoDePreco, PRECO_IMAGEM, PRAZO_LISTA_MS, PRAZO_GERAR_MS, estimar, viaCodex, viaGemini, codigoDeSaida } from './gerar-cenario.mjs'
 import { CAMINHO_ENV } from '../../mercado-livre/scripts/lib/env.mjs'
 import { CAMINHO_CONFIG } from '../../mercado-livre/scripts/lib/config.mjs'
 
@@ -388,4 +388,15 @@ test('CLI: --uso com valor desconhecido sai 2 com a mensagem de uso', () => {
   const r = rodarCli(['--uso', 'reels', '--preco-usd', '0.05'], 1)
   assert.equal(r.status, 2, r.stderr)
   assert.ok(r.stderr.includes('--uso video|anuncio'), r.stderr)
+})
+
+test('codigoDeSaida: parou vale 3 mesmo com cena faltando, faltou vale 1, tudo gerado vale 0', () => {
+  const parou = 'precisa do pode ir da pessoa'
+  const tabela = [
+    [{ parou, faltaram: [] }, 3],
+    [{ parou, faltaram: ['a'] }, 3],
+    [{ faltaram: ['a'] }, 1],
+    [{ faltaram: [] }, 0],
+  ]
+  for (const [r, esperado] of tabela) assert.equal(codigoDeSaida(r), esperado, JSON.stringify(r))
 })

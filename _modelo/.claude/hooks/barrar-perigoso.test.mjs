@@ -1424,3 +1424,22 @@ test('5.20: as regras novas com a entrada gigante terminam em tempo linear', () 
     assert.strictEqual(r.status, saida, `${nome}: saida ${r.status} em vez de ${saida} (${r.stderr})`)
   }
 })
+
+test('5.21: passou do teto de cd e -C, todo alvo do checkout conta como pasta', () => {
+  // passando do teto a pasta para de mudar; o alvo seria medido na pasta errada e um
+  // `checkout -- pasta` que so existe la no fundo saia livre (medido em 2026-10-20)
+  const dir = mkdtempSync(join(tmpdir(), 'trava-teto-cd-'))
+  try {
+    let fundo = dir
+    for (let i = 0; i < 65; i++) fundo = join(fundo, 'a')
+    mkdirSync(fundo, { recursive: true })
+    writeFileSync(join(fundo, 'arquivo.txt'), 'x')
+    const cd = n => 'cd a && '.repeat(n)
+    assert.ok(ehPerigoso(cd(65) + 'git checkout -- arquivo.txt', { cwd: dir }), 'deveria barrar: 65 cd passam do teto')
+    assert.ok(ehPerigoso('git ' + '-C a '.repeat(65) + 'checkout -- arquivo.txt', { cwd: dir }), 'deveria barrar: 65 -C passam do teto')
+    // canario: abaixo do teto, o arquivo avulso segue livre
+    assert.strictEqual(ehPerigoso(cd(64) + 'git checkout -- a/arquivo.txt', { cwd: dir }), null)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})

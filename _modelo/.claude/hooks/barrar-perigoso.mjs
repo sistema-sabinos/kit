@@ -412,6 +412,7 @@ function alvoAmplo(alvo, dir, conta) {
   if (a === '.' || a === '..' || /[*?[]/.test(a) || a.startsWith(':') || /[\\\/]$/.test(a)) return true
   if (a.includes(SUB) || /^[\\\/]{2}/.test(a)) return true
   if (a === VAZIO || a.startsWith('-')) return false
+  if (conta.mudancas > MAX_MUDANCAS_DE_PASTA) return true
   if (++conta.n > MAX_PASTAS_CONFERIDAS) return true
   try { return !!statSync(resolve(dir, a), { throwIfNoEntry: false })?.isDirectory() } catch { return false }
 }
@@ -493,7 +494,8 @@ function gitDescartePerigoso(verbo, resto, dir, conta, deFora) {
 }
 
 // cd e -C repetidos tem teto: passou dele, a pasta para de mudar (cada um junta texto no
-// caminho, e milhares deles faziam o comando custar o quadrado)
+// caminho, e milhares deles faziam o comando custar o quadrado) e o alvoAmplo conta todo
+// alvo como pasta, porque a pasta medida ja nao e a de verdade (rodada 5.21)
 const MAX_MUDANCAS_DE_PASTA = 64
 function mudarPasta(conta, dir, alvo) {
   if (alvo === VAZIO || ++conta.mudancas > MAX_MUDANCAS_DE_PASTA) return dir

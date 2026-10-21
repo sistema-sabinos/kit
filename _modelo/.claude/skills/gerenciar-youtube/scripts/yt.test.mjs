@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { urlDeAutorizacao, trocarCodigo, tokenValido, pedidosDoComando, diffDoVideo, corpoDaAtualizacao, clienteDoArquivo, clienteDoEnv, tokenDoEnv, envDoToken } from './yt.mjs'
+import { urlDeAutorizacao, trocarCodigo, tokenValido, pedidosDoComando, diffDoVideo, corpoDaAtualizacao, clienteDoArquivo, clienteDoEnv, tokenDoEnv, envDoToken, erroDaGravacao } from './yt.mjs'
 
 test('urlDeAutorizacao pede offline, consentimento e os dois escopos', () => {
   const u = new URL(urlDeAutorizacao({ clientId: 'cid', redirect: 'http://127.0.0.1:8765', estado: 'e1' }))
@@ -65,6 +65,23 @@ test('corpoDaAtualizacao preserva categoria e o que nao mudou', () => {
 test('corpoDaAtualizacao leva junto os idiomas do video, que a API apagaria se faltassem', () => {
   const atual = { title: 'A', description: 'x', categoryId: '22', defaultLanguage: 'pt-BR', defaultAudioLanguage: 'pt' }
   assert.deepEqual(corpoDaAtualizacao('v', atual, { title: 'B' }).snippet, { title: 'B', description: 'x', tags: [], categoryId: '22', defaultLanguage: 'pt-BR', defaultAudioLanguage: 'pt' })
+})
+
+const QUEDA = /^a conexao caiu durante a gravacao: conferir no YouTube Studio antes de repetir$/
+
+test('erroDaGravacao: prazo estourado (TimeoutError do AbortSignal.timeout) manda conferir no Studio', () => {
+  const e = new DOMException('The operation was aborted due to timeout', 'TimeoutError')
+  assert.equal(e.name, 'TimeoutError', 'canario: o DOMException nasceu com o nome certo')
+  assert.match(erroDaGravacao(e).message, QUEDA)
+})
+
+test('erroDaGravacao: fetch failed manda conferir no Studio', () => {
+  assert.match(erroDaGravacao(new TypeError('fetch failed')).message, QUEDA)
+})
+
+test('erroDaGravacao: erro da API volta identico', () => {
+  const e = new Error('403 forbidden')
+  assert.strictEqual(erroDaGravacao(e), e)
 })
 
 test('credencial do Google vai pro .env, nunca pra arquivo solto no projeto', () => {

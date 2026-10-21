@@ -23,6 +23,12 @@ function kitFalso() {
 // termos sinteticos: a lista real mora na bancada (bancada/proibidos.json), fora do kit,
 // e nenhum termo dela pode aparecer aqui, porque este arquivo vai no zip
 const TERMOS = ['termo-secreto-exemplo', 'segundo-termo-exemplo']
+// Este arquivo e o detector passam pelo Gate 1 como qualquer outro (5.21), entao isca de termo e
+// de segredo se monta por codigo. NOME e o nome do produto sem o "s", que esta na lista da
+// bancada: em pedacos, porque o detector so junta letras com 1 caractere no meio. O SEGREDO
+// junta o valor pela soma, e o detector pede o valor colado depois do "=".
+const NOME = ['sab', 'ino'].join('')
+const SEGREDO = 'GEMINI_API_KEY=' + 'AIzaSyD9x1abcdefgh'
 
 test('gate 1 pega termo proibido', () => {
   const dir = kitFalso()
@@ -196,12 +202,13 @@ test('gate 1 fora da bancada (a pasta da lista nao existe) nao avisa', () => {
 
 test('gate 1 pega valor de segredo mas nao o nome da variavel', () => {
   const dir = kitFalso()
-  writeFileSync(join(dir, 'a.md'), 'Preencha GEMINI_API_KEY no arquivo de chaves\n')
-  writeFileSync(join(dir, 'b.md'), 'GEMINI_API_KEY=AIzaSyD9x1abcdefgh\n')
-  const { falhas } = rodarGates(dir)
-  assert.ok(!falhas.some(f => f.gate === 1 && f.arquivo.endsWith('a.md')), 'nome de variavel e permitido')
-  assert.ok(falhas.some(f => f.gate === 1 && f.arquivo.endsWith('b.md')), 'valor atribuido e proibido')
-  rmSync(dir, { recursive: true, force: true })
+  try {
+    writeFileSync(join(dir, 'a.md'), 'Preencha GEMINI_API_KEY no arquivo de chaves\n')
+    writeFileSync(join(dir, 'b.md'), SEGREDO + '\n')
+    const { falhas } = rodarGates(dir)
+    assert.ok(!falhas.some(f => f.gate === 1 && f.arquivo.endsWith('a.md')), 'nome de variavel e permitido')
+    assert.ok(falhas.some(f => f.gate === 1 && f.arquivo.endsWith('b.md')), 'valor atribuido e proibido')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
 test('gate 1 ignora placeholder e leitura de env em codigo', () => {
@@ -213,29 +220,30 @@ test('gate 1 ignora placeholder e leitura de env em codigo', () => {
   rmSync(dir, { recursive: true, force: true })
 })
 
-test('permite a palavra sabinos (nome do produto) mas barra sabino sozinho', () => {
+test('permite a palavra sabinos (nome do produto) mas barra o nome do produto sem o s', () => {
   const dir = kitFalso()
-  writeFileSync(join(dir, 'a.md'), 'O SabinOS te ajuda a organizar tudo.\n')
-  writeFileSync(join(dir, 'b.md'), 'Qualquer duvida, fale com o Sabino.\n')
-  const { falhas } = rodarGates(dir, { proibidos: ['sabino'] })
-  assert.ok(!falhas.some(f => f.gate === 1 && f.arquivo.endsWith('a.md')), 'sabinos (nome do produto) e permitido')
-  assert.ok(falhas.some(f => f.gate === 1 && f.arquivo.endsWith('b.md') && /sabino/i.test(f.detalhe)), 'sabino sozinho continua proibido')
-  rmSync(dir, { recursive: true, force: true })
+  try {
+    writeFileSync(join(dir, 'a.md'), 'O SabinOS te ajuda a organizar tudo.\n')
+    writeFileSync(join(dir, 'b.md'), `Qualquer duvida, fale com o ${NOME[0].toUpperCase() + NOME.slice(1)}.\n`)
+    const { falhas } = rodarGates(dir, { proibidos: [NOME] })
+    assert.ok(!falhas.some(f => f.gate === 1 && f.arquivo.endsWith('a.md')), 'sabinos (nome do produto) e permitido')
+    assert.ok(falhas.some(f => f.gate === 1 && f.arquivo.endsWith('b.md') && new RegExp(NOME, 'i').test(f.detalhe)), 'o nome sem o s continua proibido')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
-test('gate 1 nao acusa o proprio detector por conter a lista de termos e exemplos de segredo', () => {
+test('gate 1 acusa o detector e o teste dele quando trazem termo ou segredo', () => {
   const dir = kitFalso()
-  mkdirSync(join(dir, '_ferramentas'), { recursive: true })
-  writeFileSync(join(dir, '_ferramentas/verificar-kit.mjs'), "const TERMOS = ['termo-secreto-exemplo']\n")
-  writeFileSync(join(dir, '_ferramentas/verificar-kit.test.mjs'),
-    "writeFileSync(x, 'Usado na operacao termo-secreto-exemplo.\\n')\nwriteFileSync(y, 'GEMINI_API_KEY=AIzaSyD9x1abcdefgh\\n')\n")
-  // canario: o mesmo conteudo fora dos arquivos do gate acusa
-  writeFileSync(join(dir, 'c.md'), 'Usado na operacao termo-secreto-exemplo.\n')
-  const { falhas } = rodarGates(dir, { proibidos: TERMOS })
-  assert.ok(falhas.some(f => f.gate === 1 && f.arquivo === 'c.md'), 'canario: fora do detector o termo acusa')
-  assert.ok(!falhas.some(f => f.gate === 1 && f.arquivo === '_ferramentas/verificar-kit.mjs'), 'o detector nao se auto-acusa')
-  assert.ok(!falhas.some(f => f.gate === 1 && f.arquivo === '_ferramentas/verificar-kit.test.mjs'), 'o teste do detector (com exemplo de segredo sintetico) nao se auto-acusa')
-  rmSync(dir, { recursive: true, force: true })
+  try {
+    mkdirSync(join(dir, '_ferramentas'), { recursive: true })
+    writeFileSync(join(dir, '_ferramentas/verificar-kit.mjs'), `const TERMOS = ['${TERMOS[0]}']\n`)
+    writeFileSync(join(dir, '_ferramentas/verificar-kit.test.mjs'), `writeFileSync(y, '${SEGREDO}')\n`)
+    // canario: o mesmo termo num arquivo comum acusa
+    writeFileSync(join(dir, 'c.md'), `Usado na operacao ${TERMOS[0]}.\n`)
+    const { falhas } = rodarGates(dir, { proibidos: TERMOS })
+    assert.ok(falhas.some(f => f.gate === 1 && f.arquivo === 'c.md'), 'canario: o termo acusa num arquivo comum')
+    assert.ok(falhas.some(f => f.gate === 1 && f.arquivo === '_ferramentas/verificar-kit.mjs'), 'o detector com termo da lista tem de acusar')
+    assert.ok(falhas.some(f => f.gate === 1 && f.arquivo === '_ferramentas/verificar-kit.test.mjs'), 'o teste do detector com segredo tem de acusar')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
 test('scripts/ dentro de uma skill e permitido', () => {

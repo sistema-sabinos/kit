@@ -18,7 +18,36 @@ export function numeroDaAula(titulo) {
   return achados.length ? achados[achados.length - 1] : null
 }
 
-export function ordenarAulas(itens) {
+// Curso grande nao cabe numa conversa: passando de CURSO_GRANDE, vira lotes consecutivos de no
+// maximo maxAulas e maxSegundos, um lote por conversa (passo 1b da SKILL). Aula sem duracao conta
+// 0 s e so o teto de aulas pesa; aula maior que o teto fica num lote sozinha, nunca some.
+export const CURSO_GRANDE = { aulas: 15, segundos: 8 * 3600 }
+export const LOTE = { maxAulas: 8, maxSegundos: 4 * 3600 }
+
+export function lotesDoCurso(aulas, { maxAulas = LOTE.maxAulas, maxSegundos = LOTE.maxSegundos } = {}) {
+  const dur = a => Number(a.duracao) || 0
+  const total = aulas.reduce((s, a) => s + dur(a), 0)
+  if (aulas.length <= CURSO_GRANDE.aulas && total <= CURSO_GRANDE.segundos) return []
+  const lotes = []
+  let atual = null
+  aulas.forEach((a, i) => {
+    if (!atual || atual.aulas + 1 > maxAulas || atual.segundos + dur(a) > maxSegundos) {
+      atual = { lote: `L${lotes.length + 1}`, de: i + 1, ate: i + 1, aulas: 0, segundos: 0 }
+      lotes.push(atual)
+    }
+    atual.ate = i + 1
+    atual.aulas += 1
+    atual.segundos += dur(a)
+  })
+  return lotes
+}
+
+// "L1 aulas 1-8, L2 aula 9": o numero e a posicao na lista ja ordenada, a mesma do listar-aulas
+export const textoDosLotes = lotes => lotes.map(l => `${l.lote} ${l.de === l.ate ? `aula ${l.de}` : `aulas ${l.de}-${l.ate}`}`).join(', ')
+
+// manterOrdem: a ordem ja foi decidida com a pessoa (lista recalculada depois do passo 1); so avisa e
+// divide em lotes, sem reordenar.
+export function ordenarAulas(itens, { manterOrdem = false } = {}) {
   const avisos = []
   const todas = itens.map((a, i) => ({ ...a, posicao: i + 1, numero: numeroDaAula(a.titulo), tokens_gemini: tokensGemini(Number(a.duracao) || 0) }))
   if (!todas.length) avisos.push('a playlist veio vazia (privada, removida ou link errado)')
@@ -30,8 +59,10 @@ export function ordenarAulas(itens) {
   const repetidos = [...vistos].filter(([, n]) => n > 1).map(([num]) => num)
 
   let aulas = todas
-  let criterio = 'ordem da playlist'
-  if (repetidos.length) {
+  let criterio = manterOrdem ? 'ordem do arquivo' : 'ordem da playlist'
+  if (manterOrdem) {
+    if (repetidos.length) avisos.push(`numero de aula repetido (${repetidos.join(', ')}), mantive a ordem do arquivo`)
+  } else if (repetidos.length) {
     avisos.push(`numero de aula repetido (${repetidos.join(', ')}), mantive a ordem da playlist`)
   } else if (numeradas.length) {
     aulas = [...numeradas].sort((a, b) => a.numero - b.numero).concat(semNumero)
@@ -41,8 +72,8 @@ export function ordenarAulas(itens) {
     for (let n = 1; n <= max; n++) if (!vistos.has(n)) faltando.push(n)
     if (faltando.length) avisos.push(`numero de aula faltando: ${faltando.join(', ')} (aula fora da playlist, ou com o numero escondido no titulo)`)
   }
-  if (semNumero.length) avisos.push(`sem numero no titulo${criterio === 'ordem da playlist' ? '' : ', ficaram no fim'}: ${semNumero.map(a => `"${a.titulo}"`).join('; ')}`)
+  if (semNumero.length) avisos.push(`sem numero no titulo${criterio.startsWith('ordem d') ? '' : ', ficaram no fim'}: ${semNumero.map(a => `"${a.titulo}"`).join('; ')}`)
 
   const segundos = aulas.reduce((s, a) => s + (Number(a.duracao) || 0), 0)
-  return { criterio, aulas, avisos, segundos, tokens_gemini: tokensGemini(segundos) }
+  return { criterio, aulas, avisos, segundos, tokens_gemini: tokensGemini(segundos), lotes: lotesDoCurso(aulas) }
 }

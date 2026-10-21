@@ -202,6 +202,11 @@ export async function viaGemini(cenas, {
   return { geradas, faltaram, custo_usd: Math.round(pagas * precoUsd * 10000) / 10000, modelo }
 }
 
+// Codigo de saida do resultado de um degrau: parar antes de gastar (3) vale mais que cena faltando (1).
+export function codigoDeSaida(r) {
+  return r.parou ? 3 : r.faltaram.length ? 1 : 0
+}
+
 function limiteDeGasto() {
   try { return carregarConfiguracao().limite_gasto_usd } catch { return PADROES.limite_gasto_usd }
 }
@@ -228,7 +233,7 @@ async function main() {
       console.error(`[codex] gerando ${cenas.length} cenario(s); sem cobranca por imagem dentro da cota do plano; credito avulso do Codex, se voce comprou, e gasto ao passar dela`)
       const r = await viaCodex(cenas, { uso: a.uso })
       console.log(JSON.stringify(r, null, 2))
-      process.exitCode = r.faltaram.length ? 1 : 0
+      process.exitCode = codigoDeSaida(r)
       return
     }
     const precoUsd = numero(a, 'preco-usd', undefined, { min: 0.001, max: 5 })
@@ -240,7 +245,7 @@ async function main() {
     if (!chave) { console.error('falta GEMINI_API_KEY no .env (o /conectar ensina a pegar)'); process.exitCode = 2; return }
     const r = await viaGemini(cenas, { chave, precoUsd, contexto: a.contexto || 'gerar-imagens', uso: a.uso })
     console.log(JSON.stringify(r, null, 2))
-    process.exitCode = r.parou ? 3 : r.faltaram.length ? 1 : 0
+    process.exitCode = codigoDeSaida(r)
   } catch (e) { console.error(e.message); process.exitCode = 1 }
 }
 

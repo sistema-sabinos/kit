@@ -639,3 +639,27 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** a primeira linha do `.gitignore` do projeto que não é comentário nem vazia é `*` (o fechado) e falta a linha `**/inteligencia/conselheiros/*/resposta.md`.
 **Como aplicar:** no `.gitignore` do projeto, no fim do bloco "Bloqueio de proposito", acrescentar as linhas `# rascunho da resposta do conselheiro, sobrescrito a cada resposta: fica so neste computador` e `**/inteligencia/conselheiros/*/resposta.md`. Mostrar o antes e o depois. Se `git ls-files ":(glob)**/inteligencia/conselheiros/*/resposta.md"` listar arquivo, ele já está no backup: tirar do índice só com o sim da pessoa (`git rm --cached` em cada um), o que mantém o arquivo no computador.
 **Como testar:** `git check-ignore -v inteligencia/conselheiros/x/resposta.md` aponta a linha nova.
+
+## ponte-codex-copia
+
+**O que é:** o verificador aceita a ponte do Codex feita por cópia quando o `.agents` da pasta-mãe só tem `skills` e cada item dela tem o nome de uma skill de `.claude/skills`.
+**Por quê:** a cópia acendia Gate 1 e Gate 11 em todo arquivo do `.agents`, e a `/atualizar-kit` precisava explicar isso como exceção a cada atualização.
+**Te afeta se:** `../.agents/skills` da pasta-mãe existe como pasta comum, e não como link.
+**Como aplicar:** nada no projeto; o `/atualizar-kit` traz o verificador novo.
+**Como testar:** `node ../_ferramentas/verificar-kit.mjs ..` sem Gate 1 em arquivo de `.agents/`.
+
+## gate1-sem-isencao
+
+**O que é:** o verificador e o teste dele passam pela conferência de vazamento (Gate 1) como qualquer outro arquivo.
+**Por quê:** a isenção deixava passar nome ou chave nesses dois arquivos (na 5.20 entrou um nome num comentário e nada pegou).
+**Te afeta se:** o `../_ferramentas/verificar-kit.mjs` da pasta-mãe ainda tem `ISENTOS_CONTEUDO`.
+**Como aplicar:** nada no projeto; o `/atualizar-kit` traz o verificador novo.
+**Como testar:** `node ../_ferramentas/verificar-kit.mjs ..` sem falha de Gate 1 em `_ferramentas/verificar-kit.mjs` nem em `_ferramentas/verificar-kit.test.mjs`, e `ISENTOS_CONTEUDO` ausente do `../_ferramentas/verificar-kit.mjs`.
+
+## env-na-raiz
+
+**O que é:** o `.env` solto na raiz da pasta-mãe aparece só no Gate 1, como arquivo proibido, e sai do Gate 11. No `_modelo` ele também sai do Gate 11, e o Gate 10 segue acusando, porque é arquivo novo no `_modelo`.
+**Por quê:** o Gate 11 pedia pra liberar o `.env` no `.gitignore`, e seguir esse pedido levaria a chave pro backup.
+**Te afeta se:** existe `.env` na raiz da pasta-mãe (`../.env`).
+**Como aplicar:** nada no projeto; o `/atualizar-kit` traz o verificador novo. Mostrar só o nome das variáveis do `../.env`, nunca o valor, e com o sim levar cada uma pro `.env` do projeto que usa.
+**Como testar:** `node ../_ferramentas/verificar-kit.mjs ..` mostra Gate 1 com `.env: arquivo proibido` e nenhuma linha `.env: fora do repositorio`.

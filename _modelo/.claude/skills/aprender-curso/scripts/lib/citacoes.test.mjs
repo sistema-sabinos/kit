@@ -2,7 +2,7 @@
 // Rodar: node --test lib/citacoes.test.mjs
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { acharCitacoes, acharForaDoFormato, conferir, citacoesDe } from './citacoes.mjs'
+import { acharCitacoes, acharForaDoFormato, conferir, citacoesDe, citacoesComCurso } from './citacoes.mjs'
 
 test('acha citacao de minuto, de hora e de pagina com a linha certa', () => {
   const c = acharCitacoes('Intro\nO caixa manda (aula 2, 6:15).\nRevisao (aula 10, 1:02:03) e apostila (aula 1, p. 41).')
@@ -99,4 +99,49 @@ test('fonte: conferir fala em fonte e em fichas/', () => {
 
 test('rotulo desconhecido quebra na hora', () => {
   assert.throws(() => citacoesDe('capitulo', 'x'), /rotulo desconhecido/)
+})
+
+// 5.21, tarefa 3.3: mais de um curso, com o curso dentro da citacao
+const comCurso = citacoesComCurso('inteligencia/cursos')
+
+test('com curso: acha minuto, hora e pagina com o curso e a linha', () => {
+  const c = comCurso.acharCitacoes('A (aula 3, 12:40, curso-ml-gemarket).\nB (aula 10, 1:02:03, b) e (aula 2, p. 41, apostila-x).')
+  assert.ok(c.length > 0, 'saida veio vazia')
+  assert.deepEqual(c, [
+    { aula: 3, marca: '12:40', curso: 'curso-ml-gemarket', linha: 1 },
+    { aula: 10, marca: '1:02:03', curso: 'b', linha: 2 },
+    { aula: 2, marca: 'p. 41', curso: 'apostila-x', linha: 2 },
+  ])
+})
+
+test('com curso: citacao sem o curso vira problema proprio, e o resto fora do formato', () => {
+  const quase = ['(aula 3, 6:15)', '(aula 1, p. 4)', '(aula 3, 6:15, Curso-X)', '(aula 3, 6:15, curso x)', '(aula 3, 6:15,b)', '(aulas 3 e 4, 6:15, b)']
+  const fora = comCurso.acharForaDoFormato(`Valida (aula 3, 6:15, b).\n${quase.join(' x ')}`)
+  assert.ok(fora.length > 0, 'saida veio vazia')
+  assert.deepEqual(fora.map(f => [f.trecho, f.semCurso]), quase.map((q, i) => [q, i < 2]))
+  assert.ok(fora.every(f => f.linha === 2))
+})
+
+test('com curso no modo de um curso so: vira fora do formato, nunca passa calada', () => {
+  const texto = 'Regra (aula 3, 12:40, curso-x).'
+  assert.deepEqual(acharCitacoes(texto), [])
+  assert.deepEqual(acharForaDoFormato(texto).map(f => f.trecho), ['(aula 3, 12:40, curso-x)'])
+})
+
+test('com curso: conferir acusa curso, aula e marca que faltam, dizendo o curso', () => {
+  const cursos = new Map([
+    ['a', [{ nome: '01-a.md', texto: '[1:00] fala de a' }]],
+    ['b', [{ nome: '01-b.md', texto: '[2:00] fala de b' }, { nome: '03-x.md', texto: '' }, { nome: '03-y.md', texto: '' }]],
+  ])
+  const citacoes = comCurso.acharCitacoes('(aula 1, 1:00, a) (aula 1, 2:00, b) (aula 1, 1:00, b) (aula 7, 1:00, a) (aula 3, 1:00, b) (aula 1, 1:00, z)')
+  const r = comCurso.conferir(citacoes, cursos)
+  assert.equal(r.ok, false)
+  assert.deepEqual(r.problemas, [
+    'aula 7 nao existe em a/aulas/',
+    'aula 1 sem a marca [1:00] em b',
+    'aula 3 em dois arquivos em b: 03-x.md, 03-y.md',
+    'curso z nao existe em inteligencia/cursos/',
+  ])
+  // canario: so as certas passam
+  assert.deepEqual(comCurso.conferir(citacoes.slice(0, 2), cursos), { ok: true, problemas: [] })
 })
