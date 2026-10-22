@@ -114,6 +114,7 @@ test('link de video dentro de playlist (&list=) pede um video so e transcreve el
 test('todo yt-dlp de uma aula ou video so, na /transcribe e na /aprender-curso, leva --no-playlist', () => {
   const linhas = ['../SKILL.md', '../../aprender-curso/SKILL.md'].flatMap(rel =>
     readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8').split(/\r?\n/).filter(l => l.includes('yt-dlp --')).map(l => `${rel}: ${l}`))
-  assert.equal(linhas.length, 3, `canario: comandos yt-dlp achados ${linhas.length}`)
+  // 4 desde a 5.24: a data, a legenda, a legenda da /transcribe e o titulo do link solto
+  assert.equal(linhas.length, 4, `canario: comandos yt-dlp achados ${linhas.length}`)
   for (const l of linhas) assert.ok(l.includes('--no-playlist'), `sem --no-playlist: ${l}`)
 })

@@ -93,8 +93,61 @@ test('--titulos --na-ordem mantem a ordem do arquivo e recalcula os lotes nela',
 
 test('lerTitulos aceita segundos, m:ss e h:mm:ss, e sem duracao valida fica null', () => {
   const t = lerTitulos('A | 95\nB | 12:40\nC | 1:02:03\nD | perto de 1h\nE\nF | 95.6\nG | NA\nH | 1h02')
-  assert.deepEqual(t.itens.map(i => [i.titulo, i.duracao]), [['A', 95], ['B', 760], ['C', 3723], ['D | perto de 1h', null], ['E', null], ['F', 96], ['G | NA', null], ['H | 1h02', null]])
-  // duracao escrita com numero que nao parseia avisa; sem numero (NA) ou sem duracao, nao
-  assert.deepEqual(t.avisos.map(a => a.match(/linha (\d+)/)[1]), ['4', '8'])
-  assert.match(t.avisos[1], /^duracao que nao entendi na linha 8 \("1h02"\): use segundos, m:ss ou h:mm:ss/)
+  assert.deepEqual(t.itens.map(i => [i.titulo, i.duracao]), [['A', 95], ['B', 760], ['C', 3723], ['D | perto de 1h', null], ['E', null], ['F', 96], ['G', null], ['H | 1h02', null]])
+  // duracao escrita com numero que nao parseia avisa; o NA (o yt-dlp sem duracao, 5.24) tambem
+  // avisa e sai do titulo; a linha sem duracao nenhuma, nao
+  assert.deepEqual(t.avisos.map(a => a.match(/linha (\d+)/)[1]), ['4', '7', '8'])
+  assert.match(t.avisos[1], /sem duracao na linha 7/)
+  assert.match(t.avisos[2], /^duracao que nao entendi na linha 8 \("1h02"\): use segundos, m:ss ou h:mm:ss/)
+})
+
+// 5.24, chat 4: link solto. A SKILL manda o yt-dlp gravar "titulo | duracao" no titulos.txt pelo
+// --print-to-file, que grava em UTF-8 (o --print pra tela perde acento e emoji no Windows), e o
+// --titulos le esse arquivo. O teste aplica o template da propria linha da SKILL.
+const SKILL = fileURLToPath(new URL('../SKILL.md', import.meta.url))
+
+test('o comando de link solto da SKILL grava titulo | duracao que o --titulos le', () => {
+  const achadas = fs.readFileSync(SKILL, 'utf8').split(/\r?\n/).filter(l => l.includes('--print-to-file'))
+  assert.equal(achadas.length, 1, `canario: linhas com --print-to-file achadas ${achadas.length}`)
+  const cmd = achadas[0]
+  assert.match(cmd, /^yt-dlp --/)
+  // --ignore-no-formats-error (revisao interna da 5.24): sem formato pra baixar, o yt-dlp para antes
+  // de gravar a linha, e o titulo e a duracao se perdem
+  for (const parte of ['--skip-download', '--ignore-no-formats-error', 'youtube:lang=pt', '--print-to-file "%(title)s | %(duration)s" "inteligencia/cursos/<nome>/fontes/titulos.txt"']) {
+    assert.ok(cmd.includes(parte), `falta ${parte}: ${cmd}`)
+  }
+  assert.ok(!cmd.includes('--print "'), `--print pra tela perde acento no Windows: ${cmd}`)
+  const tmpl = cmd.match(/--print-to-file "([^"]+)"/)[1]
+  const linha = ([titulo, duracao]) => tmpl.replace('%(title)s', () => titulo).replace('%(duration)s', () => String(duracao))
+  // titulo com cedilha, til, acento agudo e fogo (U+1F525), montado por codigo
+  const TITULO = `Precifica${String.fromCharCode(0xe7, 0xe3)}o na pr${String.fromCharCode(0xe1)}tica ${String.fromCodePoint(0x1f525)}`
+  const CRLF = String.fromCharCode(13, 10)
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'listar-link-solto-'))
+  try {
+    const arq = path.join(dir, 'titulos.txt')
+    // o --print-to-file acrescenta uma linha por link, com o fim de linha do sistema (CRLF no Windows)
+    const rodar = aulas => {
+      fs.writeFileSync(arq, aulas.map(linha).join(CRLF) + CRLF)
+      return spawnSync(process.execPath, [CLI, '--titulos', arq], { timeout: 30000 })
+    }
+    const r = rodar([[TITULO, 760], ['Aula 1 | intro', 95.4]])
+    assert.ifError(r.error)
+    assert.ok(r.stdout.length > 0, `saida veio vazia: ${r.stderr}`)
+    assert.equal(r.status, 0, r.stderr.toString('utf8'))
+    assert.ok(r.stdout.includes(Buffer.from(TITULO, 'utf8')), `titulo nao veio em UTF-8: ${r.stdout.toString('hex')}`)
+    const txt = r.stdout.toString('utf8')
+    assert.ok(txt.includes(`${TITULO} (13 min, `), txt)
+    assert.ok(txt.includes('Aula 1 | intro (2 min, '), txt)
+    // so vira lote pela duracao lida: 10 aulas ficam abaixo do teto de 15, e 10 h passam de 8 h
+    const horas = rodar(Array.from({ length: 10 }, (_, i) => [`Aula ${i + 1}`, 3600]))
+    assert.equal(horas.status, 0, horas.stderr.toString('utf8'))
+    assert.match(horas.stdout.toString('utf8'), /^LOTES: /m)
+    // canario: 10 aulas de 1 min nao fazem lote
+    const minutos = rodar(Array.from({ length: 10 }, (_, i) => [`Aula ${i + 1}`, 60]))
+    assert.equal(minutos.status, 0, minutos.stderr.toString('utf8'))
+    assert.ok(minutos.stdout.length > 0, 'saida do canario veio vazia')
+    assert.doesNotMatch(minutos.stdout.toString('utf8'), /LOTES:/)
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
 })

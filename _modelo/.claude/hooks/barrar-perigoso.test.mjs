@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert'
-import { ehPerigoso } from './barrar-perigoso.mjs'
+import { ehPerigoso, ehGitPerigoso } from './barrar-perigoso.mjs'
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -1441,5 +1441,44 @@ test('5.21: passou do teto de cd e -C, todo alvo do checkout conta como pasta', 
     assert.strictEqual(ehPerigoso(cd(64) + 'git checkout -- a/arquivo.txt', { cwd: dir }), null)
   } finally {
     rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+// 5.23 (1b): a leitura de git sozinha, pra hook que so cuida de git
+const MOTIVO_RESET = ehPerigoso('git reset --hard')
+
+test('5.23 ehGitPerigoso: rm antes do git ainda devolve o motivo de git', () => {
+  const cmd = 'rm -rf $S/x; git reset --hard'
+  // canario: o ehPerigoso devolve o do rm primeiro, que nao e o de git
+  assert.ok(ehPerigoso(cmd) && ehPerigoso(cmd) !== MOTIVO_RESET, 'canario: o rm vem antes no ehPerigoso')
+  assert.strictEqual(ehGitPerigoso(cmd), MOTIVO_RESET)
+})
+
+test('5.23 ehGitPerigoso: rm sozinho e comando comum nao barram', () => {
+  assert.ok(ehPerigoso('rm -rf x'), 'canario: o ehPerigoso barra o rm')
+  for (const cmd of ['rm -rf x', 'git status', 'git checkout main', undefined, '']) {
+    assert.strictEqual(ehGitPerigoso(cmd), null, `nao deveria barrar: ${cmd}`)
+  }
+})
+
+test('5.23 ehGitPerigoso: git entre aspas de quem executa barra', () => {
+  assert.ok(MOTIVO_RESET, 'canario: o reset tem motivo')
+  assert.strictEqual(ehGitPerigoso('bash -c "git reset --hard"'), MOTIVO_RESET)
+  assert.strictEqual(ehGitPerigoso('git commit -m "git reset --hard"'), null)
+})
+
+test('5.23: aspas vazias coladas no git nao escondem o perigo', () => {
+  assert.ok(ehPerigoso('git reset --hard'), 'canario: sem as aspas barra')
+  for (const cmd of ['git reset --ha""rd', 'g""it reset --hard', 'git re""set --hard', "git reset --ha''rd", 'git push --for""ce origin main', 'git ""reset --hard', 'git reset --hard""']) {
+    assert.ok(ehPerigoso(cmd), `deveria barrar: ${cmd}`)
+    assert.ok(ehGitPerigoso(cmd), `deveria barrar na leitura de git: ${cmd}`)
+  }
+})
+
+test('5.23: palavra so de aspas vazias segue argumento vazio do -C', () => {
+  // achado da revisao comum do Codex: sumir com os dois pares deixava o -C comer o reset
+  for (const cmd of ['git -C "" reset --hard', 'git -C """" reset --hard', "git -C '''' reset --hard", `git -C ""'' reset --hard`]) {
+    assert.ok(ehPerigoso(cmd), `deveria barrar: ${cmd}`)
+    assert.ok(ehGitPerigoso(cmd), `deveria barrar na leitura de git: ${cmd}`)
   }
 })

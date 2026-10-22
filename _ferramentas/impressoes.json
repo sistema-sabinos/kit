@@ -1,5 +1,5 @@
 {
- "versao": "5.21",
+ "versao": "5.22",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -118,11 +118,14 @@
    "97d787854e560346": "anterior-3.4",
    "9ac027150d098274": "5.14",
    "a04e48ec15d76695": "anterior-5.20",
+   "a0a7eeb7b629254c": "5.22",
+   "b22bfd36cf2bdc5f": "5.22",
    "b9a2703d4bb40fdc": "3.4",
    "c12c233da6d843a0": "5.17",
    "c18cb4d20ca7ec60": "anterior-3.4",
    "c756f0bfcb7c93e2": "anterior-5.17",
    "d22b5db888eb93db": "anterior-5.14",
+   "dc304d6be3c7bbf9": "5.22",
    "dc7b2245bb529b80": "5.16",
    "e01b1eb119cc7801": "anterior-3.4"
   },
@@ -384,16 +387,18 @@
   },
   ".claude/skills/aprender-curso/SKILL.md": {
    "02b4e9f444c47b41": "5.7",
+   "2c1c7ab4c13297ad": "5.22",
    "4090923d056c8d33": "anterior-5.5",
    "4af78733fb10454b": "anterior-5.5",
-   "53cdb8c614fdfb1e": "5.21",
-   "614bde27d9739849": "5.21",
+   "53cdb8c614fdfb1e": "anterior-5.21",
+   "614bde27d9739849": "anterior-5.21",
    "6ce8c8bd1722f26d": "5.21",
    "7ba07f801f2bf7d2": "5.20",
    "979525ec9f2f9014": "5.11",
    "a1eae2489d4d088a": "5.5",
    "a5e573e52013fe61": "anterior-5.5",
    "cbc315174b1f8491": "anterior-5.5",
+   "d21c1a28dcd5ef82": "5.22",
    "e078e88230a19b00": "5.18",
    "e1cbe1503267dc8c": "4.1",
    "f931e62e07f07ef9": "anterior-5.5",
@@ -401,7 +406,7 @@
   },
   ".claude/skills/aprender-curso/scripts/conferir-citacoes.mjs": {
    "616745c618284b53": "5.5",
-   "724bd270df68b749": "5.21",
+   "724bd270df68b749": "anterior-5.21",
    "806f7fc7ae3cc245": "5.21",
    "b4261882eccafd57": "5.18",
    "d9f4a1b152f038a0": "5.20",
@@ -416,7 +421,7 @@
   ".claude/skills/aprender-curso/scripts/lib/aulas.mjs": {
    "5dad2925700383a1": "5.21",
    "ad8f4783a344c3f8": "4.1",
-   "f91422e0bc031632": "5.21"
+   "f91422e0bc031632": "anterior-5.21"
   },
   ".claude/skills/aprender-curso/scripts/lib/citacoes.mjs": {
    "2f60a46b27dfb090": "5.21",
@@ -440,9 +445,10 @@
    "1e8b749907227bb9": "5.7",
    "1f96490e8d83933f": "5.21",
    "266e4aa547a956d9": "5.11",
-   "5883ffe6b06e8827": "5.21",
+   "4a63869435b897ec": "5.22",
+   "5883ffe6b06e8827": "anterior-5.21",
    "e39bc94607a74937": "4.1",
-   "f07a7badca18783f": "5.21"
+   "f07a7badca18783f": "anterior-5.21"
   },
   ".claude/skills/assistir-video/SKILL.md": {
    "2dd20161ca456395": "anterior-3.0",

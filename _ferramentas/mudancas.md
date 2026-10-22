@@ -663,3 +663,19 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** existe `.env` na raiz da pasta-mãe (`../.env`).
 **Como aplicar:** nada no projeto; o `/atualizar-kit` traz o verificador novo. Mostrar só o nome das variáveis do `../.env`, nunca o valor, e com o sim levar cada uma pro `.env` do projeto que usa.
 **Como testar:** `node ../_ferramentas/verificar-kit.mjs ..` mostra Gate 1 com `.env: arquivo proibido` e nenhuma linha `.env: fora do repositorio`.
+
+## trava-git-exportada
+
+**O que é:** a trava de comando destrutivo ganha uma função a mais, `ehGitPerigoso`, que olha só o comando de git perigoso. E passa a barrar o git que joga fora trabalho escrito com aspas vazias no meio da palavra (`git reset --ha""rd`), que a versão 5.21 deixava passar; o resto do que ela barra e deixa passar fica igual.
+**Por quê:** a bancada passou a usar a mesma leitura de git da trava num hook próprio; num comando com `rm` antes do git, a trava devolvia só o motivo do `rm`.
+**Te afeta se:** o `.claude/hooks/barrar-perigoso.mjs` do projeto não tem `ehGitPerigoso`.
+**Como aplicar:** nada no projeto; a trava nova chega pelo motor do `/atualizar-sabinos`.
+**Como testar:** `node -e "import('./.claude/hooks/barrar-perigoso.mjs').then(m => process.exit(m.ehGitPerigoso && m.ehGitPerigoso('rm -rf x; git reset --hard') ? 0 : 1))"` sai com código 0 (com a trava antiga, sai 1), e `echo '{"tool_name":"Bash","tool_input":{"command":"ls"}}' | node .claude/hooks/barrar-perigoso.mjs` sai com 0.
+
+## ponte-codex-copia-por-skill
+
+**O que é:** na ponte do Codex feita por cópia, o verificador olha cada item de `.agents/skills` sozinho. Skill que só existe ali vira uma linha só do Gate 1 (`skill so na ponte`), com o nome dela; item com tipo diferente do `.claude/skills` vira uma linha `tipo diferente`; e `.env` dentro da cópia passa a ser acusado pelo Gate 1, sem mostrar o valor. O Gate 11 deixa de acusar o `.agents/`.
+**Por quê:** uma skill a mais na cópia acendia Gate 1 e Gate 11 em todo arquivo do `.agents`, e o Gate 11 pedia pra liberar o `.agents/` no `.gitignore`; o `.env` dentro da cópia passava calado.
+**Te afeta se:** `../.agents/skills` da pasta-mãe existe como pasta comum, e não como link.
+**Como aplicar:** nada no projeto; o `/atualizar-kit` traz o verificador novo. Com linha `skill so na ponte`, mostrar o nome e, com o sim da pessoa, mover a pasta dela pra `../.claude/skills`.
+**Como testar:** `node ../_ferramentas/verificar-kit.mjs ..` sem linha `fora do repositorio` em `.agents/`, e no máximo uma linha do Gate 1 por item de `.agents/skills`.

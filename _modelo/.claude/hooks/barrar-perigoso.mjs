@@ -201,27 +201,44 @@ function classificarTrechosEntreAspas(comando) {
   // so (o espaco de dentro vira NUL), pra regra do git, que conta palavra (o git entre aspas de
   // quem executa, `bash -c "git reset --hard"`, vai pelo suspeito, como o resto): no limpo,
   // `git -C "Meus Projetos" reset --hard` virava `git -C  reset --hard`, e o -C comia o reset
-  let marcado = ''
+  // em pedacos, pra o VAZIO de uma sequencia de aspas vazias sair depois sem refazer o texto
+  const marcado = []
   let ultimoIndice = 0
   let m
+  // rodada 5.23 (revisao interna): aspas vazias coladas em texto somem, como no shell
+  // (`git reset --ha""rd` roda `--hard`); a palavra feita so de aspas vazias (`""`, `""""`) e um
+  // argumento vazio e vira um VAZIO so (revisao comum do Codex: sumir com os dois pares de
+  // `git -C """" reset` deixava o -C comer o reset). A sequencia de pares vazios guarda onde pos o
+  // VAZIO e onde acaba; se acaba colada em texto, o VAZIO sai. Uma passada so: a entrada gigante
+  // segue linear
+  let sequencia = null
+  const fechaSequencia = () => {
+    if (sequencia && /\S/.test(comando[sequencia.fim] ?? ' ')) marcado[sequencia.posicao] = ''
+    sequencia = null
+  }
   const ehEscritorDeTexto = leitorDeEscritores(comando)
   while ((m = RE_ASPAS.exec(comando))) {
     const conteudo = m[1] !== undefined ? m[1] : m[2]
+    const escritor = ehEscritorDeTexto(m.index)
+    if (conteudo || escritor || !sequencia || sequencia.fim !== m.index) fechaSequencia()
     limpo += comando.slice(ultimoIndice, m.index)
     desaspado += comando.slice(ultimoIndice, m.index)
-    marcado += comando.slice(ultimoIndice, m.index)
+    marcado.push(comando.slice(ultimoIndice, m.index))
     ultimoIndice = RE_ASPAS.lastIndex
-    const escritor = ehEscritorDeTexto(m.index)
     if (conteudo && !escritor) suspeitos.push(conteudo)
     if (!escritor) desaspado += conteudo
     // dentro das aspas, parentese, chave, crase e separador sao texto (`git checkout -- "a (1).txt"`)
     // aspas vazias viram a marca VAZIO: `git -C ""` mantem a pasta (git-scm.com/docs/git)
-    if (!escritor) marcado += conteudo ? conteudo.replace(/\s/g, NUL).replace(/[(){}`;&|]/g, '_') : VAZIO
+    if (escritor) continue
+    if (conteudo) marcado.push(conteudo.replace(/\s/g, NUL).replace(/[(){}`;&|]/g, '_'))
+    else if (sequencia) sequencia.fim = RE_ASPAS.lastIndex
+    else if (!/\S/.test(comando[m.index - 1] ?? ' ')) { sequencia = { posicao: marcado.length, fim: RE_ASPAS.lastIndex }; marcado.push(VAZIO) }
   }
+  fechaSequencia()
   limpo += comando.slice(ultimoIndice)
   desaspado += comando.slice(ultimoIndice)
-  marcado += comando.slice(ultimoIndice)
-  return { limpo, suspeitos, desaspado, marcado }
+  marcado.push(comando.slice(ultimoIndice))
+  return { limpo, suspeitos, desaspado, marcado: marcado.join('') }
 }
 const NUL = String.fromCharCode(0)
 const VAZIO = String.fromCharCode(2)
@@ -1165,6 +1182,23 @@ export function ehPerigoso(comando, opcoes = {}) {
   // lido uma vez so (rodada 5.20: o Start-Process remontado soma um suspeito por chamada)
   for (const suspeito of new Set([...suspeitos, ...argumentosRemontados(desaspado)])) {
     const motivoSuspeito = ehPerigoso(suspeito, { cwd })
+    if (motivoSuspeito) return motivoSuspeito
+  }
+  return null
+}
+
+// rodada 5.23 (1b): so a leitura de git, com a mesma leitura do ehPerigoso (marcado, cwd, -C e
+// trecho entre aspas de quem executa, recursivo). O ehPerigoso devolve o primeiro motivo que
+// achar, e o do rm vem antes: `rm -rf x; git reset --hard` voltava com o motivo do rm, e quem so
+// quer saber do git ficava sem ele
+export function ehGitPerigoso(comando, opcoes = {}) {
+  if (typeof comando !== 'string' || comando.length === 0) return null
+  const cwd = typeof opcoes.cwd === 'string' && opcoes.cwd ? opcoes.cwd : process.cwd()
+  const { suspeitos, desaspado, marcado } = classificarTrechosEntreAspas(comando)
+  const motivo = gitPerigoso(marcado, cwd)
+  if (motivo) return motivo
+  for (const suspeito of new Set([...suspeitos, ...argumentosRemontados(desaspado)])) {
+    const motivoSuspeito = ehGitPerigoso(suspeito, { cwd })
     if (motivoSuspeito) return motivoSuspeito
   }
   return null

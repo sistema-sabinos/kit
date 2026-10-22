@@ -495,7 +495,8 @@ test('.agents continua banido mesmo com o padrao AGENTS.md liberado', () => {
   mkdirSync(join(dir, '.agents/skills'), { recursive: true })
   writeFileSync(join(dir, '.agents/skills/x.md'), '# ponte\n')
   const { falhas } = rodarGates(dir)
-  assert.ok(falhas.some(f => f.gate === 1 && f.arquivo === '.agents/skills/x.md' && /pasta proibida: \.agents/.test(f.detalhe)), '.agents/skills continua banido no kit versionado')
+  // com .claude/skills ao lado, o x.md e entrada sem par da copia: uma linha so, com o detalhe dela (5.24)
+  assert.ok(falhas.some(f => f.gate === 1 && f.arquivo === '.agents/skills/x.md' && /pasta proibida: \.agents|skill so na ponte/.test(f.detalhe)), '.agents/skills continua banido no kit versionado')
   rmSync(dir, { recursive: true, force: true })
 })
 

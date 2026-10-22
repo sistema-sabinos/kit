@@ -64,7 +64,16 @@ numero da aula no titulo.
 
 Lista de links soltos ou pasta de videos: gravar uma aula por linha em
 `inteligencia/cursos/<nome>/fontes/titulos.txt`, com o titulo (ou o nome do arquivo) e, quando
-souber, ` | duracao` em segundos, m:ss ou h:mm:ss (`Aula 3 - estoque | 12:40`). Depois rodar:
+souber, ` | duracao` em segundos, m:ss ou h:mm:ss (`Aula 3 - estoque | 12:40`).
+Na lista de links, quem grava cada linha e o `yt-dlp`, sem baixar o video. Comecar sem o
+`titulos.txt` (ou com ele vazio), porque o comando acrescenta no fim, e rodar um link por vez, na
+ordem que a pessoa mandou. Curso que ja tem pasta e a pessoa pediu pra acrescentar as novas: manter
+o `titulos.txt` e rodar so os links novos.
+```
+yt-dlp --no-playlist --skip-download --ignore-no-formats-error --extractor-args "youtube:lang=pt" --print-to-file "%(title)s | %(duration)s" "inteligencia/cursos/<nome>/fontes/titulos.txt" "<link da aula>"
+```
+No fim, conferir uma linha por link. Link que deu erro ganha a linha a mao, com o proprio link no
+lugar do titulo. Duracao `NA` (o site nao informou) sai com `AVISO` e a aula conta 0 s. Depois rodar:
 ```
 node .claude/skills/aprender-curso/scripts/listar-aulas.mjs --titulos "inteligencia/cursos/<nome>/fontes/titulos.txt"
 ```

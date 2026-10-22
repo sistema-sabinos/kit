@@ -3,7 +3,8 @@
 // O titulo vem no idioma original (youtube:lang=pt): sem isso o YouTube traduz e corta, e o numero da
 // aula some do titulo.
 // Pasta de videos ou lista de links: --titulos le um arquivo com uma aula por linha, "titulo" ou
-// "titulo | duracao" (segundos, m:ss ou h:mm:ss), e passa pela mesma ordem e pelos mesmos lotes.
+// "titulo | duracao" (segundos, m:ss ou h:mm:ss; NA avisa e conta 0 s), e passa pela mesma ordem e
+// pelos mesmos lotes.
 // Curso grande sai com a linha LOTES (passo 1b da SKILL).
 // Uso (da raiz do projeto):
 //   node .claude/skills/aprender-curso/scripts/listar-aulas.mjs "<link da playlist>" [--json]
@@ -40,9 +41,12 @@ export function lerTitulos(texto) {
     const corte = l.lastIndexOf('|')
     const depois = corte < 0 ? '' : l.slice(corte + 1).trim()
     const duracao = corte < 0 ? null : segundosDe(depois)
+    // NA e o que o yt-dlp grava quando o site nao informa a duracao (5.24, link solto)
+    const na = corte >= 0 && depois === 'NA'
     // "1h02" ou "45min" contariam 0 s calados e baixariam o custo e os lotes
-    if (duracao == null && /\d/.test(depois)) avisos.push(`duracao que nao entendi na linha ${n} ("${depois}"): use segundos, m:ss ou h:mm:ss; ate corrigir, a aula conta 0 s`)
-    const titulo = corte < 0 || duracao == null ? l : l.slice(0, corte).trim()
+    if (na) avisos.push(`sem duracao na linha ${n} (NA: o site nao informou); a aula conta 0 s`)
+    else if (duracao == null && /\d/.test(depois)) avisos.push(`duracao que nao entendi na linha ${n} ("${depois}"): use segundos, m:ss ou h:mm:ss; ate corrigir, a aula conta 0 s`)
+    const titulo = corte < 0 || (duracao == null && !na) ? l : l.slice(0, corte).trim()
     return { id: `linha ${n}`, titulo, duracao }
   })
   return { titulo: null, canal: null, itens, avisos }
