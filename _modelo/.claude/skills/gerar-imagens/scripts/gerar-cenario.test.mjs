@@ -8,6 +8,8 @@ import { mkdtempSync, writeFileSync, rmSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { REGRAS, montarPrompt, cotaEstourou, escolherModeloImagem, erroSemModelo, avisoDePreco, PRECO_IMAGEM, PRAZO_LISTA_MS, PRAZO_GERAR_MS, estimar, viaCodex, viaGemini, codigoDeSaida } from './gerar-cenario.mjs'
+import { rodarComPrazo } from './motor.mjs'
+import { EventEmitter } from 'node:events'
 import { CAMINHO_ENV } from '../../mercado-livre/scripts/lib/env.mjs'
 import { CAMINHO_CONFIG } from '../../mercado-livre/scripts/lib/config.mjs'
 
@@ -180,6 +182,27 @@ test('viaCodex: arquivo que ja existia antes e nao mudou de carimbo conta como n
   assert.deepEqual(r.faltaram, [cenas[0].out, cenas[1].out])
   assert.deepEqual(r.geradas, [])
   assert.equal(r.cota_estourada, true)
+})
+
+// 5.25, tarefa 3b: o codex que passa do prazo no Windows sai inteiro, nunca orfao gastando cota
+test('viaCodex: estouro do prazo no Windows derruba a arvore do codex e o recado chega no resultado', async () => {
+  const derrubados = []
+  const prazos = []
+  const filho = new EventEmitter()
+  filho.pid = 777
+  filho.stdout = new EventEmitter()
+  filho.stderr = new EventEmitter()
+  filho.stdin = { on() {}, end() {} }
+  filho.kill = () => { setImmediate(() => filho.emit('close', null)) }
+  const r = await viaCodex(cenas, {
+    raiz: RAIZ_FALSA,
+    executar: (c, a, op) => { prazos.push(op.timeout); return rodarComPrazo(c, a, { ...op, timeout: 30 }, { plataforma: 'win32', subir: () => filho, encerrar: pid => derrubados.push(pid) }) },
+    carimbo: () => null,
+  })
+  assert.deepEqual(prazos, [20 * 60 * 1000], 'canario: o prazo de 20 min chegou ao executor')
+  assert.deepEqual(derrubados, [777])
+  assert.match(r.erro ?? '', /^o codex passou de 0 s sem terminar e foi encerrado/)
+  assert.deepEqual(r.faltaram, [cenas[0].out, cenas[1].out])
 })
 
 function geminiFalso({ respostas }) {

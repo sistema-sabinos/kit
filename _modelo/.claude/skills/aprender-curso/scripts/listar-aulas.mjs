@@ -17,8 +17,12 @@ import { ordenarAulas, textoDosLotes } from './lib/aulas.mjs'
 
 const minutos = s => `${Math.round(s / 60)} min`
 
+// Prazo abaixo dos 120 s em que o terminal da IA corta o comando (5.25): uma playlist de 199 aulas
+// levou uns 3 s pra listar, entao 100 s sobram com folga.
+const PRAZO_PLAYLIST_MS = 100000
+
 export function lerPlaylist(url, { rodar = execFileSync } = {}) {
-  const saida = rodar('yt-dlp', ['--flat-playlist', '-J', '--no-warnings', '--extractor-args', 'youtube:lang=pt', url], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+  const saida = rodar('yt-dlp', ['--flat-playlist', '-J', '--no-warnings', '--extractor-args', 'youtube:lang=pt', url], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: PRAZO_PLAYLIST_MS })
   const j = JSON.parse(saida)
   const entradas = j.entries ?? [j]
   return {
@@ -26,6 +30,13 @@ export function lerPlaylist(url, { rodar = execFileSync } = {}) {
     canal: j.channel ?? j.uploader ?? null,
     itens: entradas.map(e => ({ id: e.id, titulo: e.title ?? '', duracao: e.duration ?? null, url: e.url ?? e.webpage_url ?? null })),
   }
+}
+
+// Recado quando a playlist nao abre. No estouro do prazo o yt-dlp esta instalado e o link costuma
+// estar certo: o caminho e a lista de links da SKILL, um link por vez.
+export function recadoDaPlaylist(e) {
+  if (e?.code === 'ETIMEDOUT') return 'A lista do curso demorou demais pra chegar e eu parei de esperar. Quem le esta mensagem e a IA: peca pra pessoa colar os links das aulas, um por vez, e siga pela lista de links soltos da SKILL (passo 1).'
+  return `Nao consegui abrir a playlist. Confira se o link abre no navegador sem login e se o yt-dlp esta instalado. Quem le esta mensagem e a IA: se faltar o yt-dlp, diga a pessoa em uma frase, peca o sim e instale voce mesma, nunca passe o comando pra ela (Windows: winget install --id yt-dlp.yt-dlp -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity; Mac: brew install yt-dlp; no Windows, depois peca pra pessoa fechar todas as janelas do VS Code e abrir de novo). Detalhe: ${String(e?.message ?? e).split('\n')[0]}`
 }
 
 // "1:02:03" -> 3723, "12:40" -> 760, "95" e "95.4" (o yt-dlp de outro site) -> 95; o resto vira
@@ -85,7 +96,7 @@ if (chamadoDireto()) {
     }
   } else {
     try { lista = lerPlaylist(alvo) } catch (e) {
-      console.error(`Nao consegui abrir a playlist. Confira se o link abre no navegador sem login e se o yt-dlp esta instalado. Quem le esta mensagem e a IA: se faltar o yt-dlp, diga a pessoa em uma frase, peca o sim e instale voce mesma, nunca passe o comando pra ela (Windows: winget install --id yt-dlp.yt-dlp -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity; Mac: brew install yt-dlp; no Windows, depois peca pra pessoa fechar todas as janelas do VS Code e abrir de novo). Detalhe: ${e.message.split('\n')[0]}`)
+      console.error(recadoDaPlaylist(e))
       process.exit(1)
     }
   }

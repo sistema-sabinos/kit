@@ -1,5 +1,5 @@
 {
- "versao": "5.22",
+ "versao": "5.23",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -118,8 +118,8 @@
    "97d787854e560346": "anterior-3.4",
    "9ac027150d098274": "5.14",
    "a04e48ec15d76695": "anterior-5.20",
-   "a0a7eeb7b629254c": "5.22",
-   "b22bfd36cf2bdc5f": "5.22",
+   "a0a7eeb7b629254c": "anterior-5.22",
+   "b22bfd36cf2bdc5f": "anterior-5.22",
    "b9a2703d4bb40fdc": "3.4",
    "c12c233da6d843a0": "5.17",
    "c18cb4d20ca7ec60": "anterior-3.4",
@@ -387,7 +387,7 @@
   },
   ".claude/skills/aprender-curso/SKILL.md": {
    "02b4e9f444c47b41": "5.7",
-   "2c1c7ab4c13297ad": "5.22",
+   "2c1c7ab4c13297ad": "anterior-5.22",
    "4090923d056c8d33": "anterior-5.5",
    "4af78733fb10454b": "anterior-5.5",
    "53cdb8c614fdfb1e": "anterior-5.21",
@@ -399,6 +399,7 @@
    "a5e573e52013fe61": "anterior-5.5",
    "cbc315174b1f8491": "anterior-5.5",
    "d21c1a28dcd5ef82": "5.22",
+   "d638689d4e889bbe": "5.23",
    "e078e88230a19b00": "5.18",
    "e1cbe1503267dc8c": "4.1",
    "f931e62e07f07ef9": "anterior-5.5",
@@ -442,6 +443,7 @@
   },
   ".claude/skills/aprender-curso/scripts/listar-aulas.mjs": {
    "03b7a99af11a1630": "5.20",
+   "0af187eceadf1c10": "5.23",
    "1e8b749907227bb9": "5.7",
    "1f96490e8d83933f": "5.21",
    "266e4aa547a956d9": "5.11",
@@ -463,6 +465,7 @@
   ".claude/skills/assistir-video/baixar-video.mjs": {
    "27ab4bfffa180085": "5.11",
    "385def88e6ee5899": "5.14",
+   "3b4e4d7f114e8a1b": "5.23",
    "8b3d049d06db0f19": "4.4",
    "93d5f87ec7995e1c": "4.2",
    "c5c8af4045d39d79": "anterior-5.14",
@@ -1538,6 +1541,7 @@
   },
   ".claude/skills/gerar-imagens/scripts/gerar-cenario.mjs": {
    "085d57aa995d0e75": "5.14",
+   "0c45e792e0ba36c8": "5.23",
    "122fb92a0205d93f": "anterior-3.9",
    "1bb39c0b68783194": "5.20",
    "22f39f97b7384ac7": "3.9",
@@ -1576,10 +1580,15 @@
    "988357fe6827b9bc": "5.20"
   },
   ".claude/skills/gerar-imagens/scripts/motor.mjs": {
+   "068eb32a35dd8d1f": "5.23",
    "0a5474abf9f7b1c0": "anterior-3.9",
    "0e78677a855b5d1e": "5.20",
+   "2e671dc5abb7cf60": "5.23",
+   "8dbf0eec61fa1c84": "5.23",
+   "92c69384a52730a0": "5.23",
    "a45ae761754b5224": "anterior-3.9",
-   "e073cf3a704a0ec1": "3.9"
+   "e073cf3a704a0ec1": "3.9",
+   "e09a07393335943b": "5.23"
   },
   ".claude/skills/gerar-imagens/scripts/prancha.mjs": {
    "0157562818bcf6bc": "anterior-3.9",

@@ -12,6 +12,16 @@ test('yt-dlp novo ganha o Node como motor de JavaScript; o velho segue sem a opc
   assert.deepEqual(opcoesJs(undefined), [])
 })
 
+// 5.25, tarefa 3c: o yt-dlp --help sem prazo pendurava a tela se o yt-dlp travasse
+test('ajudaDoYtDlp pergunta ao yt-dlp com prazo de 20 s e, no estouro, segue sem a opcao', () => {
+  const vistos = []
+  const ajuda = baixar.ajudaDoYtDlp((prog, args, op) => { vistos.push([prog, args, op.timeout]); return { stdout: '--js-runtimes RUNTIMES' } })
+  assert.deepEqual(vistos, [['yt-dlp', ['--help'], 20000]])
+  assert.deepEqual(opcoesJs(ajuda), ['--js-runtimes', 'node'], 'canario: a ajuda volta inteira')
+  // estouro: o spawnSync volta com error e sem stdout
+  assert.deepEqual(opcoesJs(baixar.ajudaDoYtDlp(() => ({ error: Object.assign(new Error('ETIMEDOUT'), { code: 'ETIMEDOUT' }), stdout: null }))), [])
+})
+
 test('o formato pede ate 720p primeiro e so cai pro melhor disponivel se nao houver', () => {
   const opcoes = FORMATO.split('/')
   assert.ok(opcoes.slice(0, 3).every(o => o.includes('[height<=720]')))

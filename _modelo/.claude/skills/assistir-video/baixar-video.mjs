@@ -52,6 +52,12 @@ export function opcoesJs(ajuda) {
   return /--js-runtimes/.test(ajuda || '') ? ['--js-runtimes', 'node'] : [];
 }
 
+// Ajuda do yt-dlp pro opcoesJs, com prazo (5.25): yt-dlp travado nao segura a tela; no estouro a
+// ajuda vem vazia e o download segue sem a opcao.
+export function ajudaDoYtDlp(rodar = spawnSync) {
+  return rodar('yt-dlp', ['--help'], { encoding: 'utf8', timeout: 20000 }).stdout;
+}
+
 // O Gemini olha poucos quadros por segundo e em resolucao baixa: 720p ainda le texto na tela e
 // evita baixar centenas de MB a toa (video 4K virava 723 MB).
 export const FORMATO = 'bv*[height<=720][ext=mp4]+ba[ext=m4a]/bv*[height<=720]+ba/b[height<=720]/bv*+ba/b';
@@ -68,7 +74,7 @@ function viaYtDlp(url, destino) {
     return { motivo: 'yt-dlp ausente' };
   }
   const saida = `${destino}.%(ext)s`;
-  const ajuda = spawnSync('yt-dlp', ['--help'], { encoding: 'utf8' }).stdout;
+  const ajuda = ajudaDoYtDlp();
   const r = spawnSync('yt-dlp', [
     '--no-warnings', '--no-playlist', ...opcoesJs(ajuda),
     '-f', FORMATO,

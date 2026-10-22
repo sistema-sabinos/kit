@@ -27,7 +27,8 @@ test('sem yt-dlp no PATH o recado traz o winget do yt-dlp e nao cita a /configur
 })
 
 // 5.21, tarefa 3.2: curso grande imprime a linha LOTES, pela playlist e pela lista de titulos
-const { lerPlaylist, lerTitulos, linhasDaLista } = await import('./listar-aulas.mjs')
+const mod = await import('./listar-aulas.mjs')
+const { lerPlaylist, lerTitulos, linhasDaLista } = mod
 const { ordenarAulas } = await import('./lib/aulas.mjs')
 const linhaLotes = linhas => linhas.filter(l => l.startsWith('LOTES:'))
 
@@ -89,6 +90,37 @@ test('--titulos --na-ordem mantem a ordem do arquivo e recalcula os lotes nela',
   } finally {
     fs.rmSync(dir, { recursive: true, force: true })
   }
+})
+
+// 5.25, tarefa 3a: o terminal da IA corta em 120 s; o yt-dlp sem prazo pendurava ali, calado
+test('lerPlaylist chama o yt-dlp com prazo abaixo dos 120 s do terminal da IA', () => {
+  const chamadas = []
+  const rodar = (prog, args, opcoes) => {
+    chamadas.push({ prog, args, opcoes })
+    return JSON.stringify({ title: 'Curso X', entries: [{ id: 'v1', title: 'Aula 1', duration: 60 }] })
+  }
+  lerPlaylist('https://exemplo.invalido/p', { rodar })
+  assert.equal(chamadas.length, 1, 'canario: o rodar falso nao foi chamado')
+  assert.equal(chamadas[0].prog, 'yt-dlp')
+  const { timeout } = chamadas[0].opcoes
+  assert.equal(typeof timeout, 'number', `timeout ausente: ${JSON.stringify(chamadas[0].opcoes)}`)
+  assert.ok(timeout > 0 && timeout < 120000, `timeout fora do prazo: ${timeout}`)
+})
+
+test('recadoDaPlaylist: no estouro do prazo manda pra rota por link; outro erro, o recado de sempre', () => {
+  const { recadoDaPlaylist } = mod
+  const estouro = Object.assign(new Error('spawnSync yt-dlp ETIMEDOUT'), { code: 'ETIMEDOUT' })
+  const prazo = recadoDaPlaylist(estouro)
+  assert.ok(prazo.length > 0, 'recado de prazo veio vazio')
+  assert.match(prazo, /demorou demais/)
+  assert.match(prazo, /links das aulas/)
+  assert.doesNotMatch(prazo, /winget/)
+  const outro = recadoDaPlaylist(Object.assign(new Error('spawnSync yt-dlp ENOENT'), { code: 'ENOENT' }))
+  assert.ok(outro.length > 0, 'recado de outro erro veio vazio')
+  assert.match(outro, /^Nao consegui abrir a playlist\./)
+  assert.match(outro, /winget install --id yt-dlp\.yt-dlp/)
+  assert.match(outro, /Detalhe: spawnSync yt-dlp ENOENT$/)
+  assert.doesNotMatch(outro, /demorou demais/)
 })
 
 test('lerTitulos aceita segundos, m:ss e h:mm:ss, e sem duracao valida fica null', () => {

@@ -9,7 +9,7 @@
 // cenas.json: [{ "out": "anuncios/<slug>/cenarios/cozinha.png", "descricao": "..." }]
 // --preco-usd e o preco por imagem conferido na pagina oficial do Gemini NO DIA.
 // Saida: 0 tudo gerado; 1 falhou alguma cena; 2 uso errado; 3 parou antes de gastar.
-import { spawnSync } from 'node:child_process'
+import { rodarComPrazo } from './motor.mjs'
 import { existsSync, statSync, readFileSync, writeFileSync, mkdirSync, appendFileSync, realpathSync } from 'node:fs'
 import { dirname, join, relative, resolve, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -115,15 +115,15 @@ export function estimar({ n, precoUsd, limiteUsd }) {
   return { total, cabe: total <= limiteUsd }
 }
 
-export async function viaCodex(cenas, { raiz = RAIZ, uso, executar = spawnSync, carimbo = (p) => existsSync(p) ? statSync(p).mtimeMs : null } = {}) {
+export async function viaCodex(cenas, { raiz = RAIZ, uso, executar = rodarComPrazo, carimbo = (p) => existsSync(p) ? statSync(p).mtimeMs : null } = {}) {
   for (const c of cenas) {
     const rel = relative(raiz, resolve(c.out))
     if (rel.startsWith('..') || isAbsolute(rel)) throw new Error(`o cenario tem que ser salvo dentro da pasta do projeto, e veio ${c.out}`)
   }
   const antes = cenas.map(c => carimbo(c.out))
-  const r = executar('codex', ['exec', '--skip-git-repo-check', '--sandbox', 'workspace-write', '-'], {
-    input: montarPrompt(cenas, { uso }), cwd: raiz, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 20 * 60 * 1000,
-    shell: process.platform === 'win32',
+  // rodarComPrazo: no estouro do prazo derruba o codex inteiro, nunca so o cmd.exe (5.25)
+  const r = await executar('codex', ['exec', '--skip-git-repo-check', '--sandbox', 'workspace-write', '-'], {
+    input: montarPrompt(cenas, { uso }), cwd: raiz, maxBuffer: 64 * 1024 * 1024, timeout: 20 * 60 * 1000,
   })
   // O texto da IA dizendo "salvei" nao vale: quem manda e o arquivo no disco. E so conta se o
   // arquivo e novo ou mudou de verdade: uma sobra de rodada anterior, com o mesmo carimbo de
@@ -135,7 +135,7 @@ export async function viaCodex(cenas, { raiz = RAIZ, uso, executar = spawnSync, 
     const novo = depois !== null && (antes[i] === null || depois > antes[i])
     ;(novo ? geradas : faltaram).push(c.out)
   })
-  return { geradas, faltaram, cota_estourada: faltaram.length > 0 && cotaEstourou(`${r?.stdout || ''}\n${r?.stderr || ''}`), custo_usd: 0 }
+  return { geradas, faltaram, cota_estourada: faltaram.length > 0 && cotaEstourou(`${r?.stdout || ''}\n${r?.stderr || ''}`), custo_usd: 0, ...(r?.error ? { erro: r.error.message } : {}) }
 }
 
 export async function viaGemini(cenas, {

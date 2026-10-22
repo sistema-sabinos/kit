@@ -48,7 +48,8 @@ node .claude/skills/aprender-curso/scripts/listar-aulas.mjs "<link>"
 ```
 O script poe as aulas na ordem do numero no titulo (playlist costuma vir de tras pra frente), manda
 aula sem numero pro fim e imprime `AVISO` quando sobra aula sem numero ou falta numero na sequencia.
-Mostrar a lista com os avisos. A pergunta abaixo so vale pro `AVISO` "sem numero no titulo"
+Mostrar a lista com os avisos. Se o script disser que a lista do curso demorou demais pra chegar,
+pedir a pessoa os links das aulas e seguir pela lista de links soltos, logo abaixo. A pergunta abaixo so vale pro `AVISO` "sem numero no titulo"
 (formato de 4 partes da casa):
 > "Essas aulas ficaram sem numero no titulo: <lista>. Incluo, tiro, ou ponho em outra ordem?
 > Pergunto porque playlist de curso costuma misturar video bonus de outro ano, e ele pode contradizer
