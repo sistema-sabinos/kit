@@ -1091,9 +1091,14 @@ test('o roteiro-exemplo.json passa em todos os gates de conteudo, com produto in
 })
 
 
-test('ponta a ponta sem gasto: fase 1, aprovar, fase 2 dry-run, fase 3 dry-run', () => {
+test('ponta a ponta sem gasto: fase 1, aprovar, fase 2 dry-run, fase 3 dry-run', async () => {
   const exemplo = JSON.parse(fs.readFileSync(EXEMPLO, 'utf8'))
-  preparar(exemplo)
+  // musica, clipes e narracoes de mentira e montagem falsa: a fase 3 dry-run so confere que
+  // os arquivos existem e entrega o pedido pra montagem. Com ffmpeg real, sob carga, o teste
+  // passou dos 600s por passo e caiu por motivo alheio a trava (duas vezes). A montagem real
+  // segue provada pelo teste do dry-run da fase 3 e pelo montar.test.mjs.
+  preparar(exemplo, { comMusica: false })
+  fs.writeFileSync(path.join(pasta, 'musica.mp3'), 'musica de mentira')
 
   const f1 = rodar([`--mlb=${MLB}`, '--fase=1'])
   assert.equal(f1.status, 0, f1.stderr.slice(0, 400))
@@ -1109,13 +1114,42 @@ test('ponta a ponta sem gasto: fase 1, aprovar, fase 2 dry-run, fase 3 dry-run',
 
   // fase 3 sem os clipes da fase 2 reprova; com eles, o dry-run monta e sai "incompleto"
   assert.equal(rodar([`--mlb=${MLB}`, '--fase=3', '--dry-run']).status, 1)
-  copiarClipes()
-  criarNarracoes(Object.fromEntries(exemplo.blocos
-    .map((b, i) => [i + 1, b.tipo === 'produto' || exemplo.vozUnica === true ? 6.4 : null])
-    .filter(([, s]) => s)))
-  assert.equal(rodar([`--mlb=${MLB}`, '--fase=3', '--dry-run']).status, SAIDA_INCOMPLETA)
-  assert.ok(fs.existsSync(path.join(pasta, '_tmp', `${SLUG}.mp4`)))
+  exemplo.blocos.forEach((_, i) => fs.writeFileSync(path.join(pasta, `bloco-${i + 1}.mp4`), 'clipe de mentira'))
+  const comVoz = exemplo.blocos.map((b) => b.tipo === 'produto' || exemplo.vozUnica === true)
+  comVoz.forEach((v, i) => { if (v) fs.writeFileSync(path.join(pasta, `narracao-${i + 1}.wav`), 'wav de mentira') })
+
+  let pedido = null
+  let r
+  const travaOriginal = process.env.GEMINI_SEM_API
+  process.env.GEMINI_SEM_API = '1'
+  try {
+    r = await chamar([`--mlb=${MLB}`, '--fase=3', '--dry-run'], {
+      ...depsDaFase3(''),
+      transcrever: async () => { throw new Error('transcrever chamado no dry-run: o gate de voz e pago') },
+      montarVideo: async (p) => {
+        pedido = p
+        fs.writeFileSync(p.saida, 'video de mentira')
+        return { ok: true, legenda: { corpo: 1, resumo: 'falsa' }, duracoes: exemplo.blocos.map(() => 8) }
+      },
+    })
+  } finally {
+    if (travaOriginal === undefined) delete process.env.GEMINI_SEM_API
+    else process.env.GEMINI_SEM_API = travaOriginal
+  }
+  assert.equal(r.status, SAIDA_INCOMPLETA, r.stderr.slice(0, 500))
+  assert.ok(pedido, 'o dry-run tem de chegar ate a montagem')
+  const tmp = path.join(pasta, '_tmp')
+  assert.deepEqual(pedido.blocos.map((b) => path.basename(b.arquivo)), exemplo.blocos.map((_, i) => `bloco-${i + 1}.mp4`))
+  assert.deepEqual(pedido.blocos.map((b) => b.fala), exemplo.blocos.map((b) => b.fala))
+  assert.deepEqual(pedido.narracoes, comVoz.map((v, i) => (v ? path.join(pasta, `narracao-${i + 1}.wav`) : null)))
+  assert.equal(pedido.musica, path.join(pasta, 'musica.mp3'), 'todo video leva a cama de musica da pasta')
+  assert.equal(pedido.saida, path.join(tmp, `${SLUG}.mp4`))
+  assert.equal(pedido.trabalho, tmp)
+  assert.deepEqual(pedido.advertencias, exemplo.advertencias ?? [])
+  assert.ok(fs.existsSync(path.join(tmp, `${SLUG}.mp4`)))
   assert.equal(fs.existsSync(path.join(pasta, 'final', `${SLUG}.mp4`)), false)
+  assert.match(r.stderr, /gate de voz.*PULADO/is)
+  assert.match(r.stderr, /NAO PUBLICAR/i)
   assert.equal(rodar([`--mlb=${MLB}`, '--fase=3']).status, 3)
 })
 
@@ -1465,26 +1499,44 @@ const depsDaFase3 = (dito) => ({
   carregarConfiguracao: () => ({ limite_gasto_usd: 4 }),
   transcrever: async () => dito,
 })
+// montagem falsa: guarda o pedido e entrega um mp4 real de 8s, porque a extracao do
+// wav depois dela roda ffmpeg de verdade (nao e parametro do kit).
+const montagemFalsa = (pedidos) => async (p) => {
+  pedidos.push(p)
+  fs.copyFileSync(path.join(modelosDeClipe, 'bloco-1.mp4'), p.saida)
+  return { ok: true, legenda: { corpo: 1, resumo: 'falsa' }, duracoes: [8, 8, 8, 8] }
+}
+// musica e narracoes de mentira: a fase 3 so confere que existem, e a montagem e falsa.
+const prepararFase3 = (roteiro) => {
+  preparar(roteiro, { comMusica: false })
+  fs.writeFileSync(path.join(pasta, 'musica.mp3'), 'musica de mentira')
+  copiarClipes()
+  for (const n of [2, 3]) fs.writeFileSync(path.join(pasta, `narracao-${n}.wav`), 'wav de mentira')
+}
 
 test('fase 3 com o gate de voz reprovado nao deixa nada em final/', async () => {
-  preparar(carimbado(roteiroValido()))
-  copiarClipes()
-  criarNarracoes()
-  const r = await chamar([`--mlb=${MLB}`, '--fase=3', ...PRECOS_AUTORIZADO], depsDaFase3('nada a ver com o roteiro'))
+  prepararFase3(carimbado(roteiroValido()))
+  const pedidos = []
+  const r = await chamar([`--mlb=${MLB}`, '--fase=3', ...PRECOS_AUTORIZADO], { ...depsDaFase3('nada a ver com o roteiro'), montarVideo: montagemFalsa(pedidos) })
   assert.equal(r.status, 1, r.stderr)
   assert.match(r.stderr, /\[voz\] bloco/)
   assert.equal(fs.existsSync(path.join(pasta, 'final', `${SLUG}.mp4`)), false)
+  assert.equal(pedidos.length, 1)
+  assert.equal(pedidos[0].saida, path.join(pasta, '_tmp', `${SLUG}.mp4`))
 })
 
 test('fase 3 aprovada nos dois gates move o video de _tmp pra final/<slug>.mp4', async () => {
   const roteiro = carimbado(roteiroValido())
-  preparar(roteiro)
-  copiarClipes()
-  criarNarracoes()
-  const r = await chamar([`--mlb=${MLB}`, '--fase=3', ...PRECOS_AUTORIZADO], depsDaFase3(falasDe(roteiro)))
+  prepararFase3(roteiro)
+  const pedidos = []
+  const r = await chamar([`--mlb=${MLB}`, '--fase=3', ...PRECOS_AUTORIZADO], { ...depsDaFase3(falasDe(roteiro)), montarVideo: montagemFalsa(pedidos) })
   assert.equal(r.status, 0, r.stderr)
   assert.ok(fs.existsSync(path.join(pasta, 'final', `${SLUG}.mp4`)))
   assert.equal(fs.existsSync(path.join(pasta, '_tmp', `${SLUG}.mp4`)), false)
+  assert.equal(pedidos.length, 1)
+  assert.equal(pedidos[0].saida, path.join(pasta, '_tmp', `${SLUG}.mp4`))
+  assert.deepEqual(pedidos[0].narracoes, [null, path.join(pasta, 'narracao-2.wav'), path.join(pasta, 'narracao-3.wav'), null])
+  assert.equal(pedidos[0].musica, path.join(pasta, 'musica.mp3'))
 })
 
 test('sem --de-espionagem a coleta continua sendo pela API', async () => {
@@ -1615,13 +1667,14 @@ test('item 15: fase 3 com o video de final/ aberto num player da recado e deixa 
 
 test('item 15: fase 3 aprovada com final/ travado da recado e deixa o aprovado em _tmp', async () => {
   const roteiro = carimbado(roteiroValido())
-  preparar(roteiro)
-  copiarClipes()
-  criarNarracoes()
+  prepararFase3(roteiro)
+  const pedidos = []
   const final = path.join(pasta, 'final', `${SLUG}.mp4`)
-  const r = await chamar([`--mlb=${MLB}`, '--fase=3', ...PRECOS_AUTORIZADO], { ...depsDaFase3(falasDe(roteiro)), renomear: ocupado((de, para) => para === final) })
+  const r = await chamar([`--mlb=${MLB}`, '--fase=3', ...PRECOS_AUTORIZADO], { ...depsDaFase3(falasDe(roteiro)), montarVideo: montagemFalsa(pedidos), renomear: ocupado((de, para) => para === final) })
     .catch((e) => ({ status: 'lancou', stderr: e.stack }))
   assert.equal(r.status, 1, r.stderr)
+  assert.equal(pedidos.length, 1)
+  assert.equal(pedidos[0].saida, path.join(pasta, '_tmp', `${SLUG}.mp4`))
   assert.match(r.stderr, /aberto em outro programa/)
   assert.ok(fs.existsSync(path.join(pasta, '_tmp', `${SLUG}.mp4`)), 'o video aprovado sumiu de _tmp')
   assert.ok(r.stderr.includes(path.join(pasta, '_tmp', `${SLUG}.mp4`)), 'o recado diz onde o aprovado ficou')

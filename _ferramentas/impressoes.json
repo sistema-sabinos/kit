@@ -1,5 +1,5 @@
 {
- "versao": "5.23",
+ "versao": "5.24",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -1580,15 +1580,15 @@
    "988357fe6827b9bc": "5.20"
   },
   ".claude/skills/gerar-imagens/scripts/motor.mjs": {
-   "068eb32a35dd8d1f": "5.23",
+   "068eb32a35dd8d1f": "anterior-5.23",
    "0a5474abf9f7b1c0": "anterior-3.9",
    "0e78677a855b5d1e": "5.20",
-   "2e671dc5abb7cf60": "5.23",
-   "8dbf0eec61fa1c84": "5.23",
+   "2e671dc5abb7cf60": "anterior-5.23",
+   "8dbf0eec61fa1c84": "anterior-5.23",
    "92c69384a52730a0": "5.23",
    "a45ae761754b5224": "anterior-3.9",
    "e073cf3a704a0ec1": "3.9",
-   "e09a07393335943b": "5.23"
+   "e09a07393335943b": "anterior-5.23"
   },
   ".claude/skills/gerar-imagens/scripts/prancha.mjs": {
    "0157562818bcf6bc": "anterior-3.9",
