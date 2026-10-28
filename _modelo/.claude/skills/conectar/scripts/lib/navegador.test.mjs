@@ -14,7 +14,7 @@ import {
   FAIXA, SENTINELA, AVISO, perfilDedicado, portaDoProjeto, candidatosDeChrome, acharChrome, argumentosDoChrome,
   guidDaPorta, portaLivre, esperarPorta, pidDoChrome, conferirPerfil, abrirChrome, conectar, sessaoCaiu,
   relogar, receitaValida, abaDoSite, tentouHaPouco, marcarTentativa, desmarcarTentativa, JANELA_RELOGIN_MS,
-  travarRelogin, expressaoClique,
+  travarRelogin, expressaoClique, conferirServidor,
 } from './navegador.mjs'
 import { runInNewContext } from 'node:vm'
 import { RAIZ } from './raiz.mjs'
@@ -209,6 +209,118 @@ test('conferirPerfil: porta morta com sentinela velha da porta-fechada', async (
     gravar(d, { porta, guid: 'velho' })
     assert.deepEqual(await conferirPerfil({ porta, perfil: d }), { estado: 'porta-fechada', guid: null })
   } finally { rmSync(d, { recursive: true, force: true }) }
+})
+
+// conferirServidor (5.30): .claude.json de mentira na forma do C1 (chave com barra normal e a caixa
+// do disco, args do claude mcp add navegador do Degrau 5); nenhum teste le o de verdade
+const argsDoC1 = porta => ['@playwright/mcp@0.0.83', '--cdp-endpoint', `http://127.0.0.1:${porta}`, '--output-dir', 'dados/navegador-saida', '--no-webmcp']
+const chaveDoC1 = raiz => raiz.split(String.fromCharCode(92)).join('/')
+// um arquivo por chamada: casos montados juntos nao se sobrescrevem (Codex comum, volta 1)
+let configs = 0
+function config(dir, projetos) {
+  const f = join(dir, `config-${++configs}.json`)
+  writeFileSync(f, typeof projetos === 'string' ? projetos : JSON.stringify({ projects: projetos }))
+  return f
+}
+const navegadorEm = args => ({ mcpServers: { navegador: { type: 'stdio', command: 'npx', args, env: {} } } })
+// projeto de mentira com a raiz, a pasta da configuracao e o perfil
+function projetoDoServidor() {
+  const base = temp()
+  const raiz = join(base, 'Proj')
+  mkdirSync(raiz)
+  return { base, raiz, perfil: perfilDedicado(raiz), limpar: () => rmSync(base, { recursive: true, force: true }) }
+}
+
+test('conferirServidor: Chrome deste projeto na porta do servidor da conferido, so com a porta', async () => {
+  const p = projetoDoServidor()
+  const s = await servidorDoGuid('g-1')
+  try {
+    gravar(p.perfil, { porta: s.porta, guid: 'g-1' })
+    const r = await conferirServidor({ raiz: p.raiz, config: config(p.base, { [chaveDoC1(p.raiz)]: navegadorEm(argsDoC1(s.porta)) }) })
+    assert.deepEqual(r, { estado: 'conferido', porta: s.porta })
+  } finally { await s.fechar(); p.limpar() }
+})
+
+test('conferirServidor: outro Chrome na porta do servidor da outro-na-porta', async () => {
+  const p = projetoDoServidor()
+  const s = await servidorDoGuid('de-outro-projeto')
+  try {
+    gravar(p.perfil, { porta: s.porta, guid: 'g-velho' })
+    const r = await conferirServidor({ raiz: p.raiz, config: config(p.base, { [chaveDoC1(p.raiz)]: navegadorEm(argsDoC1(s.porta)) }) })
+    assert.deepEqual(r, { estado: 'outro-na-porta', porta: s.porta })
+  } finally { await s.fechar(); p.limpar() }
+})
+
+test('conferirServidor: sem sentinela da sem-sentinela, e a pasta-mae (sem dados/chrome-perfil) nao passa', async () => {
+  const p = projetoDoServidor()
+  const s = await servidorDoGuid('g-2')
+  try {
+    assert.ok(!existsSync(p.perfil), 'canario: a raiz nao tem perfil, como a pasta-mae')
+    const r = await conferirServidor({ raiz: p.raiz, config: config(p.base, { [chaveDoC1(p.raiz)]: navegadorEm(argsDoC1(s.porta)) }) })
+    assert.deepEqual(r, { estado: 'sem-sentinela', porta: s.porta })
+  } finally { await s.fechar(); p.limpar() }
+})
+
+test('conferirServidor: ninguem na porta do servidor da porta-fechada', async () => {
+  const p = projetoDoServidor()
+  try {
+    const porta = await portaMorta()
+    gravar(p.perfil, { porta, guid: 'g-velho' })
+    const r = await conferirServidor({ raiz: p.raiz, config: config(p.base, { [chaveDoC1(p.raiz)]: navegadorEm(argsDoC1(porta)) }) })
+    assert.deepEqual(r, { estado: 'porta-fechada', porta })
+  } finally { p.limpar() }
+})
+
+test('conferirServidor: servidor numa porta e sentinela noutra da porta-mudou, mesmo com o Chrome deste projeto vivo', async () => {
+  const p = projetoDoServidor()
+  const deste = await servidorDoGuid('g-deste')
+  const outro = await servidorDoGuid('g-outro')
+  try {
+    // o Chrome deste projeto pulou de porta; na porta antiga, onde o navegador foi ligado, responde outro
+    gravar(p.perfil, { porta: deste.porta, guid: 'g-deste' })
+    const r = await conferirServidor({ raiz: p.raiz, config: config(p.base, { [chaveDoC1(p.raiz)]: navegadorEm(argsDoC1(outro.porta)) }) })
+    assert.deepEqual(r, { estado: 'porta-mudou', porta: outro.porta })
+  } finally { await deste.fechar(); await outro.fechar(); p.limpar() }
+})
+
+test('conferirServidor: configuracao que nao se le ou sem a forma do C1 da sem-config', async () => {
+  const p = projetoDoServidor()
+  const s = await servidorDoGuid('g-1')
+  try {
+    gravar(p.perfil, { porta: s.porta, guid: 'g-1' })
+    const k = chaveDoC1(p.raiz)
+    const certo = await conferirServidor({ raiz: p.raiz, config: config(p.base, { [k]: navegadorEm(argsDoC1(s.porta)) }) })
+    assert.equal(certo.estado, 'conferido', 'canario: a entrada certa confere')
+    const semCdp = argsDoC1(s.porta).filter((a, i, l) => a !== '--cdp-endpoint' && l[i - 1] !== '--cdp-endpoint')
+    const casos = {
+      'sem arquivo': join(p.base, 'nao-existe.json'),
+      'arquivo quebrado': config(p.base, '{ isso nao e json'),
+      'sem a entrada do projeto': config(p.base, { [k + '-outro']: navegadorEm(argsDoC1(s.porta)) }),
+      'servidor de outro nome': config(p.base, { [k]: { mcpServers: { playwright: { args: argsDoC1(s.porta) } } } }),
+      'args sem --cdp-endpoint': config(p.base, { [k]: navegadorEm(semCdp) }),
+      'endpoint fora de 127.0.0.1': config(p.base, { [k]: navegadorEm(['--cdp-endpoint', `http://10.0.0.1:${s.porta}`]) }),
+      'porta fora da faixa valida': config(p.base, { [k]: navegadorEm(['--cdp-endpoint', 'http://127.0.0.1:80']) }),
+    }
+    assert.equal(new Set(Object.values(casos)).size, Object.keys(casos).length, 'canario: cada caso le o proprio arquivo')
+    for (const [nome, arquivo] of Object.entries(casos))
+      assert.deepEqual(await conferirServidor({ raiz: p.raiz, config: arquivo }), { estado: 'sem-config', porta: null }, nome)
+    assert.deepEqual(await conferirServidor({ raiz: undefined, config: config(p.base, { [k]: navegadorEm(argsDoC1(s.porta)) }) }), { estado: 'sem-config', porta: null }, 'sem raiz')
+  } finally { await s.fechar(); p.limpar() }
+})
+
+test('conferirServidor: no Windows a chave com outra caixa e outra barra acha a entrada; duas chaves que discordam dao sem-config', async () => {
+  const p = projetoDoServidor()
+  const s = await servidorDoGuid('g-1')
+  try {
+    gravar(p.perfil, { porta: s.porta, guid: 'g-1' })
+    // fora do Windows caixa muda o caminho: a chave vai igual e o teste confere so a discordancia
+    const variante = process.platform === 'win32' ? p.raiz.toUpperCase() : chaveDoC1(p.raiz)
+    if (process.platform === 'win32') assert.ok(variante.includes(String.fromCharCode(92)) && variante !== chaveDoC1(p.raiz), 'canario: a variante tem outra caixa e barra invertida')
+    const r = await conferirServidor({ raiz: p.raiz, config: config(p.base, { [variante]: navegadorEm(argsDoC1(s.porta)) }) })
+    assert.deepEqual(r, { estado: 'conferido', porta: s.porta })
+    const duas = { [chaveDoC1(p.raiz)]: navegadorEm(argsDoC1(s.porta)), [chaveDoC1(p.raiz) + '/']: navegadorEm(argsDoC1(s.porta + 1)) }
+    assert.deepEqual(await conferirServidor({ raiz: p.raiz, config: config(p.base, duas) }), { estado: 'sem-config', porta: null })
+  } finally { await s.fechar(); p.limpar() }
 })
 
 test('candidatos e acharChrome', () => {

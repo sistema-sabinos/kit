@@ -1,11 +1,12 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { avaliarMcp, MODOS_ASK_CALADO } from './barrar-mcp.mjs'
+import { avaliarMcp, avaliarMcpComPerfil, MODOS_ASK_CALADO } from './barrar-mcp.mjs'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
+import { createServer } from 'node:http'
 
 const HOOK = fileURLToPath(new URL('./barrar-mcp.mjs', import.meta.url))
 // projeto de mentira so pro juizo de caminho: o filename nao toca no disco
@@ -204,4 +205,168 @@ test('settings do _modelo e da pasta-mae ligam a trava pra todo mcp, com onFailu
       assert.ok(existsSync(HOOK), 'a pasta-mae chama o hook do _modelo, que tem de existir')
     } else assert.match(hook.command, /\/\.claude\/hooks\/barrar-mcp\.mjs/)
   }
+})
+
+// Porteiro do perfil (5.30, D19 e D20). O hook roda como processo, com o projeto, o .claude.json e o
+// Chrome num mkdtemp: a configuracao entra pelo CLAUDE_CONFIG_DIR, o mesmo caminho do Claude Code
+// (C1 da 5.30), entao nenhum teste le o de verdade. O Chrome de mentira conta os pedidos.
+async function chromeDeMentira(guid) {
+  let pedidos = 0
+  const s = createServer((req, res) => {
+    pedidos += 1
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify({ webSocketDebuggerUrl: `ws://127.0.0.1:${s.address().port}/devtools/browser/${guid}` }))
+  })
+  await new Promise(r => s.listen(0, '127.0.0.1', r))
+  return { porta: s.address().port, pedidos: () => pedidos, fechar: () => new Promise(r => s.close(r)) }
+}
+
+async function portaSemNinguem() {
+  const c = await chromeDeMentira('x')
+  await c.fechar()
+  return c.porta
+}
+
+// spawn e nao spawnSync: o Chrome de mentira roda neste processo e precisa do laco livre pra responder
+function rodarHook(entrada, env) {
+  return new Promise(ok => {
+    const p = spawn(process.execPath, [HOOK], { env })
+    let stdout = ''
+    let stderr = ''
+    p.stdout.on('data', d => { stdout += d })
+    p.stderr.on('data', d => { stderr += d })
+    p.on('close', status => ok({ status, stdout, stderr }))
+    p.stdin.end(JSON.stringify(entrada))
+  })
+}
+
+// projeto com sentinela e .claude.json na forma do C1; servidor grava a porta do --cdp-endpoint
+async function comProjeto(fn) {
+  const base = mkdtempSync(join(tmpdir(), 'barrar-mcp-perfil-'))
+  try {
+    const raiz = join(base, 'proj')
+    const perfil = join(raiz, 'dados', 'chrome-perfil')
+    const cfg = join(base, 'cfg')
+    mkdirSync(perfil, { recursive: true })
+    mkdirSync(cfg)
+    const sentinela = (porta, guid) => writeFileSync(join(perfil, '.sabinos-porta.json'), JSON.stringify({ porta, guid, perfil }))
+    const servidor = porta => writeFileSync(join(cfg, '.claude.json'), JSON.stringify({ projects: {
+      [raiz.split(String.fromCharCode(92)).join('/')]: { mcpServers: { navegador: { type: 'stdio', command: 'npx',
+        args: ['@playwright/mcp@0.0.83', '--cdp-endpoint', `http://127.0.0.1:${porta}`, '--output-dir', 'dados/navegador-saida', '--no-webmcp'], env: {} } } },
+    } }))
+    const env = { ...process.env, CLAUDE_PROJECT_DIR: raiz, CLAUDE_CONFIG_DIR: cfg }
+    const rodar = (tool_name, extra = {}) => rodarHook({ tool_name, tool_input: {}, cwd: raiz, mcp_server: { name: tool_name.split('__')[1], source: 'local' }, ...extra }, env)
+    await fn({ raiz, perfil, cfg, sentinela, servidor, rodar })
+  } finally { rmSync(base, { recursive: true, force: true }) }
+}
+
+const NAVEGAR = 'mcp__navegador__browser_navigate'
+
+test('perfil: o navegador passa com o Chrome deste projeto na porta em que foi ligado', () => comProjeto(async ({ sentinela, servidor, rodar }) => {
+  const c = await chromeDeMentira('g-deste')
+  try {
+    sentinela(c.porta, 'g-deste')
+    servidor(c.porta)
+    const r = await rodar(NAVEGAR, { tool_input: { url: 'https://exemplo.com' } })
+    assert.deepEqual([r.status, r.stdout, r.stderr], [0, '', ''])
+    assert.equal(c.pedidos(), 1, 'a conferencia perguntou ao Chrome')
+  } finally { await c.fechar() }
+}))
+
+test('perfil: outro Chrome na porta, ou sem sentinela, barra com o recado do abrir-chrome e do religar', () => comProjeto(async ({ perfil, sentinela, servidor, rodar }) => {
+  const c = await chromeDeMentira('de-outro-projeto')
+  try {
+    servidor(c.porta)
+    sentinela(c.porta, 'g-velho')
+    const outro = await rodar(NAVEGAR)
+    assert.equal(outro.status, 2)
+    assert.ok(outro.stderr.includes(`na porta ${c.porta} responde um Chrome que não é o deste projeto`), outro.stderr)
+    assert.ok(outro.stderr.includes('claude mcp remove navegador'), outro.stderr)
+    rmSync(join(perfil, '.sabinos-porta.json'))
+    const sem = await rodar(NAVEGAR)
+    assert.equal(sem.status, 2)
+    assert.ok(sem.stderr.includes('não é o deste projeto'), sem.stderr)
+  } finally { await c.fechar() }
+}))
+
+test('perfil: Chrome fechado barra com o recado de rodar o abrir-chrome', () => comProjeto(async ({ sentinela, servidor, rodar }) => {
+  const porta = await portaSemNinguem()
+  sentinela(porta, 'g-velho')
+  servidor(porta)
+  const r = await rodar(NAVEGAR)
+  assert.equal(r.status, 2)
+  assert.ok(r.stderr.includes('o Chrome dedicado não está aberto: rode `node .claude/skills/conectar/scripts/abrir-chrome.mjs`'), r.stderr)
+}))
+
+test('perfil: servidor numa porta e o Chrome deste projeto noutra barra pedindo pra religar', () => comProjeto(async ({ sentinela, servidor, rodar }) => {
+  const deste = await chromeDeMentira('g-deste')
+  const outro = await chromeDeMentira('g-outro')
+  try {
+    sentinela(deste.porta, 'g-deste')
+    servidor(outro.porta)
+    const r = await rodar(NAVEGAR)
+    assert.equal(r.status, 2)
+    assert.ok(r.stderr.includes(`foi ligado na porta ${outro.porta}, mas o Chrome deste projeto agora usa outra`), r.stderr)
+    assert.ok(r.stderr.includes('claude mcp remove navegador'), r.stderr)
+    assert.ok(r.stderr.includes('feche e abra o Claude Code antes de usar'), r.stderr)
+  } finally { await deste.fechar(); await outro.fechar() }
+}))
+
+test('perfil: configuracao sem a entrada do projeto barra pedindo o passo 3 e o atualizar', () => comProjeto(async ({ cfg, sentinela, rodar }) => {
+  const c = await chromeDeMentira('g-deste')
+  try {
+    sentinela(c.porta, 'g-deste')
+    writeFileSync(join(cfg, '.claude.json'), JSON.stringify({ projects: {} }))
+    const r = await rodar(NAVEGAR)
+    assert.equal(r.status, 2)
+    assert.ok(r.stderr.includes('não deu pra saber em que porta o `navegador` foi ligado'), r.stderr)
+    assert.ok(r.stderr.includes('/atualizar-sabinos'), r.stderr)
+    assert.equal(c.pedidos(), 0)
+  } finally { await c.fechar() }
+}))
+
+test('perfil: origem fora do escopo local, ou sem o campo, barra sem tocar no Chrome', () => comProjeto(async ({ sentinela, servidor, rodar }) => {
+  const c = await chromeDeMentira('g-deste')
+  try {
+    sentinela(c.porta, 'g-deste')
+    servidor(c.porta)
+    assert.equal((await rodar(NAVEGAR)).status, 0, 'canario: com a origem local passa')
+    const antes = c.pedidos()
+    const dinamico = await rodar(NAVEGAR, { mcp_server: { name: 'navegador', source: 'dynamic' } })
+    assert.equal(dinamico.status, 2)
+    assert.ok(dinamico.stderr.includes('não veio do passo 3 do Degrau 5'), dinamico.stderr)
+    const semCampo = await rodar(NAVEGAR, { mcp_server: undefined })
+    assert.equal(semCampo.status, 2)
+    assert.ok(semCampo.stderr.includes('atualize o Claude Code'), semCampo.stderr)
+    assert.equal(c.pedidos(), antes, 'nenhum pedido ao Chrome com a origem errada')
+  } finally { await c.fechar() }
+}))
+
+test('perfil: o que ja barrava ou pedia segue igual, e outro servidor nao passa pela conferencia', () => comProjeto(async ({ sentinela, servidor, rodar }) => {
+  const c = await chromeDeMentira('de-outro-projeto')
+  try {
+    // o Chrome na porta nao e o deste projeto: so a conferencia barraria o snapshot
+    sentinela(c.porta, 'g-velho')
+    servidor(c.porta)
+    const codigo = await rodar('mcp__navegador__browser_run_code_unsafe', { tool_input: { code: 'x' } })
+    assert.equal(codigo.status, 2)
+    assert.ok(codigo.stderr.includes('roda código nela'), codigo.stderr)
+    assert.equal((await rodar('mcp__playwright__browser_navigate')).status, 0, 'o playwright do --isolated passa')
+    const conta = await rodar('mcp__claude_ai_Gmail__send_message')
+    assert.equal(conta.status, 0)
+    assert.equal(JSON.parse(conta.stdout).hookSpecificOutput.permissionDecision, 'ask')
+    assert.equal(c.pedidos(), 0, 'nenhum pedido ao Chrome fora do navegador que passaria')
+    assert.equal((await rodar('mcp__navegador__browser_snapshot')).status, 2, 'canario: o mesmo Chrome barra o snapshot do navegador')
+  } finally { await c.fechar() }
+}))
+
+test('perfil: erro na conferencia, estado desconhecido ou lib que nao abre barram', async () => {
+  const entrada = { tool_name: NAVEGAR, tool_input: {}, cwd: CWD, mcp_server: { name: 'navegador', source: 'local' } }
+  assert.equal((await avaliarMcpComPerfil(entrada, { conferir: async () => ({ estado: 'conferido', porta: 1 }) })).decisao, 'passa', 'canario')
+  const erro = await avaliarMcpComPerfil(entrada, { conferir: async () => { throw new Error('x') } })
+  assert.deepEqual(erro, { decisao: 'barra', motivo: 'a trava não conseguiu conferir o Chrome deste projeto' })
+  assert.equal((await avaliarMcpComPerfil(entrada, { conferir: async () => ({ estado: 'novo' }) })).decisao, 'barra')
+  assert.equal((await avaliarMcpComPerfil(entrada, { conferir: async () => undefined })).decisao, 'barra')
+  const semLib = await avaliarMcpComPerfil(entrada, { conferir: async () => ({ estado: 'sem-lib' }) })
+  assert.ok(semLib.decisao === 'barra' && semLib.motivo.includes('/atualizar-sabinos'), semLib.motivo)
 })

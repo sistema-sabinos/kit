@@ -14,6 +14,7 @@ import { join, resolve, win32, posix } from 'node:path'
 import { spawn } from 'node:child_process'
 import { createServer } from 'node:net'
 import { createHash } from 'node:crypto'
+import { homedir } from 'node:os'
 import { RAIZ } from './raiz.mjs'
 import { codigo as codigoTotp, CONTA } from '../totp.mjs'
 
@@ -154,6 +155,46 @@ export async function conferirPerfil({ porta, perfil, fetchFn, timeoutMs } = {})
   const s = lerSentinela(perfil)
   if (!s) return { estado: 'sem-sentinela', guid }
   return { estado: s.porta === porta && s.guid === guid ? 'conferido' : 'outro-na-porta', guid }
+}
+
+// A configuracao local do Claude Code (o claude mcp add do passo 3 do Degrau 5 grava ali), no
+// lugar que o C1 da 5.30 mediu: <CLAUDE_CONFIG_DIR>/.claude.json com a variavel, senao a home.
+function configDoClaude(env = process.env) {
+  return join(env.CLAUDE_CONFIG_DIR || homedir(), '.claude.json')
+}
+
+// A porta do --cdp-endpoint com que o servidor navegador desta raiz foi ligado; null quando a
+// entrada nao existe, nao tem a forma do C1 ou duas chaves da mesma raiz discordam.
+function portaDoServidor(raiz, config) {
+  const projetos = JSON.parse(readFileSync(config, 'utf8'))?.projects
+  if (!projetos || typeof projetos !== 'object') return null
+  const portas = new Set()
+  for (const [k, p] of Object.entries(projetos)) {
+    if (chave(k) !== chave(raiz)) continue
+    const args = p?.mcpServers?.navegador?.args
+    if (!Array.isArray(args)) continue
+    const i = args.indexOf('--cdp-endpoint')
+    const u = i >= 0 && typeof args[i + 1] === 'string' ? /^http:\/\/127\.0\.0\.1:(\d+)\/?$/.exec(args[i + 1]) : null
+    const n = u ? Number(u[1]) : NaN
+    portas.add(n >= 1024 && n <= 65535 ? n : null)
+  }
+  return portas.size === 1 ? [...portas][0] : null
+}
+
+// O porteiro do perfil (5.30, D19 e D20): o Chrome na porta em que o navegador desta raiz foi
+// ligado e o deste projeto? Os estados do conferirPerfil, mais porta-mudou (servidor numa porta e
+// sentinela noutra) e sem-config. Nunca joga erro e nunca devolve nada do arquivo alem da porta.
+export async function conferirServidor({ raiz, config = configDoClaude(), fetchFn, timeoutMs = 1500 } = {}) {
+  try {
+    const porta = portaDoServidor(raiz, config)
+    if (porta === null) return { estado: 'sem-config', porta: null }
+    const perfil = perfilDedicado(raiz)
+    const s = lerSentinela(perfil)
+    if (s && s.porta !== porta) return { estado: 'porta-mudou', porta }
+    return { estado: (await conferirPerfil({ porta, perfil, fetchFn, timeoutMs })).estado, porta }
+  } catch {
+    return { estado: 'sem-config', porta: null }
+  }
 }
 
 // soExistente: so usa perfil que ja existe e nunca pula de porta (a sonda agendada roda assim).

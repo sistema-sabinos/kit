@@ -20,6 +20,10 @@
 // Chrome do Claude Code 2.1.308); o arquivo da sonda fica na bancada e um teste de la confere esta copia.
 // Ferramenta do Playwright MCP com filename grava relativo a raiz do projeto (README do pacote, 0.0.83),
 // mesmo com --output-dir, que so vale pro nome automatico: por isso o filename se julga contra a raiz.
+// No servidor navegador (o do Chrome dedicado, rodada 5.30) a trava ainda confere, a cada chamada que
+// passaria, que ele veio do escopo local e que o Chrome na porta em que foi ligado e o deste projeto:
+// pega o Chrome de outro projeto na mesma porta e a porta que mudou. Nao pega o Chrome trocado entre
+// a conferencia e a chamada, alguns milissegundos depois.
 import { realpathSync, statSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -163,6 +167,47 @@ export function avaliarMcp({ tool_name, tool_input, cwd, permission_mode } = {})
   return d
 }
 
+// O porteiro do perfil (5.30, D19 e D20). A lib do Chrome dedicado so carrega pro servidor navegador:
+// ferramenta de outro servidor nao paga a rede. A origem local e a do claude mcp add do passo 3 do
+// Degrau 5 (C1 da 5.30); com --mcp-config ela vem dynamic e a configuracao lida nao e a que roda.
+const LIB_NAVEGADOR = new URL('../skills/conectar/scripts/lib/navegador.mjs', import.meta.url).href
+// Religar no meio da sessao so troca o arquivo: o servidor que ja roda segue na porta velha ate o
+// Claude Code reabrir (achado P1 da final da 5.30, provado ao vivo); a trava disso fica pra 5.31.
+const RELIGAR = 'ligue o `navegador` de novo com a porta nova (`claude mcp remove navegador` e o passo 3 do Degrau 5) e feche e abra o Claude Code antes de usar, porque o `navegador` que já está rodando só pega a porta nova numa sessão nova'
+const ATUALIZAR = 'rode o `/atualizar-sabinos`'
+const RECADO_DO_PERFIL = {
+  'porta-fechada': () => 'o Chrome dedicado não está aberto: rode `node .claude/skills/conectar/scripts/abrir-chrome.mjs` e tente de novo',
+  'outro-na-porta': p => `na porta ${p} responde um Chrome que não é o deste projeto: rode o \`abrir-chrome.mjs\`; se ele disser que a porta mudou, ${RELIGAR}`,
+  'porta-mudou': p => `o \`navegador\` foi ligado na porta ${p}, mas o Chrome deste projeto agora usa outra: ${RELIGAR}`,
+  'sem-config': () => `não deu pra saber em que porta o \`navegador\` foi ligado: ligue de novo pelo passo 3 do Degrau 5; se continuar, ${ATUALIZAR}`,
+  'sem-lib': () => `a conferência do Chrome deste projeto não abriu: ${ATUALIZAR}`,
+}
+RECADO_DO_PERFIL['sem-sentinela'] = RECADO_DO_PERFIL['outro-na-porta']
+
+async function conferirPeloKit(raiz) {
+  let lib
+  try { lib = await import(LIB_NAVEGADOR) } catch { return { estado: 'sem-lib' } }
+  if (typeof lib.conferirServidor !== 'function') return { estado: 'sem-lib' }
+  return lib.conferirServidor({ raiz })
+}
+
+export async function avaliarMcpComPerfil(entrada = {}, { conferir = conferirPeloKit } = {}) {
+  const d = avaliarMcp(entrada)
+  if (d.decisao !== 'passa' || entrada.tool_name.split('__')[1] !== 'navegador') return d
+  const origem = entrada.mcp_server?.source
+  if (origem === undefined) return barra('o Claude Code não disse de onde veio o `navegador`: atualize o Claude Code')
+  if (origem !== 'local') return barra('o `navegador` deste projeto não veio do passo 3 do Degrau 5: ligue de novo por ele')
+  let c
+  try {
+    c = await conferir(typeof entrada.cwd === 'string' && entrada.cwd ? entrada.cwd : process.cwd())
+  } catch {
+    return barra('a trava não conseguiu conferir o Chrome deste projeto')
+  }
+  if (c?.estado === 'conferido') return d
+  const recado = RECADO_DO_PERFIL[c?.estado]
+  return barra(recado ? recado(c.porta) : 'a trava não conseguiu conferir o Chrome deste projeto')
+}
+
 // rodada 5.20 (decisao 9, N37): o import.meta.url vem com o atalho resolvido e o argv[1] do jeito que
 // veio; com o projeto aberto por juncao ou link, a comparacao crua dava falso e a trava nao rodava
 function chamadoDireto() {
@@ -177,13 +222,13 @@ if (chamadoDireto()) {
   let bruto = ''
   process.stdin.setEncoding('utf8')
   process.stdin.on('data', pedaco => { bruto += pedaco })
-  process.stdin.on('end', () => {
+  process.stdin.on('end', async () => {
     let r
     try {
       const entrada = JSON.parse(bruto)
       // o cwd do Bash pode ter andado; o servidor MCP resolve o caminho pela raiz do projeto
-      r = avaliarMcp({
-        tool_name: entrada.tool_name, tool_input: entrada.tool_input,
+      r = await avaliarMcpComPerfil({
+        tool_name: entrada.tool_name, tool_input: entrada.tool_input, mcp_server: entrada.mcp_server,
         cwd: process.env.CLAUDE_PROJECT_DIR || entrada.cwd, permission_mode: entrada.permission_mode,
       })
     } catch {

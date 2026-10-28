@@ -1,5 +1,5 @@
 {
- "versao": "5.26",
+ "versao": "5.27",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -102,9 +102,11 @@
   },
   ".claude/hooks/barrar-mcp.mjs": {
    "0b9f336a0412e924": "anterior-5.25",
+   "521f48a103437881": "5.27",
    "5cbc8da34bfc02ec": "anterior-5.25",
    "7fdf84c880839752": "anterior-5.25",
    "9280c32f145569c2": "5.25",
+   "dc6645080c92f7ba": "5.27",
    "fa1419833a314eb9": "anterior-5.25"
   },
   ".claude/hooks/barrar-perigoso.mjs": {
@@ -970,14 +972,15 @@
   ".claude/skills/conectar/SKILL.md": {
    "00ce3a2576a89169": "3.0",
    "06ac729775e074be": "anterior-3.6",
-   "17eb2e7953f29302": "5.26",
+   "06d1951b877afcd4": "5.27",
+   "17eb2e7953f29302": "anterior-5.26",
    "1d6396880425d2da": "4.6",
    "29765200f4f1cb63": "5.15",
    "4117a1453c2eed41": "5.18",
    "4f1fc59cb82d1817": "5.25",
    "565a327091a62a23": "3.7",
    "8ff86dfa3dff582f": "4.1",
-   "924bfd9b715a6ea4": "5.26",
+   "924bfd9b715a6ea4": "anterior-5.26",
    "96efa3b18305e191": "3.1",
    "9989ace16f4a1c80": "5.26",
    "9e15b3a48343157b": "5.11",
@@ -988,18 +991,18 @@
    "fa890774ab90ac09": "5.7"
   },
   ".claude/skills/conectar/referencias/escada.md": {
-   "0102fd9974c17060": "5.26",
+   "0102fd9974c17060": "anterior-5.26",
    "fb798052c8ca8434": "5.26"
   },
   ".claude/skills/conectar/referencias/navegador.md": {
    "67ea99aabbffdf42": "5.26",
-   "b1a948f5ba9cacae": "5.26",
-   "c9a6716f5b3cf68e": "5.26"
+   "b1a948f5ba9cacae": "anterior-5.26",
+   "c9a6716f5b3cf68e": "anterior-5.26"
   },
   ".claude/skills/conectar/referencias/relogar.md": {
-   "25e0402102bc6e7c": "5.26",
-   "842d235ea65f41a6": "5.26",
-   "c76552e177b025fb": "5.26",
+   "25e0402102bc6e7c": "anterior-5.26",
+   "842d235ea65f41a6": "anterior-5.26",
+   "c76552e177b025fb": "anterior-5.26",
    "fbc1cfad676ceefe": "5.26"
   },
   ".claude/skills/conectar/scripts/abrir-chrome.mjs": {
@@ -1017,16 +1020,17 @@
   },
   ".claude/skills/conectar/scripts/lib/navegador.mjs": {
    "268db5bfd61cdd32": "anterior-5.25",
-   "2e5537810334c4e6": "5.26",
+   "2e5537810334c4e6": "anterior-5.26",
    "2efa9f9d15d66ef0": "5.25",
-   "4f8e494a599d88b8": "5.26",
-   "790ae49c5947f424": "5.26",
-   "94d2fcd5909e4206": "5.26",
-   "b52c516a3ba925b6": "5.26",
-   "d71334e6a349b958": "5.26",
+   "4f8e494a599d88b8": "anterior-5.26",
+   "790ae49c5947f424": "anterior-5.26",
+   "94d2fcd5909e4206": "anterior-5.26",
+   "b52c516a3ba925b6": "anterior-5.26",
+   "d71334e6a349b958": "anterior-5.26",
    "e2cd2354b6352281": "5.26",
-   "e3418d381c4af7b4": "5.26",
-   "e39e06ba0caf7968": "5.26"
+   "e3418d381c4af7b4": "anterior-5.26",
+   "e39e06ba0caf7968": "anterior-5.26",
+   "ef705e2b71dd1bb6": "5.27"
   },
   ".claude/skills/conectar/scripts/lib/raiz.mjs": {
    "628d16ee88ccfa76": "5.25"
@@ -1035,14 +1039,14 @@
    "a464d40b73289c21": "5.25"
   },
   ".claude/skills/conectar/scripts/receitas-login.json": {
-   "37517e5f3dc66819": "5.26",
+   "37517e5f3dc66819": "anterior-5.26",
    "66c1f794d499986f": "5.26"
   },
   ".claude/skills/conectar/scripts/relogar.mjs": {
-   "329393b3990b41f1": "5.26",
+   "329393b3990b41f1": "anterior-5.26",
    "56aea1c180045ad1": "5.26",
-   "5ad244cbb1a54a4d": "5.26",
-   "e36f93c13ea5136b": "5.26"
+   "5ad244cbb1a54a4d": "anterior-5.26",
+   "e36f93c13ea5136b": "anterior-5.26"
   },
   ".claude/skills/conectar/scripts/totp.mjs": {
    "95376de9d14d2f71": "5.26"
@@ -2067,10 +2071,11 @@
   },
   ".claude/skills/mercado-livre/scripts/lib/chrome.mjs": {
    "16f445e5578a13cb": "5.26",
-   "19bb715b47768a9c": "5.26",
-   "251870f5f397177e": "5.26",
-   "6b43b8aa0c942fbd": "5.26",
-   "908a71ed29e50be5": "5.26",
+   "19bb715b47768a9c": "anterior-5.26",
+   "251870f5f397177e": "anterior-5.26",
+   "47b0a375f578796b": "5.27",
+   "6b43b8aa0c942fbd": "anterior-5.26",
+   "908a71ed29e50be5": "anterior-5.26",
    "9199df883327758e": "5.25",
    "91e35665775191df": "3.6",
    "96fd691d08740769": "anterior-3.6",
@@ -2208,12 +2213,13 @@
    "a12c6c0403adfe7d": "5.20"
   },
   ".claude/skills/midia-social/scripts/lib/chrome.mjs": {
+   "5618eb42a88ef884": "5.27",
    "5a8f035c4887d6a5": "5.26",
-   "5f3e78bcb7562782": "5.26",
+   "5f3e78bcb7562782": "anterior-5.26",
    "73136ee25d4cbcc3": "anterior-5.25",
-   "848c23ebd5a90e8c": "5.26",
-   "ae472972f2854f97": "5.26",
-   "b6a5971853632bee": "5.26",
+   "848c23ebd5a90e8c": "anterior-5.26",
+   "ae472972f2854f97": "anterior-5.26",
+   "b6a5971853632bee": "anterior-5.26",
    "c425240b77a4c916": "5.25",
    "e8366fdf7f8a6064": "4.1"
   },

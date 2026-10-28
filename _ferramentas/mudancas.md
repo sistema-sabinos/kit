@@ -775,3 +775,11 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto não tem `.claude/skills/conectar/scripts/relogar.mjs`.
 **Como aplicar:** nada no projeto; o motor traz.
 **Como testar:** `node .claude/skills/conectar/scripts/relogar.mjs ML` responde `falta-variavel` num projeto sem as três linhas do `ML` no `.env`.
+
+## porteiro-do-perfil
+
+**O que é:** o robô agora confere, a cada uso do navegador, que o Chrome na porta é o deste projeto; se não for, ele para e diz o que rodar (abrir o Chrome dedicado com o `abrir-chrome.mjs`, ou ligar o `navegador` de novo pelo passo 3 do Degrau 5 do `/conectar` quando a porta mudou).
+**Por quê:** dois projetos podem cair na mesma porta, e com o Chrome de um fechado o `navegador` dele entrava calado no Chrome logado do outro.
+**Te afeta se:** o projeto tem `.claude/hooks/barrar-mcp.mjs` sem o texto `avaliarMcpComPerfil`.
+**Como aplicar:** nada no projeto; o motor traz.
+**Como testar:** `grep -l avaliarMcpComPerfil .claude/hooks/barrar-mcp.mjs` imprime o caminho, e com o Chrome dedicado fechado uma ferramenta do `navegador` para com o recado de rodar o `abrir-chrome.mjs`.

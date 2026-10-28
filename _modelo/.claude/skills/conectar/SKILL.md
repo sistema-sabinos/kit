@@ -58,7 +58,7 @@ Antes do Degrau 1, três perguntas, nesta ordem:
 3. Ligar o servidor `navegador` com a porta que o `porta.mjs` imprimiu, no lugar de `<porta>`. Fica só neste projeto (o escopo padrão), porque a porta é dele:
    `claude mcp add navegador -- npx @playwright/mcp@0.0.83 --cdp-endpoint http://127.0.0.1:<porta> --output-dir dados/navegador-saida --no-webmcp`
 
-Cada vez que for usar o `navegador`, rodar antes o `abrir-chrome.mjs`: o servidor entra em qualquer Chrome que estiver na porta, e é o `abrir-chrome.mjs` que confere se esse Chrome é o deste projeto. Se ele avisar que a porta mudou, ligar o `navegador` de novo com a porta nova (`claude mcp remove navegador` e o passo 3) antes de usar.
+Cada vez que for usar o `navegador`, rodar antes o `abrir-chrome.mjs`: o servidor entra em qualquer Chrome que estiver na porta, e é o `abrir-chrome.mjs` que confere se esse Chrome é o deste projeto. Se ele avisar que a porta mudou, ligar o `navegador` de novo com a porta nova (`claude mcp remove navegador` e o passo 3) e fechar e abrir o Claude Code antes de usar: o `navegador` que já está rodando só pega a porta nova numa sessão nova.
 
 **Degrau 6, API escondida.** O caminho que o próprio site usa por dentro, achado uma vez e conferido toda vez. É provisório até quem faz o SabinOS terminar de testar esse caminho. O mesmo desempate do Degrau 5: tarefa que se repete toda semana ou mais vira script; de vez em quando, com você na frente.
 
