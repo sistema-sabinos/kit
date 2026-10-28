@@ -30,8 +30,9 @@ segundos serve uma dessas etapas.
 1. Rode `node .claude/skills/configurar-video/scripts/conferir.mjs`. Ele diz o
    que falta instalar (ffmpeg e companhia). Faltando algo, mande a pessoa pro
    `/configurar-video` e pare aqui.
-2. A chave do Gemini fica no `.env` do projeto. Sem ela, mande a pessoa pro
-   `/conectar`, que ensina a pegar.
+2. A chave do Gemini fica no `.env` do projeto, e a IA não abre esse arquivo:
+   rode `node .claude/skills/conectar/scripts/chave.mjs tem GEMINI_API_KEY`. Com
+   `falta`, mande a pessoa pro `/conectar`, que ensina a pegar.
 3. A conta do Gemini costuma ser pré-paga: se o crédito zerar, imagem, vídeo e
    voz param de uma vez.
 

@@ -52,14 +52,19 @@ node .claude/skills/compartilhar/scripts/compartilhar.mjs varrer <pasta>
 ```
 
 Saída 2 quer dizer que achou: `segredos` (arquivo, linha e tipo, nunca o valor,
-inclusive dentro de um `.env.example`) e `envs` (arquivo `.env` dentro da pasta).
+inclusive dentro de um `.env.example`), `envs` (arquivo `.env` dentro da pasta) e
+`sessoes` (arquivo de login do navegador: sai da pasta e nunca viaja).
 Saída 3 é erro de digitação no comando (pasta que não existe, comando errado):
 corrigir e rodar de novo. `naoVarridos` e `ilegiveis`
 são arquivos que a varredura não conseguiu ler (planilha, PDF, arquivo grande):
 mostrar a lista e pedir que a pessoa confirme que não tem senha nem dado de
 cliente neles antes de seguir. Parar e mostrar onde está (arquivo e linha, nunca o valor), e oferecer tirar
-dali: com o sim, a chave ou senha vai pro `.env` do projeto, que não viaja, e no
-arquivo da pasta fica só o nome do serviço. CPF ou dado de cliente não vai pro
+dali: com o sim, a pessoa abre o `.env` do projeto (que não viaja) no editor e
+cola a chave ou senha numa linha `NOME=valor`; a IA roda
+`node .claude/skills/conectar/scripts/chave.mjs bate NOME --em <pasta>/<arquivo>:<linha>`
+(o `<arquivo>` do `varrer` vem a partir da `<pasta>`, e o `bate` roda da raiz) e
+só com `bate` tira a chave do arquivo da pasta, onde fica só o nome do serviço. A
+IA nunca grava o `.env`. CPF ou dado de cliente não vai pro
 `.env`: sai do arquivo que viaja (fica só no projeto, ou some, se não é mais
 necessário). Se o arquivo já estava no backup do
 projeto (aparece em `git log --oneline -- <arquivo>`), avisar: tirar daqui não
@@ -235,7 +240,7 @@ No fim, uma linha no diário de hoje, no formato que o `AGENTS.md` manda: "pasta
 
 ## Regras
 
-- Senha ou `.env` dentro da pasta: parar antes de qualquer outra coisa.
+- Senha, `.env` ou arquivo de sessão dentro da pasta: parar antes de qualquer outra coisa.
 - Nunca apagar nem mover nada do projeto, fora tirar a senha da pasta (Passo 2):
   só a linha no `.gitignore`, o `git rm --cached` e a linha na Estrutura de
   pastas, e só depois do push e do ok do Passo 6.

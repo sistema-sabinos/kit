@@ -528,6 +528,10 @@ perguntar outro nome antes de seguir.
   rodar script baixado da internet) antes de ele rodar. Vai sempre, em todo projeto,
   mesmo quando a pessoa recusou o auto-sync: o `settings.json` copiado já chama ela pelo
   bloco `PreToolUse`, e sem o arquivo o projeto nasce apontando pra um script que não existe.
+- `.claude/hooks/barrar-mcp.mjs`, só o script (nunca o `.test.mjs`). É a trava das
+  ferramentas de fora (navegador, email, redes): barra o que lê login ou roda código no
+  navegador e pergunta antes de mandar, apagar ou publicar em conta. Vai sempre, como a
+  outra trava: o `settings.json` copiado já chama ela.
 - `.claude/hooks/auto-sync.mjs`, só o script (nunca o `auto-sync.test.mjs`). É o
   backup automático que o bloco `Stop` do `settings.json` chama. Vai sempre, como a
   trava: sem ele o projeto nasce com o `settings.json` apontando pra um script que não existe.

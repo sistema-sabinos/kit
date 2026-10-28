@@ -5,7 +5,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { autoSync, lerOrigem, carimbo, semInternet, semLogin } from './auto-sync.mjs'
+import { autoSync, lerOrigem, carimbo, semInternet, semLogin, caraDeChave, conferirPreparados } from './auto-sync.mjs'
 
 const SCRIPT = fileURLToPath(new URL('./auto-sync.mjs', import.meta.url))
 const AGORA = new Date(2026, 9, 5, 22, 7)   // 22h no Brasil: em UTC ja seria dia 6
@@ -322,6 +322,49 @@ test('--conferir sem git sai 2 (nunca verde sem conferir) e opcao errada nunca f
     assert.equal(git(r.a, 'log', '--format=%s', '-1'), 'inicio', 'nada commitado')
     assert.ok(!temNoRemoto(r, 'novo.md'), 'nada enviado')
   } finally { rmSync(solta, { recursive: true, force: true }); rmSync(r.raiz, { recursive: true, force: true }) }
+})
+
+// Rodada 5.28 (ata, T12): login de navegador exportado (storageState, HAR) e semente de 2FA
+// nao tem palavra de chave nem maiuscula misturada, e a regra larga deixava passar. Iscas
+// montadas em pedacos, nunca um cookie ou uma semente inteira escrita.
+const SEMENTE = 'JBSWY3DP' + 'EHPK3PXP'
+test('caraDeChave: cookie de storageState e de HAR, otpauth e semente sob nome de 2FA', () => {
+  const iscas = [
+    ['  "coo' + 'kies": [{ "name": "sid", "value": "abc" }]', 'cookie de navegador'],
+    ['  "coo' + 'kies": [', 'cookie de navegador'],
+    ['{ "name": "Coo' + 'kie", "value": "sid=abc" }', 'cookie de navegador'],
+    // comum do Codex no chat 7: a ordem inversa numa linha so
+    ['{"value":"sid=abc","name":"Coo' + 'kie"}', 'cookie de navegador'],
+    ['otp' + 'auth://totp/loja:eu?secret=' + SEMENTE + '&issuer=loja', 'semente de 2FA'],
+    ['ML_' + 'TOTP_SEED=' + SEMENTE, 'semente de 2FA'],
+  ]
+  for (const [linha, tipo] of iscas) assert.equal(caraDeChave(linha), tipo, `isca sem o tipo certo: ${tipo}`)
+})
+
+test('caraDeChave: canario, titulo em caixa alta, prosa e cookies vazio passam limpos', () => {
+  assert.equal(caraDeChave('chave = sk-' + 'Ab1'.repeat(10)), 'chave de API', 'canario: o sk- tinha de casar')
+  for (const linha of [
+    'titulo: CANETAMARKERBOBBIEGOODS',
+    '"coo' + 'kies": []',
+    'SEED=CANETAMARKERBOBBIEGOODS',
+    'Configure o 2FA: autenticacaoemdoispassos',
+    // chat 7 (item 2 do recibo do chat 2): produto chamado Cookie num catalogo
+    '{ "name": "Coo' + 'kie", "preco": 12 }',
+  ]) assert.equal(caraDeChave(linha), null, `falso positivo: ${linha}`)
+})
+
+test('conferir: login salvo em json com cookie fica fora do backup', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'auto-sync-login-'))
+  try {
+    git(dir, 'init', '-q', '-b', 'main')
+    configurar(dir)
+    mkdirSync(join(dir, 'dados'))
+    const login = ['{', '  "coo' + 'kies": [', '    { "name": "sid", "value": "abc", "domain": ".loja.com" }', '  ],', '  "origins": []', '}', ''].join('\n')
+    writeFileSync(join(dir, 'dados', 'login.json'), login)
+    writeFileSync(join(dir, 'nota.md'), 'normal\n')
+    git(dir, 'add', 'dados/login.json', 'nota.md')
+    assert.deepEqual(conferirPreparados(dir), [{ rel: 'dados/login.json', motivo: 'tem cara de cookie de navegador' }])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
 test('arquivo acima do limite fica fora do backup e o recado diz o tamanho', () => {

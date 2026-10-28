@@ -116,7 +116,8 @@ versão completa, com suporte a legenda: `brew install ffmpeg-full && brew link 
 
 ### 4. Chave do Gemini
 
-Veja se o `.env` tem `GEMINI_API_KEY`. Se não tem, explique em duas frases o que fica
+Rode `node .claude/skills/conectar/scripts/chave.mjs tem GEMINI_API_KEY` (a IA não abre o `.env`;
+o script responde só `tem` ou `falta`). Com `falta`, explique em duas frases o que fica
 travado sem ela: a conferência de vídeo por IA (o "olho final"), a geração de imagem e a
 voz gerada. Dá pra editar vídeo sem ela. Ofereça rodar o `/conectar` pra pôr a chave.
 Qualquer uso pago da chave só acontece com preço e autorização avisados na hora.

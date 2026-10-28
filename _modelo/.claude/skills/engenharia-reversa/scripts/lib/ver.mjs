@@ -45,7 +45,7 @@ export function escolherFlash(ids) {
 
 export async function descobrirModelo(chave, { buscar = fetchComTimeout } = {}) {
   const r = await buscar(`${API}/models?key=${chave}&pageSize=300`, {}, { timeoutMs: 30_000 })
-  if (!r.ok) throw new Error(`o Gemini recusou a chave (${r.status}). Confira a GEMINI_API_KEY no .env e o faturamento no aistudio.google.com`)
+  if (!r.ok) throw new Error(`o Gemini recusou a chave (${r.status}). Confira com node .claude/skills/conectar/scripts/chave.mjs tem GEMINI_API_KEY e o faturamento no aistudio.google.com`)
   const j = await r.json()
   const ids = (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace(/^models\//, ''))
   const modelo = escolherFlash(ids)

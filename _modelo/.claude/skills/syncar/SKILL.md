@@ -93,7 +93,7 @@ Dentro do projeto, no primeiro `/syncar` daquele computador: sem `.origem` na ra
 
 ## Regras
 
-- **Nunca** commitar `.env` nem arquivo com chave ou senha. Se aparecer chave em arquivo rastreado, avisar e ajudar a mover pro `.env` antes de commitar
+- **Nunca** commitar `.env` nem arquivo com chave ou senha. Se aparecer chave em arquivo rastreado, avisar e mostrar arquivo e linha (nunca o valor); a pessoa abre o `.env` no editor e cola numa linha `NOME=valor`; a IA roda `node .claude/skills/conectar/scripts/chave.mjs bate NOME --em <arquivo>:<linha>` e só com `bate` tira a chave do arquivo, antes de commitar (a IA nunca grava o `.env`)
 - Repositório sempre privado por padrão
 - Nunca forçar o envio (`--force`) nem apagar o lado de lá pra o envio passar: a trava barra, e esse atalho é o que perde o trabalho do sócio
 - Nunca `git reset --hard`, `git checkout -- .` nem `git clean`: apagam o trabalho que ainda não subiu. Pra voltar atrás no meio de uma junção, só `git rebase --abort`

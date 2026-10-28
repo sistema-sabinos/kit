@@ -47,6 +47,7 @@ import { join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
 import { conectar } from '../../mercado-livre/scripts/lib/chrome.mjs'
+import { sessaoCaiu, AVISO } from '../../conectar/scripts/lib/navegador.mjs'
 import { limpar, suspeitos } from '../../ler-avaliacoes/scripts/lib/texto.mjs'
 import { slugDe, gravarJson, gravarEtapaDaCategoria, dataLocal } from '../../mercado-livre/scripts/lib/pipeline.mjs'
 
@@ -546,7 +547,8 @@ function abrirNoChrome(page) {
   return async url => {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 })
     await page.waitForTimeout(2500)
-    if (/login|registration/i.test(page.url())) throw new Error('a pagina pediu login: a sessao do Chrome dedicado caiu')
+    const caiu = sessaoCaiu({ url: page.url(), host: 'mercadolivre.com.br' })
+    if (caiu) throw new Error(AVISO[caiu])
   }
 }
 

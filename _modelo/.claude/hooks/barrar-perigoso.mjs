@@ -159,7 +159,8 @@ function leitorDeEscritores(comando) {
 // 4. Trava de disco (rodada 5.17). Passam: `cp ubuntu.iso /dev/sdb` (o cp so cita),
 //    `fdisk /dev/sda` e `parted /dev/sda mklabel gpt` (interativos ou com verbo depois),
 //    `nvme format /dev/nvme0n1`, `hdparm --security-erase`, `dd of=$DISCO` (o limite 1),
-//    `echo "format D:" | cmd`, `git -c alias.f=!format f D:` e `rg --pre format`. E o
+//    `echo "format D:" | cmd` e `rg --pre format` (o `git -c alias.f=!format f D:` barra desde
+//    a 5.28, pelo limite 7). E o
 //    contrario, barram sem precisar: `notepad mkfs.txt`, `wipefs /dev/sdb` sem -a (so
 //    lista) e mencao solta como `echo usar wipefs depois >> licoes.md`.
 // 5. Copias de sombra do Windows (rodada 5.18, doc conferida em 2026-10-19 em
@@ -181,12 +182,24 @@ function leitorDeEscritores(comando) {
 //    ForEach barra, seja qual for o objeto (`$api | % { $_.Delete(id) }`).
 // 7. Git (rodada 5.20, N6 e N10). `git checkout arquivo` sem `--` fica livre (nao da pra
 //    saber sem o git se a palavra e branch ou arquivo; pasta, ponto, curinga, `:/` e a lista
-//    que sai de $(...) ou do xargs barram). Passam alias (`git -c alias.x="reset --hard" x`),
-//    `git branch -D`, `git reflog expire`, `git gc --prune=now`, `git update-ref -d`, `git
-//    checkout-index -a -f` e o alvo lido de arquivo (`--pathspec-from-file`). A palavra "git"
+//    que sai de $(...) ou do xargs barram). Desde a 5.28, nos verbos que a trava julga, barram
+//    a palavra com variavel, substituicao, crase ou chaves, o git depois do xargs e o apelido
+//    por -c ou --config-env; pelo xargs com -I, -i ou --replace, a troca no verbo. A barra invertida se
+//    le do jeito do bash e do PowerShell. Nao decidem o redirecionamento (`2>$null`), o
+//    comentario, as chaves coladas em @ ou ^ (`HEAD@{1}`), o valor do `stash -m` e o git citado
+//    por grep, rg, echo ou outro git. Barra a prosa de heredoc com verbo julgado antes de
+//    parentese, crase ou chaves (`git push (desde ...)` num `commit -F - <<EOF`). Passam
+//    o verbo por crase, chaves ou parentese (git `x` --hard), porque o mesmo desenho pega
+//    prosa de heredoc, o apelido gravado no config do git e `git branch -D`, `git reflog
+//    expire`, `git gc --prune=now`, `git update-ref -d`, `git checkout-index -a -f` e o alvo
+//    lido de arquivo (`--pathspec-from-file`). A palavra "git"
 //    solta no meio dos argumentos de outro git abre a leitura de um git novo (`git reset git
 //    --hard` passa), e o cd so muda a pasta do git que vem depois dele no mesmo nivel (o cd de
 //    fora de um ( ) nao chega no git de dentro).
+// 8. Leitura de segredo (rodada 5.28) e lombada. Barra o codigo inline do node e do python, o
+//    sqlite3, o Get-Content, o type e a copia com `.env`, perfil, sessao salva ou HAR, e o
+//    download com cookie. Passam o script que le o arquivo sozinho, o codigo mandado pela entrada
+//    (`py - <<EOF`), o grep, o mv, o tar e o caminho montado por Join-Path.
 function classificarTrechosEntreAspas(comando) {
   const RE_ASPAS = /"([^"]*)"|'([^']*)'/g
   const suspeitos = []
@@ -230,8 +243,12 @@ function classificarTrechosEntreAspas(comando) {
     // dentro das aspas, parentese, chave, crase e separador sao texto (`git checkout -- "a (1).txt"`)
     // aspas vazias viram a marca VAZIO: `git -C ""` mantem a pasta (git-scm.com/docs/git)
     if (escritor) continue
-    if (conteudo) marcado.push(conteudo.replace(/\s/g, NUL).replace(/[(){}`;&|]/g, '_'))
-    else if (sequencia) sequencia.fim = RE_ASPAS.lastIndex
+    // a crase entre aspas duplas ainda roda no bash: vira $, que a leitura de git conta como nao lida; e
+    // o #, o < e o > do comeco sao texto (`git clean -e "#keep"`), entao levam a marca ASPA (5.28)
+    if (conteudo) {
+      const t = (m[1] !== undefined ? conteudo.split('`').join('$') : conteudo).replace(/\s/g, NUL).replace(/[(){}`;&|]/g, '_')
+      marcado.push(/^[#<>]/.test(t) ? ASPA + t : t)
+    } else if (sequencia) sequencia.fim = RE_ASPAS.lastIndex
     else if (!/\S/.test(comando[m.index - 1] ?? ' ')) { sequencia = { posicao: marcado.length, fim: RE_ASPAS.lastIndex }; marcado.push(VAZIO) }
   }
   fechaSequencia()
@@ -242,6 +259,7 @@ function classificarTrechosEntreAspas(comando) {
 }
 const NUL = String.fromCharCode(0)
 const VAZIO = String.fromCharCode(2)
+const ASPA = String.fromCharCode(3)
 
 // usado so pelo rmPerigoso (ver comentario dele) pra dividir a linha em comandos; a
 // limpeza principal de aspas de todo o resto do arquivo e a classificarTrechosEntreAspas
@@ -425,7 +443,7 @@ function expandir(p) {
 // caminho de rede (\\servidor, que o disco demora a responder) ou pasta que existe (relativa
 // ao cwd do comando). A conferencia no disco tem teto: passou dele, conta como pasta
 function alvoAmplo(alvo, dir, conta) {
-  const a = expandir(alvo.split(NUL).join(' '))
+  const a = expandir(alvo.split(NUL).join(' ').split(ASPA).join(''))
   if (a === '.' || a === '..' || /[*?[]/.test(a) || a.startsWith(':') || /[\\\/]$/.test(a)) return true
   if (a.includes(SUB) || /^[\\\/]{2}/.test(a)) return true
   if (a === VAZIO || a.startsWith('-')) return false
@@ -516,10 +534,65 @@ function gitDescartePerigoso(verbo, resto, dir, conta, deFora) {
 const MAX_MUDANCAS_DE_PASTA = 64
 function mudarPasta(conta, dir, alvo) {
   if (alvo === VAZIO || ++conta.mudancas > MAX_MUDANCAS_DE_PASTA) return dir
-  return resolve(dir, expandir(alvo.split(NUL).join(' ')))
+  return resolve(dir, expandir(alvo.split(NUL).join(' ').split(ASPA).join('')))
 }
 
-function lerGit(args, dir, conta, deFora) {
+// rodada 5.28 (1a): git que joga trabalho fora escrito de um jeito que a trava nao desfaz como o
+// shell (variavel, $'..', $(...), crase, chaves, a lista do xargs, apelido por -c) barra: o criterio
+// "barra o que nao entende" da D1 da 5.27 da bancada. A barra invertida o bash tira e o PowerShell
+// guarda (caminho do Windows), entao a palavra com ela e lida dos dois jeitos
+const JULGADOS = new Set(['push', 'reset', 'clean', 'checkout', 'restore', 'switch', 'stash'])
+const MOTIVO_NAO_LE = 'esta escrito de um jeito que a trava nao le com certeza (variavel, substituicao, chaves, xargs ou apelido) e pode jogar trabalho fora'
+const BARRA = String.fromCharCode(92)
+// as chaves coladas em @ ou ^ sao do git (reflog, upstream e peel: HEAD@{1}, @{-1}, v1^{commit}), nao do shell
+function naoLe(a) { return a.includes('$') || a.split('@' + SUB).join('').split('^' + SUB).join('').includes(SUB) }
+function semBarra(a) { return a.replace(/\\([\s\S])/g, '$1') }
+// no checkout com -- depois, a primeira palavra solta antes dele e o commit (`git checkout $(git
+// rev-parse HEAD~1) -- a.txt`): o valor dela so muda de onde vem o arquivo listado
+function commitAntesDoTraco(resto) {
+  const j = resto.findIndex((a, k) => !a.startsWith('-') && !['-b', '-B', '--orphan'].includes(resto[k - 1]))
+  return j >= 0 && resto.indexOf('--') > j ? j : -1
+}
+const ehGit = p => nomeDoPrograma(p) === 'git' || (p.includes(BARRA) && nomeDoPrograma(semBarra(p)) === 'git')
+// o que decide para no comentario (`# sobe (backup)`) e deixa de fora o redirecionamento (`2>$null`,
+// `> $LOG`): nenhum dos dois chega no git
+const RE_REDIRECIONA = /^[\d*]?(?:>>?|<)/
+const RE_SO_REDIRECIONA = /^[\d*]?(?:>>?|<)$/
+function argumentosLidos(resto) {
+  const lidos = []
+  for (let j = 0; j < resto.length; j++) {
+    const a = resto[j]
+    if (a.startsWith('#')) break
+    if (RE_REDIRECIONA.test(a)) { if (RE_SO_REDIRECIONA.test(a)) j++; continue }
+    lidos.push(a)
+  }
+  return lidos
+}
+// xargs com -I, -i ou --replace pode trocar o proprio verbo do git (`xargs -I{} git {} --hard`): o
+// deFora guarda as trocas do pedaco, de todo xargs dele ({} vira SUB no marcado). Barra o verbo que e
+// uma troca, e com {} tambem o verbo que nao e nome simples de comando do git (`git "{}"` vira `__`)
+function trocaDoXargs(palavras, i) {
+  const a = palavras[i]
+  if (a === '-I') return palavras[i + 1] || null
+  if (a.startsWith('-I') || a.startsWith('-i')) return a.slice(2) || SUB
+  if (a === '--replace') return SUB
+  if (a.startsWith('--replace=')) return a.slice(10) || SUB
+  return null
+}
+// o git que vem como texto de outro programa (`grep -rn git $DIR`, `git log --grep git`, `xargs grep
+// -l git`) fica so com as regras de antes da 5.28. O programa do pedaco e a primeira palavra, ou a
+// primeira depois do xargs e das opcoes dele
+const CITAM = new Set(['git', 'grep', 'egrep', 'fgrep', 'rg', 'ag', 'ack', 'findstr', 'select-string', 'sls', 'echo', 'printf', 'write-output', 'write-host'])
+function programaDoPedaco(palavras) {
+  let k = 0
+  if (nomeDoPrograma(palavras[0]) === 'xargs') {
+    k = 1
+    while (k < palavras.length && palavras[k].startsWith('-')) k += XARGS_COM_VALOR.test(palavras[k]) ? 2 : 1
+  }
+  return k
+}
+
+function lerGit(args, dir, conta, deFora, citado) {
   let i = 0
   let semForca = false
   while (i < args.length && args[i].startsWith('-')) {
@@ -527,15 +600,28 @@ function lerGit(args, dir, conta, deFora) {
     const nome = op.split('=')[0]
     let valor
     if (GIT_COM_VALOR.has(op)) { valor = args[i + 1]; i += 2 } else { valor = op.slice(nome.length + 1); i++ }
-    if (valor === undefined) return null
+    if (valor === undefined) return deFora && !citado ? MOTIVO_NAO_LE : null
     if (op === '-C' || nome === '--work-tree') dir = mudarPasta(conta, dir, valor)
     // valor vazio e zero tambem sao falso pro git (revisao final do Codex, 5.20); o --config-env
     // tira o valor de uma variavel que a trava nao le, entao conta como sem forca
     if (op === '-c' && /^clean\.requireforce=(?:false|no|off|0*)$/i.test(valor)) semForca = true
     if (nome === '--config-env' && /^clean\.requireforce=/i.test(valor)) semForca = true
+    if (!citado && (op === '-c' || nome === '--config-env') && (/^alias\./i.test(valor) || naoLe(valor))) return MOTIVO_NAO_LE
   }
   const verbo = args[i]
   const resto = args.slice(i + 1)
+  const troca = deFora instanceof Set && verbo !== undefined && (deFora.has(verbo) || (deFora.has(SUB) && !/^[a-z][a-z0-9-]*$/.test(verbo)))
+  if (!citado && (troca || (verbo === undefined ? deFora : verbo.includes('$')))) return MOTIVO_NAO_LE
+  if (!JULGADOS.has(verbo)) return null
+  if (!citado) {
+    // pelo xargs, o checkout e o restore que hoje barram guardam o motivo de hoje; o resto barra por nao ler
+    if (deFora) return (['checkout', 'restore'].includes(verbo) && gitDescartePerigoso(verbo, resto, dir, conta, deFora)) || MOTIVO_NAO_LE
+    const lidos = argumentosLidos(resto)
+    const livre = verbo === 'checkout' ? commitAntesDoTraco(lidos) : -1
+    // no stash decide a primeira palavra solta, fora o valor do -m (`git stash -m "wip $X"`)
+    const decide = verbo === 'stash' ? [lidos.find((a, k) => !a.startsWith('-') && !['-m', '--message'].includes(lidos[k - 1])) ?? ''] : lidos.filter((a, j) => j !== livre)
+    if (decide.some(naoLe)) return MOTIVO_NAO_LE
+  }
   if (verbo === 'push') return gitPushPerigoso(resto)
   if (verbo === 'reset') return resto.some(a => longa(a, '--hard')) ? MOTIVO_SEM_SALVAR : null
   if (verbo === 'clean') return gitCleanPerigoso(resto, semForca)
@@ -592,13 +678,22 @@ function gitPerigoso(texto, cwd) {
     }
     let i = 0
     let deFora = false
+    const programa = programaDoPedaco(palavras)
     while (i < palavras.length) {
       const nome = nomeDoPrograma(palavras[i])
-      if (nome === 'xargs') deFora = true
-      if (nome !== 'git') { i++; continue }
+      if (nome === 'xargs') deFora = deFora || true
+      else if (deFora) {
+        const t = trocaDoXargs(palavras, i)
+        if (t) { if (deFora === true) deFora = new Set(); deFora.add(t) }
+      }
+      if (!ehGit(palavras[i])) { i++; continue }
+      // o g\it so abre leitura no lugar do programa; no meio dos argumentos ele fica como na v5.24
       let fim = i + 1
       while (fim < palavras.length && nomeDoPrograma(palavras[fim]) !== 'git') fim++
-      const motivo = lerGit(palavras.slice(i + 1, fim), dir, conta, deFora)
+      const args = palavras.slice(i + 1, fim)
+      const citado = programa < i && CITAM.has(nomeDoPrograma(palavras[programa]))
+      const motivo = lerGit(args, dir, conta, deFora, citado) ||
+        (args.some(a => a.includes(BARRA)) ? lerGit(args.map(semBarra), dir, conta, deFora, citado) : null)
       if (motivo) return motivo
       i = fim
     }
@@ -712,6 +807,205 @@ function clearContentPerigoso(comando) {
     opcaoDepoisDaPalavra(comando, RE_CLEAR_CONTENT, RE_OPCAO_RECURSE, FIM_DO_COMANDO)
 }
 const MOTIVO_OUTRO_PROGRAMA = 'apaga pasta ou arquivo por outro programa, sem confirmacao'
+// rodada 5.28 (1b, ata das decisoes tecnicas da 5.28): leitura de segredo por um caminho que a regra de
+// permissao nao ve. O deny de Read do settings pega cat, head, tail, sed e tee (doc conferida em
+// 2026-10-23 em code.claude.com/docs/en/permissions); o codigo inline do node e do python, o sqlite3, a
+// copia, o Get-Content e o download com cookie passam por fora. Lombada, nunca garantia: o `node
+// script.mjs` que le o .env sozinho segue livre, e precisa (os scripts do kit leem a chave assim).
+// Le o marcado: o codigo entre aspas e uma palavra so, e o texto de quem so escreve ja saiu
+const FONTE_SEGREDO = String.raw`(?<![\w.\-])\.env(?!\.(?:example|sample|template)(?![\w\-]))(?:\.[\w.\-]+)?(?![\w\-])|chrome-perfil|chrome-profile|Google[\\\/]Chrome[\\\/]|Microsoft[\\\/]Edge[\\\/]|dados[\\\/]sessao|[\\\/]Cookies(?![\w\-])|\.har(?![\w\-])|storage-?state|\.auth[\\\/]|(?<![^\\\/\s"'(])(?=[^\\\/\s"'(]*totp)[^\\\/\s"'(]*\.json(?![\w\-])`
+// interna no fechamento: a semente de 2FA (*totp*.json), como no barrar-mcp e no chave.mjs. O nome so
+// comeca no inicio da palavra (ou depois de aspa e parentese, volta 2: ReadAllText("ml-totp.json")) e o
+// totp e conferido num lookahead; aspa e parentese ficam fora do nome: cada palavra e lida uma vez, linear
+const RE_SEGREDO = new RegExp(FONTE_SEGREDO, 'i')
+const RE_SEGREDO_G = new RegExp(FONTE_SEGREDO, 'gi')
+const RE_SQLITE = /(?<![\w\-.])sqlite3(?:\.exe)?(?![\w\-.])/gi
+const RE_BAIXA = /(?<![\w\-.])(?:curl|wget|iwr|irm|Invoke-WebRequest|Invoke-RestMethod)(?:\.exe)?(?![\w\-.])/gi
+const RE_CABECALHO_COOKIE = /\bCookie\s*[:=]/gi
+const RE_CURL = /(?<![\w\-.])curl(?:\.exe)?(?![\w\-.])/gi
+const RE_CURL_COOKIE = /\s(?:-b|--cookie)(?=[\s=]|$)|\s-b(?=\S)/g
+const COPIAM = new Set(['cp', 'copy', 'copy-item', 'cpi'])
+// o destino da copia e o valor do -t, do --target-directory ou do -Destination (`cp -t /tmp .env`,
+// `Copy-Item -Destination x -Path .env`); sem eles, e o ultimo argumento
+// o -t do cp e minusculo: o -T maiusculo nao leva valor (`cp -T .env out`)
+const RE_DESTINO = /^(?:-[a-zA-Z]*t|--target-directory|-[Dd][Ee][Ss][Tt]\w*)$/
+const RE_DESTINO_COLADO = /^(?:--target-directory=|-dest\w*:)/i
+function origensDaCopia(args) {
+  const j = args.findIndex(a => RE_DESTINO.test(a))
+  if (j >= 0) return [...args.slice(0, j), ...args.slice(j + 2)]
+  if (args.some(a => RE_DESTINO_COLADO.test(a))) return args.filter(a => !RE_DESTINO_COLADO.test(a))
+  return args.slice(0, -1)
+}
+// fechamento da 5.28: na ferramenta PowerShell o cat e o Get-Content, e o deny de Read nao pega cat,
+// Get-Content nem Select-String ali (medido em 2026-10-27, isca com deny local); no Bash o deny ja pega o cat
+const LEEM = new Set(['get-content', 'gc', 'type', 'cat', 'more', 'format-hex', 'fhx', 'import-csv', 'ipcsv'])
+// interna no fechamento: o programa pode vir depois de uma atribuicao (`$x = Get-Content .env`,
+// `[string]$x = gc .env`) ou do cmd /c (`cmd /c type .env`), e o .NET le direto ([IO.File]::ReadAllText)
+// volta 2: o lado esquerdo e qualquer coisa que comeca com $ ou [ ate o primeiro = (`${x}`, `$x.y`, `$x[0]`,
+// `$x, $y`, `[List[string]]$x`, `??=`). Sem = no meio, o [^=]* para no primeiro =: linear
+const RE_ATRIBUICAO = /^\s*(?:[$[][^=]*=\s*)+/
+// o Exists so pergunta se o arquivo existe (volta 2: falso positivo do lado seguro)
+const RE_IO_FILE = /\[(?:System\.)?IO\.File\]::(?!Exists(?![\w]))/gi
+// curinga que casaria o .env (`.e*`, `.en?`, `.e?v`, e na volta 2 `*env`, `?env`, `.[e]nv`), conferido
+// contra ".env". O curinga sem nenhuma letra do nome (`*`, `*.*`) fica livre: ali o .env e so mais um
+function curingaDoEnv(palavra) {
+  const nome = palavra.replace(/^.*[\\\/]/, '').toLowerCase()
+  return /[*?[]/.test(nome) && /[env]/.test(nome) && casaCuringa(nome, '.env')
+}
+// pode[j]: o curinga lido ate aqui casa as j primeiras letras do nome. O [abc] casa uma letra do grupo;
+// o [ sem ] depois e letra. O ] seguinte de cada posicao sai de uma passada de tras pra frente: linear
+function casaCuringa(curinga, nome) {
+  const fecha = Array(curinga.length).fill(-1)
+  for (let i = curinga.length - 1, f = -1; i >= 0; i--) { fecha[i] = f; if (curinga[i] === ']') f = i }
+  let pode = [true, ...Array(nome.length).fill(false)]
+  for (let i = 0; i < curinga.length; i++) {
+    const c = curinga[i]
+    let casa = l => c === '?' || c === l
+    if (c === '[' && fecha[i] > i + 1) { const grupo = curinga.slice(i + 1, fecha[i]); casa = l => grupo.includes(l); i = fecha[i] }
+    if (c === '*') { for (let j = 1; j <= nome.length; j++) pode[j] = pode[j] || pode[j - 1] }
+    else pode = pode.map((_, j) => j > 0 && pode[j - 1] && casa(nome[j - 1]))
+    if (!pode.includes(true)) return false
+  }
+  return pode[nome.length]
+}
+const alvoDeSegredo = args => RE_SEGREDO.test(args.join(' ')) || args.some(curingaDoEnv)
+// comum do Codex no fechamento: o Select-String e escritor de texto, e o caminho entre aspas sumia do
+// marcado. A busca (Select-String, sls, findstr) le o comando cru, com as aspas: o primeiro argumento
+// solto, o -Pattern e o /C: do findstr sao o texto procurado e ficam livres; o resto e o valor do -Path
+// (e do /G: e /F: do findstr) sao arquivo. Uma passada so no comando: linear
+const BUSCAM = new Set(['select-string', 'sls', 'findstr'])
+// cada pedaco guarda em citadas o indice das palavras que comecam entre aspas: texto, nunca programa
+function pedacosComAspas(comando) {
+  const novo = () => Object.assign([], { citadas: new Set() })
+  const pedacos = [novo()]
+  let palavra = null, aspa = null, citada = false
+  const fecha = () => {
+    const p = pedacos[pedacos.length - 1]
+    if (palavra !== null) { if (citada) p.citadas.add(p.length); p.push(palavra) }
+    palavra = null; citada = false
+  }
+  for (const c of comando) {
+    if (aspa) { if (c === aspa) aspa = null; else palavra += c; continue }
+    if (c === '"' || c === "'") { aspa = c; if (palavra === null) citada = true; palavra ??= ''; continue }
+    if (/[;&|({\r\n]/.test(c)) { fecha(); pedacos.push(novo()); continue }
+    if (/\s/.test(c)) { fecha(); continue }
+    palavra = (palavra ?? '') + c
+  }
+  fecha()
+  return pedacos
+}
+function buscaEmSegredo(comando) {
+  for (const p of pedacosComAspas(comando)) {
+    // a busca depois de atribuicao (`$x = sls ...`, `[string[]]$l +=`) e do & ou do . tambem e lida (final do Codex)
+    // volta 2 (comum): a atribuicao colada (`$x=sls`) e o `${x}` (o { divide o pedaco, sobra `x}`) tambem
+    let inicio = 0
+    if (/^[$[]|\}$/.test(p[0] ?? '')) {
+      const j = p.findIndex((x, i) => !p.citadas.has(i) && x.includes('='))
+      if (j >= 0) {
+        const resto = p[j].slice(p[j].lastIndexOf('=') + 1)
+        if (resto) { p[j] = resto; inicio = j } else inicio = j + 1
+      }
+    }
+    while (p[inicio] === '&' || p[inicio] === '.') inicio++
+    const k = p.findIndex((x, i) => i >= inicio && nomeDoPrograma(x) !== 'sudo')
+    if (k < 0 || p.citadas.has(k) || !BUSCAM.has(nomeDoPrograma(p[k]))) continue
+    const findstr = nomeDoPrograma(p[k]) === 'findstr'
+    // o padrao por opcao (-Pattern, /C:, /G:) pode vir depois do caminho: os soltos so se decidem
+    // no fim do pedaco (volta 2 da comum)
+    let padraoPorOpcao = false
+    const soltos = []
+    for (let i = k + 1; i < p.length; i++) {
+      const a = p[i]
+      if (findstr && a.startsWith('/')) {
+        if (/^\/[cg]:/i.test(a)) padraoPorOpcao = true
+        if (/^\/[gf]:/i.test(a) && RE_SEGREDO.test(a.slice(3))) return true
+        continue
+      }
+      if (!findstr && /^-[a-z]/i.test(a)) {
+        const doisPontos = a.indexOf(':')
+        const opcao = (doisPontos < 0 ? a.slice(1) : a.slice(1, doisPontos)).toLowerCase()
+        const colado = doisPontos < 0 ? null : a.slice(doisPontos + 1)
+        if (opcao.length >= 4 && 'pattern'.startsWith(opcao)) { padraoPorOpcao = true; if (colado === null) i++ }
+        else if (opcao === 'path' || opcao === 'pspath' || opcao === 'lp' || (opcao.length >= 2 && 'literalpath'.startsWith(opcao))) {
+          const valor = colado ?? p[++i]
+          if (valor && RE_SEGREDO.test(valor)) return true
+        }
+        continue
+      }
+      soltos.push(a)
+    }
+    if (soltos.slice(padraoPorOpcao ? 0 : 1).some(a => RE_SEGREDO.test(a))) return true
+  }
+  return false
+}
+// o codigo inline so conta com a opcao de codigo entre as opcoes do proprio interpretador, antes da
+// primeira palavra solta (o -sexagesimal de um ffprobe la adiante nao e do node). Cada varredura para
+// na primeira palavra solta, que inclui o proximo node: linear
+const RE_PALAVRA_Y = /\s+(\S+)/y
+const RE_NODE_CODIGO = /^(?:-[a-zA-Z]*[ep][a-zA-Z]*|--eval|--print)(?:=|$)/
+const RE_PYTHON_CODIGO = /^-[a-zA-Z]*c/
+// opcao que leva valor na palavra seguinte (`node -r fs -e ...`, `python -W ignore -c ...`): o valor
+// e pulado, senao ele encerrava a busca antes do codigo
+const RE_NODE_COM_VALOR = /^(?:-r|--require|--import|--loader|--experimental-loader|-C|--conditions|--input-type|--title)$/
+const RE_PYTHON_COM_VALOR = /^-[WX]$/
+function codigoInline(comando, reInterpretador, reCodigo, reComValor) {
+  // o interpretador que ja ficou dentro das opcoes de um anterior (`node --title node -e`) nao e lido de
+  // novo: cada palavra entra numa varredura so, linear
+  let lido = 0
+  for (const m of comando.matchAll(reInterpretador)) {
+    if (m.index < lido) continue
+    RE_PALAVRA_Y.lastIndex = m.index + m[0].length
+    for (let p = RE_PALAVRA_Y.exec(comando); p && p[1].startsWith('-'); p = RE_PALAVRA_Y.exec(comando)) {
+      lido = RE_PALAVRA_Y.lastIndex
+      if (!reCodigo.test(p[1])) {
+        if (reComValor.test(p[1])) { if (!RE_PALAVRA_Y.exec(comando)) break; lido = RE_PALAVRA_Y.lastIndex }
+        continue
+      }
+      // o codigo e a palavra seguinte (no marcado, o trecho entre aspas e uma palavra so) ou vem colado
+      const codigo = RE_PALAVRA_Y.exec(comando)
+      if (RE_SEGREDO.test(p[1]) || (codigo && RE_SEGREDO.test(codigo[1]))) return true
+      break
+    }
+  }
+  return false
+}
+function leituraDeSegredo(comando, cru) {
+  if (RE_SEGREDO.test(cru) && buscaEmSegredo(cru)) return true
+  const segredo = RE_SEGREDO.test(comando)
+  if (segredo) {
+    if (codigoInline(comando, RE_NODE, RE_NODE_CODIGO, RE_NODE_COM_VALOR)) return true
+    if (codigoInline(comando, RE_PYTHON, RE_PYTHON_CODIGO, RE_PYTHON_COM_VALOR)) return true
+    if (opcaoDepoisDaPalavra(comando, RE_SQLITE, RE_SEGREDO_G, FIM_DO_COMANDO)) return true
+    if (opcaoDepoisDaPalavra(comando, RE_IO_FILE, RE_SEGREDO_G, FIM_DO_COMANDO)) return true
+  }
+  if (segredo || /[*?[]/.test(comando)) {
+    // o { divide o pedaco, e o `${x} = gc .env` vira `$x} = ...`, que ainda comeca com $
+    for (const { seg } of pedacosDeComando(comando.replace(/\$\{/g, '$$'))) {
+      const p = seg.replace(RE_ATRIBUICAO, '').match(/\S+/g) || []
+      let k = p.findIndex(x => nomeDoPrograma(x) !== 'sudo')
+      if (k < 0) continue
+      // volta 2: o cmd aceita chave antes do /c (`cmd /d /c`, `cmd /d/c`) e o programa colado (`cmd /ctype`);
+      // o operador ponto roda o comando como o & (`. gc .env`). Cada palavra e lida uma vez: linear
+      if (nomeDoPrograma(p[k]) === 'cmd') {
+        for (k++; k < p.length && p[k].startsWith('/'); k++) {
+          const c = /\/[ck]/i.exec(p[k])
+          if (!c) continue
+          const colado = p[k].slice(c.index + 2)
+          if (colado) p[k] = colado; else k++
+          break
+        }
+      }
+      if (p[k] === '.') k++
+      const nome = nomeDoPrograma(p[k] ?? '')
+      // o caminho pode ter espaco (User Data): le os argumentos juntos; na copia, o ultimo e o destino
+      if (LEEM.has(nome) && alvoDeSegredo(p.slice(k + 1))) return true
+      if (COPIAM.has(nome) && alvoDeSegredo(origensDaCopia(p.slice(k + 1)))) return true
+    }
+  }
+  return opcaoDepoisDaPalavra(comando, RE_BAIXA, RE_CABECALHO_COOKIE, FIM_DO_COMANDO) ||
+    opcaoDepoisDaPalavra(comando, RE_CURL, RE_CURL_COOKIE, FIM_DO_COMANDO)
+}
+const MOTIVO_SEGREDO = 'le ou copia segredo do projeto (.env, perfil do navegador, sessao salva ou cookie) por um caminho que a protecao de leitura nao ve'
 // regras que leem o desaspado (o que importa pode estar entre aspas); o texto de quem so
 // escreve (echo "...") ja saiu dele
 const PERIGOS_NO_DESASPADO = [
@@ -1174,7 +1468,7 @@ export function ehPerigoso(comando, opcoes = {}) {
   const emUmaLinha = desaspado.replace(/`?\r?\n\s*/g, ' ')
   // e tambem linha a linha: juntar tudo deixava um `-Command` da primeira linha encerrar a
   // leitura das opcoes e esconder o `powershell "-e"` da segunda (achado do Codex na final)
-  const motivo = testarPadroes(limpo) || gitPerigoso(marcado, cwd) || testarPadroes(desaspado, PERIGOS_POWERSHELL) || testarPadroes(emUmaLinha, PERIGOS_POWERSHELL) || testarPadroes(desaspado, PERIGOS_SUBSHELL) || testarPadroes(desaspado, PERIGOS_DISCO) || testarPadroes(desaspado, PERIGOS_NO_DESASPADO)
+  const motivo = testarPadroes(limpo) || gitPerigoso(marcado, cwd) || testarPadroes(desaspado, PERIGOS_POWERSHELL) || testarPadroes(emUmaLinha, PERIGOS_POWERSHELL) || testarPadroes(desaspado, PERIGOS_SUBSHELL) || testarPadroes(desaspado, PERIGOS_DISCO) || testarPadroes(desaspado, PERIGOS_NO_DESASPADO) || (leituraDeSegredo(marcado, comando) ? MOTIVO_SEGREDO : null)
   if (motivo) return motivo
   // correcao 5: todo trecho entre aspas que NAO veio de um escritor de texto conhecido
   // e comando de verdade em potencial, e testa nele mesmo, recursivo (o texto extraido

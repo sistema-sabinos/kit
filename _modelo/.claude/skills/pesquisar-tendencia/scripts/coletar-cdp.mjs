@@ -20,6 +20,7 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
 import { conectar } from '../../mercado-livre/scripts/lib/chrome.mjs'
+import { sessaoCaiu, AVISO } from '../../conectar/scripts/lib/navegador.mjs'
 import { tokenMl } from '../../mercado-livre/scripts/lib/tokens.mjs'
 import { mlGet } from '../../mercado-livre/scripts/lib/ml-api.mjs'
 import { gravarJson, dataLocal } from '../../mercado-livre/scripts/lib/pipeline.mjs'
@@ -147,7 +148,8 @@ export async function coletarBusca(page, termo, { maxItens = 120, maxPaginas = 2
     await espera(2500)
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight * 0.7))
     await espera(1200)
-    if (/login|registration/i.test(page.url())) return { total: 0, itens: [], url, erro: 'a busca pediu login: a sessao do Chrome dedicado caiu, entre de novo na conta' }
+    const caiu = sessaoCaiu({ url: page.url(), host: 'mercadolivre.com.br' })
+    if (caiu) return { total: 0, itens: [], url, erro: AVISO[caiu] }
     const daPagina = await page.evaluate(extrairCards)
     if (!daPagina.length) {
       if (pagina === 1) return { total: 0, itens: [], url, erro: 'nenhum anuncio lido: a busca veio vazia ou a pagina mudou (olhe a janela do Chrome dedicado)' }

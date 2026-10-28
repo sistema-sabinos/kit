@@ -1,12 +1,22 @@
 {
   "permissions": {
-    "ask": [
-      "Read(./.env)",
-      "Read(./.env.*)"
-    ],
     "deny": [
+      "Read(./.env)",
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/.env.*.local)",
       "Read(./secrets/**)",
-      "Read(./.secrets/**)"
+      "Read(./.secrets/**)",
+      "Read(./dados/sessao/**)",
+      "Read(./dados/chrome-perfil/**)",
+      "Read(**/.auth/**)",
+      "Read(**/*.har)",
+      "Read(**/storage-state*.json)",
+      "Read(**/*totp*.json)",
+      "Read(~/AppData/Local/Google/Chrome/User Data/**)",
+      "Read(~/Library/Application Support/Google/Chrome/**)",
+      "mcp__playwright__browser_run_code_unsafe",
+      "mcp__navegador__browser_run_code_unsafe"
     ]
   },
   "hooks": {
@@ -17,6 +27,16 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/barrar-perigoso.mjs\""
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/barrar-mcp.mjs\"",
+            "onFailure": "block"
           }
         ]
       }

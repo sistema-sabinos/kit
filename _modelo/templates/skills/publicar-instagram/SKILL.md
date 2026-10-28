@@ -122,7 +122,8 @@ Se chamou com caminho (ex: `/publicar-instagram producao/2026-10-08-moedor/`):
 
 ### 2. Detectar o método configurado
 
-Verificar `.env`:
+Rodar `node .claude/skills/conectar/scripts/chave.mjs tem POSTFORME_API_KEY INSTAGRAM_ACCESS_TOKEN`
+(a IA não abre o `.env`) e ler linha a linha:
 - Se tem `POSTFORME_API_KEY` -> usar Post for Me
 - Se tem `INSTAGRAM_ACCESS_TOKEN` -> usar Graph API
 - Se tem os dois -> perguntar qual usar

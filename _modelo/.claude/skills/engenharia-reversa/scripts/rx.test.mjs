@@ -50,7 +50,7 @@ function falsos(dir, { falhaEm = null, loginEm = null, pagoVaiPara = `https://ww
     get: async caminho => (caminho.includes('5000002') ? { paging: { total: 1 }, results: [{ item_id: id('4000002'), price: 50 }] } : caminho.includes('3000001') ? { paging: { total: 2 }, results: [{ item_id: id('4000001'), price: 55 }, { item_id: 'MLB9', price: 60 }] } : {}),
     lerAnuncio: async url => {
       abertos.push(url)
-      if (loginEm && url.includes(loginEm)) throw new Error('a pagina pediu login')
+      if (loginEm && url.includes(loginEm)) throw Object.assign(new Error('x'), { sessao: 'sessao-caida' })
       if (falhaEm && url.includes(falhaEm)) throw new Error('timeout')
       const url_final = url.includes('-4000002') ? pagoVaiPara : url
       return { url_final, fotos: [`https://http2.mlstatic.com/D_NQ_1-MLA1-F.jpg`, `https://http2.mlstatic.com/D_NQ_2-MLA2-F.webp`], video: url.includes('10000'), descricao: 'Caneca de inox', link_perguntas: url.includes('100001') ? 'https://perguntas' : null }
@@ -102,6 +102,8 @@ test('pagina pedindo login para a rodada com a mensagem de entrar de novo', asyn
   const dir = mkdtempSync(join(tmpdir(), 'rx-'))
   try {
     await assert.rejects(rodadaGratis({ termo: 'x', ...falsos(dir, { loginEm: '100003' }) }), /Entre de novo na conta/)
+    const captcha = async () => { throw Object.assign(new Error('x'), { sessao: 'captcha' }) }
+    await assert.rejects(rodadaGratis({ termo: 'x', ...falsos(dir), lerAnuncio: captcha }), /resolva na janela do Chrome dedicado/)
     await assert.rejects(rodadaGratis({ termo: 'x', ...falsos(dir), buscar: async () => ({ itens: [], erro: 'a busca pediu login: entre de novo' }) }), /a busca pediu login/)
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })

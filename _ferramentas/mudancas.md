@@ -77,7 +77,7 @@
 
 **O que é:** o assistente passa a pedir licença antes de ler o arquivo de chaves (`.env`) e nunca lê a pasta `secrets/`.
 **Por quê:** chave lida entra na conversa, e conversa pode ir parar em print, em log ou em outro lugar.
-**Te afeta se:** o `.claude/settings.json` não tem `Read(./.env)` em `permissions.ask`.
+**Te afeta se:** o `.claude/settings.json` não tem `Read(./.env)` nem em `permissions.ask` nem em `permissions.deny`.
 **Como aplicar:** acrescentar em `permissions.ask` os itens `Read(./.env)` e `Read(./.env.*)`, e em `permissions.deny` o item `Read(./secrets/**)`, criando `permissions` se não existir e sem tirar nada que já esteja lá.
 **Como testar:** JSON válido e os três itens presentes.
 
@@ -163,7 +163,7 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 **O que é:** o `/publicar-marketplace` passa a criar o anúncio direto no Mercado Livre, já pausado, quando você não usa Bling.
 **Por quê:** pra isso o aplicativo do Mercado Livre que você criou no `/conectar` precisa de permissão de leitura e escrita; com só leitura, a auditoria funciona e a publicação volta erro de permissão.
-**Te afeta se:** o `.env` tem `ML_CLIENT_ID` e o projeto tem `.claude/skills/publicar-marketplace/scripts/publicar-ml.mjs`.
+**Te afeta se:** `node .claude/skills/conectar/scripts/chave.mjs tem ML_CLIENT_ID` responde `tem` e o projeto tem `.claude/skills/publicar-marketplace/scripts/publicar-ml.mjs`.
 **Como aplicar:** abrir com a pessoa o portal de desenvolvedor do Mercado Livre, no aplicativo dela, e conferir na tela que a permissão é de leitura e escrita; se for só leitura, trocar e autorizar a conta de novo com o `autorizar.mjs --ml --url`, como no `/conectar`.
 **Como testar:** o `publicar-ml.mjs --montar` de um anúncio auditado termina sem erro de permissão (a validação do Mercado Livre é uma escrita que não cria nada).
 
@@ -661,7 +661,7 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **O que é:** o `.env` solto na raiz da pasta-mãe aparece só no Gate 1, como arquivo proibido, e sai do Gate 11. No `_modelo` ele também sai do Gate 11, e o Gate 10 segue acusando, porque é arquivo novo no `_modelo`.
 **Por quê:** o Gate 11 pedia pra liberar o `.env` no `.gitignore`, e seguir esse pedido levaria a chave pro backup.
 **Te afeta se:** existe `.env` na raiz da pasta-mãe (`../.env`).
-**Como aplicar:** nada no projeto; o `/atualizar-kit` traz o verificador novo. Mostrar só o nome das variáveis do `../.env`, nunca o valor, e com o sim levar cada uma pro `.env` do projeto que usa.
+**Como aplicar:** nada no projeto; o `/atualizar-kit` traz o verificador novo. Rodar `node .claude/skills/conectar/scripts/chave.mjs nomes --arquivo ../.env` (só os nomes, nunca o valor). Com o sim, a pessoa copia cada linha pro `.env` do projeto que usa, pelo editor; a IA confere com `node .claude/skills/conectar/scripts/chave.mjs bate NOME --com ../.env` e, só com `bate`, a pessoa apaga a linha do `../.env`.
 **Como testar:** `node ../_ferramentas/verificar-kit.mjs ..` mostra Gate 1 com `.env: arquivo proibido` e nenhuma linha `.env: fora do repositorio`.
 
 ## trava-git-exportada
@@ -679,3 +679,75 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** `../.agents/skills` da pasta-mãe existe como pasta comum, e não como link.
 **Como aplicar:** nada no projeto; o `/atualizar-kit` traz o verificador novo. Com linha `skill so na ponte`, mostrar o nome e, com o sim da pessoa, mover a pasta dela pra `../.claude/skills`.
 **Como testar:** `node ../_ferramentas/verificar-kit.mjs ..` sem linha `fora do repositorio` em `.agents/`, e no máximo uma linha do Gate 1 por item de `.agents/skills`.
+
+## trava-git-por-familia
+
+**O que é:** a trava de comando destrutivo passa a barrar o git que joga trabalho fora escrito com variável, substituição (`$(...)`), crase, chaves, xargs, barra invertida ou apelido por `-c`. Passa a barrar também o uso legítimo com variável nos verbos que ela julga, como `git push origin $(git branch --show-current)` e `git checkout "$BR"`.
+**Por quê:** a versão publicada deixava passar nove jeitos de escrever o git que joga trabalho fora, como `git reset $(echo --hard)` e `echo --hard | xargs git reset`.
+**Te afeta se:** o `.claude/hooks/barrar-perigoso.mjs` do projeto deixa passar `git reset $(echo --hard)`.
+**Como aplicar:** nada no projeto; a trava nova chega pelo motor do `/atualizar-sabinos`.
+**Como testar:** `echo '{"tool_name":"Bash","tool_input":{"command":"git reset $(echo --hard)"}}' | node .claude/hooks/barrar-perigoso.mjs` sai com código 2 (com a trava antiga, sai 0), e o mesmo com `git status` no lugar sai 0.
+
+## trava-leitura-de-segredo
+
+**O que é:** a trava de comando destrutivo passa a barrar ler ou copiar `.env`, perfil do navegador, sessão salva e cookie por código inline (`node -e`, `python -c`), `sqlite3`, cópia (`cp`, `Copy-Item`), `Get-Content`/`type` e download com cookie. É uma lombada: o script do kit segue lendo o `.env` sozinho, como sempre.
+**Por quê:** a regra de permissão que protege o `.env` não vê esses caminhos.
+**Te afeta se:** o `.claude/hooks/barrar-perigoso.mjs` do projeto deixa passar `cp .env /tmp/x`.
+**Como aplicar:** nada no projeto; a trava nova chega pelo motor do `/atualizar-sabinos`.
+**Como testar:** `echo '{"tool_name":"Bash","tool_input":{"command":"cp .env /tmp/x"}}' | node .claude/hooks/barrar-perigoso.mjs` sai com código 2 (com a trava antiga, sai 0), e o mesmo com `grep -c CHAVE .env` no lugar sai 0.
+
+## trava-no-navegador
+
+**O que é:** uma trava nova olha toda ferramenta de fora (navegador, email, redes) antes de ela rodar. No navegador, barra o que lê o login da página ou roda código dentro dela; fora dele, pergunta antes de mandar, apagar ou publicar em conta.
+**Por quê:** a trava de comando só olha o terminal. Uma ferramenta do navegador conseguia ler o cookie da sua conta ou rodar código na página sem nada no caminho.
+**Te afeta se:** o `.claude/settings.json` do projeto não cita `barrar-mcp`.
+**Como aplicar:** conferir que o `.claude/hooks/barrar-mcp.mjs` existe no projeto (ele chega pelo componente `trava`, no `aplicar`; sem ele, parar e rodar o `aplicar` antes). Rodar `node "<kit>/_ferramentas/atualizar-projeto.mjs" settings .`, mostrar a saída (o antes e o depois) e, com o sim, rodar de novo com `--gravar`.
+**Como testar:** o `settings.json` é JSON válido, e `node -e "process.stdout.write(JSON.stringify({tool_name:'mcp__x__browser_run_'+'code_unsafe'}))" | node .claude/hooks/barrar-mcp.mjs` sai com código 2. Avisar que a trava vale a partir da próxima conversa.
+
+## env-em-deny
+
+**O que é:** o assistente deixa de conseguir ler o arquivo de chaves (`.env`, e também o `.env.local` do app) e os arquivos de login do navegador. Antes ele só pedia licença pra ler o `.env`.
+**Por quê:** a licença aparecia no meio do trabalho e era fácil dizer sim sem ler, e chave lida entra na conversa. Quem grava a chave no `.env` é você ou o script do kit, e a regra não alcança script.
+**Te afeta se:** o `.claude/settings.json` não tem `Read(./.env)` em `permissions.deny`.
+**Como aplicar:** igual à `trava-no-navegador`: conferir o `.claude/hooks/barrar-mcp.mjs` no projeto, rodar `node "<kit>/_ferramentas/atualizar-projeto.mjs" settings .`, mostrar a saída e, com o sim, rodar com `--gravar`. O `ask` antigo do `.env` pode ficar, porque o `deny` vale antes.
+**Como testar:** JSON válido, `Read(./.env)` aparece em `permissions.deny`, e o teste da `trava-no-navegador` sai com código 2.
+
+## segredo-de-sessao-fora-do-backup
+
+**O que é:** o backup passa a deixar de fora o login do navegador guardado em arquivo: cookie exportado, gravação de rede e a pasta de saída da ferramenta do navegador.
+**Por quê:** esses arquivos guardam a sessão da sua conta, e subir pro GitHub entrega o login a quem tiver acesso ao repositório.
+**Te afeta se:** o `.gitignore` do projeto não tem `dados/sessao/`.
+**Como aplicar:** acrescentar ao `.gitignore`, logo depois da linha `dados/chrome-perfil/` (sem ela, no fim do arquivo, depois de toda linha que começa com `!`), as 7 linhas do `_modelo/.gitignore` do kit que começam em "# sessao de navegador" (o comentário e as 6 regras). Depois, se `git ls-files -ci --exclude-standard` listar arquivo que as regras novas pegam (de `dados/sessao/`, `dados/navegador-saida/`, `.playwright-mcp/` ou `.auth/`, ou com nome `storage-state*.json` ou `*.har`, em qualquer pasta), rodar `git rm --cached` nesses arquivos, que tira do git sem apagar do disco, dizendo isso à pessoa antes e avisando que o histórico do GitHub segue com o que já subiu.
+**Como testar:** `git check-ignore dados/sessao/x .playwright-mcp/x storage-state.json rede.har` imprime os quatro caminhos.
+
+## playwright-mcp-versao-fixa
+
+**O que é:** a ferramenta de navegador que testa o app (o servidor `playwright` do Claude Code) passa a ser instalada numa versão fixa, conferida pelo kit, e isolada, com um navegador limpo a cada vez e a saída em `dados/navegador-saida/`.
+**Por quê:** instalada sempre na versão mais nova, cada atualização do pacote podia trazer ferramenta que a trava ainda não conhece.
+**Te afeta se:** `claude mcp get playwright` mostra o pacote com `@latest` ou sem versão.
+**Como aplicar:** com o sim da pessoa, rodar `claude mcp remove playwright` e instalar de novo pela linha do `playwright` do passo do navegador na `/conectar` do kit (a que traz a versão fixa e o `--isolated`).
+**Como testar:** `claude mcp get playwright` mostra a versão fixa e o `--isolated`. Avisar que vale a partir da próxima conversa.
+
+## chave-sem-abrir
+
+**O que é:** o assistente confere a chave do `.env` sem abrir o arquivo, por `node .claude/skills/conectar/scripts/chave.mjs`, que responde só `tem`, `falta`, `bate` ou `nao bate`, nunca o valor. Pra mover uma chave de um arquivo pro `.env`, você cola a chave no `.env` pelo editor e o assistente confere com `bate` antes de tirar ela do arquivo de origem. A consulta de comissão do Mercado Livre passa pelo `node .claude/skills/mercado-livre/scripts/consultar-ml.mjs`, que usa o token sem mostrar.
+**Por quê:** com o `.env` em deny (entrada `env-em-deny`), as skills que mandavam o assistente ler ou gravar o `.env` emperravam.
+**Te afeta se:** o projeto não tem `.claude/skills/conectar/scripts/chave.mjs`.
+**Como aplicar:** o `chave.mjs` chega pelo atualizador junto do núcleo; o `consultar-ml.mjs` e os textos das skills de pacote chegam com o pacote. Nada pra fazer à mão.
+**Como testar:** `node .claude/skills/conectar/scripts/chave.mjs nomes` lista só os nomes do `.env`, sem nenhum valor.
+
+## semente-2fa-e-leitura-de-mcp
+
+**O que é:** a semente de 2FA salva em arquivo (qualquer `*totp*.json`) fica fora do backup e o assistente não lê. A trava do navegador e das contas deixa passar sem perguntar a ferramenta de leitura com verbo em português (`listar`, `buscar`, `consultar`, `ler`, `obter`, `ver`, `saldo`), como as do servidor do Bling do kit. O detector de chave do backup para de segurar JSON de catálogo com produto chamado Cookie.
+**Por quê:** a semente gera o código de 2FA da conta, e subir pro GitHub entrega o segundo fator. O servidor do Bling é só leitura e pedia confirmação a cada chamada.
+**Te afeta se:** o `.gitignore` do projeto não tem `*totp*.json`, ou o `.claude/settings.json` não tem `Read(**/*totp*.json)` em `permissions.deny`.
+**Como aplicar:** no `.gitignore` (arquivo misto), acrescentar logo depois da linha `secrets/` as 2 linhas do `_modelo/.gitignore` do kit que começam em "# semente de 2FA" (o comentário e a regra). Rodar `node "<kit>/_ferramentas/atualizar-projeto.mjs" settings .`, mostrar a saída e, com o sim, rodar com `--gravar`. Se `git ls-files -ci --exclude-standard` listar algum `*totp*.json`, rodar `git rm --cached` nele, dizendo antes que tira do git sem apagar do disco e que a semente que já subiu precisa ser trocada na conta. O hook e a faxina chegam pelo atualizador.
+**Como testar:** `git check-ignore dados/totp.json` imprime o caminho, e `Read(**/*totp*.json)` aparece em `permissions.deny`.
+
+## lib-de-navegador
+
+**O que é:** os pacotes que abrem o Chrome dedicado passam a usar uma lib só, no núcleo (`.claude/skills/conectar/scripts/lib/navegador.mjs`), com porta própria por projeto e conferência de que o Chrome na porta é o deste projeto; os dois `chrome.mjs` de pacote viram casca que reexporta a lib.
+**Por quê:** as duas cópias abriam todo projeto na mesma porta e aceitavam qualquer Chrome que respondesse nela, até o de outro projeto.
+**Te afeta se:** o projeto tem `.claude/skills/mercado-livre/scripts/lib/chrome.mjs` e não tem `.claude/skills/conectar/scripts/lib/navegador.mjs`.
+**Como aplicar:** nada no projeto; o motor traz.
+**Como testar:** `grep -L "conectar/scripts/lib/navegador.mjs" .claude/skills/*/scripts/lib/chrome.mjs` sai vazio, e `node .claude/skills/conectar/scripts/porta.mjs` imprime um número.

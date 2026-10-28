@@ -218,8 +218,9 @@ entra mudança de foco, se a pessoa decidir uma. Conferir por API que o anúncio
 - Anúncio duplicado (Clássico e Premium do mesmo produto) divide esforço e faz
   as campanhas de anúncio darem lance uma contra a outra. Um por produto.
 - Chamada da API com 401: token vencido; renove o token com
-  `node .claude/skills/mercado-livre/scripts/lib/tokens.mjs ml` e use o
-  `ML_ACCESS_TOKEN` do `.env`.
+  `node .claude/skills/mercado-livre/scripts/lib/tokens.mjs ml` e refaça a
+  consulta por `node .claude/skills/mercado-livre/scripts/consultar-ml.mjs "<caminho>"`,
+  que usa o token novo sem a IA abrir o `.env`.
 
 ## Regras
 

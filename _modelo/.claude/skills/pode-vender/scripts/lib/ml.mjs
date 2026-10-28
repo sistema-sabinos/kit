@@ -3,6 +3,7 @@
 // sozinho nao prova proibicao (pode ser que ninguem venda): por isso a marca de controle na
 // mesma rodada e o cruzamento com a ANVISA.
 import { casaPalavraInteira, norm } from './texto.mjs'
+import { sessaoCaiu, AVISO } from '../../../conectar/scripts/lib/navegador.mjs'
 
 export function urlDaBusca(marca) {
   const slug = encodeURIComponent(String(marca).trim().toLowerCase()).replace(/%20/g, '-')
@@ -49,9 +50,8 @@ export async function presencaNoML(page, marca, aliases = [], { esperarMs = 3200
   const url = urlDaBusca(marca)
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 })
   await page.waitForTimeout(esperarMs)
-  if (/login|registration|captcha/i.test(page.url())) {
-    throw new Error('o Mercado Livre pediu login ou verificacao: entre na sua conta no Chrome dedicado e rode de novo')
-  }
+  const caiu = sessaoCaiu({ url: page.url(), host: 'mercadolivre.com.br' })
+  if (caiu) throw new Error(AVISO[caiu])
   let bruto
   try {
     bruto = await page.evaluate(lerBusca)

@@ -13,7 +13,7 @@
     ] },
     "bastao": { "depende": [], "caminhos": [".claude/skills/bastao/"] },
     "checar": { "depende": ["nucleo"], "caminhos": [".claude/skills/checar/"] },
-    "trava": { "depende": [], "caminhos": [".claude/hooks/barrar-perigoso.mjs"] },
+    "trava": { "depende": [], "caminhos": [".claude/hooks/barrar-perigoso.mjs", ".claude/hooks/barrar-mcp.mjs"] },
     "assistir-video": { "depende": [], "caminhos": [".claude/skills/assistir-video/"] },
     "transcribe": { "depende": [], "caminhos": [".claude/skills/transcribe/"] },
     "aprender-curso": { "depende": ["assistir-video", "transcribe"], "caminhos": [".claude/skills/aprender-curso/"] },

@@ -87,8 +87,9 @@ Uma conta por vez. Pra cada uma:
 1. Dizer pra que serve, o que é grátis e o que cobra (id do fato e data).
 2. `/segunda-opiniao`, depois o "pode ir".
 3. Guiar o cadastro clique a clique. O aluno cria, confirma o e-mail, copia a chave
-   de teste e cola no `app/codigo/.env.local`. A IA confere só que a variável existe;
-   o valor fica no arquivo.
+   de teste e cola no `app/codigo/.env.local`. A IA confere por
+   `node .claude/skills/conectar/scripts/chave.mjs tem NOME --arquivo app/codigo/.env.local`,
+   sem abrir o arquivo, porque ele guarda segredo.
 4. Registrar na hora: linha em `_contexto/ferramentas.md`
    (`| <serviço> | ligado | <AAAA-MM-DD> | <pra quê>; chave no .env.local do app como <NOME_DA_VARIAVEL> |`)
    e o endereço do painel e a conta usada em `_contexto/infra.md`, seção "Servidor e

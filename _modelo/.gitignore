@@ -62,6 +62,8 @@
 !.env.example
 .secrets/
 secrets/
+# semente de 2FA salva em arquivo
+*totp*.json
 # nome desta maquina e aviso do auto-sync: valem so neste computador
 .origem
 .backup-falhou
@@ -88,6 +90,13 @@ playwright-report/
 .agents/
 # perfil do Chrome dedicado do pacote Mercado Livre: guarda o login da conta
 dados/chrome-perfil/
+# sessao de navegador (storageState, HAR, cookie exportado) e saida do Playwright MCP: guardam login
+dados/sessao/
+dados/navegador-saida/
+.playwright-mcp/
+.auth/
+storage-state*.json
+*.har
 # material de curso (inclusive apostila paga e PDF grande) fica so neste computador;
 # o resumo em aulas/ e o mentor.md sobem
 **/inteligencia/cursos/*/fontes/

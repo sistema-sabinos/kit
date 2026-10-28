@@ -167,10 +167,29 @@ test('CLI: varrer sai 2 com segredo, conferir sai 1 com caminho de fora, 0 limpo
     assert.throws(() => execFileSync('node', [SCRIPT, 'varrer', 'suja'], { cwd: raiz, stdio: 'pipe' }), e => e.status === 2)
     assert.throws(() => execFileSync('node', [SCRIPT, 'conferir', 'fora'], { cwd: raiz, stdio: 'pipe' }), e => e.status === 1)
     const r = JSON.parse(execFileSync('node', [SCRIPT, 'varrer', 'limpa'], { cwd: raiz, encoding: 'utf8' }))
-    assert.deepEqual(r, { segredos: [], envs: [], ilegiveis: [], naoVarridos: [] })
+    assert.deepEqual(r, { segredos: [], envs: [], sessoes: [], ilegiveis: [], naoVarridos: [] })
     // erro de uso sai 3: o 2 fica so pra "achou segredo"
     assert.throws(() => execFileSync('node', [SCRIPT, 'varrer', 'nao-existe'], { cwd: raiz, stdio: 'pipe' }), e => e.status === 3)
     assert.throws(() => execFileSync('node', [SCRIPT, 'decisoes', 'limpa'], { cwd: raiz, stdio: 'pipe' }), e => e.status === 3)
+  })
+})
+
+// Rodada 5.28 (ata, T12): login de navegador guardado em arquivo sai da pasta pelo nome, porque
+// o conteudo (cookie em JSON, perfil binario) nem sempre tem cara de chave. A pasta aparece uma
+// vez so: um perfil de Chrome de verdade tem milhares de arquivos.
+test('varrer acusa arquivo de sessao pelo nome', () => {
+  comProjeto({
+    'acme/storage-state.json': '{}', 'acme/rede.har': '{}', 'acme/.auth/s.json': '{}', 'acme/dados/sessao/a.md': 'x',
+    'acme/dados/chrome-perfil/Default/Prefs': 'x', 'acme/.playwright-mcp/p.yml': 'x', 'acme/notas.md': 'nada aqui\n',
+  }, raiz => {
+    const r = varrer(join(raiz, 'acme'))
+    assert.deepEqual(r.sessoes, ['.auth/', '.playwright-mcp/', 'dados/chrome-perfil/', 'dados/sessao/', 'rede.har', 'storage-state.json'])
+    assert.throws(() => execFileSync('node', [SCRIPT, 'varrer', 'acme'], { cwd: raiz, stdio: 'pipe' }), e => e.status === 2)
+  })
+  // a varredura de segredo pula pasta sessao em qualquer lugar; o nome tem de pegar o que ela nao le
+  comProjeto({ 'beta/clientes/sessao/chaves.txt': 'chave sk-' + 'Ab1'.repeat(10) + '\n', 'beta/notas.md': 'x\n' }, raiz => {
+    assert.deepEqual(varrer(join(raiz, 'beta')).sessoes, ['clientes/sessao/'])
+    assert.throws(() => execFileSync('node', [SCRIPT, 'varrer', 'beta'], { cwd: raiz, stdio: 'pipe' }), e => e.status === 2)
   })
 })
 

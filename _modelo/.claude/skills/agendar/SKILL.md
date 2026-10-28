@@ -34,7 +34,8 @@ parte de leitura.
 
 ## Primeira vez: o bot do Telegram
 
-Se o `.env` já tem `TELEGRAM_TOKEN` e `TELEGRAM_CHAT_ID`, pular esta seção.
+Rodar `node .claude/skills/conectar/scripts/chave.mjs tem TELEGRAM_TOKEN TELEGRAM_CHAT_ID`; com
+os dois `tem`, pular esta seção. A IA nunca abre o `.env`: o script responde só `tem` ou `falta`.
 
 Sem Telegram por enquanto (a pessoa não quer ou não pode agora): seguir pra
 "Montar um robô" assim mesmo. O aviso que não sai pelo Telegram vira um recado em

@@ -7,7 +7,7 @@ import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { hashArquivo, montarPlano, aplicarPlano, desfazer, registrarMudanca } from './atualizar-projeto.mjs'
+import { hashArquivo, montarPlano, aplicarPlano, desfazer, registrarMudanca, mesclarSettings, resumo } from './atualizar-projeto.mjs'
 
 // fileURLToPath, e nao URL.pathname: no Windows o pathname vem com barra sobrando.
 const MOTOR = fileURLToPath(new URL('./atualizar-projeto.mjs', import.meta.url))
@@ -444,3 +444,95 @@ test('componente video depende do assistir-video (o olho final do editar-video u
   const real = JSON.parse(readFileSync(fileURLToPath(new URL('./componentes.json', import.meta.url)), 'utf8'))
   assert.deepEqual(real.componentes.video.depende, ['nucleo', 'mercado-livre', 'assistir-video'])
 })
+
+// Rodada 5.28: o settings.json e misto (metade do kit, metade da pessoa). O deny e a trava do MCP
+// entram por juncao, sem tirar nada da pessoa: o ask antigo do .env fica e e inerte, porque o deny vale antes.
+const SETTINGS_DO_KIT = JSON.parse(readFileSync(fileURLToPath(new URL('../_modelo/.claude/settings.json', import.meta.url)), 'utf8'))
+const ehBlocoMcp = b => (b.hooks || []).some(h => typeof h.command === 'string' && h.command.includes('barrar-mcp.mjs'))
+const SETTINGS_DA_PESSOA = {
+  permissions: { allow: ['Bash(npm test)'], ask: ['Read(./.env)'], deny: ['Read(./meu/**)'] },
+  hooks: {
+    PreToolUse: [{ matcher: 'Write', hooks: [{ type: 'command', command: 'node meu-hook.mjs' }] }],
+    Stop: [{ hooks: [{ type: 'command', command: 'node outro.mjs' }] }],
+  },
+}
+
+test('mesclarSettings junta deny e a trava do mcp sem tirar nada da pessoa e e idempotente', () => {
+  const { settings, faltava } = mesclarSettings(structuredClone(SETTINGS_DA_PESSOA), SETTINGS_DO_KIT)
+  assert.deepEqual(settings.permissions.allow, ['Bash(npm test)'])
+  assert.deepEqual(settings.permissions.ask, ['Read(./.env)'])
+  assert.deepEqual(settings.permissions.deny, ['Read(./meu/**)', ...SETTINGS_DO_KIT.permissions.deny], 'a da pessoa primeiro, depois a do kit')
+  for (const regra of ['mcp__playwright__browser_run_code_unsafe', 'mcp__navegador__browser_run_code_unsafe'])
+    assert.ok(settings.permissions.deny.includes(regra), regra)
+  assert.ok(settings.hooks.PreToolUse.some(b => b.matcher === 'Write'), 'o hook da pessoa fica')
+  assert.equal(settings.hooks.PreToolUse.filter(ehBlocoMcp).length, 1)
+  assert.deepEqual(settings.hooks.PreToolUse.find(ehBlocoMcp), SETTINGS_DO_KIT.hooks.PreToolUse.find(ehBlocoMcp))
+  assert.deepEqual(settings.hooks.Stop, SETTINGS_DA_PESSOA.hooks.Stop, 'o Stop sem auto-sync fica como a pessoa deixou')
+  assert.equal(faltava.length, SETTINGS_DO_KIT.permissions.deny.length + 1)
+  const segunda = mesclarSettings(structuredClone(settings), SETTINGS_DO_KIT)
+  assert.deepEqual(segunda.settings, settings, 'a segunda passada nao muda nada')
+  assert.deepEqual(segunda.faltava, [])
+  // bloco antigo da trava do mcp (sem o onFailure) e trocado pelo do kit, nunca duplicado
+  const velho = structuredClone(settings)
+  velho.hooks.PreToolUse.find(ehBlocoMcp).hooks[0].onFailure = undefined
+  const trocado = mesclarSettings(JSON.parse(JSON.stringify(velho)), SETTINGS_DO_KIT)
+  assert.equal(trocado.settings.hooks.PreToolUse.filter(ehBlocoMcp).length, 1)
+  assert.deepEqual(trocado.settings.hooks.PreToolUse.find(ehBlocoMcp), SETTINGS_DO_KIT.hooks.PreToolUse.find(ehBlocoMcp))
+  assert.equal(trocado.faltava.length, 1)
+  // hook da pessoa no mesmo bloco da chamada antiga da trava fica, com o matcher dela (Codex comum)
+  const misturado = structuredClone(SETTINGS_DA_PESSOA)
+  misturado.permissions.deny = [...SETTINGS_DO_KIT.permissions.deny]
+  misturado.hooks.PreToolUse.push({ matcher: 'mcp__x__.*', hooks: [{ type: 'command', command: 'node barrar-mcp.mjs' }, { type: 'command', command: 'node auditoria.mjs' }] })
+  misturado.hooks.PreToolUse.push({ matcher: 'Bash', hooks: [{ type: 'command', command: 'node regra.mjs --nome barrar-mcp' }] })
+  const junto = mesclarSettings(misturado, SETTINGS_DO_KIT).settings
+  assert.ok(junto.hooks.PreToolUse.some(b => b.matcher === 'Bash' && b.hooks[0].command === 'node regra.mjs --nome barrar-mcp'), 'hook que so cita a palavra sumiu')
+  assert.ok(junto.hooks.PreToolUse.some(b => b.matcher === 'mcp__x__.*' && b.hooks.length === 1 && b.hooks[0].command === 'node auditoria.mjs'), 'o hook de auditoria da pessoa sumiu')
+  assert.equal(junto.hooks.PreToolUse.filter(ehBlocoMcp).length, 1)
+  assert.deepEqual(junto.hooks.PreToolUse.find(ehBlocoMcp), SETTINGS_DO_KIT.hooks.PreToolUse.find(ehBlocoMcp))
+})
+
+// final do Codex no fechamento da 5.28: so e a trava o hook cujo script e o barrar-mcp.mjs; o nome como
+// argumento de outro script fica
+test('mesclarSettings guarda hook da pessoa que passa barrar-mcp.mjs como argumento', () => {
+  const pessoa = structuredClone(SETTINGS_DA_PESSOA)
+  const argumento = 'node auditoria.mjs --arquivo barrar-mcp.mjs'
+  pessoa.hooks.PreToolUse.push({ matcher: 'Write', hooks: [{ type: 'command', command: argumento }] })
+  pessoa.hooks.PreToolUse.push({ matcher: 'mcp__.*', hooks: [{ type: 'command', command: 'node "C:/Users/Fulano de Tal/p/.claude/hooks/barrar-mcp.mjs"' }] })
+  // volta 2 (comum): opcao do node antes do script segue sendo a trava
+  pessoa.hooks.PreToolUse.push({ matcher: 'mcp__.*', hooks: [{ type: 'command', command: 'node --no-warnings "C:/Fulano de Tal/.claude/hooks/barrar-mcp.mjs"' }] })
+  const { settings } = mesclarSettings(pessoa, SETTINGS_DO_KIT)
+  assert.ok(settings.hooks.PreToolUse.some(b => b.matcher === 'Write' && b.hooks[0].command === argumento), 'o hook com o nome no argumento sumiu')
+  assert.ok(!JSON.stringify(settings).includes('Fulano de Tal'), 'a chamada antiga da trava, com espaco no caminho, devia sair')
+  assert.equal(settings.hooks.PreToolUse.filter(b => b.matcher === 'mcp__.*').length, 1)
+})
+
+test('plano avisa settings.json sem as travas do kit', () => comPasta(raiz => {
+  const kit = montarKit(raiz, { [INICIAR]: 'novo\n', '.claude/settings.json': JSON.stringify(SETTINGS_DO_KIT) })
+  const projeto = montarProjeto(raiz, { [INICIAR]: 'novo\n', '.claude/settings.json': JSON.stringify(SETTINGS_DA_PESSOA) })
+  const n = SETTINGS_DO_KIT.permissions.deny.length + 1
+  assert.ok(resumo(montarPlano({ kit, projeto })).split('\n').includes(`settings.json: faltam ${n} regra(s) ou trava(s) do kit; rodar o passo settings`))
+  writeFileSync(join(projeto, '.claude/settings.json'), JSON.stringify(SETTINGS_DO_KIT))
+  assert.ok(!/settings\.json: faltam/.test(resumo(montarPlano({ kit, projeto }))), 'com tudo junto, o aviso some')
+}))
+
+test('CLI settings mostra antes e depois, so grava com --gravar, e recusa gravar sem o barrar-mcp.mjs no projeto', () => comPasta(raiz => {
+  const kit = montarKit(raiz, { [INICIAR]: 'novo\n', '.claude/settings.json': JSON.stringify(SETTINGS_DO_KIT) })
+  const original = JSON.stringify(SETTINGS_DA_PESSOA, null, 2) + '\n'
+  const projeto = montarProjeto(raiz, { '.claude/settings.json': original })
+  const mostra = rodar(['settings', projeto, '--kit', kit])
+  assert.equal(mostra.codigo, 0, mostra.saida)
+  assert.match(mostra.saida, /antes/)
+  assert.match(mostra.saida, /depois/)
+  assert.equal(ler(projeto, '.claude/settings.json'), original, 'sem --gravar o arquivo fica igual')
+  const sem = rodar(['settings', projeto, '--kit', kit, '--gravar'])
+  assert.equal(sem.codigo, 1)
+  assert.match(sem.saida, /rodar o aplicar antes/)
+  assert.equal(ler(projeto, '.claude/settings.json'), original, 'sem o barrar-mcp.mjs o arquivo fica igual')
+  escrever(projeto, { '.claude/hooks/barrar-mcp.mjs': 'x\n' })
+  const grava = rodar(['settings', projeto, '--kit', kit, '--gravar'])
+  assert.equal(grava.codigo, 0, grava.saida)
+  const gravado = ler(projeto, '.claude/settings.json')
+  assert.ok(!gravado.includes(CRLF) && gravado.endsWith('}\n'), 'LF, com quebra no fim')
+  assert.deepEqual(JSON.parse(gravado), mesclarSettings(structuredClone(SETTINGS_DA_PESSOA), SETTINGS_DO_KIT).settings)
+  assert.match(gravado, /^\{\n {2}"permissions"/)
+}))

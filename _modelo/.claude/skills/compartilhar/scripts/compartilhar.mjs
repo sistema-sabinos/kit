@@ -15,11 +15,25 @@ import { lerDecisoes, alvosDe, varrerSegredos, dataLocal } from '../../faxina/sc
 
 const eol = txt => ((txt.match(/\r\n/g) || []).length * 2 > (txt.match(/\n/g) || []).length ? '\r\n' : '\n')
 
+// login de navegador guardado em arquivo (ata 5.28, T12): sai pelo nome, porque o conteudo
+// nem sempre tem cara de chave. A pasta vale uma linha so, com / no fim; o arquivo, inteiro. Pasta
+// sessao e navegador-saida em qualquer lugar, como o chrome-perfil: a varredura da faxina pula as tres
+// pelo nome, e o que ela nao le sai daqui pelo nome (Codex comum, achado 4).
+export const SESSAO_PASTA = /(^|\/)(sessao|navegador-saida|chrome-perfil|\.auth|\.playwright-mcp)\//
+export const SESSAO_ARQUIVO = /(^|\/)storage-state[^/]*\.json$|\.har$/i
+
 export function varrer(pasta) {
-  const envs = readdirSync(pasta, { recursive: true }).map(String).filter(p => /(^|[\\/])\.env/.test(p) && !p.endsWith('.env.example')).map(p => p.split(sep).join('/'))
+  const todos = readdirSync(pasta, { recursive: true }).map(String).map(p => p.split(sep).join('/'))
+  const envs = todos.filter(p => /(^|\/)\.env/.test(p) && !p.endsWith('.env.example'))
+  const sessoes = new Set()
+  for (const p of todos) {
+    const m = SESSAO_PASTA.exec(p)
+    if (m) sessoes.add(p.slice(0, m.index + m[0].length))
+    else if (SESSAO_ARQUIVO.test(p)) sessoes.add(p)
+  }
   const ilegiveis = []
   const naoVarridos = []
-  return { segredos: varrerSegredos(pasta, ilegiveis, naoVarridos), envs, ilegiveis, naoVarridos }
+  return { segredos: varrerSegredos(pasta, ilegiveis, naoVarridos), envs, sessoes: [...sessoes].sort(), ilegiveis, naoVarridos }
 }
 
 // etiqueta e o ultimo pedaco do caminho da pasta: "[projeto] clientes/acme", "[acme]" e "acme" viram "acme"
@@ -113,7 +127,7 @@ if (chamadoDireto()) {
   else if (cmd === 'varrer') {
     const r = varrer(pasta)
     console.log(JSON.stringify(r, null, 1))
-    if (r.segredos.length || r.envs.length) process.exitCode = 2
+    if (r.segredos.length || r.envs.length || r.sessoes.length) process.exitCode = 2
   } else if (cmd === 'decisoes' && etiqueta) console.log(JSON.stringify(extrairDecisoes(process.cwd(), pasta, etiqueta)))
   else if (cmd === 'conferir') {
     const r = conferir(pasta)

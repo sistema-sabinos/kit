@@ -22,6 +22,7 @@
 // leitura do resumo e da categoria e por texto e aguenta mais.
 import { fileURLToPath } from 'node:url'
 import { conectar } from '../../mercado-livre/scripts/lib/chrome.mjs'
+import { sessaoCaiu, AVISO } from '../../conectar/scripts/lib/navegador.mjs'
 import { carregarConfiguracao, exigir } from '../../mercado-livre/scripts/lib/config.mjs'
 import { realpathSync } from 'node:fs'
 
@@ -223,6 +224,8 @@ export async function simularNaPagina(page, { termo, preco, tipo, frete }) {
   const espera = ms => page.waitForTimeout(ms)
   await page.goto(URL_SIMULADOR, { waitUntil: 'domcontentloaded' })
   await espera(1500)
+  const caiu = sessaoCaiu({ url: page.url(), host: 'mercadolivre.com.br' })
+  if (caiu) throw new Error(AVISO[caiu])
 
   // 1) categoria: busca e clique de mouse no primeiro card sugerido (e o clique que registra a escolha)
   const busca = page.locator('#search-box')

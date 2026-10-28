@@ -341,6 +341,45 @@ test('foraDoBackup: .secrets/ e secrets/ em qualquer profundidade e recado de en
   })
 })
 
+// Rodada 5.28: espelho das 6 regras de sessao do _modelo/.gitignore. Sem elas a faxina lista o
+// login exportado como "ficou fora do backup" e o passo 5 da skill oferece liberar a extensao.
+test('foraDoBackup: sessao do navegador, .auth, storage-state e har ficam fora de proposito', () => {
+  comProjeto({
+    '.gitignore': '*\n!*/\n!*.md\n!*.json\n!*.png\n!*.yml\n!.gitignore\ndados/sessao/\ndados/navegador-saida/\n.playwright-mcp/\n.auth/\nstorage-state*.json\n*.har\n',
+    'a.md': 'x', 'video.mp4': 'x', 'dados/sessao/c.json': 'x', 'dados/navegador-saida/t.png': 'x', '.playwright-mcp/p.yml': 'x',
+    '.auth/s.json': 'x', 'storage-state.json': 'x', 'rede.har': 'x',
+  }, raiz => {
+    execFileSync('git', ['init', '-q', raiz])
+    const bruto = execFileSync('git', ['-C', raiz, 'status', '--ignored=matching', '--porcelain=v1'], { encoding: 'utf8' })
+    for (const p of ['dados/sessao/', 'dados/navegador-saida/', '.playwright-mcp/', '.auth/', 'storage-state.json', 'rede.har'])
+      assert.ok(bruto.includes('!! ' + p), `canario: o git nao ignorou ${p}`)
+    assert.deepEqual(foraDoBackup(raiz).arquivos, ['video.mp4'])
+  })
+})
+
+// chat 7 da 5.28: a semente de 2FA (*totp*.json) espelha o _modelo/.gitignore; sem ela a faxina
+// oferece liberar a semente pro backup
+test('foraDoBackup: semente de 2FA fica fora de proposito', () => {
+  comProjeto({
+    '.gitignore': '*\n!*/\n!*.md\n!*.json\n!.gitignore\n*totp*.json\n',
+    'a.md': 'x', 'video.mp4': 'x', 'dados/totp.json': 'x', 'dados/ml-totp.json': 'x',
+  }, raiz => {
+    execFileSync('git', ['init', '-q', raiz])
+    const bruto = execFileSync('git', ['-C', raiz, 'status', '--ignored=matching', '--porcelain=v1'], { encoding: 'utf8' })
+    for (const p of ['dados/totp.json', 'dados/ml-totp.json']) assert.ok(bruto.includes('!! ' + p), `canario: o git nao ignorou ${p}`)
+    assert.deepEqual(foraDoBackup(raiz).arquivos, ['video.mp4'])
+  })
+})
+
+test('varrerSegredos pula dados/sessao e dados/navegador-saida como o chrome-perfil', () => {
+  // cookie de storageState e chave falsa montados em pedacos, nunca inteiros
+  const sujo = '{ "coo' + 'kies": [{ "value": "sk-' + 'Ab1'.repeat(10) + '" }] }\n'
+  comProjeto({ 'dados/sessao/c.json': sujo, 'dados/navegador-saida/x.json': sujo, 'dados/outro.json': sujo }, raiz => {
+    const a = varrerSegredos(raiz).map(x => x.arquivo)
+    assert.deepEqual(a, ['dados/outro.json'], 'canario no dados/outro.json e nada de dentro das pastas de sessao')
+  })
+})
+
 test('orfaos: robos/ e bem-vindo.html sao sempre conhecidos', () => {
   comProjeto({ 'AGENTS.md': 'nada citado', 'robos/execucoes.jsonl': 'x', 'bem-vindo.html': 'x', 'solto.txt': 'x' }, raiz => {
     assert.deepEqual(orfaos(raiz), ['solto.txt'])

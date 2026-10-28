@@ -39,7 +39,7 @@ Rodar os comandos de leitura e classificar cada item em verde, amarelo ou vermel
 - `.gitignore` existe e bloqueia o `.env` e as variações dele? Vale `.env*` numa linha só (o do molde) ou `.env` e `.env.*` em duas.
 - `git ls-files | grep -i "\.env"` volta vazio, ou só com `.env.example`? (nenhum arquivo de chave rastreado)
 - Rodar `node .claude/skills/faxina/scripts/faxina.mjs` e olhar só a lista `segredos`: é a mesma conferência de cara de chave do backup automático (OpenAI, GitHub, AWS, Meta, Instagram, Google, Telegram, Mercado Livre e outros). Pra cada arquivo da lista, `git ls-files <arquivo>` diz se ele já está no backup. Nunca procurar prefixo de chave com `grep` à mão: os próprios arquivos do kit citam os prefixos.
-- **Vermelho:** `.env` rastreado ou chave em arquivo. Conserto: mover a chave pro `.env`, tirar do arquivo, `git rm --cached` no `.env` se estiver rastreado, e avisar que a chave exposta deve ser trocada no provedor (uma vez no GitHub, considerar vazada).
+- **Vermelho:** `.env` rastreado ou chave em arquivo. Conserto: mostrar arquivo e linha (nunca o valor); a pessoa abre o `.env` no editor e cola numa linha `NOME=valor`; a IA roda `node .claude/skills/conectar/scripts/chave.mjs bate NOME --em <arquivo>:<linha>` e só com `bate` tira a chave do arquivo (a IA nunca grava o `.env`); `git rm --cached` no `.env` se estiver rastreado, e avisar que a chave exposta deve ser trocada no provedor (uma vez no GitHub, considerar vazada).
 
 ### 4. Comandos (skills)
 
@@ -64,6 +64,7 @@ Rodar os comandos de leitura e classificar cada item em verde, amarelo ou vermel
 - Skill ativa que depende de ferramenta ainda pendente (a própria skill diz o que precisa)?
 - **Amarelo:** skill esperando conexão. Conserto: `/conectar`.
 - **Amarelo:** ferramenta conectada sem leitura barata feita agora. Texto: "não dá pra testar daqui, nada a consertar"; nunca "Conserto: /conectar", porque ela já está ligada.
+- **Lib do Chrome em dia** (amarelo quando falha): cada `.claude/skills/*/scripts/lib/chrome.mjs` do projeto cita `conectar/scripts/lib/navegador.mjs`. O que não cita é a lib velha, que abre o Chrome em outra porta e briga pelo mesmo perfil. Conferência: `grep -L "conectar/scripts/lib/navegador.mjs" .claude/skills/*/scripts/lib/chrome.mjs`. Saída vazia é verde, e projeto sem nenhum `chrome.mjs` (nenhum pacote com navegador) também. Conserto: rodar a `/atualizar-sabinos` e aceitar a troca desse arquivo. Se ele foi mexido de propósito, refazer a mudança em cima da casca nova.
 
 ### 7. Padrão AGENTS.md
 
@@ -82,14 +83,14 @@ Um hook que não roda (Node não instalado, script apagado) vira erro não bloqu
 
 - A pasta `.claude/hooks/` existe e o `barrar-perigoso.mjs` está dentro dela?
 - O `settings.json` tem o bloco `hooks.PreToolUse` apontando pra `barrar-perigoso.mjs`, com o `matcher` cobrindo **as três** ferramentas (`"Bash|PowerShell|Monitor"`, em qualquer ordem, separadas por `|` ou vírgula; nunca só `"Bash"` sozinho, senão a trava do PowerShell morre em silêncio e ninguém percebe)? Sem só o `Monitor` (projeto de antes da 5.20): amarelo, o comando mandado em segundo plano escapa da trava, e o `/atualizar-sabinos` acrescenta (entrada `trava-no-monitor`).
-- O `settings.json` tem as regras de permissão do `.env` (`ask` pra `Read(./.env)` e `Read(./.env.*)`, `deny` pra `Read(./secrets/**)` e `Read(./.secrets/**)`)?
+- O `settings.json` tem o `deny` de leitura do `.env` (`Read(./.env)`, `Read(**/.env)`, `Read(**/.env.local)` e `Read(**/.env.*.local)`), das pastas de chave (`Read(./secrets/**)` e `Read(./.secrets/**)`), da sessão do navegador (`dados/sessao/`, `dados/chrome-perfil/`, `.auth/`, `*.har` e `storage-state*.json`), da semente de 2FA (`Read(**/*totp*.json)`) e do perfil do Chrome do dia a dia? E o bloco `hooks.PreToolUse` com matcher `"mcp__.*"` apontando pra `barrar-mcp.mjs`, com `"onFailure": "block"`? Um `ask` antigo do `.env` que tenha sobrado não atrapalha: o `deny` vale antes.
 - A trava responde de verdade: rodar `node -e "process.stdout.write(JSON.stringify({tool_input:{command:'rm -r'+'f /'}}))" | node .claude/hooks/barrar-perigoso.mjs` (o `node -e` monta o JSON sem depender de aspas do terminal do usuário, Windows ou Mac; a receita perigosa vai partida em duas pontas, `'rm -r'+'f /'`, pra esse comando de teste não carregar o próprio texto que a trava barra e acabar bloqueado por ela mesma antes de rodar) e conferir que o comando sai com código de erro e imprime o motivo do bloqueio. Isso prova que o script barra; as outras três só provam que o arquivo existe.
 - A trava está ligada (ponta a ponta, o único teste que passa pelo `settings.json`):
   1. Criar uma pasta de teste com nome novo: `node -e "const n='.trava-teste-sabinos-'+Date.now();require('fs').mkdirSync(n);console.log(n)"`. O comando falha se o nome já existe, então nada de verdade entra na prova; anotar o nome que ele imprimiu.
   2. Tentar apagar essa pasta pela ferramenta, como um pedido comum: no Bash, `rm -rf <nome>`; no PowerShell, `Remove-Item -Recurse <nome>` (nunca `rm -rf` no PowerShell, que falha por parâmetro e parece trava).
   3. Barrado com a mensagem "Pare aqui": a trava está ligada (testado agora), e esse "pare" é o esperado neste item e dispensa explicação. Apagou: VERMELHO, trava desligada. Falhou sem o "Pare aqui": amarelo, a prova não valeu; dizer o erro.
   4. Tirar a pasta vazia: `node -e "require('fs').rmdirSync('<nome>')"`. É a exceção combinada à regra 12 do `AGENTS.md`, que manda parar quando a trava barra: vale só aqui, porque a pasta nasceu no passo 1 desta prova e o `rmdirSync` não apaga pasta com conteúdo. Em qualquer outro bloqueio, parar e explicar.
-- **Vermelho:** pasta ou script faltando, hook não referenciado no `settings.json`, matcher sem o Bash ou sem o PowerShell, regra de permissão do `.env` ausente, ou a trava não bloqueou o comando de teste, ou a pasta de teste foi apagada (trava fora do `settings.json` ou desligada). Conserto: copiar `.claude/hooks/barrar-perigoso.mjs` de `../_modelo/` (sem o `.test.mjs`, que é só de desenvolvimento) e reaplicar o bloco `PreToolUse` (matcher `"Bash|PowerShell|Monitor"`) e as regras do `.env` no `settings.json`.
+- **Vermelho:** pasta ou script faltando, hook não referenciado no `settings.json`, matcher sem o Bash ou sem o PowerShell, regra de permissão do `.env` ausente, ou a trava não bloqueou o comando de teste, ou a pasta de teste foi apagada (trava fora do `settings.json` ou desligada). Conserto: copiar `.claude/hooks/barrar-perigoso.mjs` e `.claude/hooks/barrar-mcp.mjs` de `../_modelo/` (sem os `.test.mjs`, que são só de desenvolvimento) e reaplicar os dois blocos `PreToolUse` (matcher `"Bash|PowerShell|Monitor"` e matcher `"mcp__.*"`) e o `deny` no `settings.json`.
 
 ### 10. Agendador
 
@@ -131,7 +132,7 @@ Ponte Codex    amarelo  não existe (só importa se você usar o Codex) (testado
 Ferramentas    amarelo  Playwright e Gmail lidos agora (testado agora); Buffer só aparece no /mcp, não dá pra testar daqui, nada a consertar (só configurado)
 Padrão         verde    CLAUDE.md e AGENTS.md no formato certo (testado agora)
 Mesa           amarelo  AGENTS.md com 3.100 tokens, 400 acima do molde do kit, e empresa.md com 950 (total 5.900 antes da sua primeira palavra) (testado agora, medir-mesa.mjs rodou). O tamanho do AGENTS.md vem do molde do kit, nada a cortar aqui; /atualizar consolida o _contexto/
-Travas         verde    barrar-perigoso responde ao comando de teste, .env em ask e secrets em deny (testado agora)
+Travas         verde    barrar-perigoso responde ao comando de teste, .env e sessão em deny, trava do MCP ligada (testado agora)
 Agendador      verde    nenhum robô atrasado (testado agora)
 Conselheiros   verde    2 conselheiros instalados neste computador (testado agora)
 

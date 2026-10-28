@@ -2,6 +2,8 @@
 
 Referencia de APIs, CLIs e conectores que podem ser usados dentro de skills do Claude Code.
 Consulte este arquivo antes de criar skills novas pra saber o que ja esta disponivel.
+Onde diz "Salvar X no `.env`": quem cola a chave no `.env` e a pessoa, pelo editor, e a IA confere com
+`node .claude/skills/conectar/scripts/chave.mjs tem X`, sem abrir o arquivo.
 
 ---
 
@@ -248,7 +250,7 @@ Pra remover um MCP: `claude mcp remove nome-do-mcp`
 **Precisa de conta:** Nao, roda local e gratis
 **Como instalar:**
 ```bash
-claude mcp add playwright npx @playwright/mcp@latest
+claude mcp add playwright -- npx @playwright/mcp@0.0.83 --isolated --output-dir dados/navegador-saida --no-webmcp
 npx playwright install chromium
 ```
 **Quando usar:** Pesquisa de concorrentes, conferencia de precos, qualquer automacao de site sem API. Confirmar com /mcp (deve listar "playwright")

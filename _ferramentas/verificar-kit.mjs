@@ -218,6 +218,8 @@ const OBRIGATORIOS = [
   '_modelo/.gitattributes',
   '_modelo/.claude/hooks/barrar-perigoso.mjs',
   '_modelo/.claude/hooks/auto-sync.mjs',
+  // 5.28: o settings chama o hook do MCP com onFailure block; sem o arquivo, toda ferramenta de fora barra
+  '_modelo/.claude/hooks/barrar-mcp.mjs',
   // a regra curta do AGENTS.md do molde manda ler o detalhe aqui (5.7, D.1)
   '_modelo/.claude/detalhe-regras.md',
   '_modelo/_contexto/empresa.md', '_modelo/_contexto/preferencias.md',
@@ -271,6 +273,12 @@ const OBRIGATORIOS = [
   '_modelo/.claude/skills/video-produto/scripts/lib/fetch-timeout.mjs',
   '_modelo/.claude/skills/mercado-livre/scripts/lib/config.mjs',
   '_modelo/.claude/skills/mercado-livre/scripts/lib/chrome.mjs',
+  // 5.28 (D4): a lib de navegador unica no nucleo; as cascas do ML e do MS importam dela
+  '_modelo/.claude/skills/conectar/scripts/lib/navegador.mjs',
+  '_modelo/.claude/skills/conectar/scripts/lib/raiz.mjs',
+  '_modelo/.claude/skills/conectar/scripts/porta.mjs',
+  '_modelo/.claude/skills/conectar/scripts/abrir-chrome.mjs',
+  '_modelo/.claude/skills/midia-social/scripts/lib/chrome.mjs',
   '_modelo/.claude/skills/mercado-livre/scripts/lib/ml-api.mjs',
   '_modelo/.claude/skills/mercado-livre/scripts/lib/bling-api.mjs',
   '_modelo/.claude/skills/mercado-livre/scripts/lib/decisoes.mjs',
@@ -667,15 +675,23 @@ export function rodarGates(dirKit, opcoes = {}) {
 
   // Gate 9: travas de seguranca do settings.json.
   // Protegem o aluno na origem, em vez de so avisar depois que o estrago aconteceu.
-  // Sintaxe conferida na doc oficial (code.claude.com/docs/en/permissions, 2026-09-21):
-  // a leitura do .env fica em "ask" (pergunta antes de ler, e a doc confirma que uma
-  // regra de Read tambem e a que se consulta pra Edit/Write no mesmo caminho), nunca em
-  // "deny", porque "deny" bloquearia de vez a escrita da chave pelo /conectar. Read(./secrets/**)
-  // continua em "deny" porque o kit nunca escreve nessa pasta; Read(./.secrets/**) tambem,
-  // pela mesma razao (chave de skill de terceiro vai pro .env).
-  const ASK_OBRIGATORIO = ['Read(./.env)', 'Read(./.env.*)']
-  const DENY_OBRIGATORIO = ['Read(./secrets/**)', 'Read(./.secrets/**)']
+  // Rodada 5.28 (ata, T5): o .env vai em deny. A pessoa cola a chave e o script grava; a regra de
+  // permissao nao alcanca script (doc de permissions, conferida na sonda C1c: deny de Read barra Read,
+  // cat, Edit e Write no caminho, vale no bypassPermissions, e um node lendo o arquivo segue rodando).
+  // O Read(./.env) fica mesmo coberto pelo Read(**/.env), porque o "Te afeta se" do mudancas.md o procura
+  // pelo nome; o Read(./.env.*) fica fora (D6), e o .env.example segue legivel. O ask antigo que a pessoa
+  // ja tinha fica inerte, porque o deny vale antes do ask, e por isso o gate nao o acusa: o /atualizar-kit
+  // nunca tira nada da pessoa. Sessao de navegador e o perfil do Chrome do dia a dia tambem vao em deny
+  // (a forma ~/ provada na sonda C1c). A trava do MCP (barrar-mcp, T2 a T4) vai nos dois settings, pra
+  // toda ferramenta de todo servidor, com onFailure block (hook que nao sobe barra a chamada), e o
+  // run_code_unsafe dos dois servidores do Playwright MCP fica em deny, segunda camada se o hook sumir.
+  const DENY_OBRIGATORIO = ['Read(./.env)', 'Read(**/.env)', 'Read(**/.env.local)', 'Read(**/.env.*.local)', 'Read(./secrets/**)', 'Read(./.secrets/**)', 'Read(./dados/sessao/**)', 'Read(./dados/chrome-perfil/**)', 'Read(**/.auth/**)', 'Read(**/*.har)', 'Read(**/storage-state*.json)', 'Read(**/*totp*.json)', 'Read(~/AppData/Local/Google/Chrome/User Data/**)', 'Read(~/Library/Application Support/Google/Chrome/**)', 'mcp__playwright__browser_run_code_unsafe', 'mcp__navegador__browser_run_code_unsafe']
+  // 5.28 fechamento: a pasta-mae trabalha nos projetos de dentro dela (/syncar, /atualizar-kit), e a
+  // forma ./ so vale na raiz dela; ali as pastas de chave e de sessao vao na forma **/
+  const NA_MAE_EM_TODA_PASTA = ['Read(./secrets/**)', 'Read(./.secrets/**)', 'Read(./dados/sessao/**)', 'Read(./dados/chrome-perfil/**)']
   for (const rel of ['.claude/settings.json', '_modelo/.claude/settings.json']) {
+    const denyObrigatorio = rel.startsWith('_modelo/') ? DENY_OBRIGATORIO
+      : DENY_OBRIGATORIO.map(r => NA_MAE_EM_TODA_PASTA.includes(r) ? r.replace('Read(./', 'Read(**/') : r)
     const settings = join(dirKit, rel)
     if (!existsSync(settings)) continue
     let cfg
@@ -700,16 +716,22 @@ export function rodarGates(dirKit, opcoes = {}) {
       tipoOk = false
     }
     if (!tipoOk) continue
-    for (const regra of ASK_OBRIGATORIO) {
-      if (!ask.includes(regra))
-        falhas.push({ gate: 9, arquivo: rel, detalhe: `permissions.ask sem a regra ${regra}` })
-    }
-    for (const regra of DENY_OBRIGATORIO) {
+    for (const regra of denyObrigatorio) {
       if (!deny.includes(regra))
         falhas.push({ gate: 9, arquivo: rel, detalhe: `permissions.deny sem a regra ${regra}` })
     }
+    const blocoMcp = ((cfg.hooks && cfg.hooks.PreToolUse) || []).find(entrada =>
+      (entrada.hooks || []).some(h => typeof h.command === 'string' && h.command.includes('barrar-mcp')))
+    if (!blocoMcp) {
+      falhas.push({ gate: 9, arquivo: rel, detalhe: 'hooks.PreToolUse sem o barrar-mcp' })
+    } else {
+      if (blocoMcp.matcher !== 'mcp__.*')
+        falhas.push({ gate: 9, arquivo: rel, detalhe: `matcher do barrar-mcp precisa ser mcp__.* (veio ${blocoMcp.matcher})` })
+      if (!blocoMcp.hooks.some(h => typeof h.command === 'string' && h.command.includes('barrar-mcp') && h.onFailure === 'block'))
+        falhas.push({ gate: 9, arquivo: rel, detalhe: 'barrar-mcp sem onFailure block' })
+    }
     // o hook de comando destrutivo nasce so no _modelo (a pasta que vira projeto do aluno);
-    // a pasta-mae faz setup e atualizacao, e nesta rodada leva so a trava de leitura
+    // a pasta-mae faz setup e atualizacao, e leva a trava de leitura e a do MCP (5.28)
     if (rel.startsWith('_modelo/')) {
       const pre = (cfg.hooks && cfg.hooks.PreToolUse) || []
       const entradaComBarreira = pre.find(entrada =>
@@ -858,6 +880,20 @@ export function rodarGates(dirKit, opcoes = {}) {
     }
   }
 
+  // Gate 16: Playwright MCP com versao fixa (rodada 5.28, ata T11). A linha que instala o pacote traz a
+  // versao sondada na bancada (o pacote novo pode trazer ferramenta que a trava do MCP nao conhece) e diz
+  // qual navegador usa: --isolated (limpo a cada vez) ou --cdp-endpoint (o Chrome dedicado pela porta).
+  // O nome do pacote vai em pedacos aqui, senao o gate acusaria este arquivo.
+  const MCP_SEM_VERSAO = /@playwright\/mcp(?!@\d+\.\d+\.\d+)/
+  const MCP_COM_VERSAO = '@playwright/' + 'mcp@'
+  for (const rel of arquivos) {
+    if (!/\.(md|html|mjs)$/i.test(rel)) continue
+    readFileSync(join(dirKit, rel), 'utf8').split(/\r?\n/).forEach((l, i) => {
+      if (MCP_SEM_VERSAO.test(l) || (l.includes(MCP_COM_VERSAO) && !/--isolated|--cdp-endpoint/.test(l)))
+        falhas.push({ gate: 16, arquivo: rel, detalhe: `linha ${i + 1}: Playwright MCP sem versao fixa ou sem --isolated nem --cdp-endpoint; fixar a versao sondada na bancada e dizer qual navegador usa` })
+    })
+  }
+
   // Gate 13: gavetas da memoria. Todo caminho de memoria que o Mapa do _modelo/AGENTS.md
   // promete tem que existir no _modelo e ter quem escreva ou leia (Tabela de destinos ou Gatilhos)
   if (set.has('_modelo/AGENTS.md')) {
@@ -927,7 +963,7 @@ const NOMES = {
   6: 'Portabilidade Windows/Mac', 7: 'Empacotamento do zip',
   8: 'Regua do /trafego', 9: 'Travas de seguranca', 10: 'Atualizador',
   11: 'Backup do aluno (.gitignore)', 12: 'Travessao', 13: 'Gavetas da memoria',
-  14: 'Terminal e da IA', 15: 'Frase de contraste (regra 1)',
+  14: 'Terminal e da IA', 15: 'Frase de contraste (regra 1)', 16: 'Playwright MCP com versao fixa',
 }
 
 // fui chamado direto? O Node entrega o import.meta.url com link e juncao resolvidos e o argv

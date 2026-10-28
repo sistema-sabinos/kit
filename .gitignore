@@ -43,6 +43,10 @@ node_modules/
 # chave de skill de fora, em qualquer profundidade (o * so segura a da raiz)
 .secrets/
 secrets/
+# semente de 2FA salva em arquivo
+*totp*.json
+# sessao de navegador exportada (storageState) guarda login: nunca sobe
+storage-state*.json
 # material bruto dos conselheiros (livro, legenda, transcricao): fica so neste computador
 /agentes/*/fontes/
 /agentes/*/prova/fontes-prova/

@@ -161,7 +161,7 @@ export function aplicarArquivo(raiz, hoje, renomear = renameSync) {
 }
 
 // ---------- segredos ----------
-const PULAR_PASTAS = new Set(['.git', 'node_modules', '.venv', '__pycache__', '.agents', 'chrome-perfil'])
+const PULAR_PASTAS = new Set(['.git', 'node_modules', '.venv', '__pycache__', '.agents', 'chrome-perfil', 'sessao', 'navegador-saida'])
 // cara de chave: a mesma lista do backup automatico (hook auto-sync), mais as duas
 // formas largas abaixo, que so a faxina usa porque ela so relata e nunca segura arquivo
 const PADROES = [
@@ -363,12 +363,16 @@ export function automacoes(raiz, hoje) {
 const BLOQUEIO_DE_PROPOSITO = [
   /(^|\/)\.env(?!\.example$)[^/]*$/, /^\.origem$/, /^\.backup-falhou$/, /^\.claude\/settings\.local\.json$/,
   /(^|\/)(node_modules|__pycache__|\.venv|dist|build|\.agents)\//, /^dados\/chrome-perfil\//,
+  // sessao de navegador e saida do Playwright MCP: espelho do _modelo/.gitignore, 5.28
+  /^dados\/(sessao|navegador-saida)\//, /(^|\/)\.(playwright-mcp|auth)\//, /(^|\/)storage-state[^/]*\.json$/, /\.har$/i,
   /(^|\/)\.DS_Store$/, /(^|\/)Thumbs\.db$/, /(^|\/)desktop\.ini$/, /(^|\/)\~\$[^/]*$/,
   // copia de seguranca do atualizador e recado de envio parado: valem so neste computador
   /^\.sabinos\//, /^_memoria\/recados\/[^/]*-auto-sync-parado\.md$/,
   /^_memoria\/recados\/[^/]*-auto-sync-segurou\.md$/,
   // pasta de chave (.secrets/ de skill de terceiro e secrets/): fora do backup de proposito, em qualquer profundidade
   /(^|\/)\.?secrets\//,
+  // semente de 2FA salva em arquivo: espelho do *totp*.json do _modelo/.gitignore (chat 7 da 5.28)
+  /(^|\/)[^/]*totp[^/]*\.json$/i,
 ]
 
 export function foraDoBackup(raiz) {

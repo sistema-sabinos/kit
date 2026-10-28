@@ -58,8 +58,13 @@ conta o resultado.
 
 ## Estado (quando o pacote ja esta configurado)
 
-1. Ler o `_contexto/midia-social.md` e o `.env` e dizer, em linguagem simples, o que esta pronto e o
-   que falta (Buffer, deposito do video, Instagram, YouTube), apontando a secao do guia de cada um.
+1. Ler o `_contexto/midia-social.md` e rodar `node .claude/skills/conectar/scripts/chave.mjs tem` com os
+   nomes de cada conexao: Buffer `BUFFER_API_KEY`; deposito do video `CLOUDINARY_CLOUD_NAME`
+   `CLOUDINARY_API_KEY` `CLOUDINARY_API_SECRET` (Cloudinary) ou `R2_ACCESS_KEY_ID` `R2_SECRET_ACCESS_KEY`
+   `CLOUDFLARE_ACCOUNT_ID` `R2_BUCKET` `R2_URL_PUBLICA` (R2); Instagram `IG_ACCESS_TOKEN`
+   `IG_TOKEN_VENCE_EM`; YouTube `YOUTUBE_CLIENT_ID` `YOUTUBE_REFRESH_TOKEN`. Ler o resultado linha a
+   linha (o deposito e um dos dois, entao o codigo de saida nao serve) e dizer, em linguagem simples, o
+   que esta pronto e o que falta, apontando a secao do guia de cada um. A IA nunca abre o `.env`.
 2. Com o Buffer ligado, rodar `node .claude/skills/midia-social/scripts/canais.mjs` (so leitura) e
    conferir que as redes continuam conectadas.
 3. Olhar o retrato mais novo em `dados/instagram/<perfil>/` e as pastas de `producao/` com post

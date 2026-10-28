@@ -808,35 +808,75 @@ test('gate 6 reprova .mjs com shebang terminando em CR', () => {
 // Gate 9: travas de seguranca do settings.json
 // ---------------------------------------------------------------------------
 
-test('gate 9 cobra ask de leitura de .env e deny de secrets nos dois settings.json', () => {
+// rodada 5.28: a trava do MCP vai nos dois settings, com o deny estatico do run_code_unsafe
+const BLOCO_MCP = { matcher: 'mcp__.*', hooks: [{ type: 'command', command: 'node barrar-mcp.mjs', onFailure: 'block' }] }
+const DENY_MCP = ['mcp__playwright__browser_run_code_unsafe', 'mcp__navegador__browser_run_code_unsafe']
+// rodada 5.28 (ata, T5 e D6): .env, sessao e perfil do Chrome do dia a dia em deny; o .env.* da raiz
+// (o .env.example) fica legivel. Lista literal: o teste nao copia a do verificador.
+const DENY_COMPLETO = [
+  'Read(./.env)', 'Read(**/.env)', 'Read(**/.env.local)', 'Read(**/.env.*.local)',
+  'Read(./secrets/**)', 'Read(./.secrets/**)',
+  'Read(./dados/sessao/**)', 'Read(./dados/chrome-perfil/**)', 'Read(**/.auth/**)', 'Read(**/*.har)', 'Read(**/storage-state*.json)',
+  // chat 7: semente de 2FA salva em arquivo
+  'Read(**/*totp*.json)',
+  'Read(~/AppData/Local/Google/Chrome/User Data/**)', 'Read(~/Library/Application Support/Google/Chrome/**)',
+  ...DENY_MCP,
+]
+// 5.28 fechamento: a pasta-mae trabalha nos projetos de dentro dela (/syncar, /atualizar-kit), e a
+// forma ./ so vale na raiz dela; ali as pastas de chave e de sessao vao na forma **/
+const NA_MAE_EM_TODA_PASTA = ['Read(./secrets/**)', 'Read(./.secrets/**)', 'Read(./dados/sessao/**)', 'Read(./dados/chrome-perfil/**)']
+const DENY_MAE = DENY_COMPLETO.map(r => NA_MAE_EM_TODA_PASTA.includes(r) ? r.replace('Read(./', 'Read(**/') : r)
+const denyDe = rel => rel.startsWith('_modelo') ? DENY_COMPLETO : DENY_MAE
+
+test('gate 9 cobra na pasta-mae a forma **/ das pastas de chave e de sessao', () => {
+  assert.deepEqual(DENY_MAE.filter(r => !DENY_COMPLETO.includes(r)),
+    ['Read(**/secrets/**)', 'Read(**/.secrets/**)', 'Read(**/dados/sessao/**)', 'Read(**/dados/chrome-perfil/**)'], 'canario: a lista da mae troca as quatro')
+  const caso = deny => {
+    const dir = kitFalso()
+    try {
+      mkdirSync(join(dir, '.claude'), { recursive: true })
+      writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify({ permissions: { deny }, hooks: { PreToolUse: [BLOCO_MCP] } }))
+      return rodarGates(dir).falhas.filter(f => f.gate === 9 && f.arquivo === '.claude/settings.json').map(f => f.detalhe)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+  assert.deepEqual(caso(DENY_COMPLETO), ['Read(**/secrets/**)', 'Read(**/.secrets/**)', 'Read(**/dados/sessao/**)', 'Read(**/dados/chrome-perfil/**)']
+    .map(r => `permissions.deny sem a regra ${r}`), 'na mae, a forma ./ sozinha nao basta')
+  assert.deepEqual(caso(DENY_MAE), [])
+  // a mae de antes, depois da juncao do /atualizar-kit: a forma ./ antiga fica e nao atrapalha
+  assert.deepEqual(caso([...DENY_COMPLETO, ...DENY_MAE]), [])
+})
+
+test('gate 9 cobra deny de leitura de .env, de secrets e de sessao nos dois settings.json', () => {
   const dir = kitFalso()
   try {
     mkdirSync(join(dir, '.claude'), { recursive: true })
     mkdirSync(join(dir, '_modelo/.claude'), { recursive: true })
     writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify({}))
     writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify({}))
-    const { falhas } = rodarGates(dir)
-    const noNove = falhas.filter(f => f.gate === 9)
-    assert.ok(noNove.length > 0, 'o gate 9 precisa acusar settings sem ask nem deny')
-    assert.ok(noNove.some(f => f.arquivo === '.claude/settings.json' && /permissions\.ask/.test(f.detalhe)))
-    assert.ok(noNove.some(f => f.arquivo === '_modelo/.claude/settings.json' && /permissions\.ask/.test(f.detalhe)))
-    assert.ok(noNove.some(f => /permissions\.deny sem a regra Read\(\.\/secrets\/\*\*\)/.test(f.detalhe)))
+    const noNove = rodarGates(dir).falhas.filter(f => f.gate === 9)
+    assert.ok(noNove.length > 0, 'o gate 9 precisa acusar settings sem deny')
+    for (const arquivo of ['.claude/settings.json', '_modelo/.claude/settings.json'])
+      for (const regra of denyDe(arquivo))
+        assert.ok(noNove.some(f => f.arquivo === arquivo && f.detalhe === `permissions.deny sem a regra ${regra}`), `${arquivo}: sem a falha da regra ${regra}`)
     assert.ok(noNove.every(f => f.detalhe && f.detalhe.length > 0), 'toda falha explica o motivo')
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
 })
 
-test('gate 9 aceita settings com ask do .env e deny de secrets', () => {
+test('gate 9 aceita settings com o deny completo e a trava do mcp', () => {
   const dir = kitFalso()
   try {
     mkdirSync(join(dir, '.claude'), { recursive: true })
     writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify({
-      permissions: { ask: ['Read(./.env)', 'Read(./.env.*)'], deny: ['Read(./secrets/**)', 'Read(./.secrets/**)'] },
+      permissions: { deny: DENY_MAE },
+      hooks: { PreToolUse: [BLOCO_MCP] },
     }))
     const { falhas } = rodarGates(dir)
     const daPastaMae = falhas.filter(f => f.gate === 9 && f.arquivo === '.claude/settings.json')
-    assert.strictEqual(daPastaMae.length, 0, 'com ask e deny corretos, o gate 9 fica quieto')
+    assert.strictEqual(daPastaMae.length, 0, 'com o deny e a trava corretos, o gate 9 fica quieto')
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
@@ -847,31 +887,65 @@ test('gate 9 acusa settings sem o deny de .secrets', () => {
   try {
     mkdirSync(join(dir, '.claude'), { recursive: true })
     writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify({
-      permissions: { ask: ['Read(./.env)', 'Read(./.env.*)'], deny: ['Read(./secrets/**)'] },
+      permissions: { deny: DENY_MAE.filter(r => r !== 'Read(**/.secrets/**)') },
+      hooks: { PreToolUse: [BLOCO_MCP] },
     }))
     const doNove = rodarGates(dir).falhas.filter(f => f.gate === 9 && f.arquivo === '.claude/settings.json')
     assert.ok(doNove.length > 0, 'canario: o gate 9 acusou alguma coisa')
-    assert.deepEqual(doNove.map(f => f.detalhe), ['permissions.deny sem a regra Read(./.secrets/**)'])
+    assert.deepEqual(doNove.map(f => f.detalhe), ['permissions.deny sem a regra Read(**/.secrets/**)'])
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
 })
 
-test('gate 9 acusa quando as regras do .env estao no lugar errado (deny em vez de ask)', () => {
+// o settings da pasta-mae depois do /atualizar-kit: o ask antigo do .env fica (a juncao nunca tira
+// nada da pessoa) e e inerte, porque o deny vale antes do ask
+test('gate 9 acusa regra do .env em ask em vez de deny', () => {
+  const ASK_ANTIGO = ['Read(./.env)', 'Read(./.env.*)']
+  const caso = deny => {
+    const dir = kitFalso()
+    try {
+      mkdirSync(join(dir, '.claude'), { recursive: true })
+      writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify({ permissions: { ask: ASK_ANTIGO, deny }, hooks: { PreToolUse: [BLOCO_MCP] } }))
+      return rodarGates(dir).falhas.filter(f => f.gate === 9 && f.arquivo === '.claude/settings.json').map(f => f.detalhe)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+  assert.deepEqual(caso(DENY_MAE.filter(r => r !== 'Read(./.env)')), ['permissions.deny sem a regra Read(./.env)'])
+  assert.deepEqual(caso(DENY_MAE), [], 'com o deny completo, o ask antigo nao acusa nada')
+})
+
+test('gate 9 deixa o .env.* da raiz fora do deny', () => {
+  assert.ok(!DENY_COMPLETO.includes('Read(./.env.*)'), 'a lista esperada nao leva o .env.* da raiz (D6)')
+  const dir = kitFalso()
+  try {
+    for (const rel of ['.claude', '_modelo/.claude']) {
+      mkdirSync(join(dir, rel), { recursive: true })
+      writeFileSync(join(dir, rel, 'settings.json'), JSON.stringify({
+        permissions: { deny: denyDe(rel) },
+        hooks: { PreToolUse: [{ matcher: 'Bash|PowerShell|Monitor', hooks: [{ type: 'command', command: 'node barrar-perigoso.mjs' }] }, BLOCO_MCP] },
+      }))
+    }
+    const doNove = rodarGates(dir).falhas.filter(f => f.gate === 9 && /settings\.json$/.test(f.arquivo))
+    assert.deepEqual(doNove, [])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+// sonda C1c da 5.28: a forma ~/ do perfil do dia a dia segura sozinha, no Windows e no bypass
+test('gate 9 cobra o deny do perfil do Chrome do dia a dia', () => {
+  const PERFIS = ['Read(~/AppData/Local/Google/Chrome/User Data/**)', 'Read(~/Library/Application Support/Google/Chrome/**)']
   const dir = kitFalso()
   try {
     mkdirSync(join(dir, '.claude'), { recursive: true })
-    // erro mais provavel de quem mexer nisso depois: deixar o .env dentro de deny,
-    // que e exatamente o bug que esta rodada corrigiu (deny bloqueia a escrita da chave)
     writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify({
-      permissions: { deny: ['Read(./.env)', 'Read(./.env.*)', 'Read(./secrets/**)', 'Read(./.secrets/**)'] },
+      permissions: { deny: DENY_MAE.filter(r => !PERFIS.includes(r)) },
+      hooks: { PreToolUse: [BLOCO_MCP] },
     }))
-    const { falhas } = rodarGates(dir)
-    const doNove = falhas.filter(f => f.gate === 9 && f.arquivo === '.claude/settings.json')
-    assert.ok(doNove.some(f => f.detalhe === 'permissions.ask sem a regra Read(./.env)'),
-      'regra do .env dentro de deny em vez de ask tem que acusar falta em ask')
-    assert.ok(doNove.some(f => f.detalhe === 'permissions.ask sem a regra Read(./.env.*)'),
-      'a segunda regra do .env tambem tem que acusar falta em ask')
+    const doNove = rodarGates(dir).falhas.filter(f => f.gate === 9 && f.arquivo === '.claude/settings.json')
+    assert.deepEqual(doNove.map(f => f.detalhe), PERFIS.map(r => `permissions.deny sem a regra ${r}`))
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
@@ -941,7 +1015,7 @@ test('gate 9 cobra o hook que barra comando perigoso no _modelo', () => {
   try {
     mkdirSync(join(dir, '_modelo/.claude'), { recursive: true })
     writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify({
-      permissions: { ask: ['Read(./.env)', 'Read(./.env.*)'], deny: ['Read(./secrets/**)', 'Read(./.secrets/**)'] },
+      permissions: { deny: DENY_COMPLETO },
     }))
     const { falhas } = rodarGates(dir)
     assert.ok(falhas.some(f => f.gate === 9 && /barrar-perigoso/.test(f.detalhe)),
@@ -957,7 +1031,7 @@ test('gate 9 acusa matcher que voltou a ser so Bash (perde a trava do PowerShell
     mkdirSync(join(dir, '_modelo/.claude/hooks'), { recursive: true })
     writeFileSync(join(dir, '_modelo/.claude/hooks/barrar-perigoso.mjs'), 'export function ehPerigoso() { return null }\n')
     writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify({
-      permissions: { ask: ['Read(./.env)', 'Read(./.env.*)'], deny: ['Read(./secrets/**)', 'Read(./.secrets/**)'] },
+      permissions: { deny: DENY_COMPLETO },
       hooks: { PreToolUse: [{ matcher: 'Bash', hooks: [{ type: 'command', command: 'node barrar-perigoso.mjs' }] }] },
     }))
     const { falhas } = rodarGates(dir)
@@ -974,7 +1048,7 @@ test('gate 9 acusa matcher sem o Monitor (rm -rf em segundo plano passava pela t
     mkdirSync(join(dir, '_modelo/.claude/hooks'), { recursive: true })
     writeFileSync(join(dir, '_modelo/.claude/hooks/barrar-perigoso.mjs'), 'export function ehPerigoso() { return null }\n')
     writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify({
-      permissions: { ask: ['Read(./.env)', 'Read(./.env.*)'], deny: ['Read(./secrets/**)', 'Read(./.secrets/**)'] },
+      permissions: { deny: DENY_COMPLETO },
       hooks: { PreToolUse: [{ matcher: 'Bash|PowerShell', hooks: [{ type: 'command', command: 'node barrar-perigoso.mjs' }] }] },
     }))
     const { falhas } = rodarGates(dir)
@@ -983,6 +1057,29 @@ test('gate 9 acusa matcher sem o Monitor (rm -rf em segundo plano passava pela t
     assert.match(doMatcher[0].detalhe, /falta Monitor\)$/)
   } finally {
     rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('gate 9 cobra o barrar-mcp com matcher mcp__.* e onFailure block nos dois settings', () => {
+  const casos = [
+    [[], 'hooks.PreToolUse sem o barrar-mcp'],
+    [[{ ...BLOCO_MCP, matcher: 'mcp__' }], 'matcher do barrar-mcp precisa ser mcp__.* (veio mcp__)'],
+    [[{ matcher: 'mcp__.*', hooks: [{ type: 'command', command: 'node barrar-mcp.mjs' }] }], 'barrar-mcp sem onFailure block'],
+  ]
+  for (const [blocos, detalhe] of casos) {
+    const dir = kitFalso()
+    try {
+      for (const rel of ['.claude', '_modelo/.claude']) {
+        mkdirSync(join(dir, rel), { recursive: true })
+        writeFileSync(join(dir, rel, 'settings.json'), JSON.stringify({
+          permissions: { deny: DENY_COMPLETO },
+          hooks: { PreToolUse: [{ matcher: 'Bash|PowerShell|Monitor', hooks: [{ type: 'command', command: 'node barrar-perigoso.mjs' }] }, ...blocos] },
+        }))
+      }
+      const doNove = rodarGates(dir).falhas.filter(f => f.gate === 9 && /barrar-mcp/.test(f.detalhe))
+      for (const arquivo of ['.claude/settings.json', '_modelo/.claude/settings.json'])
+        assert.deepEqual(doNove.filter(f => f.arquivo === arquivo).map(f => f.detalhe), [detalhe], `${arquivo}: ${detalhe}`)
+    } finally { rmSync(dir, { recursive: true, force: true }) }
   }
 })
 
@@ -1029,18 +1126,18 @@ test('gate 9 acusa credito avulso do Codex sem o "pode ir", e os textos novos pa
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
-test('gate 9 aceita o _modelo completo, com ask, deny e hook', () => {
+test('gate 9 aceita o _modelo completo, com deny e as duas travas', () => {
   const dir = kitFalso()
   try {
     mkdirSync(join(dir, '_modelo/.claude/hooks'), { recursive: true })
     writeFileSync(join(dir, '_modelo/.claude/hooks/barrar-perigoso.mjs'), 'export function ehPerigoso() { return null }\n')
     writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify({
-      permissions: { ask: ['Read(./.env)', 'Read(./.env.*)'], deny: ['Read(./secrets/**)', 'Read(./.secrets/**)'] },
-      hooks: { PreToolUse: [{ matcher: 'Bash|PowerShell|Monitor', hooks: [{ type: 'command', command: 'node barrar-perigoso.mjs' }] }] },
+      permissions: { deny: DENY_COMPLETO },
+      hooks: { PreToolUse: [{ matcher: 'Bash|PowerShell|Monitor', hooks: [{ type: 'command', command: 'node barrar-perigoso.mjs' }] }, BLOCO_MCP] },
     }))
     const { falhas } = rodarGates(dir)
     const doModelo =falhas.filter(f => f.gate === 9 && f.arquivo === '_modelo/.claude/settings.json')
-    assert.strictEqual(doModelo.length, 0, 'com ask, deny e hook, o gate 9 fica quieto')
+    assert.strictEqual(doModelo.length, 0, 'com deny e as duas travas, o gate 9 fica quieto')
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
@@ -1547,6 +1644,31 @@ test('gate 15 libera trecho entre aspas retas, curvas, crases, aspa que cruza a 
 })
 
 // o RESPONDA-AQUI.txt da pasta-mae guarda as respostas do aluno, com as palavras dele
+// Rodada 5.28 (ata, T11): o MCP do navegador se instala na versao sondada na bancada e diz qual
+// navegador usa (o isolado, limpo a cada vez, ou o dedicado pela porta). O nome do pacote vai em
+// pedacos, porque este arquivo vai no kit e o proprio Gate 16 o varre.
+test('gate 16 reprova o Playwright MCP sem versao fixa ou sem isolated nem cdp-endpoint e aceita a forma fixa', () => {
+  const pacote = '@playwright/' + 'mcp'
+  const linhas = [
+    `claude mcp add playwright -- npx ${pacote}@latest --isolated`,
+    `claude mcp add playwright -- npx ${pacote} --isolated`,
+    `claude mcp add playwright -- npx ${pacote}@0.0.83 --output-dir dados/navegador-saida`,
+    `claude mcp add playwright -- npx ${pacote}@0.0.83 --isolated --output-dir dados/navegador-saida`,
+    `claude mcp add navegador -- npx ${pacote}@0.0.83 --cdp-endpoint http://127.0.0.1:9333`,
+  ]
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo/.claude/skills/x'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/.claude/skills/x/SKILL.md'), linhas.join('\n') + '\n')
+    writeFileSync(join(dir, '_modelo/.claude/skills/x/y.mjs'), `// ${linhas[0]}\n`)
+    const do16 = rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 16)
+    assert.ok(do16.length > 0, 'canario: o gate 16 acusou alguma coisa')
+    assert.deepEqual(do16.map(f => `${f.arquivo} ${f.detalhe.split(':')[0]}`).sort(),
+      ['_modelo/.claude/skills/x/SKILL.md linha 1', '_modelo/.claude/skills/x/SKILL.md linha 2', '_modelo/.claude/skills/x/SKILL.md linha 3', '_modelo/.claude/skills/x/y.mjs linha 1'])
+    assert.ok(do16.every(f => /fixar a versao sondada na bancada e dizer qual navegador usa/.test(f.detalhe)))
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
 test('gate 15 nao le .mjs, fixtures nem as respostas do RESPONDA-AQUI.txt', () => {
   const dir = kitFalso()
   try {

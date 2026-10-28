@@ -52,7 +52,7 @@ passado; palavra desconhecida sai com erro 3 e não roda nada.) O que cada parte
   só é pego no formato com pontos e traço (`000.000.000-00`). O valor nunca
   aparece no relatório, e não deve aparecer no chat. Ficam fora da varredura, de
   propósito: `.env`, arquivo de teste (`.test.mjs`) e as pastas `node_modules`,
-  `.venv`, `.agents` e `chrome-perfil`.
+  `.venv`, `.agents`, `chrome-perfil`, `sessao` e `navegador-saida`.
 - `naoVarridos`: arquivo que a varredura de segredo não leu (acima de 2 MB ou
   binário, como planilha e PDF). Se é de texto e sobe pro backup (export em `.csv`
   ou `.txt`), pedir que a pessoa confirme que não tem senha nem CPF dentro.
@@ -154,8 +154,11 @@ Um item por vez, ou tudo de uma vez se a pessoa disser "aplica tudo":
   `substitui:` e o motivo.
   A decisão antiga que ela substitui entra na lista de arquivar da próxima
   faxina; não precisa de outro sim agora.
-- Segredo: mostrar arquivo e linha, explicar que o lugar de chave e senha é o
-  `.env` (que nunca sobe pro GitHub) e oferecer mover; CPF de cliente sai do
+- Segredo: mostrar arquivo e linha (nunca o valor), explicar que o lugar de chave
+  e senha é o `.env`, que nunca sobe pro GitHub. Com o sim, a pessoa abre o `.env`
+  no editor e cola numa linha `NOME=valor`; a IA roda
+  `node .claude/skills/conectar/scripts/chave.mjs bate NOME --em <arquivo>:<linha>`
+  e só com `bate` tira a chave do arquivo (a IA nunca grava o `.env`). CPF de cliente sai do
   sistema ou vai pra um arquivo que a pessoa decidir. Se o arquivo já subiu pro
   GitHub, avisar que tirar daqui não apaga o histórico: a chave tem que ser
   trocada no serviço.

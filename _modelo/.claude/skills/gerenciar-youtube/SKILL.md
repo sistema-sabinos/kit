@@ -14,7 +14,8 @@ no arquivo `.env`, como toda chave do kit.
 
 ## Primeira vez
 
-Sem `YOUTUBE_CLIENT_ID` no `.env`, guiar pela secao "YouTube" de
+Rodar `node .claude/skills/conectar/scripts/chave.mjs tem YOUTUBE_CLIENT_ID` (a IA nao abre o `.env`).
+Com `falta`, guiar pela secao "YouTube" de
 `.claude/skills/midia-social/referencias/configurar.md` (projeto no Google Cloud, as duas APIs
 ligadas, credencial de app de computador). Depois, uma vez:
 

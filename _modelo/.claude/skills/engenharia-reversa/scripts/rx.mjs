@@ -13,6 +13,7 @@ import { join, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
 import { conectar } from '../../mercado-livre/scripts/lib/chrome.mjs'
+import { sessaoCaiu, AVISO } from '../../conectar/scripts/lib/navegador.mjs'
 import { tokenMl } from '../../mercado-livre/scripts/lib/tokens.mjs'
 import { mlGet } from '../../mercado-livre/scripts/lib/ml-api.mjs'
 import { lerEnv } from '../../mercado-livre/scripts/lib/env.mjs'
@@ -60,7 +61,7 @@ export function extrairPerguntas() {
     .filter(q => q.pergunta)
 }
 
-const pediuLogin = e => /login/i.test(String(e?.message))
+const pediuLogin = e => Boolean(e?.sessao)
 
 // A parte gratis inteira. Tudo que fala com o mundo entra por parametro.
 export async function rodadaGratis({ termo, soTradicional = false, buscar, get, lerAnuncio, lerPerguntas, baixar, medidor, pastaFotos, dormir = ms => new Promise(r => setTimeout(r, ms)), log = () => {}, hoje = dataLocal() }) {
@@ -92,7 +93,7 @@ export async function rodadaGratis({ termo, soTradicional = false, buscar, get, 
       lidos.push({ ...a, ...destino, fotos, video: p.video ?? null, descricao: p.descricao ?? null, perguntas })
       log(`${a.id}: ${fotos.length} fotos, ${perguntas.length} perguntas`)
     } catch (e) {
-      if (pediuLogin(e)) throw new Error('a pagina pediu login: a sessao do Chrome dedicado caiu. Entre de novo na conta e rode outra vez')
+      if (pediuLogin(e)) throw new Error(AVISO[e.sessao])
       falharam.push({ id: a.id, erro: `pagina: ${String(e.message).slice(0, 120)}` })
     }
     await dormir(2000 + Math.floor(Math.random() * 2000))
@@ -193,7 +194,8 @@ if (ehCli) {
       const abrir = async url => {
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 })
         await page.waitForTimeout(2500)
-        if (/login|registration/i.test(page.url())) throw new Error('a pagina pediu login')
+        const caiu = sessaoCaiu({ url: page.url(), host: 'mercadolivre.com.br' })
+        if (caiu) throw Object.assign(new Error(AVISO[caiu]), { sessao: caiu })
       }
       medidor = await abrirMedidor()
       const coleta = await rodadaGratis({

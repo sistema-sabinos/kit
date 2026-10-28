@@ -43,6 +43,14 @@ export const CHAVES = [
   ['token do Slack', /\bxox[abeprs]-[A-Za-z0-9-]{10,}/],
   ['chave do Stripe', /\b(?:sk|rk)_(?:live|prod)_[A-Za-z0-9]{10,}/],
   ['token do Mercado Livre', /\bAPP_USR-\d+-\d{6}-[0-9a-f]{20,}-\d+/],
+  // login de navegador exportado e semente de 2FA (ata 5.28, T12, pre-requisito da D3)
+  ['cookie de navegador', /"cookies"\s*:\s*\[\s*(?:\{|$)/],
+  // cabecalho de HAR exige o valor de cookie na mesma linha: so o nome casava produto chamado Cookie
+  // (chat 7). Furo: HAR identado com name e value em linhas diferentes, salvo como .json
+  ['cookie de navegador', /"name"\s*:\s*"(?:set-)?cookie"\s*,\s*"value"\s*:\s*"[^"]*=/i],
+  ['cookie de navegador', /"value"\s*:\s*"[^"]*=[^"]*"\s*,\s*"name"\s*:\s*"(?:set-)?cookie"/i],
+  ['semente de 2FA', /otpauth:\/\/[a-z]+\/\S*?[?&]secret=[A-Za-z2-7]{16,}/i],
+  ['semente de 2FA', /\b[A-Za-z0-9_]*(?:TOTP|2FA|OTP_SEED)[A-Za-z0-9_]*["']?\s*[:=]\s*["']?([A-Za-z2-7]{16,}=*)(?![A-Za-z0-9])/i, v => /^[A-Z2-7]+=*$/.test(v)],
   ['token ou chave colada', /^(?!.*(?:br\.gov\.bcb|;base64,))[^\n]*?\b(?:[A-Za-z0-9]+_)*(?:token|chave|senha|secret|key|password|bearer)\b[^\n]{0,40}?(?<![A-Za-z0-9_-])([A-Za-z0-9_-]{60,})/i,
     v => /[a-z]/.test(v) && /[A-Z]/.test(v) && /\d/.test(v)],
 ]

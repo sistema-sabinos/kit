@@ -38,7 +38,7 @@ Pra cada um, responder sempre as mesmas 4 coisas: **o que te deixa fazer**, **é
 
 - **O que te deixa fazer:** eu passo a enxergar e operar um navegador de verdade: abrir sites, ler páginas, preencher formulários, tirar prints, conferir preços de concorrentes. É a base de meia dúzia de automações futuras.
 - **Grátis ou pago:** grátis.
-- **Precisa de quê:** nada de conta. Um comando no terminal (`claude mcp add playwright npx @playwright/mcp@latest`) e o download dos navegadores (`npx playwright install chromium`, uns 700 MB). Eu rodo os dois, você só aprova.
+- **Precisa de quê:** nada de conta. Um comando no terminal (`claude mcp add playwright -- npx @playwright/mcp@0.0.83 --isolated --output-dir dados/navegador-saida --no-webmcp`) e o download dos navegadores (`npx playwright install chromium`, uns 700 MB). Eu rodo os dois, você só aprova.
 - **Hoje ou depois:** hoje, em 2 minutos. Confirmar com `/mcp` (deve aparecer "playwright" conectado) e fazer uma demonstração na hora: abrir um site que o usuário conhece e ler algo dele.
 
 ### 2. Plugins (pacotes de habilidade prontos)

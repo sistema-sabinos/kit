@@ -47,7 +47,7 @@ Se o `.env` não existir, a skill vai guiar você na configuração passo a pass
 ## Workflow
 
 1. Verificar se o arquivo existe e é um HTML válido
-2. Verificar se `.env` tem as variáveis necessárias, se não tiver, guiar configuração
+2. Rodar `node .claude/skills/conectar/scripts/chave.mjs tem CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_PROJECT_NAME` (a IA não abre o `.env`); com algum `falta`, guiar configuração
 3. Mostrar o que vai pro ar (arquivo e nome do projeto) e avisar que o link fica público pra quem tiver ele. Só seguir com o "pode ir" naquele momento
 4. Fazer upload via Cloudflare Pages API
 5. Retornar a URL pública
