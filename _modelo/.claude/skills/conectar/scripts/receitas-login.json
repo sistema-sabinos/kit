@@ -1,0 +1,19 @@
+[
+  {
+    "conta": "ML",
+    "host": "mercadolivre.com.br",
+    "entrada": "https://www.mercadolivre.com.br/login/identification",
+    "sessao": "/(password|totp)/.*validation",
+    "passos": [
+      { "campo": "usuario", "seletor": "input[name=\"identifier\"]" },
+      { "clicar": "button[type=\"submit\"]" },
+      { "clicar": "#password_validation button" },
+      { "campo": "senha", "seletor": "#password" },
+      { "clicar": "button[type=\"submit\"]" },
+      { "clicar": "button.landing__close-button" },
+      { "clicar": "#totp button" },
+      { "campo": "codigo", "seletor": "input[autocomplete=\"one-time-code\"]" },
+      { "clicar": "button[type=\"submit\"]" }
+    ]
+  }
+]

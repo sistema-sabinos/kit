@@ -309,8 +309,9 @@ de forma, nesta ordem de importância:
   duas vezes e envelhece.
 - **As regras de casa no topo, e repetidas em uma linha no rodapé.** São quatro:
   pesquisa mundial (buscar em qualquer idioma, principalmente inglês, entregar em
-  português); economia de conversa (processo fechado, conversa nova); chave e
-  senha só em arquivo `.env`, nunca no chat nem em outro arquivo; e gate humano
+  português); economia de conversa (processo fechado, conversa nova); chave de
+  API só no `.env`, nunca no chat nem em outro arquivo, e senha de site não se
+  guarda, salvo na conta em que a pessoa ligar o relogin automático; e gate humano
   (nada que gasta dinheiro, manda mensagem pra fora, publica ou altera conta de
   terceiro roda sem o "pode ir" da pessoa naquele momento). Depois delas, o tom
   de escrita resumido em poucas linhas.
@@ -708,7 +709,9 @@ uma pasta com esse nome na raiz, avisar e perguntar outro nome antes de seguir.
   Google Agenda", "Reunião: nada"): o que ela usa e o sistema ainda não alcança
   fica `só você`; o que ela não tem fica `não ligada`, com o que o `/conectar`
   diz pra isso na Observação (o item do assunto, ou a seção 10 dele, que manda
-  pro catálogo de ferramentas); sem nada que sirva, a linha fica `só você`. Nada
+  pro catálogo de ferramentas); `só você` também quando a pessoa prefere fazer na
+  mão ou nenhum degrau da escada do `/conectar` serve, com a Observação "o robô te
+  guia passo a passo na tela". Nada
   se liga aqui: é só o mapa.
   No `preferencias.md`, o parágrafo marcado pelo comentário `<!-- nível: iniciante ... -->`
   segue a pergunta 3. "Nunca usei IA" e "Uso o básico" ficam como está. "Já me viro

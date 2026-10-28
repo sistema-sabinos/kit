@@ -62,7 +62,7 @@ no começo das sessões seguintes.
 
 ## Regras
 
-- **Nunca** commitar `.env` nem arquivo com chave ou senha. Se aparecer chave em arquivo rastreado, avisar e mostrar arquivo e linha (nunca o valor); a pessoa abre o `.env` do projeto que usa a chave (`<projeto>/.env`) no editor e cola numa linha `NOME=valor`; a IA roda, aqui na pasta-mãe, `node _modelo/.claude/skills/conectar/scripts/chave.mjs bate NOME --arquivo <projeto>/.env --em <arquivo>:<linha>` e só com `bate` tira a chave do arquivo, antes de commitar (a IA nunca grava o `.env`)
+- **Nunca** commitar `.env` nem arquivo com chave ou senha. Se aparecer chave em arquivo rastreado, avisar e mostrar arquivo e linha (nunca o valor); a pessoa abre o `.env` do projeto que usa a chave (`<projeto>/.env`) no editor e cola numa linha `NOME=valor`; a IA roda, aqui na pasta-mãe, `node _modelo/.claude/skills/conectar/scripts/chave.mjs bate NOME --arquivo <projeto>/.env --em <arquivo>:<linha>` e só com `bate` tira a chave do arquivo, antes de commitar (a IA nunca grava o `.env`). Senha de site em arquivo: apagar dali, porque senha de site não se guarda, salvo na conta em que a pessoa ligar o relogin automático
 - Repositório sempre privado por padrão
 - Nunca `git reset --hard`, `git checkout -- .` nem `git clean`: apagam o trabalho que ainda não subiu
 - Se o auto-sync (hook) estiver ligado, o /syncar manual serve pra commit com mensagem descritiva; não duplicar avisos sobre salvar

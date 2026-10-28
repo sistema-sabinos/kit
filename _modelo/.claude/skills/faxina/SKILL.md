@@ -2,7 +2,7 @@
 name: faxina
 description: >
   Confere se a memória do projeto está apodrecendo: diário e decisão velhos pra
-  arquivar, senha ou CPF fora do .env, arquivo que nenhuma regra cita, decisões
+  arquivar, chave ou CPF fora do .env, senha guardada em arquivo, arquivo que nenhuma regra cita, decisões
   que brigam entre si, "onde paramos" que não bate com o diário, robô que parou
   de dar sinal, fato do negócio guardado só na memória do assistente e arquivo
   que não está no backup. Só relata; mexe com o sim. Use quando o usuário chamar
@@ -154,8 +154,10 @@ Um item por vez, ou tudo de uma vez se a pessoa disser "aplica tudo":
   `substitui:` e o motivo.
   A decisão antiga que ela substitui entra na lista de arquivar da próxima
   faxina; não precisa de outro sim agora.
-- Segredo: mostrar arquivo e linha (nunca o valor), explicar que o lugar de chave
-  e senha é o `.env`, que nunca sobe pro GitHub. Com o sim, a pessoa abre o `.env`
+- Segredo: mostrar arquivo e linha (nunca o valor), explicar que o lugar da chave
+  de API é o `.env`, que nunca sobe pro GitHub, e que senha de site não se guarda,
+  salvo na conta em que a pessoa ligar o relogin automático: fora dela, a senha se
+  apaga do arquivo, com o sim. Pra chave, com o sim, a pessoa abre o `.env`
   no editor e cola numa linha `NOME=valor`; a IA roda
   `node .claude/skills/conectar/scripts/chave.mjs bate NOME --em <arquivo>:<linha>`
   e só com `bate` tira a chave do arquivo (a IA nunca grava o `.env`). CPF de cliente sai do

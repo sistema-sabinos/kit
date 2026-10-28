@@ -264,6 +264,9 @@ const OBRIGATORIOS = [
   '_modelo/.claude/skills/mercado-livre/referencias/precificacao.md',
   '_modelo/.claude/skills/mercado-livre/referencias/clips.md',
   '_modelo/.claude/skills/mercado-livre/referencias/navegador.md',
+  // 5.29: a escada do /conectar e os cuidados do navegador, agora no nucleo
+  '_modelo/.claude/skills/conectar/referencias/navegador.md',
+  '_modelo/.claude/skills/conectar/referencias/escada.md',
   '_modelo/.claude/skills/mercado-livre/scripts/abrir-chrome.mjs',
   '_modelo/.claude/skills/mercado-livre/scripts/autorizar.mjs',
   '_modelo/.claude/skills/mercado-livre/scripts/lib/raiz.mjs',
@@ -278,6 +281,11 @@ const OBRIGATORIOS = [
   '_modelo/.claude/skills/conectar/scripts/lib/raiz.mjs',
   '_modelo/.claude/skills/conectar/scripts/porta.mjs',
   '_modelo/.claude/skills/conectar/scripts/abrir-chrome.mjs',
+  // 5.29 (D15): relogin automatico, desligado por padrao
+  '_modelo/.claude/skills/conectar/scripts/totp.mjs',
+  '_modelo/.claude/skills/conectar/scripts/relogar.mjs',
+  '_modelo/.claude/skills/conectar/scripts/receitas-login.json',
+  '_modelo/.claude/skills/conectar/referencias/relogar.md',
   '_modelo/.claude/skills/midia-social/scripts/lib/chrome.mjs',
   '_modelo/.claude/skills/mercado-livre/scripts/lib/ml-api.mjs',
   '_modelo/.claude/skills/mercado-livre/scripts/lib/bling-api.mjs',
@@ -891,6 +899,9 @@ export function rodarGates(dirKit, opcoes = {}) {
     readFileSync(join(dirKit, rel), 'utf8').split(/\r?\n/).forEach((l, i) => {
       if (MCP_SEM_VERSAO.test(l) || (l.includes(MCP_COM_VERSAO) && !/--isolated|--cdp-endpoint/.test(l)))
         falhas.push({ gate: 16, arquivo: rel, detalhe: `linha ${i + 1}: Playwright MCP sem versao fixa ou sem --isolated nem --cdp-endpoint; fixar a versao sondada na bancada e dizer qual navegador usa` })
+      // 5.29 (C1a): com os dois, o --isolated vence calado e abre outro navegador, fora do Chrome dedicado
+      else if (l.includes(MCP_COM_VERSAO) && l.includes('--isolated') && l.includes('--cdp-endpoint'))
+        falhas.push({ gate: 16, arquivo: rel, detalhe: `linha ${i + 1}: Playwright MCP com --isolated e --cdp-endpoint juntos; escolha um: --isolated (limpo) ou --cdp-endpoint (o Chrome dedicado)` })
     })
   }
 

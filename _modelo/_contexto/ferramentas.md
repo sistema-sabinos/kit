@@ -11,8 +11,9 @@ assuntos abaixo; depois o `/conectar`, a cada conexão concluída.
   ferramenta existe, mas quem mexe é a pessoa, na mão); `pendente` (começou a ligar
   e falta um passo); ou `instalado` (pacote de skills, que se configura no primeiro
   uso).
-- **Observação:** pra quê, e como o sistema alcança: MCP, API (só o nome da variável
-  no `.env`, a chave nunca vem aqui) ou programa no computador.
+- **Observação:** pra quê, o degrau da escada do `/conectar`, e como o sistema alcança:
+  MCP, API (só o nome da variável no `.env`, a chave nunca vem aqui), navegador,
+  arquivo ou programa no computador.
 
 | Ferramenta | Status | Ligado em | Observação |
 |---|---|---|---|

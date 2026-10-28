@@ -42,7 +42,7 @@ As skills são o roteiro: nunca improvisar o fluxo.
    projeto criado.
 5. Nada que gasta dinheiro, publica, envia mensagem pra fora ou altera conta de terceiros
    roda sem aprovação explícita na hora.
-6. Chave e senha só em arquivo `.env`, nunca no chat nem em outro arquivo.
+6. Chave de API só no `.env`, nunca no chat nem em outro arquivo. Senha de site não se guarda, salvo na conta em que você ligar o relogin automático (o `/conectar` explica).
 7. Nunca editar `_modelo/` (o molde dos próximos projetos) sem o usuário pedir
    explicitamente.
 8. A skill `segunda-opiniao` entra antes do ok do que gasta, publica, envia pra

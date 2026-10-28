@@ -3,7 +3,7 @@
 // Rodar: node --test navegador.test.mjs
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, existsSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, existsSync, readFileSync, writeFileSync, rmSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname, basename } from 'node:path'
 import { createServer as servidorHttp } from 'node:http'
@@ -13,8 +13,12 @@ import { fileURLToPath } from 'node:url'
 import {
   FAIXA, SENTINELA, AVISO, perfilDedicado, portaDoProjeto, candidatosDeChrome, acharChrome, argumentosDoChrome,
   guidDaPorta, portaLivre, esperarPorta, pidDoChrome, conferirPerfil, abrirChrome, conectar, sessaoCaiu,
+  relogar, receitaValida, abaDoSite, tentouHaPouco, marcarTentativa, desmarcarTentativa, JANELA_RELOGIN_MS,
+  travarRelogin, expressaoClique,
 } from './navegador.mjs'
+import { runInNewContext } from 'node:vm'
 import { RAIZ } from './raiz.mjs'
+import { codigo } from '../totp.mjs'
 
 const AQUI = dirname(fileURLToPath(import.meta.url))
 const P = FAIXA.inicio + 7
@@ -480,4 +484,368 @@ test('porta.mjs imprime so a porta do projeto', () => {
   assert.match(saida, /^[0-9]+$/)
   assert.equal(Number(saida), portaDoProjeto(RAIZ))
   assert.ok(Number(saida) >= FAIXA.inicio && Number(saida) < FAIXA.inicio + FAIXA.tamanho, `porta ${saida} fora da faixa`)
+})
+
+// Relogin automatico (5.29, D15). Pagina falsa no molde da do Playwright (url, fill, click): o
+// clique no #entrar leva pra pagina logada, a nao ser que a pagina falsa mande ficar no login.
+const LOGIN = 'https://www.mercadolivre.com.br/login?go=vendas'
+const LOGADA = 'https://www.mercadolivre.com.br/vendas/omni/lista'
+const RECEITA = {
+  conta: 'ML',
+  host: 'mercadolivre.com.br',
+  passos: [
+    { campo: 'usuario', seletor: '#u' }, { clicar: '#seguir' },
+    { campo: 'senha', seletor: '#s' }, { clicar: '#seguir2' },
+    { campo: 'codigo', seletor: '#c' }, { clicar: '#entrar' },
+  ],
+}
+// iscas montadas em pedacos: nenhum literal do teste e o valor inteiro
+const ISCA = { usuario: ['vend', 'edor@', 'x.com'].join(''), senha: ['Se', 'nha', '-9', '!q'].join(''), semente: ['JBSW', 'Y3DP', 'EHPK', '3PXP'].join('') }
+const envDe = (sem = []) => new Map([['ML_USUARIO', ISCA.usuario], ['ML_SENHA', ISCA.senha], ['ML_TOTP', ISCA.semente]].filter(([n]) => !sem.includes(n)))
+const AGORA = 1_700_000_000_000
+
+function paginaFalsa({ inicio = LOGIN, depois = LOGADA, captchaApos = null, desvio = null } = {}) {
+  const feitos = []
+  let url = inicio
+  return {
+    feitos,
+    url: () => url,
+    fill: async (seletor, valor) => { feitos.push(['fill', seletor, valor]) },
+    click: async seletor => {
+      feitos.push(['click', seletor])
+      if (desvio && seletor === desvio.apos) url = desvio.para
+      else if (seletor === captchaApos) url = 'https://www.mercadolivre.com.br/captcha?x=1'
+      else if (seletor === '#entrar') url = depois
+    },
+    voltarProLogin() { url = inicio },
+    irPara(u) { url = u },
+    ir: async u => { feitos.push(['ir', u]); url = u },
+  }
+}
+const opcoesRelogar = extra => ({ conta: 'ML', receita: RECEITA, env: envDe(), tentadas: new Set(), agora: () => AGORA, dormir: async () => {}, ...extra })
+
+test('relogar: com as tres variaveis preenche usuario, senha e o codigo da hora e devolve relogou', async () => {
+  const pagina = paginaFalsa()
+  const r = await relogar({ pagina, ...opcoesRelogar() })
+  assert.equal(r.resultado, 'relogou')
+  assert.deepEqual(pagina.feitos, [
+    ['fill', '#u', ISCA.usuario], ['click', '#seguir'], ['fill', '#s', ISCA.senha], ['click', '#seguir2'],
+    ['fill', '#c', codigo(ISCA.semente, AGORA)], ['click', '#entrar'],
+  ])
+})
+
+test('relogar: faltando qualquer uma das tres variaveis devolve falta-variavel sem tocar na pagina', async () => {
+  for (const sem of ['ML_USUARIO', 'ML_SENHA', 'ML_TOTP']) {
+    const pagina = paginaFalsa()
+    const r = await relogar({ pagina, ...opcoesRelogar({ env: envDe([sem]) }) })
+    assert.equal(r.resultado, 'falta-variavel', sem)
+    assert.deepEqual(pagina.feitos, [], sem)
+  }
+})
+
+test('relogar: sem receita devolve sem-receita', async () => {
+  const pagina = paginaFalsa()
+  assert.equal((await relogar({ pagina, ...opcoesRelogar({ receita: null }) })).resultado, 'sem-receita')
+  assert.deepEqual(pagina.feitos, [])
+})
+
+test('relogar: com captcha nunca preenche, nem na entrada nem no meio dos passos', async () => {
+  const naEntrada = paginaFalsa({ inicio: 'https://www.mercadolivre.com.br/captcha?x=1' })
+  assert.equal((await relogar({ pagina: naEntrada, ...opcoesRelogar() })).resultado, 'captcha')
+  assert.deepEqual(naEntrada.feitos, [])
+  const noMeio = paginaFalsa({ captchaApos: '#seguir' })
+  assert.equal((await relogar({ pagina: noMeio, ...opcoesRelogar() })).resultado, 'captcha')
+  assert.deepEqual(noMeio.feitos, [['fill', '#u', ISCA.usuario], ['click', '#seguir']], 'parou antes da senha')
+})
+
+test('relogar: captcha na entrada nao gasta a tentativa; resolvido, o relogin ainda roda', async () => {
+  const tentadas = new Set()
+  const pagina = paginaFalsa({ inicio: 'https://www.mercadolivre.com.br/captcha?x=1' })
+  assert.equal((await relogar({ pagina, ...opcoesRelogar({ tentadas }) })).resultado, 'captcha')
+  assert.equal((await relogar({ pagina: paginaFalsa(), ...opcoesRelogar({ tentadas }) })).resultado, 'relogou')
+})
+
+test('relogar: uma tentativa por queda; caiu de novo no mesmo disparo, para sem preencher', async () => {
+  const tentadas = new Set()
+  const pagina = paginaFalsa()
+  assert.equal((await relogar({ pagina, ...opcoesRelogar({ tentadas }) })).resultado, 'relogou')
+  pagina.voltarProLogin()
+  const antes = pagina.feitos.length
+  const r = await relogar({ pagina, ...opcoesRelogar({ tentadas }) })
+  assert.equal(r.resultado, 'falhou')
+  assert.match(r.motivo, /caiu de novo/)
+  assert.equal(pagina.feitos.length, antes, 'a segunda queda nao preencheu nada')
+})
+
+test('relogar: receita de outra conta nao preenche nada (a senha do ML nunca vai pra outro site)', async () => {
+  const pagina = paginaFalsa()
+  const r = await relogar({ pagina, ...opcoesRelogar({ receita: { ...RECEITA, conta: 'LOJA' } }) })
+  assert.equal(r.resultado, 'falhou')
+  assert.match(r.motivo, /conta LOJA/)
+  assert.deepEqual(pagina.feitos, [])
+})
+
+test('relogar: pagina que sai do host da receita ou do https antes de um campo para sem preencher', async () => {
+  for (const para of ['https://outro.exemplo/login', 'http://www.mercadolivre.com.br/login']) {
+    const pagina = paginaFalsa({ desvio: { apos: '#seguir', para } })
+    const r = await relogar({ pagina, ...opcoesRelogar() })
+    assert.equal(r.resultado, 'falhou', para)
+    assert.match(r.motivo, /antes de preencher senha/, para)
+    assert.deepEqual(pagina.feitos, [['fill', '#u', ISCA.usuario], ['click', '#seguir']], para)
+  }
+  const naEntrada = paginaFalsa({ inicio: 'https://outro.exemplo/login' })
+  assert.equal((await relogar({ pagina: naEntrada, ...opcoesRelogar({ receita: { ...RECEITA, host: 'mercadolivre.com.br', sessao: 'login' } }) })).resultado, 'falhou')
+  assert.deepEqual(naEntrada.feitos, [], 'login de outro site na entrada nao recebe nada')
+})
+
+test('relogar: aoTentar roda uma vez quando o relogin comeca, e nao no captcha da entrada', async () => {
+  let vezes = 0
+  const aoTentar = () => { vezes += 1 }
+  await relogar({ pagina: paginaFalsa({ inicio: 'https://www.mercadolivre.com.br/captcha?x=1' }), ...opcoesRelogar({ aoTentar }) })
+  assert.equal(vezes, 0)
+  await relogar({ pagina: paginaFalsa(), ...opcoesRelogar({ aoTentar }) })
+  assert.equal(vezes, 1)
+})
+
+test('tentouHaPouco e marcarTentativa: a marca no perfil segura a segunda queda entre processos', () => {
+  const perfil = temp()
+  try {
+    assert.equal(tentouHaPouco({ perfil, conta: 'ML', agora: AGORA }), false, 'sem marca')
+    marcarTentativa({ perfil, conta: 'ML', agora: AGORA })
+    marcarTentativa({ perfil, conta: 'LOJA', agora: AGORA - JANELA_RELOGIN_MS })
+    assert.equal(tentouHaPouco({ perfil, conta: 'ML', agora: AGORA + 60_000 }), true)
+    assert.equal(tentouHaPouco({ perfil, conta: 'ML', agora: AGORA + JANELA_RELOGIN_MS }), false, 'passou a janela')
+    assert.equal(tentouHaPouco({ perfil, conta: 'LOJA', agora: AGORA }), false, 'marca de outra conta, fora da janela')
+    assert.equal(tentouHaPouco({ perfil, conta: 'OUTRA', agora: AGORA }), false)
+    desmarcarTentativa({ perfil, conta: 'ML' })
+    assert.equal(tentouHaPouco({ perfil, conta: 'ML', agora: AGORA + 60_000 }), false, 'desmarcada')
+    writeFileSync(join(perfil, '.sabinos-relogin.json'), '{')
+    assert.equal(tentouHaPouco({ perfil, conta: 'ML', agora: AGORA }), false, 'marca quebrada nao derruba')
+  } finally {
+    rmSync(perfil, { recursive: true, force: true })
+  }
+})
+
+test('travarRelogin: um relogin por conta de cada vez, e a trava velha sai', () => {
+  const perfil = temp()
+  try {
+    const soltar = travarRelogin({ perfil, conta: 'ML', agora: AGORA })
+    assert.equal(typeof soltar, 'function', 'canario: o primeiro trava')
+    assert.equal(travarRelogin({ perfil, conta: 'ML', agora: AGORA + 1000 }), null, 'o segundo no meio fica de fora')
+    assert.equal(typeof travarRelogin({ perfil, conta: 'LOJA', agora: AGORA }), 'function', 'outra conta trava a dela')
+    soltar()
+    const de_novo = travarRelogin({ perfil, conta: 'ML', agora: AGORA + 2000 })
+    assert.equal(typeof de_novo, 'function', 'solta, trava de novo')
+    assert.equal(typeof travarRelogin({ perfil, conta: 'ML', agora: AGORA + 2000 + JANELA_RELOGIN_MS }), 'function', 'trava de processo morto sai depois da janela')
+    assert.equal(typeof travarRelogin({ perfil: join(perfil, 'nao-existe'), conta: 'ML' }), 'function', 'sem perfil nao lanca')
+    assert.ok(!existsSync(join(perfil, 'nao-existe')), 'sem perfil nao cria')
+    // criada e ainda sem a hora (o outro processo esta entre o wx e a escrita): segura
+    const vazia = join(perfil, '.sabinos-relogin-trava-VAZIA')
+    writeFileSync(vazia, '')
+    assert.equal(travarRelogin({ perfil, conta: 'VAZIA', agora: AGORA }), null, 'trava vazia e nova segura')
+    const velhaEm = new Date(2020, 0, 1)
+    utimesSync(vazia, velhaEm, velhaEm)
+    assert.equal(typeof travarRelogin({ perfil, conta: 'VAZIA', agora: AGORA }), 'function', 'trava vazia mais velha que a janela sai')
+  } finally {
+    rmSync(perfil, { recursive: true, force: true })
+  }
+})
+
+test('abaDoSite: servidor que aceita a conexao e nao responde o handshake nao prende', async () => {
+  const presos = []
+  const mudo = servidorTcp(s => presos.push(s))
+  await new Promise(r => mudo.listen(0, '127.0.0.1', r))
+  const lista = servidorHttp((req, res) => {
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify([{ type: 'page', url: 'https://www.mercadolivre.com.br/login', webSocketDebuggerUrl: `ws://127.0.0.1:${mudo.address().port}/devtools/page/a` }]))
+  })
+  await new Promise(r => lista.listen(0, '127.0.0.1', r))
+  try {
+    const aba = await Promise.race([
+      abaDoSite({ porta: lista.address().port, hosts: ['mercadolivre.com.br'], timeoutMs: 300 }),
+      new Promise(r => setTimeout(() => r('preso'), 5000)),
+    ])
+    // o prazo da lib (300 ms) vence a corrida com o 'preso': sem ele a promessa nunca resolve
+    assert.equal(aba, null, 'saiu pelo prazo, sem ficar presa')
+    assert.ok(presos.length > 0, 'canario: a lib chegou a conectar no servidor mudo')
+  } finally {
+    for (const s of presos) s.destroy()
+    await new Promise(r => mudo.close(r))
+    await new Promise(r => lista.close(r))
+  }
+})
+
+test('relogar: captcha no meio devolve a tentativa; resolvido, roda de novo', async () => {
+  const tentadas = new Set()
+  let devolvidas = 0
+  const aoDesistir = () => { devolvidas += 1 }
+  assert.equal((await relogar({ pagina: paginaFalsa({ captchaApos: '#seguir' }), ...opcoesRelogar({ tentadas, aoDesistir }) })).resultado, 'captcha')
+  assert.equal(devolvidas, 1)
+  assert.equal((await relogar({ pagina: paginaFalsa(), ...opcoesRelogar({ tentadas, aoDesistir }) })).resultado, 'relogou')
+})
+
+test('relogar: espera a pagina assentar depois de todo clique e quando a url muda entre dois passos', async () => {
+  const pagina = paginaFalsa({ desvio: { apos: '#seguir', para: LOGIN + '/senha' } })
+  const dormir = async ms => { pagina.feitos.push(['dormir', ms]) }
+  const r = await relogar({ pagina, ...opcoesRelogar({ dormir, assentarMs: 1234 }) })
+  assert.equal(r.resultado, 'relogou')
+  const A = ['dormir', 1234]
+  assert.deepEqual(pagina.feitos, [
+    ['fill', '#u', ISCA.usuario], ['click', '#seguir'], A, A, ['fill', '#s', ISCA.senha], ['click', '#seguir2'], A,
+    ['fill', '#c', codigo(ISCA.semente, AGORA)], ['click', '#entrar'], A,
+  ], 'uma espera depois de cada clique e mais uma onde a url mudou (#seguir)')
+})
+
+test('relogar: aba parada no meio do login volta pra entrada antes do primeiro passo', async () => {
+  const receita = { ...RECEITA, entrada: LOGIN }
+  const meio = paginaFalsa({ inicio: 'https://www.mercadolivre.com.br/login/senha' })
+  assert.equal((await relogar({ pagina: meio, ...opcoesRelogar({ receita }) })).resultado, 'relogou')
+  assert.deepEqual(meio.feitos.slice(0, 2), [['ir', LOGIN], ['fill', '#u', ISCA.usuario]])
+  const naEntrada = paginaFalsa({ inicio: LOGIN })
+  await relogar({ pagina: naEntrada, ...opcoesRelogar({ receita }) })
+  assert.ok(!naEntrada.feitos.some(f => f[0] === 'ir'), 'ja na entrada, nao navega')
+  const semEntrada = paginaFalsa({ inicio: 'https://www.mercadolivre.com.br/login/senha' })
+  await relogar({ pagina: semEntrada, ...opcoesRelogar() })
+  assert.ok(!semEntrada.feitos.some(f => f[0] === 'ir'), 'receita sem entrada, nao navega')
+})
+
+test('abaDoSite: o clique que roda na pagina confere o endereco na mesma volta', () => {
+  const clicar = href => {
+    let clicou = false
+    const r = runInNewContext(expressaoClique(JSON.stringify('#ok'), 'mercadolivre.com.br'), {
+      URL, location: { href }, document: { querySelector: () => ({ click: () => { clicou = true } }) },
+    })
+    return { r, clicou }
+  }
+  assert.deepEqual(clicar('https://www.mercadolivre.com.br/login'), { r: true, clicou: true }, 'canario: no site, clica')
+  assert.deepEqual(clicar('http://127.0.0.1:9/login'), { r: false, clicou: false }, 'local fora do host da receita')
+  for (const href of ['https://outro.exemplo/confirmar', 'http://www.mercadolivre.com.br/login', 'https://mercadolivre.com.br.outro.exemplo/x']) {
+    assert.deepEqual(clicar(href), { r: false, clicou: false }, href)
+  }
+})
+
+test('relogar: clique em pagina de outro site nao acontece', async () => {
+  const receita = { ...RECEITA, passos: [{ campo: 'usuario', seletor: '#u' }, { clicar: '#seguir' }, { clicar: '#seguir2' }, { clicar: '#entrar' }] }
+  const pagina = paginaFalsa({ desvio: { apos: '#seguir', para: 'https://outro.exemplo/confirmar' } })
+  const r = await relogar({ pagina, ...opcoesRelogar({ receita }) })
+  assert.equal(r.resultado, 'falhou')
+  assert.match(r.motivo, /antes de clicar em #seguir2/)
+  assert.deepEqual(pagina.feitos, [['fill', '#u', ISCA.usuario], ['click', '#seguir']], 'o botao do outro site nao foi apertado')
+})
+
+test('relogar: pagina que sai do site durante a espera nao recebe o campo seguinte', async () => {
+  const pagina = paginaFalsa({ desvio: { apos: '#seguir', para: LOGIN + '/senha' } })
+  let n = 0
+  // a segunda espera e a da url mudada, antes do campo da senha: a pagina foge pra outro site nela
+  const dormir = async ms => { if (ms === 1234 && ++n === 2) pagina.irPara('https://outro.exemplo/login') }
+  const r = await relogar({ pagina, ...opcoesRelogar({ dormir, assentarMs: 1234 }) })
+  assert.equal(n >= 2, true, 'canario: a espera da url mudada rodou')
+  assert.equal(r.resultado, 'falhou')
+  assert.ok(!pagina.feitos.some(f => f[0] === 'fill' && f[1] === '#s'), 'a senha nao foi pro outro site')
+})
+
+test('relogar: fora do login mas fora do site, depois dos passos, nao conta como relogou', async () => {
+  const pagina = paginaFalsa({ depois: 'https://outro.exemplo/erro' })
+  const r = await relogar({ pagina, ...opcoesRelogar() })
+  assert.equal(r.resultado, 'falhou')
+  assert.match(r.motivo, /saiu de mercadolivre\.com\.br/)
+})
+
+test('abaDoSite: com duas abas do site vai na frente a do login e o log avisa da sobra, sem query', async () => {
+  const s = servidorHttp((req, res) => {
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify([
+      { type: 'page', url: 'https://www.mercadolivre.com.br/vendas?tok=x', webSocketDebuggerUrl: 'ws://127.0.0.1:1/devtools/page/a' },
+      { type: 'page', url: 'https://www.mercadolivre.com.br/login?tok=y', webSocketDebuggerUrl: 'ws://127.0.0.1:1/devtools/page/b' },
+    ]))
+  })
+  await new Promise(r => s.listen(0, '127.0.0.1', r))
+  const linhas = []
+  try {
+    await abaDoSite({ porta: s.address().port, hosts: ['mercadolivre.com.br'], naFrente: u => /login/.test(u), log: m => linhas.push(m) })
+  } finally {
+    await new Promise(r => s.close(r))
+  }
+  assert.equal(linhas.length, 1)
+  assert.match(linhas[0], /^2 abas do site abertas; usando https:\/\/www\.mercadolivre\.com\.br\/login e deixando https:\/\/www\.mercadolivre\.com\.br\/vendas$/)
+})
+
+test('relogar: pagina que fica no login depois dos passos devolve falhou', async () => {
+  const pagina = paginaFalsa({ depois: LOGIN })
+  const r = await relogar({ pagina, ...opcoesRelogar() })
+  assert.equal(r.resultado, 'falhou')
+  assert.match(r.motivo, /continuou no login/)
+})
+
+test('relogar: pagina fora do login nao preenche nada', async () => {
+  const pagina = paginaFalsa({ inicio: LOGADA })
+  assert.equal((await relogar({ pagina, ...opcoesRelogar() })).resultado, 'falhou')
+  assert.deepEqual(pagina.feitos, [])
+})
+
+test('relogar: site fora da tabela usa o sessao e o captcha da receita', async () => {
+  const receita = { conta: 'ML', host: 'loja.exemplo', sessao: '/entrar', captcha: '/desafio', passos: [{ campo: 'usuario', seletor: '#u' }, { clicar: '#entrar' }] }
+  const pagina = paginaFalsa({ inicio: 'https://loja.exemplo/entrar', depois: 'https://loja.exemplo/painel' })
+  assert.equal((await relogar({ pagina, ...opcoesRelogar({ receita }) })).resultado, 'relogou')
+  const desafio = paginaFalsa({ inicio: 'https://loja.exemplo/desafio' })
+  const r = await relogar({ pagina: desafio, ...opcoesRelogar({ receita }) })
+  assert.equal(r.resultado, 'captcha')
+  assert.match(r.motivo, /o site loja\.exemplo pediu verificacao/, 'o aviso cita o site da receita, nao o Mercado Livre')
+})
+
+test('relogar: campo que nao aparece devolve falhou com o seletor, sem o valor', async () => {
+  const pagina = paginaFalsa()
+  pagina.fill = async () => { throw new Error(`timeout esperando #s com ${ISCA.senha}`) }
+  const r = await relogar({ pagina, ...opcoesRelogar() })
+  assert.equal(r.resultado, 'falhou')
+  assert.match(r.motivo, /#u/)
+  assert.ok(!r.motivo.includes(ISCA.senha), 'o recado nao repassa a mensagem de erro, que pode levar o valor')
+})
+
+test('relogar: nenhum valor do .env vai pro log nem pro resultado', async () => {
+  const linhas = []
+  const pagina = paginaFalsa()
+  const r = await relogar({ pagina, ...opcoesRelogar({ log: m => linhas.push(m) }) })
+  const tudo = linhas.join('|') + JSON.stringify(r)
+  assert.ok(linhas.length > 0, 'canario: o relogar escreveu no log')
+  assert.ok(`(${ISCA.senha})`.includes(ISCA.senha), 'canario: a busca da isca casa')
+  for (const v of [ISCA.usuario, ISCA.senha, ISCA.semente, codigo(ISCA.semente, AGORA)]) assert.ok(!tudo.includes(v), 'valor no log')
+})
+
+test('receitaValida: aceita a forma da receita e recusa o resto com o motivo', () => {
+  assert.equal(receitaValida(RECEITA), null)
+  assert.equal(receitaValida({ ...RECEITA, entrada: 'https://www.mercadolivre.com.br/vendas', sessao: 'login', captcha: 'captcha' }), null)
+  assert.match(receitaValida(null), /objeto/)
+  assert.match(receitaValida({ ...RECEITA, conta: undefined }), /conta/)
+  assert.match(receitaValida({ ...RECEITA, conta: 'ml' }), /conta/)
+  assert.match(receitaValida({ ...RECEITA, host: '' }), /host/)
+  assert.match(receitaValida({ ...RECEITA, passos: [] }), /passos/)
+  assert.match(receitaValida({ ...RECEITA, passos: [{ campo: 'cpf', seletor: '#x' }] }), /campo/)
+  assert.match(receitaValida({ ...RECEITA, passos: [{ campo: 'senha' }] }), /seletor/)
+  assert.match(receitaValida({ ...RECEITA, entrada: 'https://outro.site/login' }), /entrada/)
+  assert.match(receitaValida({ ...RECEITA, entrada: 'http://www.mercadolivre.com.br/' }), /entrada/)
+  assert.match(receitaValida({ ...RECEITA, sessao: '(' }), /sessao/)
+})
+
+// receita so entra com a prova ao vivo (a do ML no C3 de 2026-10-28); a data mora no relogar.md,
+// conferida pelo bancada/relogar-kit.test.mjs
+test('receitas-login.json: toda receita e valida e cada conta aparece uma vez', () => {
+  const lista = JSON.parse(readFileSync(join(AQUI, '..', 'receitas-login.json'), 'utf8'))
+  assert.ok(Array.isArray(lista) && lista.length > 0, 'canario: a lista veio')
+  assert.deepEqual(lista.map(receitaValida).filter(Boolean), [])
+  assert.equal(new Set(lista.map(r => r.conta)).size, lista.length, 'conta repetida na lista')
+})
+
+test('abaDoSite: sem aba no site e sem abrir devolve null; porta morta tambem', async () => {
+  const s = servidorHttp((req, res) => {
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify([{ type: 'page', url: 'https://outro.site/x', webSocketDebuggerUrl: 'ws://127.0.0.1:1/devtools/page/a' }]))
+  })
+  await new Promise(r => s.listen(0, '127.0.0.1', r))
+  try {
+    assert.equal(await abaDoSite({ porta: s.address().port, hosts: ['mercadolivre.com.br'] }), null)
+  } finally {
+    await new Promise(r => s.close(r))
+  }
+  assert.equal(await abaDoSite({ porta: await portaMorta(), hosts: ['mercadolivre.com.br'] }), null)
 })

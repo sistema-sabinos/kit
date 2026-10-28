@@ -83,19 +83,20 @@ uma pessoa, sem precisar refazer login toda vez.
 Só montar isso depois de esgotar o caminho mais simples (API oficial,
 biblioteca pronta, download direto) e ele travar especificamente por causa
 de login. Pra um uso ocasional, baixar o vídeo na mão e passar o arquivo
-local resolve sem esse peso a mais.
+local resolve sem esse peso a mais. Dentro de um projeto, quem decide o caminho
+é a escada do `/conectar`: o navegador logado é o Degrau 5 dela.
 
 ### Cuidados de segurança, sempre
 
 - **Perfil isolado:** o navegador dedicado usa uma pasta de perfil própria,
   separada do navegador pessoal, pra um script com bug não ter acesso às
   suas outras contas.
-- **Nunca o navegador do dia a dia:** a porta de depuração remota nunca vai
-  no navegador que você usa pra tudo. Isso deixaria qualquer processo da
-  máquina, não só o seu script, capaz de controlar sua sessão logada.
-- **Credencial só no `.env`:** usuário e senha das contas usadas nesse
-  navegador ficam no arquivo `.env`, nunca digitadas no chat nem escritas em
-  outro arquivo do projeto.
+- **Nunca o navegador do dia a dia:** A porta de depuração nunca vai no Chrome
+  do dia a dia. Isso deixaria qualquer processo da máquina, não só o seu
+  script, capaz de controlar sua sessão logada.
+- **Senha de site não se guarda, salvo na conta em que você ligar o relogin
+  automático:** o login fica feito no Chrome dedicado, e sessão, HAR e
+  storageState valem segredo igual ao `.env`.
 
 ### Onde isso já aparece
 

@@ -140,7 +140,7 @@ cada uma.
 
 Só API oficial e pública (API é a porta que um sistema abre pra outro conversar com ele), com
 a chave da conta do próprio aluno. Chave é a senha que um sistema usa pra falar com outro; ela
-mora no `.env` (o arquivo de senhas do projeto, que nunca vai pro backup). Endereço interno da
+mora no `.env` (o arquivo de chaves do projeto, que nunca vai pro backup). Endereço interno da
 referência que aparece no navegador fica proibido, mesmo visível.
 
 ### Passo 4. As partes que mordem

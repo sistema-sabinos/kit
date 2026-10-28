@@ -23,7 +23,7 @@ a conta sem o "pode ir" da pessoa naquele momento.
 - `_contexto/empresa.md` e `_contexto/preferencias.md`
 - `_contexto/vereditos-legais.md`, escrito pela `/pode-vender`
 - `referencias/contratos.md`, os arquivos que passam de uma etapa pra outra
-- `referencias/navegador.md`, os cuidados com o Chrome dedicado: ler antes de
+- `.claude/skills/conectar/referencias/navegador.md`, os cuidados com o Chrome dedicado: ler antes de
   clicar ou navegar
 - O Chrome dedicado e a conta do Mercado Livre autorizada (seção "Primeira vez")
 

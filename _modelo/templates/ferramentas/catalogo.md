@@ -244,6 +244,7 @@ Pra remover um MCP: `claude mcp remove nome-do-mcp`
 > hospedados pela Anthropic. Voce liga uma vez no site claude.ai (Configuracoes > Conectores,
 > login Google) e o Claude Code carrega sozinho, sem instalar nada. Prefira essa rota; os MCPs
 > de terceiros abaixo sao alternativa pra quando o conector oficial nao cobrir o caso.
+> Sem nenhum dos dois, a escada do `/conectar` diz o proximo caminho (arquivo, navegador logado).
 
 ### Playwright (navegador)
 **O que faz:** O Claude passa a enxergar e operar um navegador de verdade: abrir sites, ler paginas, preencher formularios, tirar prints
@@ -253,7 +254,11 @@ Pra remover um MCP: `claude mcp remove nome-do-mcp`
 claude mcp add playwright -- npx @playwright/mcp@0.0.83 --isolated --output-dir dados/navegador-saida --no-webmcp
 npx playwright install chromium
 ```
-**Quando usar:** Pesquisa de concorrentes, conferencia de precos, qualquer automacao de site sem API. Confirmar com /mcp (deve listar "playwright")
+**Chrome dedicado logado (Degrau 5 do /conectar):** o servidor `navegador` usa o Chrome do projeto, aberto por `node .claude/skills/conectar/scripts/abrir-chrome.mjs`, na porta que `node .claude/skills/conectar/scripts/porta.mjs` imprime (no lugar de `<porta>`):
+```bash
+claude mcp add navegador -- npx @playwright/mcp@0.0.83 --cdp-endpoint http://127.0.0.1:<porta> --output-dir dados/navegador-saida --no-webmcp
+```
+**Quando usar:** Pesquisa de concorrentes, conferencia de precos, site sem API: pela escada do `/conectar`. Confirmar com /mcp (deve listar "playwright", e "navegador" se ligou o segundo)
 
 ### Notion
 **O que faz:** Acessa projetos, bases de dados, briefings e tarefas do Notion

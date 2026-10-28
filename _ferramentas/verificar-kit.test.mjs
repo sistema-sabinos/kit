@@ -1669,6 +1669,24 @@ test('gate 16 reprova o Playwright MCP sem versao fixa ou sem isolated nem cdp-e
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
+// Rodada 5.29 (C1a): com --isolated junto do --cdp-endpoint o servidor sobe sem erro e o --isolated vence
+// calado, abrindo outro navegador em vez do Chrome dedicado. A linha com os dois reprova.
+test('gate 16 reprova o Playwright MCP com isolated e cdp-endpoint juntos', () => {
+  const pacote = '@playwright/' + 'mcp'
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo/.claude/skills/x'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/.claude/skills/x/SKILL.md'), [
+      `claude mcp add navegador -- npx ${pacote}@0.0.83 --isolated --cdp-endpoint http://127.0.0.1:<porta>`,
+      `claude mcp add navegador -- npx ${pacote}@0.0.83 --cdp-endpoint http://127.0.0.1:<porta> --output-dir dados/navegador-saida`,
+    ].join('\n') + '\n')
+    const do16 = rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 16)
+    assert.ok(do16.length > 0, 'canario: o gate 16 acusou alguma coisa')
+    assert.deepEqual(do16.map(f => `${f.arquivo} ${f.detalhe.split(':')[0]}`), ['_modelo/.claude/skills/x/SKILL.md linha 1'])
+    assert.ok(do16[0].detalhe.includes('escolha um: --isolated (limpo) ou --cdp-endpoint (o Chrome dedicado)'), do16[0].detalhe)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
 test('gate 15 nao le .mjs, fixtures nem as respostas do RESPONDA-AQUI.txt', () => {
   const dir = kitFalso()
   try {

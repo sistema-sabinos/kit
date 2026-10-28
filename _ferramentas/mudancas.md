@@ -751,3 +751,27 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto tem `.claude/skills/mercado-livre/scripts/lib/chrome.mjs` e não tem `.claude/skills/conectar/scripts/lib/navegador.mjs`.
 **Como aplicar:** nada no projeto; o motor traz.
 **Como testar:** `grep -L "conectar/scripts/lib/navegador.mjs" .claude/skills/*/scripts/lib/chrome.mjs` sai vazio, e `node .claude/skills/conectar/scripts/porta.mjs` imprime um número.
+
+## escada-do-conectar
+
+**O que é:** o `/conectar` ganha a escada de caminhos (do conector oficial ao navegador logado e à nuvem paga, com "só você" e o robô guiando na tela como último degrau sem gasto) e o segundo servidor do navegador, `navegador`, que usa o Chrome dedicado do projeto pela porta dele. Os cuidados do navegador passam do pacote do Mercado Livre pro núcleo, em `.claude/skills/conectar/referencias/navegador.md`.
+**Por quê:** site sem porta oficial terminava em "não tem roteiro" ou ficava de fora, e cada caso agora cai num degrau com custo e cuidado ditos antes.
+**Te afeta se:** o projeto não tem `.claude/skills/conectar/referencias/escada.md`.
+**Como aplicar:** nada no projeto; o motor traz.
+**Como testar:** `.claude/skills/conectar/referencias/escada.md` existe, e o `.claude/skills/conectar/SKILL.md` tem a seção `## A escada`.
+
+## regra-senha-de-site
+
+**O que é:** a regra "Chave no `.env`." separa chave de API de senha de site: a chave fica no `.env`, e a senha de site não se guarda, salvo na conta em que você ligar o relogin automático (o `/conectar` explica).
+**Por quê:** a regra antiga mandava guardar senha no `.env` junto da chave, e quem pega o `.env` leva a conta.
+**Te afeta se:** o `AGENTS.md` do projeto tem o texto "Chave e senha só em arquivo `.env`".
+**Como aplicar:** no `AGENTS.md` do projeto (arquivo misto), achar a regra pelo título **Chave no `.env`.** e trocar só a frase dela por "Chave de API só no `.env`, nunca no chat; senha de site: ver `/conectar`.", sem mudar o número da regra. Mostrar a troca e gravar com o sim.
+**Como testar:** `grep -c "Chave e senha só em arquivo" AGENTS.md` dá 0, e a regra **Chave no `.env`.** cita o `/conectar`.
+
+## relogin-automatico
+
+**O que é:** o robô pode entrar de novo sozinho numa conta quando a sessão do Chrome dedicado cai, só na conta em que a pessoa ligar (`.claude/skills/conectar/referencias/relogar.md`): usuário, senha e semente do 2FA dessa conta no `.env`, lidos pelo `node .claude/skills/conectar/scripts/relogar.mjs <CONTA>`, que responde uma palavra só e nunca mostra valor. Vem desligado, e só entra sozinho em site com receita de login testada ao vivo (hoje, o Mercado Livre, pela senha e pelo Google Authenticator).
+**Por quê:** a sessão do site cai de tempos em tempos e o robô parava o trabalho até a pessoa entrar de novo.
+**Te afeta se:** o projeto não tem `.claude/skills/conectar/scripts/relogar.mjs`.
+**Como aplicar:** nada no projeto; o motor traz.
+**Como testar:** `node .claude/skills/conectar/scripts/relogar.mjs ML` responde `falta-variavel` num projeto sem as três linhas do `ML` no `.env`.

@@ -107,7 +107,7 @@ Rotina (robô do `/agendar`, Hermes, agente agendado) escreve só no próprio di
 
 **14. Terminal é da IA.** A pessoa nunca digita no terminal: só clica (login, senha) e escreve no chat.
 
-**15. Chave no `.env`.** Chave e senha só em arquivo `.env`, nunca no chat nem em outro arquivo.
+**15. Chave no `.env`.** Chave de API só no `.env`, nunca no chat; senha de site: ver `/conectar`.
 
 ## Estrutura de pastas
 

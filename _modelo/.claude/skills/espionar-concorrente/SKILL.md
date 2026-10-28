@@ -32,7 +32,7 @@ roda é o agente `ml-espiao`.
 - `fornecedores/<f>/_raw-pesquisa-<categoria>.json` (a `/pesquisar-tendencia` rodou nessa
   categoria), menos no modo de um anúncio só, que dispensa a pesquisa
 - Chrome dedicado aberto e logado
-- `.claude/skills/mercado-livre/referencias/navegador.md`, os cuidados com o
+- `.claude/skills/conectar/referencias/navegador.md`, os cuidados com o
   Chrome dedicado: ler antes de clicar ou navegar
 - `.claude/skills/mercado-livre/referencias/contratos.md`, seção 0
 

@@ -26,7 +26,7 @@ e a margem bruta na mediana. Sai um `.md` pra ler e um `.csv` que a
 - `_contexto/vereditos-legais.md`: produto sem veredito válido não entra
 - `.env` com a autorização do Mercado Livre (`/conectar`, seção Mercado Livre e Bling)
 - Chrome dedicado aberto e logado (`node .claude/skills/mercado-livre/scripts/abrir-chrome.mjs`)
-- `.claude/skills/mercado-livre/referencias/navegador.md`, os cuidados com o
+- `.claude/skills/conectar/referencias/navegador.md`, os cuidados com o
   Chrome dedicado: ler antes de clicar ou navegar
 - `.claude/skills/mercado-livre/referencias/contratos.md`, seção 0: as colunas que saem daqui
 

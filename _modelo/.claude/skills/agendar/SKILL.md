@@ -80,7 +80,8 @@ Perguntar, uma por vez, só o que faltar:
 
 Descobrir de onde vem o dado: API que o projeto já ligou (Mercado Livre, Bling,
 pelo `/conectar`), arquivo em `dados/` ou página pública. Dado que exige login
-num site sem API fica de fora: explicar e oferecer outro caminho.
+num site sem API: rodar a escada do `/conectar` e voltar aqui com o caminho que
+ela der (arquivo do degrau 4, ou script sem IA no Chrome dedicado, provisório).
 
 ### 2. Escrever a receita
 

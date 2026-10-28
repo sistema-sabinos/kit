@@ -28,7 +28,7 @@ Serve em dois momentos: antes de escolher produto, pra entender o nicho; e na
 
 - Chrome dedicado aberto e logado, e a autorização do Mercado Livre no `.env`
   (a `/mercado-livre` ensina)
-- `.claude/skills/mercado-livre/referencias/navegador.md`, os cuidados com o
+- `.claude/skills/conectar/referencias/navegador.md`, os cuidados com o
   Chrome dedicado: ler antes de rodar
 - Pra parte paga, `GEMINI_API_KEY` no `.env` (o `/conectar` ensina) e
   `limite_gasto_usd` em `_contexto/mercado-livre.md`

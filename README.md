@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 5.25 (2026-10-27)
+Versão 5.26 (2026-10-28)
 
 Um sistema de trabalho com IA pro seu negócio, rodando dentro do VS Code com o Claude Code.
 
@@ -71,7 +71,7 @@ O kit também funciona com o Codex (CLI da OpenAI, login pela sua conta ChatGPT)
 
 ## Uma regra de ouro
 
-Chave de API e senha vão sempre num arquivo chamado `.env` na raiz da pasta certa. Ele já vem protegido e nunca sobe pro GitHub. Nunca cole chave dentro de outro arquivo ou na conversa.
+Chave de API vai sempre num arquivo chamado `.env` na raiz da pasta certa. Ele já vem protegido e nunca sobe pro GitHub. Nunca cole chave dentro de outro arquivo ou na conversa. Senha de site não se guarda, salvo na conta em que você ligar o relogin automático: o login você faz na tela.
 
 ---
 

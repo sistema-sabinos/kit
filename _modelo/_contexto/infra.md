@@ -1,6 +1,6 @@
 # Infra, onde as coisas estão hospedadas
 
-> Onde está, em que conta e quem acessa como (você, o sócio, o sistema por API). Reescreve quando muda. Senha e chave nunca aqui: ficam no `.env`.
+> Onde está, em que conta e quem acessa como (você, o sócio, o sistema por API). Reescreve quando muda. Chave de API nunca aqui: fica no `.env`. Senha de site não se guarda, salvo na conta em que você ligar o relogin automático.
 
 ## Site
 

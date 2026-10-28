@@ -1,7 +1,7 @@
 # Configurar o pacote de midia social
 
 > Cada comando abre so a secao que ele precisa, na primeira vez. Ninguem configura tudo de uma vez.
-> Chave e senha nunca vao no chat: vao no arquivo `.env`, na raiz do projeto, uma por linha.
+> Chave de API nunca vai no chat: vai no arquivo `.env`, na raiz do projeto, uma por linha. Senha de site nao se guarda, salvo na conta em que voce ligar o relogin automatico.
 > Todo numero aqui foi conferido na data escrita no topo da secao. Plano e limite de plataforma
 > mudam: se a data tiver mais de 90 dias, pedir ao Claude pra conferir de novo antes de confiar.
 

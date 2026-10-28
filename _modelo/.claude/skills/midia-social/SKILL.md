@@ -94,4 +94,4 @@ node .claude/skills/midia-social/scripts/abrir-chrome.mjs
 - Nada publica sem o "pode ir" da pessoa naquele momento.
 - Nunca logar no Instagram pra coletar: so pagina publica.
 - Copiar o principio de um post de sucesso, nunca a frase.
-- Chave e senha vao no `.env`, nunca no chat.
+- Chave de API vai no `.env`; senha nunca vai no chat, e senha de site nao se guarda, salvo na conta em que voce ligar o relogin automatico.

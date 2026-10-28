@@ -60,7 +60,9 @@ são arquivos que a varredura não conseguiu ler (planilha, PDF, arquivo grande)
 mostrar a lista e pedir que a pessoa confirme que não tem senha nem dado de
 cliente neles antes de seguir. Parar e mostrar onde está (arquivo e linha, nunca o valor), e oferecer tirar
 dali: com o sim, a pessoa abre o `.env` do projeto (que não viaja) no editor e
-cola a chave ou senha numa linha `NOME=valor`; a IA roda
+cola a chave numa linha `NOME=valor` (senha de site não vai pro `.env`: sai do
+arquivo e pronto, porque senha de site não se guarda, salvo na conta em que a
+pessoa ligar o relogin automático); a IA roda
 `node .claude/skills/conectar/scripts/chave.mjs bate NOME --em <pasta>/<arquivo>:<linha>`
 (o `<arquivo>` do `varrer` vem a partir da `<pasta>`, e o `bate` roda da raiz) e
 só com `bate` tira a chave do arquivo da pasta, onde fica só o nome do serviço. A
