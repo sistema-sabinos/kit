@@ -48,7 +48,7 @@ function lerSentinela(perfil) {
   try {
     const s = JSON.parse(readFileSync(join(perfil, SENTINELA), 'utf8'))
     if (Number.isInteger(s?.porta) && s.porta >= 1024 && s.porta <= 65535 && typeof s.guid === 'string' &&
-      typeof s.perfil === 'string' && chave(s.perfil) === chave(perfil)) return { porta: s.porta, guid: s.guid }
+      typeof s.perfil === 'string' && chave(s.perfil) === chave(perfil)) return { porta: s.porta, guid: s.guid, semJanela: s.semJanela === true, saida: s.saida === true }
   } catch {}
   return null
 }
@@ -80,10 +80,43 @@ export function acharChrome({ env = process.env, plataforma = process.platform, 
   return candidatosDeChrome(env, plataforma).find(c => existe(c)) || null
 }
 
+// Os tres --disable-* sao os que o Playwright passa ao Chrome que ele mesmo abre: sem eles o Chrome
+// congela a pagina em segundo plano (prova C1c da 5.32, volta 3). Janela minimizada trava o clique
+// mesmo com eles (volta 2): o Windows nao desenha janela minimizada.
 export function argumentosDoChrome(perfil, porta, { headless = false } = {}) {
-  const a = [`--remote-debugging-port=${porta}`, `--user-data-dir=${perfil}`, '--no-first-run', '--no-default-browser-check']
+  const a = [`--remote-debugging-port=${porta}`, `--user-data-dir=${perfil}`, '--no-first-run', '--no-default-browser-check',
+    '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding']
   if (headless) a.push('--headless=new')
   return a
+}
+
+// Onde o navegador da IA grava o que baixa; igual ao SAIDA_NAVEGADOR do hook barrar-mcp.mjs (um
+// teste confere), que esta lib nao importa.
+export const SAIDA = 'dados/navegador-saida'
+
+// Aponta a pasta de download do perfil pra SAIDA do projeto, mexendo so nessa chave e na do
+// "perguntar onde salvar" do Default/Preferences. So com o Chrome fechado: aberto, ele reescreve o arquivo ao fechar. Arquivo
+// ilegivel fica como esta (o perfil guarda o login). true quando a pasta ficou gravada.
+export function apontarDownload(perfil, saida, { log = console.log } = {}) {
+  const pasta = join(perfil, 'Default')
+  const arquivo = join(pasta, 'Preferences')
+  let dados = {}
+  if (existsSync(arquivo)) {
+    try { dados = JSON.parse(readFileSync(arquivo, 'utf8')) } catch { dados = null }
+    if (!dados || typeof dados !== 'object' || Array.isArray(dados)) {
+      log(`nao consegui ler ${arquivo}; o arquivo que o Chrome baixar pode cair na pasta Downloads, fora do projeto`)
+      return false
+    }
+  }
+  const download = dados.download && typeof dados.download === 'object' ? dados.download : {}
+  // com o "perguntar onde salvar" ligado o Chrome abre o Salvar como e o robo fica esperando a pessoa
+  dados.download = { ...download, default_directory: resolve(saida), prompt_for_download: false }
+  mkdirSync(pasta, { recursive: true })
+  mkdirSync(saida, { recursive: true })
+  const tmp = arquivo + '.sabinos-tmp'
+  writeFileSync(tmp, JSON.stringify(dados))
+  renameSync(tmp, arquivo)
+  return true
 }
 
 // O guid e o fim do webSocketDebuggerUrl do /json/version; null quando a porta nao responde
@@ -144,6 +177,51 @@ export function pidDoChrome(porta, guid, { timeoutMs = 3000 } = {}) {
     }
     ws.onerror = () => acabar(null)
   })
+}
+
+// Um comando do CDP no Chrome desse guid; devolve o result, ou null quando nao deu pra perguntar.
+export function comandoCdp(porta, guid, method, params = {}, { timeoutMs = 3000 } = {}) {
+  return new Promise(ok => {
+    let ws
+    const prazo = setTimeout(() => acabar(null), timeoutMs)
+    function acabar(v) {
+      clearTimeout(prazo)
+      try { ws?.close() } catch {}
+      ok(v)
+    }
+    try {
+      ws = new WebSocket(`ws://127.0.0.1:${porta}/devtools/browser/${guid}`)
+    } catch {
+      return acabar(null)
+    }
+    ws.onopen = () => ws.send(JSON.stringify({ id: 1, method, params }))
+    ws.onmessage = ev => {
+      try {
+        const m = JSON.parse(ev.data)
+        if (m.id === 1) acabar(m.result ?? null)
+      } catch { acabar(null) }
+    }
+    ws.onerror = () => acabar(null)
+  })
+}
+
+// Janela minimizada trava o clique do robo (C1c, volta 2): cada janela de aba minimizada volta pra
+// normal. Quantas voltaram.
+export async function desminimizar(porta, guid, { cdp = comandoCdp } = {}) {
+  const alvos = (await cdp(porta, guid, 'Target.getTargets'))?.targetInfos || []
+  const vistas = new Set()
+  let voltaram = 0
+  for (const a of alvos.filter(x => x.type === 'page')) {
+    const j = await cdp(porta, guid, 'Browser.getWindowForTarget', { targetId: a.targetId })
+    if (!j || vistas.has(j.windowId)) continue
+    vistas.add(j.windowId)
+    if (j.bounds?.windowState !== 'minimized') continue
+    if (!(await cdp(porta, guid, 'Browser.setWindowBounds', { windowId: j.windowId, bounds: { windowState: 'normal' } }))) {
+      throw new Error('a janela do Chrome dedicado esta minimizada e nao voltou pro tamanho normal: minimizada, o clique do robo trava. Restaure a janela e rode de novo.')
+    }
+    voltaram += 1
+  }
+  return voltaram
 }
 
 // conferido: o Chrome na porta e o deste perfil. outro-na-porta: responde um Chrome com outro
@@ -279,10 +357,17 @@ export async function conferirServidor({ raiz, janela, sessao, pasta = pastaDaAn
 }
 
 // soExistente: so usa perfil que ja existe e nunca pula de porta (a sonda agendada roda assim).
-export async function abrirChrome({ raiz = RAIZ, perfil = perfilDedicado(raiz), porta = portaDoProjeto(raiz), soExistente = false, headless = false, env = process.env, plataforma = process.platform, existe = existsSync, spawnFn = spawn, fetchFn, livre = portaLivre, perguntarPid = pidDoChrome, esperarMs = 45_000, dormir, log = console.log } = {}) {
+// headless: tarefa sem a pessoa na frente; o login feito com janela vale sem janela (C1c, volta 4).
+// O Chrome conferido se reaproveita como esta: semJanela diz se ele abriu sem janela, e
+// semPastaDeSaida, se abriu antes da pasta de download apontar pro projeto (lib de antes da 5.29).
+export async function abrirChrome({ raiz = RAIZ, perfil = perfilDedicado(raiz), porta = portaDoProjeto(raiz), soExistente = false, headless = false, env = process.env, plataforma = process.platform, existe = existsSync, spawnFn = spawn, fetchFn, livre = portaLivre, perguntarPid = pidDoChrome, cdp = comandoCdp, esperarMs = 45_000, dormir, log = console.log } = {}) {
   if (soExistente && !existe(perfil)) throw Object.assign(new Error(`o perfil do Chrome dedicado nao existe (${perfil}). Perfil novo nao se cria aqui: o Mercado Livre manda perfil novo pra verificacao de conta. Abra o Chrome dedicado do projeto e entre na conta uma vez.`), { estado: 'sem-perfil' })
   const atual = await conferirPerfil({ porta, perfil, fetchFn })
-  if (atual.estado === 'conferido') return { jaEstavaAberto: true, perfilConferido: true, porta, pid: null }
+  if (atual.estado === 'conferido') {
+    const s = lerSentinela(perfil)
+    if (headless && !s.semJanela && (await desminimizar(porta, atual.guid, { cdp })) > 0) log('a janela do Chrome dedicado estava minimizada e voltou pro tamanho normal: minimizada, o clique do robo trava')
+    return { jaEstavaAberto: true, perfilConferido: true, porta, pid: null, semJanela: s.semJanela, semPastaDeSaida: !s.saida }
+  }
   if (soExistente && atual.estado !== 'porta-fechada') return { jaEstavaAberto: true, perfilConferido: false, porta, pid: null }
 
   let escolhida = null
@@ -305,6 +390,8 @@ export async function abrirChrome({ raiz = RAIZ, perfil = perfilDedicado(raiz), 
     const ignora = join(perfil, '.gitignore')
     if (!existsSync(ignora)) writeFileSync(ignora, '*\n')
   }
+  // so o perfil dedicado do projeto: perfil de fora (a sonda da bancada abre o do Raio-X) nao se mexe
+  const saida = chave(perfil, plataforma) === chave(perfilDedicado(raiz), plataforma) && apontarDownload(perfil, join(raiz, SAIDA), { log })
   const filho = spawnFn(chrome, argumentosDoChrome(perfil, escolhida, { headless }), { detached: true, stdio: 'ignore' })
   if (filho && typeof filho.unref === 'function') filho.unref()
   log(`abrindo o Chrome dedicado na porta ${escolhida} (perfil em ${perfil})`)
@@ -315,9 +402,46 @@ export async function abrirChrome({ raiz = RAIZ, perfil = perfilDedicado(raiz), 
   const pid = (filho && filho.pid) || null
   const dono = await perguntarPid(escolhida, guid)
   if (!pid || dono !== pid) throw new Error(`outro Chrome pegou a porta ${escolhida} enquanto o deste projeto abria. Feche o Chrome dedicado deste projeto e rode de novo.`)
-  gravarSentinela(perfil, { porta: escolhida, guid })
+  gravarSentinela(perfil, { porta: escolhida, guid, semJanela: headless, saida })
   if (escolhida !== porta) log(`a porta ${porta} estava com outro programa, entao o Chrome deste projeto passou pra porta ${escolhida}. Se o navegador da IA estava ligado na porta antiga, ${RELIGAR}.`)
   return { jaEstavaAberto: false, perfilConferido: true, porta: escolhida, pid }
+}
+
+// Fecha o Chrome deste projeto pelo CDP, so quando quem responde na porta e ele (conferido); com
+// outro estado nao fecha nada e devolve o estado. Script de rotina que abriu o Chrome fecha no fim:
+// ele nasce solto (detached) e sobreviveria ao script. A porta cai antes do processo, que ainda
+// grava o Preferences por uns 400 ms (P1 da 5.33): so volta com o processo morto, senao quem abre
+// logo em seguida perde a pasta de download.
+export const FOLGA_SEM_PID_MS = 2000
+
+export function processoVivo(pid) {
+  try { process.kill(pid, 0); return true } catch (e) { return e.code === 'EPERM' }
+}
+
+export async function fecharChrome({ raiz = RAIZ, perfil = perfilDedicado(raiz), porta = portaDoProjeto(raiz), fetchFn, cdp = comandoCdp, perguntarPid = pidDoChrome, vivo = processoVivo, esperarMs = 15_000, passoMs = 250, dormir = ms => new Promise(r => setTimeout(r, ms)) } = {}) {
+  const atual = await conferirPerfil({ porta, perfil, fetchFn })
+  if (atual.estado !== 'conferido') return { fechado: false, estado: atual.estado, porta }
+  const pid = await perguntarPid(porta, atual.guid)
+  await cdp(porta, atual.guid, 'Browser.close')
+  const fim = Date.now() + esperarMs
+  do {
+    if (!(await guidDaPorta(porta, { fetchFn })) && !(pid && vivo(pid))) {
+      // sem o numero do processo nao da pra ver ele morrer: folga de uns 5 vezes os 432 ms medidos
+      if (!pid) await dormir(FOLGA_SEM_PID_MS)
+      return { fechado: true, estado: 'conferido', porta }
+    }
+    await dormir(passoMs)
+  } while (Date.now() < fim)
+  throw new Error(`pedi pro Chrome dedicado fechar, mas a porta ${porta} seguiu aberta. Feche as janelas dele e rode de novo.`)
+}
+
+// As opcoes do abrir-chrome.mjs a partir do argv (sem o node e o script).
+export function opcoesDeAbrir(argv) {
+  const conhecidas = ['--sem-janela', '--fechar']
+  const outra = argv.find(a => !conhecidas.includes(a))
+  if (outra) throw new Error(`opcao desconhecida: ${outra}. Use --sem-janela (tarefa sem voce na frente) ou --fechar.`)
+  if (argv.includes('--sem-janela') && argv.includes('--fechar')) throw new Error('use --sem-janela ou --fechar, um de cada vez.')
+  return { headless: argv.includes('--sem-janela'), fechar: argv.includes('--fechar') }
 }
 
 // carregar traz o Playwright (a casca do pacote resolve do node_modules dela); skill so muda o texto

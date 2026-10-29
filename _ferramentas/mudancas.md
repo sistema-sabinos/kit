@@ -791,3 +791,11 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto tem `.claude/hooks/barrar-mcp.mjs` sem o texto `anotarSessao`, ou o `.claude/settings.json` não tem o bloco `SessionStart` que chama o `barrar-mcp.mjs`.
 **Como aplicar:** nada no projeto; o motor traz o hook e junta o bloco `SessionStart` no `settings.json`, sem tirar hook da pessoa. Avisar que vale a partir da próxima vez que o Claude Code abrir.
 **Como testar:** `grep -l anotarSessao .claude/hooks/barrar-mcp.mjs` imprime o caminho, e o `.claude/settings.json` tem em `hooks.SessionStart` um comando com `barrar-mcp.mjs`.
+
+## chrome-dedicado-sem-janela
+
+**O que é:** o Chrome dedicado do projeto passa a salvar o que baixa em `dados/navegador-saida/`, abre sem janela quando o robô trabalha sozinho (`abrir-chrome.mjs --sem-janela`) e fecha pelo `abrir-chrome.mjs --fechar`. O robô pode baixar o anexo de um email pelo Gmail do Chrome dedicado, e o Claude in Chrome pode ir nesse Chrome com a pessoa na frente.
+**Por quê:** antes o anexo caía na pasta Downloads, fora do projeto, e a página parada atrás de outra janela ou minimizada travava o clique do robô.
+**Te afeta se:** o projeto tem `.claude/skills/conectar/scripts/lib/navegador.mjs` sem o texto `apontarDownload`.
+**Como aplicar:** nada no projeto; o motor traz. Avisar que um Chrome dedicado que já estava aberto continua baixando na Downloads até ser fechado (`node .claude/skills/conectar/scripts/abrir-chrome.mjs --fechar`) e aberto de novo.
+**Como testar:** `node .claude/skills/conectar/scripts/abrir-chrome.mjs --sem-janela` abre o Chrome sem janela e diz a porta, e o `dados/chrome-perfil/Default/Preferences` tem `dados` e `navegador-saida` no `default_directory`.

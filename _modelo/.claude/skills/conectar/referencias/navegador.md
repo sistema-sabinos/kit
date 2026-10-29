@@ -20,6 +20,14 @@
   porta nova (`claude mcp remove navegador` e o passo 3) e fechar e abrir o
   Claude Code antes de usar: o `navegador` que já está rodando só pega a
   porta nova numa sessão nova.
+- Tarefa sem a pessoa na frente abre o Chrome dedicado sem janela
+  (`abrir-chrome.mjs --sem-janela`, ou `abrirChrome` com `headless: true` no
+  script) e, se foi ela que abriu, fecha no fim (`fecharChrome` da lib), porque
+  o Chrome segue aberto depois do script. Com a pessoa na frente, a janela pode
+  ficar atrás de outra, mas minimizada trava o clique.
+- O `abrir-chrome.mjs` avisa que o Chrome está sem janela, ou que abriu antes da
+  pasta de download apontar pro projeto: não fechar sozinho. Mostrar o aviso;
+  quem fecha, pelo `--fechar`, é a pessoa, depois do robô terminar.
 - A lib do Chrome avisa `outro-na-porta` ou `sem-sentinela`: tem outro
   Chrome na porta deste projeto, ou um que não diz de quem é. Parar, mostrar o
   aviso da lib e não fechar nada sozinho.

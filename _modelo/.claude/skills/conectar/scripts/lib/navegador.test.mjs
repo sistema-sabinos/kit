@@ -15,7 +15,9 @@ import {
   guidDaPorta, portaLivre, esperarPorta, pidDoChrome, conferirPerfil, abrirChrome, conectar, sessaoCaiu,
   relogar, receitaValida, abaDoSite, tentouHaPouco, marcarTentativa, desmarcarTentativa, JANELA_RELOGIN_MS,
   travarRelogin, expressaoClique, conferirServidor, anotarSessao, pastaDaAnotacao, RELIGAR,
+  SAIDA, apontarDownload, desminimizar, fecharChrome, opcoesDeAbrir, processoVivo, FOLGA_SEM_PID_MS,
 } from './navegador.mjs'
+import { SAIDA_NAVEGADOR } from '../../../../hooks/barrar-mcp.mjs'
 import { runInNewContext } from 'node:vm'
 import { RAIZ } from './raiz.mjs'
 import { codigo } from '../totp.mjs'
@@ -555,15 +557,233 @@ test('argumentosDoChrome leva porta, perfil e headless', () => {
   assert.ok(argumentosDoChrome('/p/perfil', P, { headless: true }).includes('--headless=new'))
 })
 
+test('argumentosDoChrome leva os tres --disable-* da prova C1c, com e sem janela', () => {
+  const tres = ['--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding']
+  const base = [`--remote-debugging-port=${P}`, '--user-data-dir=/p/perfil', '--no-first-run', '--no-default-browser-check', ...tres]
+  assert.deepEqual(argumentosDoChrome('/p/perfil', P), base)
+  assert.deepEqual(argumentosDoChrome('/p/perfil', P, { headless: true }), [...base, '--headless=new'])
+})
+
+test('SAIDA da lib e a mesma pasta que o hook barrar-mcp.mjs deixa o navegador gravar', () => {
+  assert.equal(SAIDA, SAIDA_NAVEGADOR)
+  assert.equal(SAIDA, 'dados/navegador-saida')
+})
+
+const prefs = perfil => JSON.parse(readFileSync(join(perfil, 'Default', 'Preferences'), 'utf8'))
+
+test('apontarDownload: perfil sem Default ganha o Preferences so com a pasta, e a pasta nasce', () => {
+  const raiz = temp()
+  try {
+    const perfil = join(raiz, 'perfil')
+    const saida = join(raiz, SAIDA)
+    assert.equal(apontarDownload(perfil, saida, { log: () => {} }), true)
+    assert.deepEqual(prefs(perfil), { download: { default_directory: saida, prompt_for_download: false } })
+    assert.ok(existsSync(saida), 'a pasta de saida existe')
+    assert.deepEqual(readdirSync(join(perfil, 'Default')), ['Preferences'], 'sem temporario sobrando')
+  } finally { rmSync(raiz, { recursive: true, force: true }) }
+})
+
+test('apontarDownload: Preferences com outras chaves mantem todas, troca a pasta e desliga o perguntar onde salvar', () => {
+  const raiz = temp()
+  try {
+    const perfil = join(raiz, 'perfil')
+    mkdirSync(join(perfil, 'Default'), { recursive: true })
+    const antes = { profile: { name: 'Pessoa 1' }, download: { prompt_for_download: true, default_directory: '/velha', directory_upgrade: true }, extensions: { x: 1 } }
+    writeFileSync(join(perfil, 'Default', 'Preferences'), JSON.stringify(antes))
+    assert.equal(apontarDownload(perfil, join(raiz, SAIDA), { log: () => {} }), true)
+    assert.deepEqual(prefs(perfil), { ...antes, download: { directory_upgrade: true, prompt_for_download: false, default_directory: join(raiz, SAIDA) } })
+  } finally { rmSync(raiz, { recursive: true, force: true }) }
+})
+
+test('apontarDownload: Preferences ilegivel fica byte a byte igual e o log avisa', () => {
+  const raiz = temp()
+  try {
+    const perfil = join(raiz, 'perfil')
+    mkdirSync(join(perfil, 'Default'), { recursive: true })
+    const arq = join(perfil, 'Default', 'Preferences')
+    for (const quebrado of ['{"download": ', '[1,2]', 'null']) {
+      writeFileSync(arq, quebrado)
+      const avisos = []
+      assert.equal(apontarDownload(perfil, join(raiz, SAIDA), { log: m => avisos.push(m) }), false, quebrado)
+      assert.equal(readFileSync(arq, 'utf8'), quebrado)
+      assert.ok(avisos.length === 1 && avisos[0].includes('Downloads'), avisos.join(' | '))
+    }
+  } finally { rmSync(raiz, { recursive: true, force: true }) }
+})
+
 test('abrirChrome reaproveita so o Chrome conferido, sem abrir outro', async () => {
   const raiz = temp()
   const ch = chromeFalso({ [P]: 'g-1' })
   try {
-    gravar(perfilDedicado(raiz), { porta: P, guid: 'g-1' })
+    gravar(perfilDedicado(raiz), { porta: P, guid: 'g-1', saida: true })
     const r = await abrirChrome({ ...MAC, raiz, fetchFn: ch.fetchFn, spawnFn: ch.spawnFn, perguntarPid: ch.perguntarPid })
-    assert.deepEqual(r, { jaEstavaAberto: true, perfilConferido: true, porta: P, pid: null })
+    assert.deepEqual(r, { jaEstavaAberto: true, perfilConferido: true, porta: P, pid: null, semJanela: false, semPastaDeSaida: false })
     assert.equal(ch.abertos.length, 0)
   } finally { rmSync(raiz, { recursive: true, force: true }) }
+})
+
+test('abrirChrome: Chrome aberto pela lib de antes (sentinela sem saida) avisa semPastaDeSaida e nao toca no Preferences', async () => {
+  const raiz = temp()
+  const ch = chromeFalso({ [P]: 'g-1' })
+  try {
+    const perfil = perfilDedicado(raiz)
+    gravar(perfil, { porta: P, guid: 'g-1' })
+    const r = await abrirChrome({ ...MAC, raiz, fetchFn: ch.fetchFn, spawnFn: ch.spawnFn, perguntarPid: ch.perguntarPid })
+    assert.equal(r.semPastaDeSaida, true)
+    assert.equal(ch.abertos.length, 0)
+    assert.equal(existsSync(join(perfil, 'Default', 'Preferences')), false, 'Chrome aberto: o Preferences nao se grava')
+  } finally { rmSync(raiz, { recursive: true, force: true }) }
+})
+
+test('abrirChrome abre apontando o download pro projeto e grava semJanela e saida na sentinela', async () => {
+  for (const headless of [false, true]) {
+    const raiz = temp()
+    const ch = chromeFalso()
+    try {
+      const perfil = perfilDedicado(raiz)
+      await abrirChrome({ ...MAC, raiz, porta: P, headless, fetchFn: ch.fetchFn, spawnFn: ch.spawnFn, perguntarPid: ch.perguntarPid })
+      assert.equal(ch.abertos[0].args.includes('--headless=new'), headless)
+      assert.equal(prefs(perfil).download.default_directory, join(raiz, SAIDA))
+      assert.equal(crua(perfil).semJanela, headless)
+      assert.equal(crua(perfil).saida, true)
+    } finally { rmSync(raiz, { recursive: true, force: true }) }
+  }
+})
+
+test('abrirChrome com perfil de fora do projeto nao mexe no Preferences dele nem cria a pasta de saida', async () => {
+  const raiz = temp()
+  const ch = chromeFalso()
+  try {
+    const perfil = join(raiz, 'outro-negocio', 'chrome-profile')
+    await abrirChrome({ ...MAC, raiz, perfil, porta: P, fetchFn: ch.fetchFn, spawnFn: ch.spawnFn, perguntarPid: ch.perguntarPid })
+    assert.equal(ch.abertos.length, 1, 'canario: o Chrome abriu')
+    assert.equal(existsSync(join(perfil, 'Default', 'Preferences')), false)
+    assert.equal(existsSync(join(raiz, SAIDA)), false)
+    assert.equal(crua(perfil).saida, false)
+  } finally { rmSync(raiz, { recursive: true, force: true }) }
+})
+
+// CDP de mentira: janelas por alvo, registra cada comando
+function cdpFalso(janelas) {
+  const feitos = []
+  const cdp = async (porta, guid, method, params = {}) => {
+    feitos.push({ method, params })
+    if (method === 'Target.getTargets') return { targetInfos: [...Object.keys(janelas).map(t => ({ type: 'page', targetId: t })), { type: 'service_worker', targetId: 'sw' }] }
+    if (method === 'Browser.getWindowForTarget') { const j = janelas[params.targetId]; return j ? { windowId: j.id, bounds: { windowState: j.estado } } : null }
+    if (method === 'Browser.setWindowBounds') { for (const j of Object.values(janelas)) if (j.id === params.windowId) j.estado = params.bounds.windowState; return {} }
+    if (method === 'Browser.close') return {}
+    return null
+  }
+  return { cdp, feitos }
+}
+
+test('abrirChrome headless com o Chrome do projeto aberto com janela minimizada devolve a janela pro normal', async () => {
+  const raiz = temp()
+  const ch = chromeFalso({ [P]: 'g-1' })
+  try {
+    gravar(perfilDedicado(raiz), { porta: P, guid: 'g-1', saida: true })
+    const janelas = { a: { id: 1, estado: 'minimized' }, b: { id: 1, estado: 'minimized' }, c: { id: 2, estado: 'normal' } }
+    const { cdp, feitos } = cdpFalso(janelas)
+    const avisos = []
+    await abrirChrome({ ...MAC, raiz, headless: true, cdp, fetchFn: ch.fetchFn, spawnFn: ch.spawnFn, perguntarPid: ch.perguntarPid, log: m => avisos.push(m) })
+    assert.deepEqual(feitos.filter(f => f.method === 'Browser.setWindowBounds').map(f => f.params), [{ windowId: 1, bounds: { windowState: 'normal' } }])
+    assert.equal(janelas.a.estado, 'normal')
+    assert.ok(avisos.some(m => m.includes('minimizada')), avisos.join(' | '))
+    // sem headless (a pessoa na frente) a janela fica como a pessoa deixou
+    const outro = cdpFalso({ a: { id: 1, estado: 'minimized' } })
+    await abrirChrome({ ...MAC, raiz, cdp: outro.cdp, fetchFn: ch.fetchFn, spawnFn: ch.spawnFn, perguntarPid: ch.perguntarPid })
+    assert.deepEqual(outro.feitos, [])
+    assert.equal(ch.abertos.length, 0)
+  } finally { rmSync(raiz, { recursive: true, force: true }) }
+})
+
+test('desminimizar: janela minimizada que o CDP nao restaura para com erro, sem contar como restaurada', async () => {
+  const { cdp } = cdpFalso({ a: { id: 1, estado: 'minimized' } })
+  const falha = async (...a) => (a[2] === 'Browser.setWindowBounds' ? null : cdp(...a))
+  await assert.rejects(desminimizar(P, 'g', { cdp: falha }), /minimizada e nao voltou/)
+})
+
+test('desminimizar: nenhuma janela minimizada nao manda comando de janela', async () => {
+  const { cdp, feitos } = cdpFalso({ a: { id: 1, estado: 'normal' }, b: { id: 2, estado: 'maximized' } })
+  assert.equal(await desminimizar(P, 'g', { cdp }), 0)
+  assert.ok(feitos.length > 0, 'canario: perguntou as janelas')
+  assert.ok(!feitos.some(f => f.method === 'Browser.setWindowBounds'))
+})
+
+test('abrirChrome sem headless com o Chrome do projeto aberto sem janela so devolve semJanela (D24)', async () => {
+  const raiz = temp()
+  const ch = chromeFalso({ [P]: 'g-1' })
+  try {
+    gravar(perfilDedicado(raiz), { porta: P, guid: 'g-1', saida: true, semJanela: true })
+    const { cdp, feitos } = cdpFalso({})
+    const r = await abrirChrome({ ...MAC, raiz, cdp, fetchFn: ch.fetchFn, spawnFn: ch.spawnFn, perguntarPid: ch.perguntarPid })
+    assert.equal(r.semJanela, true)
+    assert.equal(ch.abertos.length, 0)
+    assert.deepEqual(feitos, [], 'nada se fecha nem se mexe sozinho')
+  } finally { rmSync(raiz, { recursive: true, force: true }) }
+})
+
+test('fecharChrome so fecha o Chrome conferido e espera a porta fechar', async () => {
+  const raiz = temp()
+  try {
+    const perfil = perfilDedicado(raiz)
+    gravar(perfil, { porta: P, guid: 'g-1' })
+    // outro Chrome na porta: nada se fecha
+    const outro = chromeFalso({ [P]: 'outro' })
+    const c1 = cdpFalso({})
+    assert.deepEqual(await fecharChrome({ raiz, porta: P, fetchFn: outro.fetchFn, cdp: c1.cdp, dormir: async () => {} }), { fechado: false, estado: 'outro-na-porta', porta: P })
+    assert.deepEqual(c1.feitos, [])
+    // porta fechada: nada a fechar
+    const morto = chromeFalso()
+    assert.equal((await fecharChrome({ raiz, porta: P, fetchFn: morto.fetchFn, cdp: c1.cdp, dormir: async () => {} })).estado, 'porta-fechada')
+    assert.deepEqual(c1.feitos, [])
+    // o deste projeto: Browser.close e a porta cai
+    const ch = chromeFalso({ [P]: 'g-1' })
+    const c2 = cdpFalso({})
+    const cdp = async (...a) => { const v = await c2.cdp(...a); if (a[2] === 'Browser.close') delete ch.portas[P]; return v }
+    assert.deepEqual(await fecharChrome({ raiz, porta: P, fetchFn: ch.fetchFn, cdp, dormir: async () => {} }), { fechado: true, estado: 'conferido', porta: P })
+    assert.deepEqual(c2.feitos.map(f => f.method), ['Browser.close'])
+    // a porta que nao cai vira erro, sem prometer que fechou
+    const teimoso = chromeFalso({ [P]: 'g-1' })
+    await assert.rejects(fecharChrome({ raiz, porta: P, fetchFn: teimoso.fetchFn, cdp: c2.cdp, esperarMs: 0, dormir: async () => {} }), /seguiu aberta/)
+  } finally { rmSync(raiz, { recursive: true, force: true }) }
+})
+
+test('fecharChrome so volta com o processo do Chrome morto, depois da porta cair', async () => {
+  const raiz = temp()
+  try {
+    gravar(perfilDedicado(raiz), { porta: P, guid: 'g-1' })
+    const ch = chromeFalso({ [P]: 'g-1' })
+    const c = cdpFalso({})
+    const cdp = async (...a) => { const v = await c.cdp(...a); if (a[2] === 'Browser.close') delete ch.portas[P]; return v }
+    // a porta cai na hora, o processo 4321 vive mais 3 perguntas
+    let vidas = 3
+    const perguntados = []
+    const vivo = pid => { perguntados.push(pid); return vidas-- > 0 }
+    let esperas = 0
+    const r = await fecharChrome({ raiz, porta: P, fetchFn: ch.fetchFn, cdp, perguntarPid: async () => 4321, vivo, dormir: async () => { esperas += 1 } })
+    assert.equal(r.fechado, true)
+    assert.equal(esperas, 3, 'esperou o processo morrer')
+    assert.ok(perguntados.every(p => p === 4321) && perguntados.length === 4, perguntados.join(','))
+    assert.equal(processoVivo(process.pid), true, 'canario: o proprio processo esta vivo')
+    // sem o numero do processo (CDP nao respondeu), espera a folga depois da porta cair
+    gravar(perfilDedicado(raiz), { porta: P, guid: 'g-2' })
+    const ch2 = chromeFalso({ [P]: 'g-2' })
+    const cdp2 = async (...a) => { if (a[2] === 'Browser.close') delete ch2.portas[P]; return {} }
+    const dormidas = []
+    const r2 = await fecharChrome({ raiz, porta: P, fetchFn: ch2.fetchFn, cdp: cdp2, perguntarPid: async () => null, vivo: () => { throw new Error('sem pid nao pergunta') }, dormir: async ms => { dormidas.push(ms) } })
+    assert.equal(r2.fechado, true)
+    assert.deepEqual(dormidas, [FOLGA_SEM_PID_MS])
+    assert.ok(FOLGA_SEM_PID_MS >= 2000, 'a folga cobre os 432 ms medidos com sobra')
+  } finally { rmSync(raiz, { recursive: true, force: true }) }
+})
+
+test('opcoesDeAbrir: --sem-janela, --fechar, nada, e opcao desconhecida ou as duas juntas recusam', () => {
+  assert.deepEqual(opcoesDeAbrir([]), { headless: false, fechar: false })
+  assert.deepEqual(opcoesDeAbrir(['--sem-janela']), { headless: true, fechar: false })
+  assert.deepEqual(opcoesDeAbrir(['--fechar']), { headless: false, fechar: true })
+  assert.throws(() => opcoesDeAbrir(['--headless']), /opcao desconhecida: --headless/)
+  assert.throws(() => opcoesDeAbrir(['--sem-janela', '--fechar']), /um de cada vez/)
 })
 
 test('abrirChrome abre, espera a porta e grava a sentinela com o guid', async () => {
