@@ -78,17 +78,20 @@ export function mesclarSettings(daPessoa, doKit) {
   const deny = Array.isArray(atual) ? atual : (atual == null ? [] : [atual])
   for (const regra of doKit?.permissions?.deny ?? []) if (!deny.includes(regra)) { deny.push(regra); faltava.push(regra) }
   if (deny.length) settings.permissions = { ...(settings.permissions ?? {}), deny }
-  const blocoKit = (doKit?.hooks?.PreToolUse ?? []).find(citaMcp)
-  if (blocoKit) {
+  // 5.31: o SessionStart do barrar-mcp anota a porta do navegador pelo mesmo criterio; sem ele, todo
+  // projeto atualizado barraria o navegador pra sempre
+  const blocos = { PreToolUse: 'trava do MCP (barrar-mcp)', SessionStart: 'anotação do navegador (barrar-mcp)' }
+  for (const [evento, nome] of Object.entries(blocos)) {
+    const blocoKit = (doKit?.hooks?.[evento] ?? []).find(citaMcp)
+    if (!blocoKit) continue
     settings.hooks ??= {}
-    const pre = settings.hooks.PreToolUse ?? []
-    if (!pre.some(b => JSON.stringify(b) === JSON.stringify(blocoKit))) {
-      settings.hooks.PreToolUse = pre
-        .map(b => (citaMcp(b) ? { ...b, hooks: b.hooks.filter(h => !ehHookMcp(h)) } : b))
-        .filter(b => !Array.isArray(b.hooks) || b.hooks.length > 0)
-        .concat(structuredClone(blocoKit))
-      faltava.push('trava do MCP (barrar-mcp)')
-    }
+    const daLista = settings.hooks[evento] ?? []
+    if (daLista.some(b => JSON.stringify(b) === JSON.stringify(blocoKit))) continue
+    settings.hooks[evento] = daLista
+      .map(b => (citaMcp(b) ? { ...b, hooks: b.hooks.filter(h => !ehHookMcp(h)) } : b))
+      .filter(b => !Array.isArray(b.hooks) || b.hooks.length > 0)
+      .concat(structuredClone(blocoKit))
+    faltava.push(nome)
   }
   return { settings, faltava }
 }

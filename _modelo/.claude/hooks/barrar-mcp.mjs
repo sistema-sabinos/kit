@@ -24,6 +24,8 @@
 // passaria, que ele veio do escopo local e que o Chrome na porta em que foi ligado e o deste projeto:
 // pega o Chrome de outro projeto na mesma porta e a porta que mudou. Nao pega o Chrome trocado entre
 // a conferencia e a chamada, alguns milissegundos depois.
+// No SessionStart (5.31) ela so anota a porta com que o navegador nasceu nesta janela, sem stdout e
+// saindo 0; a conferencia usa a anotada, entao religar no meio da sessao barra ate o Claude Code reabrir.
 import { realpathSync, statSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -171,24 +173,33 @@ export function avaliarMcp({ tool_name, tool_input, cwd, permission_mode } = {})
 // ferramenta de outro servidor nao paga a rede. A origem local e a do claude mcp add do passo 3 do
 // Degrau 5 (C1 da 5.30); com --mcp-config ela vem dynamic e a configuracao lida nao e a que roda.
 const LIB_NAVEGADOR = new URL('../skills/conectar/scripts/lib/navegador.mjs', import.meta.url).href
-// Religar no meio da sessao so troca o arquivo: o servidor que ja roda segue na porta velha ate o
-// Claude Code reabrir (achado P1 da final da 5.30, provado ao vivo); a trava disso fica pra 5.31.
-const RELIGAR = 'ligue o `navegador` de novo com a porta nova (`claude mcp remove navegador` e o passo 3 do Degrau 5) e feche e abra o Claude Code antes de usar, porque o `navegador` que já está rodando só pega a porta nova numa sessão nova'
 const ATUALIZAR = 'rode o `/atualizar-sabinos`'
+const FECHAR_E_ABRIR = 'feche e abra o Claude Code antes de usar'
+// o texto de religar vem da lib (c.religar), o mesmo do log do abrir-chrome
 const RECADO_DO_PERFIL = {
   'porta-fechada': () => 'o Chrome dedicado não está aberto: rode `node .claude/skills/conectar/scripts/abrir-chrome.mjs` e tente de novo',
-  'outro-na-porta': p => `na porta ${p} responde um Chrome que não é o deste projeto: rode o \`abrir-chrome.mjs\`; se ele disser que a porta mudou, ${RELIGAR}`,
-  'porta-mudou': p => `o \`navegador\` foi ligado na porta ${p}, mas o Chrome deste projeto agora usa outra: ${RELIGAR}`,
+  'outro-na-porta': c => `na porta ${c.porta} responde um Chrome que não é o deste projeto: rode o \`abrir-chrome.mjs\`; se ele disser que a porta mudou, ${c.religar}`,
+  'porta-mudou': c => `o \`navegador\` foi ligado na porta ${c.porta}, mas o Chrome deste projeto agora usa outra: ${c.religar}`,
+  'sem-anotacao': () => `o \`navegador\` não estava ligado quando o Claude Code abriu (ou a anotação se perdeu): ${FECHAR_E_ABRIR}`,
+  'religado': c => `o \`navegador\` foi ligado de novo depois que o Claude Code abriu, e o que está rodando segue na porta ${c.porta}: ${FECHAR_E_ABRIR}`,
   'sem-config': () => `não deu pra saber em que porta o \`navegador\` foi ligado: ligue de novo pelo passo 3 do Degrau 5; se continuar, ${ATUALIZAR}`,
   'sem-lib': () => `a conferência do Chrome deste projeto não abriu: ${ATUALIZAR}`,
 }
 RECADO_DO_PERFIL['sem-sentinela'] = RECADO_DO_PERFIL['outro-na-porta']
 
-async function conferirPeloKit(raiz) {
+async function conferirPeloKit({ raiz, janela, sessao }) {
   let lib
   try { lib = await import(LIB_NAVEGADOR) } catch { return { estado: 'sem-lib' } }
-  if (typeof lib.conferirServidor !== 'function') return { estado: 'sem-lib' }
-  return lib.conferirServidor({ raiz })
+  if (typeof lib.conferirServidor !== 'function' || typeof lib.RELIGAR !== 'string') return { estado: 'sem-lib' }
+  return { ...(await lib.conferirServidor({ raiz, janela, sessao })), religar: lib.RELIGAR }
+}
+
+// SessionStart: anota e nada mais. O stdout desse evento vira contexto da IA, entao nada sai nele.
+async function anotarPeloKit({ raiz, janela, sessao, origem }) {
+  try {
+    const lib = await import(LIB_NAVEGADOR)
+    lib.anotarSessao({ raiz, janela, sessao, origem })
+  } catch {}
 }
 
 export async function avaliarMcpComPerfil(entrada = {}, { conferir = conferirPeloKit } = {}) {
@@ -199,13 +210,16 @@ export async function avaliarMcpComPerfil(entrada = {}, { conferir = conferirPel
   if (origem !== 'local') return barra('o `navegador` deste projeto não veio do passo 3 do Degrau 5: ligue de novo por ele')
   let c
   try {
-    c = await conferir(typeof entrada.cwd === 'string' && entrada.cwd ? entrada.cwd : process.cwd())
+    c = await conferir({
+      raiz: typeof entrada.cwd === 'string' && entrada.cwd ? entrada.cwd : process.cwd(),
+      janela: entrada.janela, sessao: entrada.session_id,
+    })
   } catch {
     return barra('a trava não conseguiu conferir o Chrome deste projeto')
   }
   if (c?.estado === 'conferido') return d
   const recado = RECADO_DO_PERFIL[c?.estado]
-  return barra(recado ? recado(c.porta) : 'a trava não conseguiu conferir o Chrome deste projeto')
+  return barra(recado ? recado({ religar: ATUALIZAR, ...c }) : 'a trava não conseguiu conferir o Chrome deste projeto')
 }
 
 // rodada 5.20 (decisao 9, N37): o import.meta.url vem com o atalho resolvido e o argv[1] do jeito que
@@ -227,9 +241,16 @@ if (chamadoDireto()) {
     try {
       const entrada = JSON.parse(bruto)
       // o cwd do Bash pode ter andado; o servidor MCP resolve o caminho pela raiz do projeto
+      const raiz = process.env.CLAUDE_PROJECT_DIR || entrada.cwd
+      if (entrada.hook_event_name === 'SessionStart') {
+        await anotarPeloKit({ raiz, janela: process.env.CLAUDE_PID, sessao: entrada.session_id, origem: entrada.source })
+        process.exitCode = 0
+        return
+      }
       r = await avaliarMcpComPerfil({
         tool_name: entrada.tool_name, tool_input: entrada.tool_input, mcp_server: entrada.mcp_server,
-        cwd: process.env.CLAUDE_PROJECT_DIR || entrada.cwd, permission_mode: entrada.permission_mode,
+        cwd: raiz, permission_mode: entrada.permission_mode,
+        janela: process.env.CLAUDE_PID, session_id: entrada.session_id,
       })
     } catch {
       r = barra(LEITURA_FALHOU)

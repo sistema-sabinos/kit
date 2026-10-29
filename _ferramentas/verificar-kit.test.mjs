@@ -810,6 +810,8 @@ test('gate 6 reprova .mjs com shebang terminando em CR', () => {
 
 // rodada 5.28: a trava do MCP vai nos dois settings, com o deny estatico do run_code_unsafe
 const BLOCO_MCP = { matcher: 'mcp__.*', hooks: [{ type: 'command', command: 'node barrar-mcp.mjs', onFailure: 'block' }] }
+// rodada 5.31: a anotacao da porta do navegador no SessionStart
+const BLOCO_INICIO = { hooks: [{ type: 'command', command: 'node barrar-mcp.mjs' }] }
 const DENY_MCP = ['mcp__playwright__browser_run_code_unsafe', 'mcp__navegador__browser_run_code_unsafe']
 // rodada 5.28 (ata, T5 e D6): .env, sessao e perfil do Chrome do dia a dia em deny; o .env.* da raiz
 // (o .env.example) fica legivel. Lista literal: o teste nao copia a do verificador.
@@ -835,7 +837,7 @@ test('gate 9 cobra na pasta-mae a forma **/ das pastas de chave e de sessao', ()
     const dir = kitFalso()
     try {
       mkdirSync(join(dir, '.claude'), { recursive: true })
-      writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify({ permissions: { deny }, hooks: { PreToolUse: [BLOCO_MCP] } }))
+      writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify({ permissions: { deny }, hooks: { SessionStart: [BLOCO_INICIO], PreToolUse: [BLOCO_MCP] } }))
       return rodarGates(dir).falhas.filter(f => f.gate === 9 && f.arquivo === '.claude/settings.json').map(f => f.detalhe)
     } finally {
       rmSync(dir, { recursive: true, force: true })
@@ -872,7 +874,7 @@ test('gate 9 aceita settings com o deny completo e a trava do mcp', () => {
     mkdirSync(join(dir, '.claude'), { recursive: true })
     writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify({
       permissions: { deny: DENY_MAE },
-      hooks: { PreToolUse: [BLOCO_MCP] },
+      hooks: { SessionStart: [BLOCO_INICIO], PreToolUse: [BLOCO_MCP] },
     }))
     const { falhas } = rodarGates(dir)
     const daPastaMae = falhas.filter(f => f.gate === 9 && f.arquivo === '.claude/settings.json')
@@ -888,7 +890,7 @@ test('gate 9 acusa settings sem o deny de .secrets', () => {
     mkdirSync(join(dir, '.claude'), { recursive: true })
     writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify({
       permissions: { deny: DENY_MAE.filter(r => r !== 'Read(**/.secrets/**)') },
-      hooks: { PreToolUse: [BLOCO_MCP] },
+      hooks: { SessionStart: [BLOCO_INICIO], PreToolUse: [BLOCO_MCP] },
     }))
     const doNove = rodarGates(dir).falhas.filter(f => f.gate === 9 && f.arquivo === '.claude/settings.json')
     assert.ok(doNove.length > 0, 'canario: o gate 9 acusou alguma coisa')
@@ -906,7 +908,7 @@ test('gate 9 acusa regra do .env em ask em vez de deny', () => {
     const dir = kitFalso()
     try {
       mkdirSync(join(dir, '.claude'), { recursive: true })
-      writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify({ permissions: { ask: ASK_ANTIGO, deny }, hooks: { PreToolUse: [BLOCO_MCP] } }))
+      writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify({ permissions: { ask: ASK_ANTIGO, deny }, hooks: { SessionStart: [BLOCO_INICIO], PreToolUse: [BLOCO_MCP] } }))
       return rodarGates(dir).falhas.filter(f => f.gate === 9 && f.arquivo === '.claude/settings.json').map(f => f.detalhe)
     } finally {
       rmSync(dir, { recursive: true, force: true })
@@ -924,7 +926,7 @@ test('gate 9 deixa o .env.* da raiz fora do deny', () => {
       mkdirSync(join(dir, rel), { recursive: true })
       writeFileSync(join(dir, rel, 'settings.json'), JSON.stringify({
         permissions: { deny: denyDe(rel) },
-        hooks: { PreToolUse: [{ matcher: 'Bash|PowerShell|Monitor', hooks: [{ type: 'command', command: 'node barrar-perigoso.mjs' }] }, BLOCO_MCP] },
+        hooks: { SessionStart: [BLOCO_INICIO], PreToolUse: [{ matcher: 'Bash|PowerShell|Monitor', hooks: [{ type: 'command', command: 'node barrar-perigoso.mjs' }] }, BLOCO_MCP] },
       }))
     }
     const doNove = rodarGates(dir).falhas.filter(f => f.gate === 9 && /settings\.json$/.test(f.arquivo))
@@ -942,7 +944,7 @@ test('gate 9 cobra o deny do perfil do Chrome do dia a dia', () => {
     mkdirSync(join(dir, '.claude'), { recursive: true })
     writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify({
       permissions: { deny: DENY_MAE.filter(r => !PERFIS.includes(r)) },
-      hooks: { PreToolUse: [BLOCO_MCP] },
+      hooks: { SessionStart: [BLOCO_INICIO], PreToolUse: [BLOCO_MCP] },
     }))
     const doNove = rodarGates(dir).falhas.filter(f => f.gate === 9 && f.arquivo === '.claude/settings.json')
     assert.deepEqual(doNove.map(f => f.detalhe), PERFIS.map(r => `permissions.deny sem a regra ${r}`))
@@ -1073,12 +1075,40 @@ test('gate 9 cobra o barrar-mcp com matcher mcp__.* e onFailure block nos dois s
         mkdirSync(join(dir, rel), { recursive: true })
         writeFileSync(join(dir, rel, 'settings.json'), JSON.stringify({
           permissions: { deny: DENY_COMPLETO },
-          hooks: { PreToolUse: [{ matcher: 'Bash|PowerShell|Monitor', hooks: [{ type: 'command', command: 'node barrar-perigoso.mjs' }] }, ...blocos] },
+          hooks: { SessionStart: [BLOCO_INICIO], PreToolUse: [{ matcher: 'Bash|PowerShell|Monitor', hooks: [{ type: 'command', command: 'node barrar-perigoso.mjs' }] }, ...blocos] },
         }))
       }
       const doNove = rodarGates(dir).falhas.filter(f => f.gate === 9 && /barrar-mcp/.test(f.detalhe))
       for (const arquivo of ['.claude/settings.json', '_modelo/.claude/settings.json'])
         assert.deepEqual(doNove.filter(f => f.arquivo === arquivo).map(f => f.detalhe), [detalhe], `${arquivo}: ${detalhe}`)
+    } finally { rmSync(dir, { recursive: true, force: true }) }
+  }
+})
+
+// 5.31: sem a anotacao do SessionStart a conferencia do navegador barra sempre
+test('gate 9 cobra o SessionStart do barrar-mcp nos dois settings', () => {
+  const SEM = 'hooks.SessionStart sem o barrar-mcp (anotacao do navegador)'
+  const casos = [
+    [[BLOCO_INICIO], []],
+    [undefined, [SEM]],
+    [[], [SEM]],
+    [[{ hooks: [{ type: 'command', command: 'node outro.mjs' }] }], [SEM]],
+    // Codex final da 5.31: com matcher a abertura nao anota
+    [[{ ...BLOCO_INICIO, matcher: 'compact' }], [SEM]],
+  ]
+  for (const [inicio, esperado] of casos) {
+    const dir = kitFalso()
+    try {
+      for (const rel of ['.claude', '_modelo/.claude']) {
+        mkdirSync(join(dir, rel), { recursive: true })
+        writeFileSync(join(dir, rel, 'settings.json'), JSON.stringify({
+          permissions: { deny: denyDe(rel) },
+          hooks: { SessionStart: inicio, PreToolUse: [{ matcher: 'Bash|PowerShell|Monitor', hooks: [{ type: 'command', command: 'node barrar-perigoso.mjs' }] }, BLOCO_MCP] },
+        }))
+      }
+      const doNove = rodarGates(dir).falhas.filter(f => f.gate === 9 && /barrar-mcp/.test(f.detalhe))
+      for (const arquivo of ['.claude/settings.json', '_modelo/.claude/settings.json'])
+        assert.deepEqual(doNove.filter(f => f.arquivo === arquivo).map(f => f.detalhe), esperado, `${arquivo}: ${JSON.stringify(inicio)}`)
     } finally { rmSync(dir, { recursive: true, force: true }) }
   }
 })
@@ -1133,7 +1163,7 @@ test('gate 9 aceita o _modelo completo, com deny e as duas travas', () => {
     writeFileSync(join(dir, '_modelo/.claude/hooks/barrar-perigoso.mjs'), 'export function ehPerigoso() { return null }\n')
     writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify({
       permissions: { deny: DENY_COMPLETO },
-      hooks: { PreToolUse: [{ matcher: 'Bash|PowerShell|Monitor', hooks: [{ type: 'command', command: 'node barrar-perigoso.mjs' }] }, BLOCO_MCP] },
+      hooks: { SessionStart: [BLOCO_INICIO], PreToolUse: [{ matcher: 'Bash|PowerShell|Monitor', hooks: [{ type: 'command', command: 'node barrar-perigoso.mjs' }] }, BLOCO_MCP] },
     }))
     const { falhas } = rodarGates(dir)
     const doModelo =falhas.filter(f => f.gate === 9 && f.arquivo === '_modelo/.claude/settings.json')

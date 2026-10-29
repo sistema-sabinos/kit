@@ -17,7 +17,9 @@
 - Servidor `navegador` do `/conectar`: cada vez que for usar, rodar antes o
   `abrir-chrome.mjs`, porque o servidor entra em qualquer Chrome que estiver na
   porta. Se ele avisar que a porta mudou, ligar o `navegador` de novo com a
-  porta nova antes de usar.
+  porta nova (`claude mcp remove navegador` e o passo 3) e fechar e abrir o
+  Claude Code antes de usar: o `navegador` que já está rodando só pega a
+  porta nova numa sessão nova.
 - A lib do Chrome avisa `outro-na-porta` ou `sem-sentinela`: tem outro
   Chrome na porta deste projeto, ou um que não diz de quem é. Parar, mostrar o
   aviso da lib e não fechar nada sozinho.

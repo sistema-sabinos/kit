@@ -32,6 +32,16 @@
         ]
       }
     ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/_modelo/.claude/hooks/barrar-mcp.mjs\""
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

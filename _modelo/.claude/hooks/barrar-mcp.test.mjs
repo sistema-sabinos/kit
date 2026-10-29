@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { avaliarMcp, avaliarMcpComPerfil, MODOS_ASK_CALADO } from './barrar-mcp.mjs'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -200,6 +200,11 @@ test('settings do _modelo e da pasta-mae ligam a trava pra todo mcp, com onFailu
     assert.equal(hook.onFailure, 'block', `${qual}: onFailure`)
     for (const regra of ['mcp__playwright__browser_run_code_unsafe', 'mcp__navegador__browser_run_code_unsafe'])
       assert.ok(settings.permissions.deny.includes(regra), `${qual}: deny sem ${regra}`)
+    // 5.31: o mesmo hook anota a porta do navegador em todo SessionStart (sem matcher)
+    const inicio = (settings.hooks.SessionStart || []).filter(b => b.hooks.some(h => h.command.includes('barrar-mcp')))
+    assert.equal(inicio.length, 1, `${qual}: um bloco SessionStart chama a trava do mcp`)
+    assert.equal(inicio[0].matcher, undefined, `${qual}: SessionStart sem matcher`)
+    assert.equal(inicio[0].hooks.find(h => h.command.includes('barrar-mcp')).command, hook.command, `${qual}: o mesmo comando do PreToolUse`)
     if (qual === 'mae') {
       assert.match(hook.command, /\/_modelo\/\.claude\/hooks\/barrar-mcp\.mjs/)
       assert.ok(existsSync(HOOK), 'a pasta-mae chama o hook do _modelo, que tem de existir')
@@ -254,29 +259,36 @@ async function comProjeto(fn) {
       [raiz.split(String.fromCharCode(92)).join('/')]: { mcpServers: { navegador: { type: 'stdio', command: 'npx',
         args: ['@playwright/mcp@0.0.83', '--cdp-endpoint', `http://127.0.0.1:${porta}`, '--output-dir', 'dados/navegador-saida', '--no-webmcp'], env: {} } } },
     } }))
-    const env = { ...process.env, CLAUDE_PROJECT_DIR: raiz, CLAUDE_CONFIG_DIR: cfg }
-    const rodar = (tool_name, extra = {}) => rodarHook({ tool_name, tool_input: {}, cwd: raiz, mcp_server: { name: tool_name.split('__')[1], source: 'local' }, ...extra }, env)
-    await fn({ raiz, perfil, cfg, sentinela, servidor, rodar })
+    // a anotacao (5.31) vai pro temporario do processo do hook, que aqui e o mkdtemp; o CLAUDE_PID e
+    // fixo, senao o hook herdaria o da sessao que roda o teste
+    const tmp = join(base, 'tmp')
+    mkdirSync(tmp)
+    const env = { ...process.env, CLAUDE_PROJECT_DIR: raiz, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PID: '4242', TEMP: tmp, TMP: tmp, TMPDIR: tmp }
+    const rodar = (tool_name, extra = {}) => rodarHook({ hook_event_name: 'PreToolUse', session_id: 'S1', tool_name, tool_input: {}, cwd: raiz, mcp_server: { name: tool_name.split('__')[1], source: 'local' }, ...extra }, env)
+    const iniciar = (source = 'startup', extra = {}) => rodarHook({ hook_event_name: 'SessionStart', session_id: 'S1', source, cwd: raiz, ...extra }, env)
+    await fn({ raiz, perfil, cfg, tmp, sentinela, servidor, rodar, iniciar })
   } finally { rmSync(base, { recursive: true, force: true }) }
 }
 
 const NAVEGAR = 'mcp__navegador__browser_navigate'
 
-test('perfil: o navegador passa com o Chrome deste projeto na porta em que foi ligado', () => comProjeto(async ({ sentinela, servidor, rodar }) => {
+test('perfil: o navegador passa com o Chrome deste projeto na porta em que foi ligado', () => comProjeto(async ({ sentinela, servidor, rodar, iniciar }) => {
   const c = await chromeDeMentira('g-deste')
   try {
     sentinela(c.porta, 'g-deste')
     servidor(c.porta)
+    await iniciar()
     const r = await rodar(NAVEGAR, { tool_input: { url: 'https://exemplo.com' } })
     assert.deepEqual([r.status, r.stdout, r.stderr], [0, '', ''])
     assert.equal(c.pedidos(), 1, 'a conferencia perguntou ao Chrome')
   } finally { await c.fechar() }
 }))
 
-test('perfil: outro Chrome na porta, ou sem sentinela, barra com o recado do abrir-chrome e do religar', () => comProjeto(async ({ perfil, sentinela, servidor, rodar }) => {
+test('perfil: outro Chrome na porta, ou sem sentinela, barra com o recado do abrir-chrome e do religar', () => comProjeto(async ({ perfil, sentinela, servidor, rodar, iniciar }) => {
   const c = await chromeDeMentira('de-outro-projeto')
   try {
     servidor(c.porta)
+    await iniciar()
     sentinela(c.porta, 'g-velho')
     const outro = await rodar(NAVEGAR)
     assert.equal(outro.status, 2)
@@ -289,21 +301,23 @@ test('perfil: outro Chrome na porta, ou sem sentinela, barra com o recado do abr
   } finally { await c.fechar() }
 }))
 
-test('perfil: Chrome fechado barra com o recado de rodar o abrir-chrome', () => comProjeto(async ({ sentinela, servidor, rodar }) => {
+test('perfil: Chrome fechado barra com o recado de rodar o abrir-chrome', () => comProjeto(async ({ sentinela, servidor, rodar, iniciar }) => {
   const porta = await portaSemNinguem()
   sentinela(porta, 'g-velho')
   servidor(porta)
+  await iniciar()
   const r = await rodar(NAVEGAR)
   assert.equal(r.status, 2)
   assert.ok(r.stderr.includes('o Chrome dedicado não está aberto: rode `node .claude/skills/conectar/scripts/abrir-chrome.mjs`'), r.stderr)
 }))
 
-test('perfil: servidor numa porta e o Chrome deste projeto noutra barra pedindo pra religar', () => comProjeto(async ({ sentinela, servidor, rodar }) => {
+test('perfil: servidor numa porta e o Chrome deste projeto noutra barra pedindo pra religar', () => comProjeto(async ({ sentinela, servidor, rodar, iniciar }) => {
   const deste = await chromeDeMentira('g-deste')
   const outro = await chromeDeMentira('g-outro')
   try {
     sentinela(deste.porta, 'g-deste')
     servidor(outro.porta)
+    await iniciar()
     const r = await rodar(NAVEGAR)
     assert.equal(r.status, 2)
     assert.ok(r.stderr.includes(`foi ligado na porta ${outro.porta}, mas o Chrome deste projeto agora usa outra`), r.stderr)
@@ -312,10 +326,13 @@ test('perfil: servidor numa porta e o Chrome deste projeto noutra barra pedindo 
   } finally { await deste.fechar(); await outro.fechar() }
 }))
 
-test('perfil: configuracao sem a entrada do projeto barra pedindo o passo 3 e o atualizar', () => comProjeto(async ({ cfg, sentinela, rodar }) => {
+test('perfil: configuracao sem a entrada do projeto barra pedindo o passo 3 e o atualizar', () => comProjeto(async ({ cfg, sentinela, servidor, rodar, iniciar }) => {
   const c = await chromeDeMentira('g-deste')
   try {
     sentinela(c.porta, 'g-deste')
+    // a janela abriu com o navegador ligado; depois a entrada sumiu do arquivo
+    servidor(c.porta)
+    await iniciar()
     writeFileSync(join(cfg, '.claude.json'), JSON.stringify({ projects: {} }))
     const r = await rodar(NAVEGAR)
     assert.equal(r.status, 2)
@@ -325,11 +342,12 @@ test('perfil: configuracao sem a entrada do projeto barra pedindo o passo 3 e o 
   } finally { await c.fechar() }
 }))
 
-test('perfil: origem fora do escopo local, ou sem o campo, barra sem tocar no Chrome', () => comProjeto(async ({ sentinela, servidor, rodar }) => {
+test('perfil: origem fora do escopo local, ou sem o campo, barra sem tocar no Chrome', () => comProjeto(async ({ sentinela, servidor, rodar, iniciar }) => {
   const c = await chromeDeMentira('g-deste')
   try {
     sentinela(c.porta, 'g-deste')
     servidor(c.porta)
+    await iniciar()
     assert.equal((await rodar(NAVEGAR)).status, 0, 'canario: com a origem local passa')
     const antes = c.pedidos()
     const dinamico = await rodar(NAVEGAR, { mcp_server: { name: 'navegador', source: 'dynamic' } })
@@ -342,12 +360,13 @@ test('perfil: origem fora do escopo local, ou sem o campo, barra sem tocar no Ch
   } finally { await c.fechar() }
 }))
 
-test('perfil: o que ja barrava ou pedia segue igual, e outro servidor nao passa pela conferencia', () => comProjeto(async ({ sentinela, servidor, rodar }) => {
+test('perfil: o que ja barrava ou pedia segue igual, e outro servidor nao passa pela conferencia', () => comProjeto(async ({ sentinela, servidor, rodar, iniciar }) => {
   const c = await chromeDeMentira('de-outro-projeto')
   try {
     // o Chrome na porta nao e o deste projeto: so a conferencia barraria o snapshot
     sentinela(c.porta, 'g-velho')
     servidor(c.porta)
+    await iniciar()
     const codigo = await rodar('mcp__navegador__browser_run_code_unsafe', { tool_input: { code: 'x' } })
     assert.equal(codigo.status, 2)
     assert.ok(codigo.stderr.includes('roda código nela'), codigo.stderr)
@@ -358,6 +377,78 @@ test('perfil: o que ja barrava ou pedia segue igual, e outro servidor nao passa 
     assert.equal(c.pedidos(), 0, 'nenhum pedido ao Chrome fora do navegador que passaria')
     assert.equal((await rodar('mcp__navegador__browser_snapshot')).status, 2, 'canario: o mesmo Chrome barra o snapshot do navegador')
   } finally { await c.fechar() }
+}))
+
+// A anotacao da porta (5.31): o SessionStart anota calado e o PreToolUse confere a porta anotada.
+// uma pasta por raiz, um arquivo por janela; devolve as anotacoes de cada raiz pela chave da lib
+const anotacoesEm = tmp => {
+  const pasta = join(tmp, 'sabinos-navegador')
+  if (!existsSync(pasta)) return []
+  return readdirSync(pasta).map(d => Object.fromEntries(readdirSync(join(pasta, d)).map(f => {
+    const a = JSON.parse(readFileSync(join(pasta, d, f), 'utf8'))
+    return [a.janela ? `janela:${a.janela}` : `sessao:${a.sessao}`, a]
+  })))
+}
+
+test('anotacao: o SessionStart grava a porta da janela, sem stdout e saindo 0', () => comProjeto(async ({ tmp, servidor, iniciar }) => {
+  servidor(29311)
+  const r = await iniciar()
+  assert.deepEqual([r.status, r.stdout, r.stderr], [0, '', ''])
+  const [a] = anotacoesEm(tmp)
+  assert.equal(a['janela:4242'].porta, 29311, 'anotada pela janela do CLAUDE_PID')
+  assert.equal(a['janela:4242'].origem, 'startup')
+  // /clear da mesma janela depois de religar pra outra porta: mantem a anotada
+  servidor(29312)
+  const clear = await iniciar('clear', { session_id: 'S2' })
+  assert.deepEqual([clear.status, clear.stdout], [0, ''])
+  assert.equal(anotacoesEm(tmp)[0]['janela:4242'].porta, 29311)
+}))
+
+test('anotacao: o SessionStart sai 0 e calado com configuracao quebrada, sem projeto ou sem sessao', () => comProjeto(async ({ cfg, tmp, iniciar }) => {
+  writeFileSync(join(cfg, '.claude.json'), '{ isso nao e json')
+  const quebrada = await iniciar()
+  assert.deepEqual([quebrada.status, quebrada.stdout, quebrada.stderr], [0, '', ''])
+  assert.equal(anotacoesEm(tmp)[0]['janela:4242'].porta, null, 'canario: anotou null, e a conferencia barra')
+  for (const extra of [{ cwd: undefined }, { session_id: undefined }, { source: 'algo-novo' }]) {
+    const r = await iniciar(undefined, extra)
+    assert.deepEqual([r.status, r.stdout, r.stderr], [0, '', ''], JSON.stringify(extra))
+  }
+}))
+
+test('anotacao: o navegador barra sem anotacao, com o recado de fechar e abrir, sem tocar no Chrome', () => comProjeto(async ({ sentinela, servidor, rodar }) => {
+  const c = await chromeDeMentira('g-deste')
+  try {
+    sentinela(c.porta, 'g-deste')
+    servidor(c.porta)
+    const r = await rodar(NAVEGAR)
+    assert.equal(r.status, 2)
+    assert.ok(r.stderr.includes('não estava ligado quando o Claude Code abriu'), r.stderr)
+    assert.ok(r.stderr.includes('feche e abra o Claude Code antes de usar'), r.stderr)
+    assert.equal(c.pedidos(), 0)
+  } finally { await c.fechar() }
+}))
+
+test('anotacao: o P1 da 5.30, religado no meio da sessao pro Chrome deste projeto, barra ate reabrir', () => comProjeto(async ({ sentinela, servidor, rodar, iniciar }) => {
+  const x = await chromeDeMentira('g-x')
+  const y = await chromeDeMentira('g-y')
+  try {
+    // a sessao abriu no Chrome X; o Chrome deste projeto agora esta em Y e o navegador foi religado pra Y
+    sentinela(x.porta, 'g-x')
+    servidor(x.porta)
+    await iniciar()
+    assert.equal((await rodar(NAVEGAR)).status, 0, 'canario: antes de religar passa')
+    sentinela(y.porta, 'g-y')
+    servidor(y.porta)
+    const antes = x.pedidos() + y.pedidos()
+    const r = await rodar('mcp__navegador__browser_snapshot')
+    assert.equal(r.status, 2)
+    assert.ok(r.stderr.includes(`foi ligado de novo depois que o Claude Code abriu, e o que está rodando segue na porta ${x.porta}`), r.stderr)
+    assert.ok(r.stderr.includes('feche e abra o Claude Code antes de usar'), r.stderr)
+    assert.equal(x.pedidos() + y.pedidos(), antes, 'nenhum pedido a Chrome nenhum')
+    // fechado e aberto: a janela nova nasce em Y e passa
+    await iniciar('startup')
+    assert.equal((await rodar('mcp__navegador__browser_snapshot')).status, 0)
+  } finally { await x.fechar(); await y.fechar() }
 }))
 
 test('perfil: erro na conferencia, estado desconhecido ou lib que nao abre barram', async () => {

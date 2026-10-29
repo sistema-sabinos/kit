@@ -9,12 +9,12 @@
 // escrita aqui (o kit precisa rodar no Windows e no Mac).
 // Os pacotes (mercado-livre, midia-social) tem uma casca chrome.mjs que reexporta esta lib e poe o
 // Playwright do proprio pacote; esta lib nao importa pacote nenhum.
-import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, statSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, renameSync, rmSync, statSync } from 'node:fs'
 import { join, resolve, win32, posix } from 'node:path'
 import { spawn } from 'node:child_process'
 import { createServer } from 'node:net'
 import { createHash } from 'node:crypto'
-import { homedir } from 'node:os'
+import { homedir, tmpdir } from 'node:os'
 import { RAIZ } from './raiz.mjs'
 import { codigo as codigoTotp, CONTA } from '../totp.mjs'
 
@@ -181,13 +181,94 @@ function portaDoServidor(raiz, config) {
   return portas.size === 1 ? [...portas][0] : null
 }
 
-// O porteiro do perfil (5.30, D19 e D20): o Chrome na porta em que o navegador desta raiz foi
-// ligado e o deste projeto? Os estados do conferirPerfil, mais porta-mudou (servidor numa porta e
-// sentinela noutra) e sem-config. Nunca joga erro e nunca devolve nada do arquivo alem da porta.
-export async function conferirServidor({ raiz, config = configDoClaude(), fetchFn, timeoutMs = 1500 } = {}) {
+// O texto de religar mora so aqui: o log do pulo de porta do abrirChrome e os recados do hook usam ele.
+export const RELIGAR = 'ligue o `navegador` de novo com a porta nova (`claude mcp remove navegador` e o passo 3 do Degrau 5) e feche e abra o Claude Code antes de usar, porque o `navegador` que já está rodando só pega a porta nova numa sessão nova'
+
+// A anotacao da porta (5.31). O servidor navegador le o .claude.json so quando nasce: religar no meio
+// da sessao troca o arquivo e nao o servidor (P1 da final da 5.30). O hook anota no SessionStart a
+// porta com que o servidor nasceu, e a conferencia usa a anotada. A chave e a janela, pelo CLAUDE_PID
+// que o Claude Code passa ao hook (C1 da 5.31: estavel na janela, diferente entre janelas); sem ele,
+// o session_id, e o /clear herda a ultima anotacao da raiz (D21). Mora no temporario do sistema: fora
+// do backup, do perfil do Chrome (que o soExistente da sonda acharia) e da pasta de saida do navegador.
+export function pastaDaAnotacao() {
+  return join(tmpdir(), 'sabinos-navegador')
+}
+const VIDA_DA_ANOTACAO_MS = 30 * 24 * 60 * 60_000
+const chaveDaJanela = (janela, sessao) => (janela ? `janela:${janela}` : sessao ? `sessao:${sessao}` : null)
+const portaValida = n => Number.isInteger(n) && n >= 1024 && n <= 65535
+const resumo = texto => createHash('sha256').update(texto).digest('hex').slice(0, 32)
+// uma pasta por raiz e um arquivo por janela: cada janela so grava o proprio arquivo, entao duas
+// abrindo juntas nao apagam a anotacao uma da outra (Codex comum da 5.31)
+const pastaDaRaiz = (raiz, pasta) => join(pasta, resumo(chave(raiz)))
+
+function lerAnotacao(arquivo) {
+  const a = JSON.parse(readFileSync(arquivo, 'utf8'))
+  if (!a || typeof a !== 'object' || Array.isArray(a)) throw new Error('anotacao quebrada')
+  return a
+}
+
+// Pelo C1: startup anota pelo arquivo, sempre (o servidor nasceu agora). Janela ja anotada mantem
+// (/compact, /clear e /resume de dentro nao fazem o servidor renascer); janela sem anotacao e o
+// --resume ou --continue de processo novo, que renasce, e anota pelo arquivo. Sem o CLAUDE_PID o
+// /clear chega com session_id novo e herda a porta da ultima anotacao da raiz. Sincrona, nunca joga
+// erro: anotar e melhor esforco, e quem barra e a conferencia.
+export function anotarSessao({ raiz, janela, sessao, origem, config = configDoClaude(), pasta = pastaDaAnotacao(), agora = Date.now() } = {}) {
   try {
+    const k = chaveDaJanela(janela, sessao)
+    if (!raiz || !k) return
+    const dir = pastaDaRaiz(raiz, pasta)
+    const nome = resumo(k) + '.json'
+    // as anotacoes desta raiz que valem; a velha ou quebrada sai (o temporario de quem grava agora fica)
+    const vivas = {}
+    let nomes = []
+    try { nomes = readdirSync(dir).filter(n => n.endsWith('.json')) } catch {}
+    for (const n of nomes) {
+      let a = null
+      try { a = lerAnotacao(join(dir, n)) } catch {}
+      if (agora - a?.em < VIDA_DA_ANOTACAO_MS) vivas[n] = a
+      else try { rmSync(join(dir, n), { force: true }) } catch {}
+    }
+    if (origem !== 'startup' && nome in vivas) return
+    // janela sem anotacao no compact ou no clear (anotacao perdida ou vencida) fica null e barra ate
+    // reabrir: ler o arquivo ali reabriria o religar no meio (Codex final da 5.31)
+    let porta = null
+    if (['startup', 'resume', 'fork'].includes(origem)) {
+      try { porta = portaDoServidor(raiz, config) } catch {}
+    } else if (!janela) {
+      const ultima = Object.values(vivas).sort((a, b) => b.em - a.em)[0]
+      porta = portaValida(ultima?.porta) ? ultima.porta : null
+    }
+    mkdirSync(dir, { recursive: true })
+    // grava ao lado e troca: a conferencia nunca le o arquivo pela metade
+    const arquivo = join(dir, nome)
+    const temp = `${arquivo}.${process.pid}.tmp`
+    writeFileSync(temp, JSON.stringify({ janela: janela || null, sessao: sessao || null, porta, origem: origem ?? null, em: agora }) + '\n')
+    renameSync(temp, arquivo)
+  } catch {}
+}
+
+function portaAnotada(raiz, janela, sessao, pasta) {
+  const k = chaveDaJanela(janela, sessao)
+  if (!raiz || !k) return null
+  try {
+    const p = lerAnotacao(join(pastaDaRaiz(raiz, pasta), resumo(k) + '.json')).porta
+    return portaValida(p) ? p : null
+  } catch {
+    return null
+  }
+}
+
+// O porteiro do perfil (5.30, D19 e D20; 5.31): o Chrome na porta em que o navegador desta janela
+// nasceu e o deste projeto? Os estados do conferirPerfil, mais sem-anotacao (nada anotado desta
+// janela, ou anotado null), religado (o arquivo mudou depois da anotacao), porta-mudou (servidor numa
+// porta e sentinela noutra) e sem-config. Nunca joga erro e nunca devolve nada do arquivo alem da porta.
+export async function conferirServidor({ raiz, janela, sessao, pasta = pastaDaAnotacao(), config = configDoClaude(), fetchFn, timeoutMs = 1500 } = {}) {
+  try {
+    const anotada = portaAnotada(raiz, janela, sessao, pasta)
+    if (anotada === null) return { estado: 'sem-anotacao', porta: null }
     const porta = portaDoServidor(raiz, config)
     if (porta === null) return { estado: 'sem-config', porta: null }
+    if (porta !== anotada) return { estado: 'religado', porta: anotada }
     const perfil = perfilDedicado(raiz)
     const s = lerSentinela(perfil)
     if (s && s.porta !== porta) return { estado: 'porta-mudou', porta }
@@ -235,7 +316,7 @@ export async function abrirChrome({ raiz = RAIZ, perfil = perfilDedicado(raiz), 
   const dono = await perguntarPid(escolhida, guid)
   if (!pid || dono !== pid) throw new Error(`outro Chrome pegou a porta ${escolhida} enquanto o deste projeto abria. Feche o Chrome dedicado deste projeto e rode de novo.`)
   gravarSentinela(perfil, { porta: escolhida, guid })
-  if (escolhida !== porta) log(`a porta ${porta} estava com outro programa, entao o Chrome deste projeto passou pra porta ${escolhida}. Se o navegador da IA estava ligado na porta antiga, rode o /conectar de novo.`)
+  if (escolhida !== porta) log(`a porta ${porta} estava com outro programa, entao o Chrome deste projeto passou pra porta ${escolhida}. Se o navegador da IA estava ligado na porta antiga, ${RELIGAR}.`)
   return { jaEstavaAberto: false, perfilConferido: true, porta: escolhida, pid }
 }
 

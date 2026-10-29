@@ -1,5 +1,5 @@
 {
- "versao": "5.27",
+ "versao": "5.28",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -102,9 +102,10 @@
   },
   ".claude/hooks/barrar-mcp.mjs": {
    "0b9f336a0412e924": "anterior-5.25",
-   "521f48a103437881": "5.27",
+   "521f48a103437881": "anterior-5.27",
    "5cbc8da34bfc02ec": "anterior-5.25",
    "7fdf84c880839752": "anterior-5.25",
+   "8d5b1504383f2073": "5.28",
    "9280c32f145569c2": "5.25",
    "dc6645080c92f7ba": "5.27",
    "fa1419833a314eb9": "anterior-5.25"
@@ -153,6 +154,7 @@
    "eeafddc6716393dc": "anterior-5.25"
   },
   ".claude/settings.json": {
+   "388f86e186bd40a6": "5.28",
    "41d9cd645c4ce95f": "anterior-3.0",
    "48f7184c1a3c84e9": "3.4",
    "66a999bc6c6c8dd2": "anterior-5.25",
@@ -997,7 +999,8 @@
   ".claude/skills/conectar/referencias/navegador.md": {
    "67ea99aabbffdf42": "5.26",
    "b1a948f5ba9cacae": "anterior-5.26",
-   "c9a6716f5b3cf68e": "anterior-5.26"
+   "c9a6716f5b3cf68e": "anterior-5.26",
+   "facccba22f93b6be": "5.28"
   },
   ".claude/skills/conectar/referencias/relogar.md": {
    "25e0402102bc6e7c": "anterior-5.26",
@@ -1019,13 +1022,16 @@
    "fd61c881492c505c": "anterior-5.25"
   },
   ".claude/skills/conectar/scripts/lib/navegador.mjs": {
+   "040f8668cc649e40": "5.28",
    "268db5bfd61cdd32": "anterior-5.25",
    "2e5537810334c4e6": "anterior-5.26",
    "2efa9f9d15d66ef0": "5.25",
    "4f8e494a599d88b8": "anterior-5.26",
+   "763aa9bbd6fda064": "5.28",
    "790ae49c5947f424": "anterior-5.26",
    "94d2fcd5909e4206": "anterior-5.26",
    "b52c516a3ba925b6": "anterior-5.26",
+   "cb171a98885e76ea": "5.28",
    "d71334e6a349b958": "anterior-5.26",
    "e2cd2354b6352281": "5.26",
    "e3418d381c4af7b4": "anterior-5.26",
@@ -2074,6 +2080,7 @@
    "19bb715b47768a9c": "anterior-5.26",
    "251870f5f397177e": "anterior-5.26",
    "47b0a375f578796b": "5.27",
+   "5c33f0a8f68ffbb3": "5.28",
    "6b43b8aa0c942fbd": "anterior-5.26",
    "908a71ed29e50be5": "anterior-5.26",
    "9199df883327758e": "5.25",
@@ -2213,6 +2220,7 @@
    "a12c6c0403adfe7d": "5.20"
   },
   ".claude/skills/midia-social/scripts/lib/chrome.mjs": {
+   "039c3eeb8007aa8d": "5.28",
    "5618eb42a88ef884": "5.27",
    "5a8f035c4887d6a5": "5.26",
    "5f3e78bcb7562782": "anterior-5.26",

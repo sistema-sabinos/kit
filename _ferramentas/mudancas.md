@@ -783,3 +783,11 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto tem `.claude/hooks/barrar-mcp.mjs` sem o texto `avaliarMcpComPerfil`.
 **Como aplicar:** nada no projeto; o motor traz.
 **Como testar:** `grep -l avaliarMcpComPerfil .claude/hooks/barrar-mcp.mjs` imprime o caminho, e com o Chrome dedicado fechado uma ferramenta do `navegador` para com o recado de rodar o `abrir-chrome.mjs`.
+
+## anotacao-do-navegador
+
+**O que é:** quando o navegador da IA é ligado de novo, o robô pede pra fechar e abrir o Claude Code antes de usar, porque o navegador que já está rodando continua na porta antiga.
+**Por quê:** ligar o `navegador` de novo no meio da conversa troca a configuração, mas não o navegador que já roda; antes, o robô conferia a porta nova e deixava a chamada ir pro Chrome da porta velha.
+**Te afeta se:** o projeto tem `.claude/hooks/barrar-mcp.mjs` sem o texto `anotarSessao`, ou o `.claude/settings.json` não tem o bloco `SessionStart` que chama o `barrar-mcp.mjs`.
+**Como aplicar:** nada no projeto; o motor traz o hook e junta o bloco `SessionStart` no `settings.json`, sem tirar hook da pessoa. Avisar que vale a partir da próxima vez que o Claude Code abrir.
+**Como testar:** `grep -l anotarSessao .claude/hooks/barrar-mcp.mjs` imprime o caminho, e o `.claude/settings.json` tem em `hooks.SessionStart` um comando com `barrar-mcp.mjs`.

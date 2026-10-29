@@ -468,7 +468,8 @@ test('mesclarSettings junta deny e a trava do mcp sem tirar nada da pessoa e e i
   assert.equal(settings.hooks.PreToolUse.filter(ehBlocoMcp).length, 1)
   assert.deepEqual(settings.hooks.PreToolUse.find(ehBlocoMcp), SETTINGS_DO_KIT.hooks.PreToolUse.find(ehBlocoMcp))
   assert.deepEqual(settings.hooks.Stop, SETTINGS_DA_PESSOA.hooks.Stop, 'o Stop sem auto-sync fica como a pessoa deixou')
-  assert.equal(faltava.length, SETTINGS_DO_KIT.permissions.deny.length + 1)
+  // a trava do mcp e a anotacao do navegador (5.31)
+  assert.equal(faltava.length, SETTINGS_DO_KIT.permissions.deny.length + 2)
   const segunda = mesclarSettings(structuredClone(settings), SETTINGS_DO_KIT)
   assert.deepEqual(segunda.settings, settings, 'a segunda passada nao muda nada')
   assert.deepEqual(segunda.faltava, [])
@@ -506,10 +507,32 @@ test('mesclarSettings guarda hook da pessoa que passa barrar-mcp.mjs como argume
   assert.equal(settings.hooks.PreToolUse.filter(b => b.matcher === 'mcp__.*').length, 1)
 })
 
+// 5.31: sem o SessionStart do barrar-mcp todo projeto atualizado barraria o navegador pra sempre
+test('mesclarSettings junta o SessionStart da anotacao do navegador sem tirar hook da pessoa', () => {
+  const blocoKit = SETTINGS_DO_KIT.hooks.SessionStart.find(ehBlocoMcp)
+  assert.ok(blocoKit, 'canario: o settings do kit tem o SessionStart do barrar-mcp')
+  const pessoa = structuredClone(SETTINGS_DA_PESSOA)
+  pessoa.hooks.SessionStart = [
+    { matcher: 'startup', hooks: [{ type: 'command', command: 'node boas-vindas.mjs' }] },
+    // chamada antiga da trava no mesmo bloco de outro hook da pessoa: sai so ela
+    { hooks: [{ type: 'command', command: 'node .claude/hooks/barrar-mcp.mjs' }, { type: 'command', command: 'node lembrete.mjs' }] },
+  ]
+  const { settings, faltava } = mesclarSettings(pessoa, SETTINGS_DO_KIT)
+  assert.ok(faltava.includes('anotação do navegador (barrar-mcp)'), faltava.join(', '))
+  const inicio = settings.hooks.SessionStart
+  assert.ok(inicio.some(b => b.matcher === 'startup' && b.hooks[0].command === 'node boas-vindas.mjs'), 'o hook da pessoa fica')
+  assert.ok(inicio.some(b => b.hooks.length === 1 && b.hooks[0].command === 'node lembrete.mjs'), 'o lembrete da pessoa fica')
+  assert.equal(inicio.filter(ehBlocoMcp).length, 1)
+  assert.deepEqual(inicio.find(ehBlocoMcp), blocoKit)
+  const segunda = mesclarSettings(structuredClone(settings), SETTINGS_DO_KIT)
+  assert.ok(!segunda.faltava.includes('anotação do navegador (barrar-mcp)'), 'a segunda passada nao junta de novo')
+  assert.deepEqual(segunda.settings.hooks.SessionStart, inicio)
+})
+
 test('plano avisa settings.json sem as travas do kit', () => comPasta(raiz => {
   const kit = montarKit(raiz, { [INICIAR]: 'novo\n', '.claude/settings.json': JSON.stringify(SETTINGS_DO_KIT) })
   const projeto = montarProjeto(raiz, { [INICIAR]: 'novo\n', '.claude/settings.json': JSON.stringify(SETTINGS_DA_PESSOA) })
-  const n = SETTINGS_DO_KIT.permissions.deny.length + 1
+  const n = SETTINGS_DO_KIT.permissions.deny.length + 2
   assert.ok(resumo(montarPlano({ kit, projeto })).split('\n').includes(`settings.json: faltam ${n} regra(s) ou trava(s) do kit; rodar o passo settings`))
   writeFileSync(join(projeto, '.claude/settings.json'), JSON.stringify(SETTINGS_DO_KIT))
   assert.ok(!/settings\.json: faltam/.test(resumo(montarPlano({ kit, projeto }))), 'com tudo junto, o aviso some')

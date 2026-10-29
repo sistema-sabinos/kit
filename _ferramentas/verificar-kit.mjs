@@ -738,6 +738,12 @@ export function rodarGates(dirKit, opcoes = {}) {
       if (!blocoMcp.hooks.some(h => typeof h.command === 'string' && h.command.includes('barrar-mcp') && h.onFailure === 'block'))
         falhas.push({ gate: 9, arquivo: rel, detalhe: 'barrar-mcp sem onFailure block' })
     }
+    // 5.31: sem a anotacao do SessionStart a conferencia do navegador barra sempre; o bloco vai sem
+    // matcher, senao a abertura nao anota (Codex final da 5.31)
+    const inicio = cfg.hooks && cfg.hooks.SessionStart
+    if (!(Array.isArray(inicio) && inicio.some(entrada => !entrada.matcher &&
+      (entrada.hooks || []).some(h => typeof h.command === 'string' && h.command.includes('barrar-mcp')))))
+      falhas.push({ gate: 9, arquivo: rel, detalhe: 'hooks.SessionStart sem o barrar-mcp (anotacao do navegador)' })
     // o hook de comando destrutivo nasce so no _modelo (a pasta que vira projeto do aluno);
     // a pasta-mae faz setup e atualizacao, e leva a trava de leitura e a do MCP (5.28)
     if (rel.startsWith('_modelo/')) {
