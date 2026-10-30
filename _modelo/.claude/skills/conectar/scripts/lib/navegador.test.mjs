@@ -18,6 +18,7 @@ import {
   SAIDA, apontarDownload, desminimizar, fecharChrome, opcoesDeAbrir, processoVivo, FOLGA_SEM_PID_MS,
   FECHAR_CHROME, avisosDeAbrir, saidaNoProjeto, baixarNaSaida, TRAVA_DOWNLOAD,
 } from './navegador.mjs'
+import { randomUUID } from 'node:crypto'
 import { SAIDA_NAVEGADOR, dentroDaSaida } from '../../../../hooks/barrar-mcp.mjs'
 import { runInNewContext } from 'node:vm'
 import { RAIZ } from './raiz.mjs'
@@ -663,37 +664,149 @@ test('apontarDownload: dados ou a saida em juncao pra fora nao aponta, avisa e n
   })
 })
 
+// Chrome de mentira pro baixarNaSaida (rota dos eventos, 5.36): cada pagina tem o quadro dela, toda
+// sessao do navegador viva recebe os eventos de download, e cada comando CDP mandado fica anotado
+// ([quadro ou 'navegador', metodo, args]); aoMandar roda depois de cada comando do navegador
+function chromeDeEventos() {
+  const vivas = new Set()
+  // paginas: os quadros das paginas abertas, que o Target.getTargets lista (falharTargets faz ele falhar)
+  const ch = { comandos: [], abertas: 0, aoMandar: () => {}, paginas: new Set(), falharTargets: false }
+  const browser = {
+    newBrowserCDPSession: async () => {
+      const ouvintes = {}
+      const s = {
+        ouvintes,
+        on: (ev, fn) => { (ouvintes[ev] ||= []).push(fn) },
+        send: async (m, a) => {
+          ch.comandos.push(['navegador', m, a])
+          ch.aoMandar(m)
+          if (m !== 'Target.getTargets') return {}
+          if (ch.falharTargets) throw new Error('Target.getTargets falhou')
+          return { targetInfos: [...ch.paginas].map(q => ({ targetId: q, type: 'page' })).concat([{ targetId: 'SW', type: 'service_worker' }]) }
+        },
+        detach: async () => { vivas.delete(s) },
+      }
+      ch.abertas++
+      vivas.add(s)
+      return s
+    },
+  }
+  ch.vivas = () => vivas.size
+  ch.pagina = quadro => {
+    ch.paginas.add(quadro)
+    const ctx = { browser: () => browser, newCDPSession: async () => ({ send: async (m, a) => { ch.comandos.push([quadro, m, a]); return m === 'Page.getFrameTree' ? { frameTree: { frame: { id: quadro } } } : {} } }) }
+    return { context: () => ctx }
+  }
+  ch.emitir = (ev, dados) => { for (const s of [...vivas]) for (const fn of s.ouvintes[ev] || []) fn(dados) }
+  ch.comecar = (quadro, nome, guid = randomUUID()) => { ch.emitir('Browser.downloadWillBegin', { frameId: quadro, guid, url: 'http://127.0.0.1/' + nome, suggestedFilename: nome }); return guid }
+  ch.terminar = (guid, saida, nome, state = 'completed') => {
+    if (state === 'completed') writeFileSync(join(saida, nome), nome)
+    ch.emitir('Browser.downloadProgress', { guid, state, ...(state === 'completed' ? { filePath: join(saida, nome) } : {}) })
+  }
+  // a acao que baixa um arquivo inteiro pela pagina do quadro
+  ch.baixando = (quadro, saida, nome) => () => ch.terminar(ch.comecar(quadro, nome), saida, nome)
+  return ch
+}
+
 // projeto de mentira pro baixarNaSaida: o perfil existe (o Chrome dedicado ja abriu)
 function comBaixador(fn) {
   const raiz = temp()
   const perfil = perfilDedicado(raiz)
   mkdirSync(perfil, { recursive: true })
-  return Promise.resolve().then(() => fn(raiz, perfil, saidaNoProjeto(raiz))).finally(() => rmSync(raiz, { recursive: true, force: true }))
+  return Promise.resolve().then(() => fn(raiz, perfil, saidaNoProjeto(raiz), chromeDeEventos())).finally(() => rmSync(raiz, { recursive: true, force: true }))
 }
 const RAPIDO = { prazoMs: 300, passoMs: 10 }
+// a marca do download vencido no perfil (a lib nao exporta o nome)
+const MARCA_VENCIDO = '.sabinos-baixando-vencido'
+const marcas = perfil => existsSync(join(perfil, MARCA_VENCIDO)) ? JSON.parse(readFileSync(join(perfil, MARCA_VENCIDO), 'utf8')) : null
 
-test('baixarNaSaida: o arquivo novo da acao cai em dados/navegador-saida e a trava sai', () => comBaixador(async (raiz, perfil, saida) => {
-  const caminho = await baixarNaSaida(() => writeFileSync(join(saida, 'relatorio.csv'), 'a;b'), { raiz, ...RAPIDO })
+test('baixarNaSaida: o download da acao volta pelo filePath do Chrome, com o foco ligado antes da acao, e a trava e a sessao saem', () => comBaixador(async (raiz, perfil, saida, ch) => {
+  let naAcao = null
+  const baixa = ch.baixando('Q1', saida, 'relatorio.csv')
+  const caminho = await baixarNaSaida(() => { naAcao = [...ch.comandos]; baixa() }, { pagina: ch.pagina('Q1'), raiz, ...RAPIDO })
   assert.equal(caminho, join(saida, 'relatorio.csv'))
-  assert.equal(readFileSync(caminho, 'utf8'), 'a;b')
+  assert.equal(readFileSync(caminho, 'utf8'), 'relatorio.csv')
+  // a pagina recem-aberta pode chegar antes da sessao de foco do conectar: o ajudante liga o foco nela
+  assert.deepEqual(naAcao, [
+    ['Q1', 'Emulation.setFocusEmulationEnabled', { enabled: true }],
+    ['Q1', 'Page.getFrameTree', undefined],
+    ['navegador', 'Browser.setDownloadBehavior', { behavior: 'default', eventsEnabled: true }],
+  ])
   assert.equal(existsSync(join(perfil, TRAVA_DOWNLOAD)), false, 'a trava ficou')
+  assert.equal(marcas(perfil), null, 'marcou o quadro de um download que terminou')
+  assert.equal(ch.vivas(), 0, 'a sessao do navegador ficou aberta')
 }))
 
-test('baixarNaSaida: o <guid>.tmp e o .crdownload nao contam como pronto, so o arquivo que eles viram', () => comBaixador(async (raiz, perfil, saida) => {
-  // a ordem que o Chrome real fez no ponta a ponta
-  const tmp = join(saida, 'fc2f51ab-b668-4f1b-8303-2a7e260e135f.tmp')
-  let voltas = 0
-  const dormir = async () => {
-    if (++voltas === 3) renameSync(tmp, join(saida, 'relatorio.csv.crdownload'))
-    if (voltas === 5) renameSync(join(saida, 'relatorio.csv.crdownload'), join(saida, 'relatorio.csv'))
+test('baixarNaSaida: sem a pagina para antes da trava', () => comBaixador(async (raiz, perfil) => {
+  let rodou = false
+  await assert.rejects(baixarNaSaida(() => { rodou = true }, { raiz, ...RAPIDO }), /precisa da pagina/)
+  assert.equal(rodou, false)
+  assert.equal(existsSync(join(perfil, TRAVA_DOWNLOAD)), false, 'a trava nasceu')
+}))
+
+test('baixarNaSaida: pagina que nao abre a sessao CDP no prazo para antes da acao e larga a trava', () => comBaixador(async (raiz, perfil, saida, ch) => {
+  // no Chrome real a sessao de uma pagina com navegacao pendente so abre quando a resposta chega
+  const presa = { context: () => ({ browser: () => ({}), newCDPSession: () => new Promise(() => {}) }) }
+  let rodou = false
+  await assert.rejects(baixarNaSaida(() => { rodou = true }, { pagina: presa, raiz, ...RAPIDO }), /a pagina nao respondeu em 1 segundos/)
+  assert.equal(rodou, false, 'a acao rodou')
+  assert.equal(existsSync(join(perfil, TRAVA_DOWNLOAD)), false, 'a trava ficou')
+  assert.equal(marcas(perfil), null, 'marcou sem a acao disparar')
+}))
+
+test('baixarNaSaida: so o download do quadro da pagina volta; o atrasado de outra pagina nao conta, e sozinho para com erro', () => comBaixador(async (raiz, perfil, saida, ch) => {
+  // o atrasado de uma chamada que estourou o prazo chega no meio desta, antes do dela
+  const caminho = await baixarNaSaida(() => { ch.baixando('Q0', saida, 'atrasado.csv')(); ch.baixando('Q1', saida, 'meu.csv')() }, { pagina: ch.pagina('Q1'), raiz, ...RAPIDO })
+  assert.equal(caminho, join(saida, 'meu.csv'))
+  // so o de outra pagina: o prazo estoura com o erro que diz isso
+  await assert.rejects(baixarNaSaida(ch.baixando('Q0', saida, 'outro.csv'), { pagina: ch.pagina('Q2'), raiz, ...RAPIDO }), /nao apareceu.*outro\.csv\) veio de outra pagina/)
+  assert.equal(ch.vivas(), 0, 'a sessao do navegador ficou aberta')
+}))
+
+test('baixarNaSaida: o download de um iframe da pagina conta como dela (Codex comum)', () => comBaixador(async (raiz, perfil, saida, ch) => {
+  const pagina = ch.pagina('Q1')
+  const ctx = pagina.context()
+  const sessao = ctx.newCDPSession
+  // a arvore da pagina traz o iframe I1 embaixo do quadro principal
+  ctx.newCDPSession = async p => { const s = await sessao(p); return { send: async (m, a) => m === 'Page.getFrameTree' ? { frameTree: { frame: { id: 'Q1' }, childFrames: [{ frame: { id: 'I1' } }] } } : s.send(m, a) } }
+  assert.equal(await baixarNaSaida(ch.baixando('I1', saida, 'iframe.csv'), { pagina, raiz, ...RAPIDO }), join(saida, 'iframe.csv'))
+}))
+
+test('baixarNaSaida: o download que comecou antes de a acao disparar nao conta', () => comBaixador(async (raiz, perfil, saida, ch) => {
+  // o comeco chega logo depois de ligar os eventos, antes da acao; o fim, durante a acao
+  let velho = null
+  ch.aoMandar = m => { if (m === 'Browser.setDownloadBehavior') velho = ch.comecar('Q1', 'velho.csv') }
+  await assert.rejects(baixarNaSaida(() => ch.terminar(velho, saida, 'velho.csv'), { pagina: ch.pagina('Q1'), raiz, ...RAPIDO }), /nao apareceu/)
+  assert.ok(velho, 'canario: o comeco de antes da acao foi emitido')
+  assert.ok(existsSync(join(saida, 'velho.csv')), 'canario: o arquivo de antes caiu na saida')
+}))
+
+test('baixarNaSaida: canceled para com erro e nao marca o quadro; dois downloads da acao param e marcam', () => comBaixador(async (raiz, perfil, saida, ch) => {
+  await assert.rejects(baixarNaSaida(() => ch.terminar(ch.comecar('Q1', 'x.csv'), saida, 'x.csv', 'canceled'), { pagina: ch.pagina('Q1'), raiz, ...RAPIDO }), /cancelou o download de x\.csv/)
+  assert.equal(marcas(perfil), null, 'o cancelado marcou o quadro')
+  // o segundo pode seguir baixando depois do erro: a pagina fica marcada
+  await assert.rejects(baixarNaSaida(() => { ch.comecar('Q2', 'a.csv'); ch.comecar('Q2', 'b.csv') }, { pagina: ch.pagina('Q2'), raiz, ...RAPIDO }), /comecou 2 downloads \(a\.csv, b\.csv\)/)
+  assert.deepEqual(marcas(perfil), ['Q2'])
+  assert.equal(existsSync(join(perfil, TRAVA_DOWNLOAD)), false, 'a trava ficou')
+  assert.equal(ch.vivas(), 0, 'a sessao do navegador ficou aberta')
+}))
+
+test('baixarNaSaida: o fim sem o arquivo na saida para (filePath de fora, sem filePath ou o arquivo sumido)', () => comBaixador(async (raiz, perfil, saida, ch) => {
+  const fora = join(raiz, 'fora.csv')
+  writeFileSync(fora, 'f')
+  const casos = {
+    'filePath de fora': g => ch.emitir('Browser.downloadProgress', { guid: g, state: 'completed', filePath: fora }),
+    'sem filePath': g => ch.emitir('Browser.downloadProgress', { guid: g, state: 'completed' }),
+    'arquivo sumido': g => ch.emitir('Browser.downloadProgress', { guid: g, state: 'completed', filePath: join(saida, 'sumiu.csv') }),
   }
-  const caminho = await baixarNaSaida(() => writeFileSync(tmp, 'a;b'), { raiz, prazoMs: 5000, dormir })
-  assert.ok(voltas >= 5, `canario: o ajudante esperou ${voltas} voltas`)
-  assert.equal(caminho, join(saida, 'relatorio.csv'))
-  await assert.rejects(baixarNaSaida(() => writeFileSync(join(saida, 'outro.csv.crdownload'), 'x'), { raiz, ...RAPIDO }), /nao apareceu/)
+  let n = 0
+  for (const [caso, fim] of Object.entries(casos)) {
+    const q = 'Q' + ++n
+    await assert.rejects(baixarNaSaida(() => fim(ch.comecar(q, 'r.csv')), { pagina: ch.pagina(q), raiz, ...RAPIDO }), /terminou o download de r\.csv, mas o arquivo nao esta em dados\/navegador-saida/, caso)
+  }
 }))
 
-test('baixarNaSaida: download pela metade de antes segura a acao ate acabar, e o dele nao volta como desta', () => comBaixador(async (raiz, perfil, saida) => {
+test('baixarNaSaida: download pela metade de antes segura a acao ate acabar, e o dele nao volta como desta', () => comBaixador(async (raiz, perfil, saida, ch) => {
   // o da chamada que estourou o prazo termina no meio da espera desta
   const velho = join(saida, 'velho.csv.crdownload')
   mkdirSync(saida, { recursive: true })
@@ -701,46 +814,192 @@ test('baixarNaSaida: download pela metade de antes segura a acao ate acabar, e o
   let voltas = 0
   let disparou = null
   const dormir = async () => { if (++voltas === 3) renameSync(velho, join(saida, 'velho.csv')) }
-  const caminho = await baixarNaSaida(() => { disparou = voltas; writeFileSync(join(saida, 'novo.csv'), 'n') }, { raiz, prazoMs: 5000, dormir })
+  const baixa = ch.baixando('Q1', saida, 'novo.csv')
+  const caminho = await baixarNaSaida(() => { disparou = voltas; baixa() }, { pagina: ch.pagina('Q1'), raiz, prazoMs: 5000, dormir })
   assert.equal(disparou, 3, 'a acao disparou com o download de antes pela metade')
   assert.equal(caminho, join(saida, 'novo.csv'))
   // pela metade ate o prazo: para sem disparar
   writeFileSync(join(saida, 'parado.csv.crdownload'), 'p')
   let rodou = false
-  await assert.rejects(baixarNaSaida(() => { rodou = true }, { raiz, ...RAPIDO }), /pela metade/)
+  await assert.rejects(baixarNaSaida(() => { rodou = true }, { pagina: ch.pagina('Q1'), raiz, ...RAPIDO }), /pela metade/)
   assert.equal(rodou, false)
   assert.equal(existsSync(join(perfil, TRAVA_DOWNLOAD)), false, 'a trava ficou')
 }))
 
-test('baixarNaSaida: dois arquivos novos param com erro e a trava sai', () => comBaixador(async (raiz, perfil, saida) => {
-  const acao = () => { writeFileSync(join(saida, 'a.csv'), '1'); writeFileSync(join(saida, 'b.csv'), '2') }
-  await assert.rejects(baixarNaSaida(acao, { raiz, ...RAPIDO }), /2 arquivos novos/)
-  assert.equal(existsSync(join(perfil, TRAVA_DOWNLOAD)), false, 'a trava ficou')
-}))
-
-test('baixarNaSaida: prazo estourado e erro da acao param com erro claro e largam a trava', () => comBaixador(async (raiz, perfil) => {
-  await assert.rejects(baixarNaSaida(() => {}, { raiz, ...RAPIDO }), /nao apareceu em dados\/navegador-saida.*outro script/)
+test('baixarNaSaida: prazo estourado e erro da acao param com erro claro, largam a trava e a sessao, e marcam o quadro', () => comBaixador(async (raiz, perfil, saida, ch) => {
+  await assert.rejects(baixarNaSaida(() => {}, { pagina: ch.pagina('Q1'), raiz, ...RAPIDO }), /nao apareceu em dados\/navegador-saida.*conexao de fora da lib/)
   assert.equal(existsSync(join(perfil, TRAVA_DOWNLOAD)), false, 'a trava ficou depois do prazo')
-  await assert.rejects(baixarNaSaida(() => { throw new Error('clique falhou') }, { raiz, ...RAPIDO }), /clique falhou/)
+  assert.deepEqual(marcas(perfil), ['Q1'])
+  await assert.rejects(baixarNaSaida(() => { throw new Error('clique falhou') }, { pagina: ch.pagina('Q2'), raiz, ...RAPIDO }), /clique falhou/)
   assert.equal(existsSync(join(perfil, TRAVA_DOWNLOAD)), false, 'a trava ficou depois do erro da acao')
+  assert.deepEqual(marcas(perfil), ['Q1', 'Q2'])
+  assert.equal(ch.vivas(), 0, 'a sessao do navegador ficou aberta')
 }))
 
-test('baixarNaSaida: um baixador por vez; trava de processo vivo segura, a de processo morto sai', () => comBaixador(async (raiz, perfil, saida) => {
+test('baixarNaSaida: pagina com marca para antes da acao; pagina nova baixa', () => comBaixador(async (raiz, perfil, saida, ch) => {
+  await assert.rejects(baixarNaSaida(() => {}, { pagina: ch.pagina('Q1'), raiz, ...RAPIDO }), /nao apareceu/)
+  assert.deepEqual(marcas(perfil), ['Q1'], 'canario: o prazo marcou o quadro')
+  const abertas = ch.abertas
+  let rodou = false
+  await assert.rejects(baixarNaSaida(() => { rodou = true }, { pagina: ch.pagina('Q1'), raiz, ...RAPIDO }), /abra uma pagina nova \(newPage\)/)
+  assert.equal(rodou, false, 'a acao rodou na pagina marcada')
+  assert.equal(ch.abertas, abertas, 'a pagina marcada abriu sessao do navegador')
+  assert.equal(existsSync(join(perfil, TRAVA_DOWNLOAD)), false, 'a trava ficou')
+  // o quadro marcado nao pesa em outra pagina
+  assert.equal(await baixarNaSaida(ch.baixando('Q2', saida, 'novo.csv'), { pagina: ch.pagina('Q2'), raiz, ...RAPIDO }), join(saida, 'novo.csv'))
+  assert.deepEqual(marcas(perfil), ['Q1'])
+}))
+
+// decisao do controlador sobre o achado 1 da comum: a marca nao sai sozinha, a pagina marcada fica
+// queimada (o frameId nao se repete entre paginas)
+test('baixarNaSaida: a marca nao sai sozinha; dois atrasados do mesmo quadro nao fazem a mesma pagina aceitar nada', () => comBaixador(async (raiz, perfil, saida, ch) => {
+  await assert.rejects(baixarNaSaida(() => {}, { pagina: ch.pagina('Q1'), raiz, ...RAPIDO }), /nao apareceu/)
+  assert.deepEqual(marcas(perfil), ['Q1'], 'canario: o prazo marcou o quadro')
+  // os dois atrasados de Q1 chegam inteiros, um em cada chamada de outra pagina
+  assert.equal(await baixarNaSaida(() => { ch.baixando('Q1', saida, 'atrasado-1.csv')(); ch.baixando('Q2', saida, 'a.csv')() }, { pagina: ch.pagina('Q2'), raiz, ...RAPIDO }), join(saida, 'a.csv'))
+  assert.equal(await baixarNaSaida(() => { ch.baixando('Q1', saida, 'atrasado-2.csv')(); ch.baixando('Q3', saida, 'b.csv')() }, { pagina: ch.pagina('Q3'), raiz, ...RAPIDO }), join(saida, 'b.csv'))
+  assert.deepEqual(marcas(perfil), ['Q1'])
+  // a pagina de Q1 segue parada antes da acao
+  let rodou = false
+  await assert.rejects(baixarNaSaida(() => { rodou = true }, { pagina: ch.pagina('Q1'), raiz, ...RAPIDO }), /abra uma pagina nova \(newPage\)/)
+  assert.equal(rodou, false, 'a pagina marcada voltou a aceitar download')
+}))
+
+// final do Codex, achado 2: a poda por numero soltava a pagina aberta depois de outras vencerem; a poda
+// e pela existencia (Target.getTargets), e sem a lista nada sai
+test('baixarNaSaida: a poda da marca tira so quadro de pagina fechada, e sem a lista de paginas nada sai', () => comBaixador(async (raiz, perfil, saida, ch) => {
+  const Q0 = ch.pagina('Q0')
+  await assert.rejects(baixarNaSaida(() => {}, { pagina: Q0, raiz, ...RAPIDO }), /nao apareceu/)
+  // 60 outras paginas abertas vencem depois dela
+  const LENTO = { prazoMs: 20, passoMs: 5 }
+  for (let i = 0; i < 60; i++) await assert.rejects(baixarNaSaida(() => {}, { pagina: ch.pagina('V' + i), raiz, ...LENTO }), /nao apareceu/)
+  assert.equal(marcas(perfil).length, 61, 'canario: as 61 vencidas marcadas')
+  assert.ok(marcas(perfil).includes('Q0'), 'a poda tirou a pagina aberta')
+  let rodou = false
+  await assert.rejects(baixarNaSaida(() => { rodou = true }, { pagina: Q0, raiz, ...RAPIDO }), /abra uma pagina nova \(newPage\)/)
+  assert.equal(rodou, false, 'a pagina aberta voltou a aceitar download')
+  // a pagina V0 fecha: a gravacao seguinte tira a marca dela
+  ch.paginas.delete('V0')
+  await assert.rejects(baixarNaSaida(() => {}, { pagina: ch.pagina('Q1'), raiz, ...RAPIDO }), /nao apareceu/)
+  assert.ok(!marcas(perfil).includes('V0'), 'a marca da pagina fechada ficou')
+  assert.ok(marcas(perfil).includes('Q0') && marcas(perfil).includes('Q1'))
+  // a lista de paginas falha: nada sai
+  ch.paginas.delete('V1')
+  ch.falharTargets = true
+  await assert.rejects(baixarNaSaida(() => {}, { pagina: ch.pagina('Q2'), raiz, ...RAPIDO }), /nao apareceu/)
+  assert.ok(marcas(perfil).includes('V1') && marcas(perfil).includes('Q2'), 'sem a lista a poda tirou marca ou nao gravou')
+}))
+
+test('baixarNaSaida: marca ilegivel para antes da acao em qualquer pagina e fica como esta', () => comBaixador(async (raiz, perfil, saida, ch) => {
+  for (const conteudo of ['lixo', '{"quadro":"Q1"}', '[1]']) {
+    writeFileSync(join(perfil, MARCA_VENCIDO), conteudo)
+    let rodou = false
+    await assert.rejects(baixarNaSaida(() => { rodou = true }, { pagina: ch.pagina('Q7'), raiz, ...RAPIDO }), /esta ilegivel/, conteudo)
+    assert.equal(rodou, false, `${conteudo}: a acao rodou`)
+    assert.equal(readFileSync(join(perfil, MARCA_VENCIDO), 'utf8'), conteudo, `${conteudo}: a marca mudou`)
+  }
+}))
+
+test('baixarNaSaida: um baixador por vez; trava de processo vivo segura, a de processo morto sai', () => comBaixador(async (raiz, perfil, saida, ch) => {
   // dois juntos: o segundo so dispara a acao depois de o primeiro achar o arquivo dele
   const ordem = []
-  const lento = baixarNaSaida(async () => { ordem.push('lento'); await new Promise(r => setTimeout(r, 100)); writeFileSync(join(saida, 'lento.csv'), 'l') }, { raiz, prazoMs: 5000, passoMs: 10 })
-  const pequeno = baixarNaSaida(() => { ordem.push('pequeno'); writeFileSync(join(saida, 'pequeno.csv'), 'p') }, { raiz, prazoMs: 5000, passoMs: 10 })
+  const lento = baixarNaSaida(async () => { ordem.push('lento'); await new Promise(r => setTimeout(r, 100)); ch.baixando('Q1', saida, 'lento.csv')() }, { pagina: ch.pagina('Q1'), raiz, prazoMs: 5000, passoMs: 10 })
+  const pequeno = baixarNaSaida(() => { ordem.push('pequeno'); ch.baixando('Q2', saida, 'pequeno.csv')() }, { pagina: ch.pagina('Q2'), raiz, prazoMs: 5000, passoMs: 10 })
   assert.deepEqual([await lento, await pequeno], [join(saida, 'lento.csv'), join(saida, 'pequeno.csv')])
   assert.deepEqual(ordem, ['lento', 'pequeno'])
   // a trava de outro processo vivo: a acao nunca roda
   let rodou = false
   writeFileSync(join(perfil, TRAVA_DOWNLOAD), '4242')
-  await assert.rejects(baixarNaSaida(() => { rodou = true }, { raiz, ...RAPIDO, vivo: () => true }), /outro robo/)
+  await assert.rejects(baixarNaSaida(() => { rodou = true }, { pagina: ch.pagina('Q1'), raiz, ...RAPIDO, vivo: () => true }), /outro robo/)
   assert.equal(rodou, false)
   assert.ok(existsSync(join(perfil, TRAVA_DOWNLOAD)), 'a trava do outro processo sumiu')
   // a mesma trava com o processo morto sai, e o download segue
-  const caminho = await baixarNaSaida(() => writeFileSync(join(saida, 'depois.csv'), 'd'), { raiz, ...RAPIDO, vivo: () => false })
+  const caminho = await baixarNaSaida(ch.baixando('Q1', saida, 'depois.csv'), { pagina: ch.pagina('Q1'), raiz, ...RAPIDO, vivo: () => false })
   assert.equal(caminho, join(saida, 'depois.csv'))
+}))
+
+// 5.36, trava com dono: a trava guarda { pid, dono } e so quem a criou apaga
+const lerTravaJson = perfil => JSON.parse(readFileSync(join(perfil, TRAVA_DOWNLOAD), 'utf8'))
+const sobrasDoRoubo = perfil => readdirSync(perfil).filter(n => n.startsWith(TRAVA_DOWNLOAD + '.'))
+
+test('baixarNaSaida: a trava guarda pid e dono, e o finally nao apaga a trava de outro dono', () => comBaixador(async (raiz, perfil, saida, ch) => {
+  let vista = null
+  const outra = JSON.stringify({ pid: process.pid, dono: 'outro-dono' })
+  const caminho = await baixarNaSaida(() => {
+    vista = lerTravaJson(perfil)
+    // a trava troca de dono no meio da chamada (roubada por engano): o finally tem de deixar
+    writeFileSync(join(perfil, TRAVA_DOWNLOAD), outra)
+    ch.baixando('Q1', saida, 'a.csv')()
+  }, { pagina: ch.pagina('Q1'), raiz, ...RAPIDO })
+  assert.equal(caminho, join(saida, 'a.csv'))
+  assert.equal(vista.pid, process.pid)
+  assert.ok(typeof vista.dono === 'string' && vista.dono.length >= 16, `dono: ${vista.dono}`)
+  assert.equal(readFileSync(join(perfil, TRAVA_DOWNLOAD), 'utf8'), outra, 'o finally apagou a trava de outro dono')
+}))
+
+test('baixarNaSaida: dois roubadores sobre a mesma trava de processo morto, so um baixa por vez', () => comBaixador(async (raiz, perfil, saida, ch) => {
+  const MORTO = 4242
+  writeFileSync(join(perfil, TRAVA_DOWNLOAD), JSON.stringify({ pid: MORTO, dono: 'morto' }))
+  // os dois leem a trava do morto e param juntos antes do roubo; a barreira solta os dois de uma vez
+  let soltar
+  const barreira = new Promise(r => { soltar = r })
+  let leram = 0
+  const vivo = async pid => {
+    if (pid !== MORTO) return pid === process.pid
+    if (++leram === 2) soltar()
+    await barreira
+    return false
+  }
+  let ativos = 0
+  let pico = 0
+  const acao = nome => async () => {
+    pico = Math.max(pico, ++ativos)
+    await new Promise(r => setTimeout(r, 50))
+    ch.baixando(nome, saida, nome)()
+    ativos--
+  }
+  const [a, b] = await Promise.all([
+    baixarNaSaida(acao('a.csv'), { pagina: ch.pagina('a.csv'), raiz, prazoMs: 5000, passoMs: 10, vivo }),
+    baixarNaSaida(acao('b.csv'), { pagina: ch.pagina('b.csv'), raiz, prazoMs: 5000, passoMs: 10, vivo }),
+  ])
+  assert.equal(leram, 2, 'canario: os dois leram a trava do morto')
+  assert.deepEqual([a, b].sort(), [join(saida, 'a.csv'), join(saida, 'b.csv')])
+  assert.equal(pico, 1, 'os dois baixaram ao mesmo tempo')
+  assert.equal(existsSync(join(perfil, TRAVA_DOWNLOAD)), false, 'a trava ficou')
+  assert.deepEqual(sobrasDoRoubo(perfil), [], 'sobrou arquivo do roubo')
+}))
+
+test('baixarNaSaida: trava trocada por uma viva entre a leitura e o roubo volta pro lugar', () => comBaixador(async (raiz, perfil) => {
+  const MORTO = 4242
+  const viva = JSON.stringify({ pid: process.pid, dono: 'vivo' })
+  writeFileSync(join(perfil, TRAVA_DOWNLOAD), JSON.stringify({ pid: MORTO, dono: 'morto' }))
+  let trocou = false
+  // depois de ler o morto e antes do roubo, outro processo ja roubou e criou a dele
+  const vivo = pid => {
+    if (pid === MORTO && !trocou) { trocou = true; writeFileSync(join(perfil, TRAVA_DOWNLOAD), viva); return false }
+    return pid === process.pid
+  }
+  let rodou = false
+  await assert.rejects(baixarNaSaida(() => { rodou = true }, { pagina: chromeDeEventos().pagina('Q1'), raiz, ...RAPIDO, vivo }), /outro robo/)
+  assert.ok(trocou, 'canario: a troca aconteceu')
+  assert.equal(rodou, false, 'a acao rodou com a trava viva de outro')
+  assert.equal(readFileSync(join(perfil, TRAVA_DOWNLOAD), 'utf8'), viva, 'a trava viva nao voltou pro lugar')
+  assert.deepEqual(sobrasDoRoubo(perfil), [], 'sobrou arquivo do roubo')
+}))
+
+test('baixarNaSaida: trava na forma velha (so o pid) de processo morto e roubada; vazia segue viva', () => comBaixador(async (raiz, perfil, saida, ch) => {
+  writeFileSync(join(perfil, TRAVA_DOWNLOAD), '4242')
+  const caminho = await baixarNaSaida(ch.baixando('Q1', saida, 'velha.csv'), { pagina: ch.pagina('Q1'), raiz, ...RAPIDO, vivo: () => false })
+  assert.equal(caminho, join(saida, 'velha.csv'))
+  assert.equal(existsSync(join(perfil, TRAVA_DOWNLOAD)), false, 'a trava ficou')
+  assert.deepEqual(sobrasDoRoubo(perfil), [], 'sobrou arquivo do roubo')
+  for (const conteudo of ['', '   ', '{"dono":"x"}', 'lixo']) {
+    writeFileSync(join(perfil, TRAVA_DOWNLOAD), conteudo)
+    let rodou = false
+    await assert.rejects(baixarNaSaida(() => { rodou = true }, { pagina: ch.pagina('Q1'), raiz, ...RAPIDO, vivo: () => false }), /outro robo/, JSON.stringify(conteudo))
+    assert.equal(rodou, false, `${JSON.stringify(conteudo)}: a acao rodou`)
+    assert.equal(readFileSync(join(perfil, TRAVA_DOWNLOAD), 'utf8'), conteudo, `${JSON.stringify(conteudo)}: a trava sumiu`)
+  }
 }))
 
 test('baixarNaSaida: saida em juncao pra fora para antes da acao', async () => {
@@ -748,24 +1007,42 @@ test('baixarNaSaida: saida em juncao pra fora para antes da acao', async () => {
     // o perfil fica na raiz: a juncao toma o lugar de dados/
     await comProjeto(caso, async proj => {
       let rodou = false
-      await assert.rejects(baixarNaSaida(() => { rodou = true }, { raiz: proj, perfil: proj, ...RAPIDO }), /leva pra fora do projeto/, caso)
+      await assert.rejects(baixarNaSaida(() => { rodou = true }, { pagina: chromeDeEventos().pagina('Q1'), raiz: proj, perfil: proj, ...RAPIDO }), /leva pra fora do projeto/, caso)
       assert.equal(rodou, false, `${caso}: a acao rodou`)
       assert.equal(existsSync(join(proj, TRAVA_DOWNLOAD)), false, `${caso}: a trava nasceu`)
     })
   }
 })
 
-test('conectar: noDefaults so quando pedido', async () => {
+// 5.36: todo script liga com noDefaults (sem ele o Playwright segura o download numa pasta temporaria);
+// a opcao saiu, entao pedir o padrao nao muda nada
+test('conectar: liga sempre com noDefaults, sem pedir', async () => {
   const raiz = temp()
   const ch = chromeFalso({ [P]: 'g-1' })
   try {
     const perfil = perfilDedicado(raiz)
     gravar(perfil, { porta: P, guid: 'g-1', saida: true })
-    const chamadas = []
-    const carregar = async () => ({ chromium: { connectOverCDP: (...a) => { chamadas.push(a); return 'browser' } } })
-    await conectar({ porta: P, perfil, carregar, fetchFn: ch.fetchFn })
-    await conectar({ porta: P, perfil, carregar, fetchFn: ch.fetchFn, noDefaults: true })
-    assert.deepEqual(chamadas, [[`http://127.0.0.1:${P}`], [`http://127.0.0.1:${P}`, { noDefaults: true }]])
+    const pw = playwrightFalso()
+    await conectar({ porta: P, perfil, carregar: pw.carregar, fetchFn: ch.fetchFn })
+    await conectar({ porta: P, perfil, carregar: pw.carregar, fetchFn: ch.fetchFn, noDefaults: false })
+    assert.deepEqual(pw.chamadas, [[`http://127.0.0.1:${P}`, { noDefaults: true }], [`http://127.0.0.1:${P}`, { noDefaults: true }]])
+  } finally { rmSync(raiz, { recursive: true, force: true }) }
+})
+
+// P0 da 5.36: com noDefaults a pagina atras da aba de outra conexao vira hidden e o clique trava; o
+// conectar liga a emulacao de foco pela propria pagina, nas que ja existem e nas que nascem depois
+test('conectar: emulacao de foco em cada pagina do contexto padrao, a que ja existia e a nova', async () => {
+  const raiz = temp()
+  const ch = chromeFalso({ [P]: 'g-1' })
+  try {
+    const perfil = perfilDedicado(raiz)
+    gravar(perfil, { porta: P, guid: 'g-1', saida: true })
+    const pw = playwrightFalso(['velha'])
+    await conectar({ porta: P, perfil, carregar: pw.carregar, fetchFn: ch.fetchFn })
+    assert.deepEqual(pw.enviados, [['velha', 'Emulation.setFocusEmulationEnabled', { enabled: true }]])
+    pw.abrir('nova')
+    await new Promise(r => setImmediate(r))
+    assert.deepEqual(pw.enviados.slice(1), [['nova', 'Emulation.setFocusEmulationEnabled', { enabled: true }]])
   } finally { rmSync(raiz, { recursive: true, force: true }) }
 })
 
@@ -1104,10 +1381,21 @@ test('abrirChrome com porta que nunca sobe avisa pra fechar o Chrome', async () 
   } finally { rmSync(raiz, { recursive: true, force: true }) }
 })
 
-// Playwright de mentira que anota onde ligou
-function playwrightFalso() {
+// Playwright de mentira que anota onde ligou (ligou), cada connectOverCDP inteiro (chamadas) e cada
+// comando CDP mandado por pagina do contexto padrao (enviados); abrir(p) faz nascer uma pagina
+function playwrightFalso(paginas = []) {
   const ligou = []
-  return { ligou, carregar: async () => ({ chromium: { connectOverCDP: async u => { ligou.push(u); return { fechado: false } } } }) }
+  const chamadas = []
+  const enviados = []
+  const ouvintes = []
+  const ctx = {
+    pages: () => [...paginas],
+    on: (evento, fn) => { if (evento === 'page') ouvintes.push(fn) },
+    newCDPSession: async p => ({ send: async (metodo, args) => { enviados.push([p, metodo, args]) } }),
+  }
+  const browser = { fechado: false, contexts: () => [ctx] }
+  const abrir = p => { for (const fn of ouvintes) fn(p) }
+  return { ligou, chamadas, enviados, abrir, carregar: async () => ({ chromium: { connectOverCDP: async (...a) => { ligou.push(a[0]); chamadas.push(a); return browser } } }) }
 }
 
 test('conectar: perfil conferido chama connectOverCDP na porta do projeto', async () => {

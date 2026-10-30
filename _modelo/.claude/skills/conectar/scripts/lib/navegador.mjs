@@ -9,11 +9,11 @@
 // escrita aqui (o kit precisa rodar no Windows e no Mac).
 // Os pacotes (mercado-livre, midia-social) tem uma casca chrome.mjs que reexporta esta lib e poe o
 // Playwright do proprio pacote; esta lib nao importa pacote nenhum.
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, renameSync, rmSync, statSync, realpathSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, renameSync, rmSync, statSync, realpathSync, linkSync } from 'node:fs'
 import { join, resolve, dirname, basename, relative, isAbsolute, sep, win32, posix } from 'node:path'
 import { spawn } from 'node:child_process'
 import { createServer } from 'node:net'
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { homedir, tmpdir } from 'node:os'
 import { RAIZ } from './raiz.mjs'
 import { codigo as codigoTotp, CONTA } from '../totp.mjs'
@@ -488,9 +488,13 @@ export function avisosDeAbrir(r, headless = false) {
 }
 
 // carregar traz o Playwright (a casca do pacote resolve do node_modules dela); skill so muda o texto
-// das mensagens. noDefaults, so no script que baixa (baixarNaSaida, abaixo): sem ele o Playwright
-// segura o download do Chrome inteiro numa pasta temporaria que apaga ao desconectar (P1 da 5.33).
-export async function conectar({ porta = portaDoProjeto(RAIZ), perfil = perfilDedicado(RAIZ), carregar, skill, fetchFn, noDefaults = false } = {}) {
+// das mensagens. Sempre com noDefaults (5.36): sem ele o Playwright segura o download do Chrome
+// inteiro numa pasta temporaria que apaga ao desconectar (P1 da 5.33), e qualquer script ligado no
+// mesmo Chrome tira o arquivo do baixarNaSaida. O noDefaults tambem desliga a emulacao de foco do
+// Playwright, e a pagina que fica atras da aba de outra conexao vira hidden e o clique trava (P0 da
+// 5.36): por isso o conectar liga a emulacao de foco pela propria pagina, em cada pagina do contexto
+// padrao, as que ja existem e as que nascem depois, com a sessao aberta enquanto o script esta ligado.
+export async function conectar({ porta = portaDoProjeto(RAIZ), perfil = perfilDedicado(RAIZ), carregar, skill, fetchFn } = {}) {
   let pw
   try {
     pw = await carregar()
@@ -507,43 +511,85 @@ export async function conectar({ porta = portaDoProjeto(RAIZ), perfil = perfilDe
   }
   if (c.estado !== 'conferido') throw Object.assign(new Error(`na porta ${porta} responde um Chrome que nao e o deste projeto. Feche esse Chrome e abra o deste projeto${skill ? `: node .claude/skills/${skill}/scripts/abrir-chrome.mjs` : ''}`), { estado: c.estado })
   const url = `http://127.0.0.1:${porta}`
-  return noDefaults ? pw.chromium.connectOverCDP(url, { noDefaults: true }) : pw.chromium.connectOverCDP(url)
+  const browser = await pw.chromium.connectOverCDP(url, { noDefaults: true })
+  const ctx = browser.contexts()[0]
+  const focar = pagina => ligarFoco(ctx, pagina)
+  // pagina que fecha antes da sessao abrir nao derruba o script
+  ctx.on('page', pagina => { focar(pagina).catch(() => {}) })
+  for (const pagina of ctx.pages()) await focar(pagina).catch(e => { if (!pagina.isClosed()) throw e })
+  return browser
 }
 
-// Script de rotina que baixa (P0 da 5.35): liga pelo conectar({ noDefaults: true }) e o Chrome grava
+// Liga a emulacao de foco numa sessao CDP da pagina e devolve a sessao, que fica aberta: e ela que
+// segura a emulacao.
+async function ligarFoco(ctx, pagina) {
+  const s = await ctx.newCDPSession(pagina)
+  await s.send('Emulation.setFocusEmulationEnabled', { enabled: true })
+  return s
+}
+
+// Script de rotina que baixa (P0 da 5.35): liga pelo conectar() e o Chrome grava
 // sozinho na SAIDA que o apontarDownload apontou, com a higiene de nome e a numeracao dele (o evento
-// download do Playwright nao dispara assim). O ajudante dispara a acao e espera um arquivo novo e
-// completo aparecer; devolve o caminho dele. Arquivo novo nao diz de que acao
-// veio: um baixador por vez no projeto (trava no perfil, a de processo morto sai) e dois arquivos novos
-// param com erro em vez de escolher. Outra conexao padrao no mesmo Chrome leva o download pra pasta
-// temporaria dela (P0): ai o prazo estoura com o erro que diz isso.
+// download do Playwright nao dispara assim). Um baixador por vez no projeto (trava no perfil, a de
+// processo morto sai). Desde a 5.36 (P0) o ajudante recebe a pagina da acao e le os eventos de download
+// do Chrome numa sessao do navegador: so vale o download que comecou depois de a acao disparar, no
+// quadro principal da pagina ou num iframe dela, e o arquivo e o filePath do completed dele. O
+// download atrasado de uma chamada que estourou o prazo vem com o quadro da pagina dela e nao conta; a
+// mesma pagina reaproveitada nao se distingue, entao a chamada que sai sem o fim do download dela grava o
+// quadro na MARCA_VENCIDO, e pagina marcada para antes da acao, pra sempre. Conexao de fora da lib que liga no padrao do Playwright leva o download pra pasta
+// temporaria dela (P0 da 5.35): ai o prazo estoura com o erro que diz isso.
 export const TRAVA_DOWNLOAD = '.sabinos-baixando'
+// fora do export: as cascas reexportam a lista da lib inteira
+const MARCA_VENCIDO = '.sabinos-baixando-vencido'
 // download pela metade: o Chrome grava primeiro um <guid>.tmp, depois o .crdownload, e so no fim troca
 // pro nome do arquivo (o ponta a ponta da 5.35 pegou o .tmp, que a P0 nao viu)
 const EM_ANDAMENTO = /\.crdownload$|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.tmp$/i
 
-export async function baixarNaSaida(acao, { raiz = RAIZ, perfil = perfilDedicado(raiz), prazoMs = 120_000, passoMs = 250, vivo = processoVivo, dormir = ms => new Promise(r => setTimeout(r, ms)) } = {}) {
+export async function baixarNaSaida(acao, { pagina, raiz = RAIZ, perfil = perfilDedicado(raiz), prazoMs = 120_000, passoMs = 250, vivo = processoVivo, dormir = ms => new Promise(r => setTimeout(r, ms)) } = {}) {
+  if (typeof pagina?.context !== 'function') throw new Error('o baixarNaSaida precisa da pagina do Playwright em que a acao clica: baixarNaSaida(acao, { pagina }).')
   const saida = saidaNoProjeto(raiz)
   if (!saida) throw new Error(`a pasta ${SAIDA} leva pra fora do projeto (atalho ou juncao): o robo nao baixa ali. Troque o atalho por uma pasta comum e abra o Chrome de novo.`)
   const fim = Date.now() + prazoMs
   const trava = join(perfil, TRAVA_DOWNLOAD)
+  // trava com dono (5.36): so quem criou apaga, e a de processo morto se rouba por rename, que so um
+  // processo ganha (dois rmSync + wx juntos deixavam os dois baixarem, final do Codex da 5.35)
+  const dono = randomUUID()
+  const minha = JSON.stringify({ pid: process.pid, dono })
   for (;;) {
     try {
-      writeFileSync(trava, String(process.pid), { flag: 'wx' })
+      writeFileSync(trava, minha, { flag: 'wx' })
       break
     } catch (e) {
       if (e.code === 'ENOENT') throw new Error(`o perfil do Chrome dedicado nao existe (${perfil}). Abra o Chrome dedicado do projeto e rode de novo.`)
       if (e.code !== 'EEXIST') throw e
-      let dono = NaN
-      try { dono = Number(readFileSync(trava, 'utf8').trim()) } catch {}
-      if (Number.isInteger(dono) && dono > 0 && !vivo(dono)) {
-        try { rmSync(trava, { force: true }) } catch {}
+      let lida = null
+      try { lida = readFileSync(trava, 'utf8') } catch {}
+      const pid = pidDaTrava(lida)
+      const roubada = `${trava}.velha-${dono}`
+      let roubou = false
+      // ENOENT: outro roubou antes, e a volta tenta o wx; outro erro (arquivo preso no Windows) espera
+      if (pid && !(await vivo(pid))) try { renameSync(trava, roubada); roubou = true } catch (e) { if (e.code === 'ENOENT') continue }
+      if (roubou) {
+        let conteudo = null
+        try { conteudo = readFileSync(roubada, 'utf8') } catch {}
+        // outro trocou a do morto por uma viva entre a leitura e o rename: ela volta pro lugar; se um
+        // terceiro ja criou outra no meio, a roubada sai e esta chamada segue esperando
+        if (conteudo !== lida) try { linkSync(roubada, trava) } catch {}
+        try { rmSync(roubada, { force: true }) } catch {}
         continue
       }
       if (Date.now() >= fim) throw new Error('outro robo do projeto esta baixando um arquivo e nao terminou a tempo: espere ele acabar e rode de novo.')
       await dormir(passoMs)
     }
   }
+  // eventos da sessao do navegador: o comeco de cada download depois da acao (desta pagina ou de outra) e o
+  // fim (completed ou canceled) de cada guid
+  let sessao = null
+  let quadro = null
+  let disparou = false
+  const nossos = []
+  const deOutro = []
+  const acabados = new Map()
   try {
     mkdirSync(saida, { recursive: true })
     // download pela metade de uma chamada que estourou o prazo terminaria no meio desta e passaria por
@@ -554,19 +600,95 @@ export async function baixarNaSaida(acao, { raiz = RAIZ, perfil = perfilDedicado
       if (Date.now() >= fim) throw new Error(`ha download pela metade em ${SAIDA} (${metade.join(', ')}): espere ele acabar; se o Chrome nao esta baixando nada, apague esse arquivo e rode de novo.`)
       await dormir(passoMs)
     }
-    const antes = new Set(readdirSync(saida))
+    // a emulacao de foco tambem aqui: a pagina recem-aberta pode chegar antes da sessao de foco que o
+    // conectar abre pelo evento page. A sessao de pagina com navegacao pendente so abre quando a
+    // resposta chega (ponta a ponta da 5.36): ela espera so ate o prazo
+    const ctx = pagina.context()
+    const abrir = ligarFoco(ctx, pagina).then(s => s.send('Page.getFrameTree'))
+    abrir.catch(() => {})
+    let relogio
+    const estouro = new Promise((_, nao) => { relogio = setTimeout(() => nao(new Error(`a pagina nao respondeu em ${Math.ceil(prazoMs / 1000)} segundos (ainda carregando?): abra uma pagina nova (newPage) e rode de novo.`)), Math.max(0, fim - Date.now())) })
+    let frameTree
+    try { ({ frameTree } = await Promise.race([abrir, estouro])) } finally { clearTimeout(relogio) }
+    quadro = frameTree.frame.id
+    // o download de um iframe da pagina tambem e dela (Codex comum); a marca fica no quadro principal
+    const daPagina = new Set()
+    const juntar = no => { daPagina.add(no.frame.id); for (const f of no.childFrames || []) juntar(f) }
+    juntar(frameTree)
+    const marcas = lerMarcas(perfil)
+    if (marcas === null) throw new Error(`a marca ${join(perfil, MARCA_VENCIDO)} esta ilegivel: confira ${SAIDA}, apague a marca e rode de novo.`)
+    if (marcas.includes(quadro)) throw new Error(`um download desta pagina estourou o prazo e ainda pode chegar, e chegaria como desta acao: abra uma pagina nova (newPage) e rode a acao nela.`)
+    sessao = await ctx.browser().newBrowserCDPSession()
+    sessao.on('Browser.downloadWillBegin', e => {
+      // o que comecou antes de a acao disparar nao e dela
+      if (!disparou) return
+      if (daPagina.has(e.frameId)) nossos.push(e)
+      else deOutro.push(e)
+    })
+    sessao.on('Browser.downloadProgress', e => { if (e.state === 'completed' || e.state === 'canceled') acabados.set(e.guid, e) })
+    await sessao.send('Browser.setDownloadBehavior', { behavior: 'default', eventsEnabled: true })
+    disparou = true
     await acao()
     do {
-      const novos = readdirSync(saida).filter(n => !antes.has(n))
-      const prontos = novos.filter(n => !EM_ANDAMENTO.test(n))
-      if (prontos.length > 1) throw new Error(`apareceram ${prontos.length} arquivos novos em ${SAIDA} (${prontos.join(', ')}): o robo nao sabe qual veio da acao e para aqui.`)
-      if (prontos.length === 1 && novos.length === 1) return join(saida, prontos[0])
+      if (nossos.length > 1) throw new Error(`a acao comecou ${nossos.length} downloads (${nossos.map(e => e.suggestedFilename).join(', ')}): o robo nao sabe qual e o certo e para aqui.`)
+      const fimDoNosso = nossos.length ? acabados.get(nossos[0].guid) : null
+      if (fimDoNosso?.state === 'canceled') throw new Error(`o Chrome cancelou o download de ${nossos[0].suggestedFilename}: rode de novo.`)
+      if (fimDoNosso) {
+        const arquivo = fimDoNosso.filePath ? caminhoReal(resolve(fimDoNosso.filePath)) : null
+        if (!arquivo || chave(dirname(arquivo)) !== chave(saida) || !existsSync(arquivo)) throw new Error(`o Chrome terminou o download de ${nossos[0].suggestedFilename}, mas o arquivo nao esta em ${SAIDA} (${fimDoNosso.filePath || 'sem caminho'}): feche o Chrome dedicado e abra de novo, pra pasta de download apontar pro projeto.`)
+        return arquivo
+      }
       await dormir(passoMs)
     } while (Date.now() < fim)
-    throw new Error(`o arquivo nao apareceu em ${SAIDA} em ${Math.ceil(prazoMs / 1000)} segundos. Se outro script estava ligado no mesmo Chrome, o download foi pra pasta temporaria dele: rode de novo com so este script.`)
+    const outros = deOutro.length ? ` O download que chegou (${deOutro.map(e => e.suggestedFilename).join(', ')}) veio de outra pagina e nao conta como desta acao.` : ''
+    throw new Error(`o arquivo nao apareceu em ${SAIDA} em ${Math.ceil(prazoMs / 1000)} segundos.${outros} Se uma conexao de fora da lib, ligada no padrao do Playwright, estava no mesmo Chrome, o download pode ter ido pra pasta temporaria dela: rode de novo sem ela.`)
   } finally {
-    try { rmSync(trava, { force: true }) } catch {}
+    if (sessao) {
+      // a chamada que sai sem o fim do download dela marca o quadro
+      const pendente = disparou && (!nossos.length || nossos.some(e => !acabados.has(e.guid)))
+      if (pendente) {
+        // as paginas abertas no Chrome (o targetId da pagina e o frameId do quadro principal, conferido no
+        // ponta a ponta); sem a lista, nada se poda
+        let abertas = null
+        try { abertas = new Set((await sessao.send('Target.getTargets')).targetInfos.filter(t => t.type === 'page').map(t => t.targetId)) } catch {}
+        try { marcarQuadro(perfil, quadro, abertas) } catch {}
+      }
+      try { await sessao.detach() } catch {}
+    }
+    try { if (JSON.parse(readFileSync(trava, 'utf8')).dono === dono) rmSync(trava, { force: true }) } catch {}
   }
+}
+
+// Os quadros marcados pelo download vencido: [] sem marca, null com a marca ilegivel.
+function lerMarcas(perfil) {
+  let texto
+  try { texto = readFileSync(join(perfil, MARCA_VENCIDO), 'utf8') } catch (e) { return e.code === 'ENOENT' ? [] : null }
+  try {
+    const m = JSON.parse(texto)
+    return Array.isArray(m) && m.every(q => typeof q === 'string') ? m : null
+  } catch { return null }
+}
+
+// A marca nunca sai sozinha (decisao do controlador sobre o achado 1 da comum da 5.36: a chamada
+// vencida pode ter deixado mais de um download atrasado). O frameId nao se repete entre paginas: ao
+// gravar, sai so a marca de quadro que nao e mais uma pagina aberta no Chrome (abertas, do
+// Target.getTargets); sem a lista (null), nada sai (final do Codex: a poda por numero soltava pagina aberta).
+function marcarQuadro(perfil, quadro, abertas) {
+  const antes = lerMarcas(perfil)
+  if (antes === null) return
+  const depois = antes.filter(q => q !== quadro && (abertas === null || abertas.has(q))).concat([quadro])
+  writeFileSync(join(perfil, MARCA_VENCIDO), JSON.stringify(depois) + '\n')
+}
+
+// O pid de quem segura a trava: JSON { pid, dono } ou, de kit anterior, so o pid. Vazia ou ilegivel
+// devolve null e conta como viva.
+function pidDaTrava(texto) {
+  if (typeof texto !== 'string') return null
+  let pid = NaN
+  const t = texto.trim()
+  if (/^\d+$/.test(t)) pid = Number(t)
+  else try { pid = JSON.parse(t).pid } catch {}
+  return Number.isInteger(pid) && pid > 0 ? pid : null
 }
 
 // Pagina de login, cadastro ou verificacao no lugar da que o script pediu. host e o site que o

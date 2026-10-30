@@ -815,3 +815,11 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto tem `.claude/skills/conectar/scripts/lib/navegador.mjs` sem o texto `baixarNaSaida`.
 **Como aplicar:** nada no projeto; o motor traz.
 **Como testar:** abrir `.claude/skills/conectar/referencias/navegador.md`: cita o `baixarNaSaida` e `dados/navegador-saida/`.
+
+## trava-com-dono-e-download-pelo-chrome
+
+**O que é:** o script de rotina que baixa passa a página onde clica pro `baixarNaSaida`, e ele só aceita o download que começou naquela página depois do clique, pelo aviso do próprio Chrome. Download que estourou o prazo deixa a página marcada, e o script abre página nova pra tentar de novo. Todo script do navegador liga do mesmo jeito, então um não tira mais o arquivo do outro, e a aba que fica atrás de outra continua clicando.
+**Por quê:** antes um download atrasado podia voltar como se fosse da chamada seguinte, e dois robôs juntos podiam baixar ao mesmo tempo.
+**Te afeta se:** o projeto tem `.claude/skills/conectar/scripts/lib/navegador.mjs` sem o texto `.sabinos-baixando-vencido`.
+**Como aplicar:** nada no projeto; o motor traz.
+**Como testar:** abrir `.claude/skills/conectar/referencias/navegador.md`: cita `baixarNaSaida(acao, { pagina })`.
