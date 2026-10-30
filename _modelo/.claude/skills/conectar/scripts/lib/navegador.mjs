@@ -9,8 +9,8 @@
 // escrita aqui (o kit precisa rodar no Windows e no Mac).
 // Os pacotes (mercado-livre, midia-social) tem uma casca chrome.mjs que reexporta esta lib e poe o
 // Playwright do proprio pacote; esta lib nao importa pacote nenhum.
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, renameSync, rmSync, statSync } from 'node:fs'
-import { join, resolve, win32, posix } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, renameSync, rmSync, statSync, realpathSync } from 'node:fs'
+import { join, resolve, dirname, basename, relative, isAbsolute, sep, win32, posix } from 'node:path'
 import { spawn } from 'node:child_process'
 import { createServer } from 'node:net'
 import { createHash } from 'node:crypto'
@@ -94,10 +94,38 @@ export function argumentosDoChrome(perfil, porta, { headless = false } = {}) {
 // teste confere), que esta lib nao importa.
 export const SAIDA = 'dados/navegador-saida'
 
+// caminho real do pedaco que ja existe, mais o resto que ainda vai nascer (o real do hook)
+function caminhoReal(p) {
+  const resto = []
+  for (let atual = p; ; atual = dirname(atual)) {
+    try { return join(realpathSync.native(atual), ...resto) } catch {}
+    if (dirname(atual) === atual) return p
+    resto.unshift(basename(atual))
+  }
+}
+
+function dentroDe(base, alvo) {
+  const r = relative(base, alvo).split(sep).join('/').toLowerCase()
+  return r !== '' && r !== '..' && !r.startsWith('../') && !isAbsolute(r)
+}
+
+// O caminho real da SAIDA quando ela fica dentro do projeto; null quando dados/ ou a propria SAIDA e
+// juncao ou link pra fora. A regra e a do dentroDaSaida do hook barrar-mcp.mjs (um teste confere).
+export function saidaNoProjeto(raiz = RAIZ) {
+  const saida = caminhoReal(resolve(raiz, SAIDA))
+  return dentroDe(caminhoReal(resolve(raiz)), saida) ? saida : null
+}
+
 // Aponta a pasta de download do perfil pra SAIDA do projeto, mexendo so nessa chave e na do
 // "perguntar onde salvar" do Default/Preferences. So com o Chrome fechado: aberto, ele reescreve o arquivo ao fechar. Arquivo
-// ilegivel fica como esta (o perfil guarda o login). true quando a pasta ficou gravada.
-export function apontarDownload(perfil, saida, { log = console.log } = {}) {
+// ilegivel fica como esta (o perfil guarda o login), e a SAIDA que sai do projeto nao se aponta. true
+// quando a pasta ficou gravada.
+export function apontarDownload(perfil, raiz, { log = console.log } = {}) {
+  const saida = join(raiz, SAIDA)
+  if (!saidaNoProjeto(raiz)) {
+    log(`a pasta ${SAIDA} leva pra fora do projeto (atalho ou juncao); o arquivo que o Chrome baixar pode cair na pasta Downloads. Troque o atalho por uma pasta comum e abra o Chrome de novo`)
+    return false
+  }
   const pasta = join(perfil, 'Default')
   const arquivo = join(pasta, 'Preferences')
   let dados = {}
@@ -391,7 +419,7 @@ export async function abrirChrome({ raiz = RAIZ, perfil = perfilDedicado(raiz), 
     if (!existsSync(ignora)) writeFileSync(ignora, '*\n')
   }
   // so o perfil dedicado do projeto: perfil de fora (a sonda da bancada abre o do Raio-X) nao se mexe
-  const saida = chave(perfil, plataforma) === chave(perfilDedicado(raiz), plataforma) && apontarDownload(perfil, join(raiz, SAIDA), { log })
+  const saida = chave(perfil, plataforma) === chave(perfilDedicado(raiz), plataforma) && apontarDownload(perfil, raiz, { log })
   const filho = spawnFn(chrome, argumentosDoChrome(perfil, escolhida, { headless }), { detached: true, stdio: 'ignore' })
   if (filho && typeof filho.unref === 'function') filho.unref()
   log(`abrindo o Chrome dedicado na porta ${escolhida} (perfil em ${perfil})`)
@@ -444,9 +472,25 @@ export function opcoesDeAbrir(argv) {
   return { headless: argv.includes('--sem-janela'), fechar: argv.includes('--fechar') }
 }
 
+// O --fechar mora so no abrir-chrome do nucleo; o do ML e o do MS nao aceitam argumento, e o Chrome
+// e o mesmo (mesmo perfil e porta, pela mesma lib).
+export const FECHAR_CHROME = 'node .claude/skills/conectar/scripts/abrir-chrome.mjs --fechar'
+
+// As linhas de aviso dos tres abrir-chrome.mjs a partir do retorno do abrirChrome e do headless
+// pedido. Chrome recem-aberto nao avisa nada.
+export function avisosDeAbrir(r, headless = false) {
+  if (!r || !r.jaEstavaAberto) return []
+  const linhas = []
+  // D24: com a pessoa pedindo janela, nada se fecha sozinho
+  if (r.semJanela && !headless) linhas.push(`Ele esta sem janela porque um robo abriu. Se o robo estiver no meio de uma tarefa, espere ele terminar; depois rode ${FECHAR_CHROME} e abra de novo sem o --fechar.`)
+  if (r.perfilConferido && r.semPastaDeSaida) linhas.push(`Esse Chrome abriu antes da pasta de download apontar pro projeto: o que ele baixar cai fora do projeto. Rode ${FECHAR_CHROME} e abra de novo.`)
+  return linhas
+}
+
 // carregar traz o Playwright (a casca do pacote resolve do node_modules dela); skill so muda o texto
-// das mensagens.
-export async function conectar({ porta = portaDoProjeto(RAIZ), perfil = perfilDedicado(RAIZ), carregar, skill, fetchFn } = {}) {
+// das mensagens. noDefaults, so no script que baixa (baixarNaSaida, abaixo): sem ele o Playwright
+// segura o download do Chrome inteiro numa pasta temporaria que apaga ao desconectar (P1 da 5.33).
+export async function conectar({ porta = portaDoProjeto(RAIZ), perfil = perfilDedicado(RAIZ), carregar, skill, fetchFn, noDefaults = false } = {}) {
   let pw
   try {
     pw = await carregar()
@@ -462,7 +506,67 @@ export async function conectar({ porta = portaDoProjeto(RAIZ), perfil = perfilDe
       : `o Chrome dedicado nao esta aberto (porta ${porta}).`), { estado: c.estado })
   }
   if (c.estado !== 'conferido') throw Object.assign(new Error(`na porta ${porta} responde um Chrome que nao e o deste projeto. Feche esse Chrome e abra o deste projeto${skill ? `: node .claude/skills/${skill}/scripts/abrir-chrome.mjs` : ''}`), { estado: c.estado })
-  return pw.chromium.connectOverCDP(`http://127.0.0.1:${porta}`)
+  const url = `http://127.0.0.1:${porta}`
+  return noDefaults ? pw.chromium.connectOverCDP(url, { noDefaults: true }) : pw.chromium.connectOverCDP(url)
+}
+
+// Script de rotina que baixa (P0 da 5.35): liga pelo conectar({ noDefaults: true }) e o Chrome grava
+// sozinho na SAIDA que o apontarDownload apontou, com a higiene de nome e a numeracao dele (o evento
+// download do Playwright nao dispara assim). O ajudante dispara a acao e espera um arquivo novo e
+// completo aparecer; devolve o caminho dele. Arquivo novo nao diz de que acao
+// veio: um baixador por vez no projeto (trava no perfil, a de processo morto sai) e dois arquivos novos
+// param com erro em vez de escolher. Outra conexao padrao no mesmo Chrome leva o download pra pasta
+// temporaria dela (P0): ai o prazo estoura com o erro que diz isso.
+export const TRAVA_DOWNLOAD = '.sabinos-baixando'
+// download pela metade: o Chrome grava primeiro um <guid>.tmp, depois o .crdownload, e so no fim troca
+// pro nome do arquivo (o ponta a ponta da 5.35 pegou o .tmp, que a P0 nao viu)
+const EM_ANDAMENTO = /\.crdownload$|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.tmp$/i
+
+export async function baixarNaSaida(acao, { raiz = RAIZ, perfil = perfilDedicado(raiz), prazoMs = 120_000, passoMs = 250, vivo = processoVivo, dormir = ms => new Promise(r => setTimeout(r, ms)) } = {}) {
+  const saida = saidaNoProjeto(raiz)
+  if (!saida) throw new Error(`a pasta ${SAIDA} leva pra fora do projeto (atalho ou juncao): o robo nao baixa ali. Troque o atalho por uma pasta comum e abra o Chrome de novo.`)
+  const fim = Date.now() + prazoMs
+  const trava = join(perfil, TRAVA_DOWNLOAD)
+  for (;;) {
+    try {
+      writeFileSync(trava, String(process.pid), { flag: 'wx' })
+      break
+    } catch (e) {
+      if (e.code === 'ENOENT') throw new Error(`o perfil do Chrome dedicado nao existe (${perfil}). Abra o Chrome dedicado do projeto e rode de novo.`)
+      if (e.code !== 'EEXIST') throw e
+      let dono = NaN
+      try { dono = Number(readFileSync(trava, 'utf8').trim()) } catch {}
+      if (Number.isInteger(dono) && dono > 0 && !vivo(dono)) {
+        try { rmSync(trava, { force: true }) } catch {}
+        continue
+      }
+      if (Date.now() >= fim) throw new Error('outro robo do projeto esta baixando um arquivo e nao terminou a tempo: espere ele acabar e rode de novo.')
+      await dormir(passoMs)
+    }
+  }
+  try {
+    mkdirSync(saida, { recursive: true })
+    // download pela metade de uma chamada que estourou o prazo terminaria no meio desta e passaria por
+    // arquivo dela (Codex comum da 5.35): a acao so dispara com a pasta sem nenhum
+    for (;;) {
+      const metade = readdirSync(saida).filter(n => EM_ANDAMENTO.test(n))
+      if (!metade.length) break
+      if (Date.now() >= fim) throw new Error(`ha download pela metade em ${SAIDA} (${metade.join(', ')}): espere ele acabar; se o Chrome nao esta baixando nada, apague esse arquivo e rode de novo.`)
+      await dormir(passoMs)
+    }
+    const antes = new Set(readdirSync(saida))
+    await acao()
+    do {
+      const novos = readdirSync(saida).filter(n => !antes.has(n))
+      const prontos = novos.filter(n => !EM_ANDAMENTO.test(n))
+      if (prontos.length > 1) throw new Error(`apareceram ${prontos.length} arquivos novos em ${SAIDA} (${prontos.join(', ')}): o robo nao sabe qual veio da acao e para aqui.`)
+      if (prontos.length === 1 && novos.length === 1) return join(saida, prontos[0])
+      await dormir(passoMs)
+    } while (Date.now() < fim)
+    throw new Error(`o arquivo nao apareceu em ${SAIDA} em ${Math.ceil(prazoMs / 1000)} segundos. Se outro script estava ligado no mesmo Chrome, o download foi pra pasta temporaria dele: rode de novo com so este script.`)
+  } finally {
+    try { rmSync(trava, { force: true }) } catch {}
+  }
 }
 
 // Pagina de login, cadastro ou verificacao no lugar da que o script pediu. host e o site que o

@@ -3,7 +3,7 @@
 // Rodar: node --test navegador.test.mjs
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, existsSync, readFileSync, readdirSync, writeFileSync, rmSync, utimesSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, existsSync, readFileSync, readdirSync, writeFileSync, rmSync, utimesSync, renameSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname, basename } from 'node:path'
 import { createServer as servidorHttp } from 'node:http'
@@ -16,8 +16,9 @@ import {
   relogar, receitaValida, abaDoSite, tentouHaPouco, marcarTentativa, desmarcarTentativa, JANELA_RELOGIN_MS,
   travarRelogin, expressaoClique, conferirServidor, anotarSessao, pastaDaAnotacao, RELIGAR,
   SAIDA, apontarDownload, desminimizar, fecharChrome, opcoesDeAbrir, processoVivo, FOLGA_SEM_PID_MS,
+  FECHAR_CHROME, avisosDeAbrir, saidaNoProjeto, baixarNaSaida, TRAVA_DOWNLOAD,
 } from './navegador.mjs'
-import { SAIDA_NAVEGADOR } from '../../../../hooks/barrar-mcp.mjs'
+import { SAIDA_NAVEGADOR, dentroDaSaida } from '../../../../hooks/barrar-mcp.mjs'
 import { runInNewContext } from 'node:vm'
 import { RAIZ } from './raiz.mjs'
 import { codigo } from '../totp.mjs'
@@ -576,7 +577,7 @@ test('apontarDownload: perfil sem Default ganha o Preferences so com a pasta, e 
   try {
     const perfil = join(raiz, 'perfil')
     const saida = join(raiz, SAIDA)
-    assert.equal(apontarDownload(perfil, saida, { log: () => {} }), true)
+    assert.equal(apontarDownload(perfil, raiz, { log: () => {} }), true)
     assert.deepEqual(prefs(perfil), { download: { default_directory: saida, prompt_for_download: false } })
     assert.ok(existsSync(saida), 'a pasta de saida existe')
     assert.deepEqual(readdirSync(join(perfil, 'Default')), ['Preferences'], 'sem temporario sobrando')
@@ -590,7 +591,7 @@ test('apontarDownload: Preferences com outras chaves mantem todas, troca a pasta
     mkdirSync(join(perfil, 'Default'), { recursive: true })
     const antes = { profile: { name: 'Pessoa 1' }, download: { prompt_for_download: true, default_directory: '/velha', directory_upgrade: true }, extensions: { x: 1 } }
     writeFileSync(join(perfil, 'Default', 'Preferences'), JSON.stringify(antes))
-    assert.equal(apontarDownload(perfil, join(raiz, SAIDA), { log: () => {} }), true)
+    assert.equal(apontarDownload(perfil, raiz, { log: () => {} }), true)
     assert.deepEqual(prefs(perfil), { ...antes, download: { directory_upgrade: true, prompt_for_download: false, default_directory: join(raiz, SAIDA) } })
   } finally { rmSync(raiz, { recursive: true, force: true }) }
 })
@@ -604,10 +605,167 @@ test('apontarDownload: Preferences ilegivel fica byte a byte igual e o log avisa
     for (const quebrado of ['{"download": ', '[1,2]', 'null']) {
       writeFileSync(arq, quebrado)
       const avisos = []
-      assert.equal(apontarDownload(perfil, join(raiz, SAIDA), { log: m => avisos.push(m) }), false, quebrado)
+      assert.equal(apontarDownload(perfil, raiz, { log: m => avisos.push(m) }), false, quebrado)
       assert.equal(readFileSync(arq, 'utf8'), quebrado)
       assert.ok(avisos.length === 1 && avisos[0].includes('Downloads'), avisos.join(' | '))
     }
+  } finally { rmSync(raiz, { recursive: true, force: true }) }
+})
+
+// Rodada 5.35, chat 3: a SAIDA so vale dentro do projeto, pelo caminho real. Cada caso monta o
+// projeto num mkdtemp, com juncao de verdade quando o caso pede.
+const CASOS_DA_SAIDA = {
+  'nada existe ainda': { dentro: true, montar: () => {} },
+  'dados e a saida pastas comuns': { dentro: true, montar: p => mkdirSync(join(p, SAIDA), { recursive: true }) },
+  'dados e juncao pra fora': { dentro: false, montar: (p, fora) => symlinkSync(fora, join(p, 'dados'), 'junction') },
+  'a saida e juncao pra fora': { dentro: false, montar: (p, fora) => { mkdirSync(join(p, 'dados')); symlinkSync(fora, join(p, SAIDA), 'junction') } },
+  'a saida e juncao pra outra pasta do projeto': { dentro: true, montar: p => { mkdirSync(join(p, 'outra')); mkdirSync(join(p, 'dados')); symlinkSync(join(p, 'outra'), join(p, SAIDA), 'junction') } },
+}
+
+async function comProjeto(caso, fn) {
+  const base = temp()
+  try {
+    const proj = join(base, 'proj')
+    const fora = join(base, 'fora')
+    mkdirSync(proj)
+    mkdirSync(fora)
+    CASOS_DA_SAIDA[caso].montar(proj, fora)
+    return await fn(proj, fora)
+  } finally { rmSync(base, { recursive: true, force: true }) }
+}
+
+test('saidaNoProjeto tem a regra do dentroDaSaida do hook, com juncao real', async () => {
+  const vistos = new Set()
+  for (const [caso, { dentro }] of Object.entries(CASOS_DA_SAIDA)) {
+    await comProjeto(caso, proj => {
+      const lib = saidaNoProjeto(proj) !== null
+      vistos.add(lib)
+      assert.equal(lib, dentro, `${caso}: a lib`)
+      assert.equal(dentroDaSaida(proj, SAIDA + '/relatorio.csv'), dentro, `${caso}: o hook`)
+    })
+  }
+  assert.deepEqual([...vistos].sort(), [false, true], 'canario: os casos cobrem dentro e fora')
+})
+
+test('apontarDownload: dados ou a saida em juncao pra fora nao aponta, avisa e nao cria nada fora', async () => {
+  for (const caso of ['dados e juncao pra fora', 'a saida e juncao pra fora']) {
+    await comProjeto(caso, (proj, fora) => {
+      const perfil = join(proj, 'perfil')
+      const avisos = []
+      assert.equal(apontarDownload(perfil, proj, { log: m => avisos.push(m) }), false, caso)
+      assert.ok(avisos.length === 1 && avisos[0].includes(SAIDA), `${caso}: ${avisos.join(' | ')}`)
+      assert.equal(existsSync(join(perfil, 'Default', 'Preferences')), false, `${caso}: o Preferences nasceu`)
+      assert.deepEqual(readdirSync(fora), [], `${caso}: nasceu coisa fora do projeto`)
+    })
+  }
+  await comProjeto('a saida e juncao pra outra pasta do projeto', proj => {
+    assert.equal(apontarDownload(join(proj, 'perfil'), proj, { log: () => {} }), true, 'canario: juncao dentro do projeto aponta')
+  })
+})
+
+// projeto de mentira pro baixarNaSaida: o perfil existe (o Chrome dedicado ja abriu)
+function comBaixador(fn) {
+  const raiz = temp()
+  const perfil = perfilDedicado(raiz)
+  mkdirSync(perfil, { recursive: true })
+  return Promise.resolve().then(() => fn(raiz, perfil, saidaNoProjeto(raiz))).finally(() => rmSync(raiz, { recursive: true, force: true }))
+}
+const RAPIDO = { prazoMs: 300, passoMs: 10 }
+
+test('baixarNaSaida: o arquivo novo da acao cai em dados/navegador-saida e a trava sai', () => comBaixador(async (raiz, perfil, saida) => {
+  const caminho = await baixarNaSaida(() => writeFileSync(join(saida, 'relatorio.csv'), 'a;b'), { raiz, ...RAPIDO })
+  assert.equal(caminho, join(saida, 'relatorio.csv'))
+  assert.equal(readFileSync(caminho, 'utf8'), 'a;b')
+  assert.equal(existsSync(join(perfil, TRAVA_DOWNLOAD)), false, 'a trava ficou')
+}))
+
+test('baixarNaSaida: o <guid>.tmp e o .crdownload nao contam como pronto, so o arquivo que eles viram', () => comBaixador(async (raiz, perfil, saida) => {
+  // a ordem que o Chrome real fez no ponta a ponta
+  const tmp = join(saida, 'fc2f51ab-b668-4f1b-8303-2a7e260e135f.tmp')
+  let voltas = 0
+  const dormir = async () => {
+    if (++voltas === 3) renameSync(tmp, join(saida, 'relatorio.csv.crdownload'))
+    if (voltas === 5) renameSync(join(saida, 'relatorio.csv.crdownload'), join(saida, 'relatorio.csv'))
+  }
+  const caminho = await baixarNaSaida(() => writeFileSync(tmp, 'a;b'), { raiz, prazoMs: 5000, dormir })
+  assert.ok(voltas >= 5, `canario: o ajudante esperou ${voltas} voltas`)
+  assert.equal(caminho, join(saida, 'relatorio.csv'))
+  await assert.rejects(baixarNaSaida(() => writeFileSync(join(saida, 'outro.csv.crdownload'), 'x'), { raiz, ...RAPIDO }), /nao apareceu/)
+}))
+
+test('baixarNaSaida: download pela metade de antes segura a acao ate acabar, e o dele nao volta como desta', () => comBaixador(async (raiz, perfil, saida) => {
+  // o da chamada que estourou o prazo termina no meio da espera desta
+  const velho = join(saida, 'velho.csv.crdownload')
+  mkdirSync(saida, { recursive: true })
+  writeFileSync(velho, 'v')
+  let voltas = 0
+  let disparou = null
+  const dormir = async () => { if (++voltas === 3) renameSync(velho, join(saida, 'velho.csv')) }
+  const caminho = await baixarNaSaida(() => { disparou = voltas; writeFileSync(join(saida, 'novo.csv'), 'n') }, { raiz, prazoMs: 5000, dormir })
+  assert.equal(disparou, 3, 'a acao disparou com o download de antes pela metade')
+  assert.equal(caminho, join(saida, 'novo.csv'))
+  // pela metade ate o prazo: para sem disparar
+  writeFileSync(join(saida, 'parado.csv.crdownload'), 'p')
+  let rodou = false
+  await assert.rejects(baixarNaSaida(() => { rodou = true }, { raiz, ...RAPIDO }), /pela metade/)
+  assert.equal(rodou, false)
+  assert.equal(existsSync(join(perfil, TRAVA_DOWNLOAD)), false, 'a trava ficou')
+}))
+
+test('baixarNaSaida: dois arquivos novos param com erro e a trava sai', () => comBaixador(async (raiz, perfil, saida) => {
+  const acao = () => { writeFileSync(join(saida, 'a.csv'), '1'); writeFileSync(join(saida, 'b.csv'), '2') }
+  await assert.rejects(baixarNaSaida(acao, { raiz, ...RAPIDO }), /2 arquivos novos/)
+  assert.equal(existsSync(join(perfil, TRAVA_DOWNLOAD)), false, 'a trava ficou')
+}))
+
+test('baixarNaSaida: prazo estourado e erro da acao param com erro claro e largam a trava', () => comBaixador(async (raiz, perfil) => {
+  await assert.rejects(baixarNaSaida(() => {}, { raiz, ...RAPIDO }), /nao apareceu em dados\/navegador-saida.*outro script/)
+  assert.equal(existsSync(join(perfil, TRAVA_DOWNLOAD)), false, 'a trava ficou depois do prazo')
+  await assert.rejects(baixarNaSaida(() => { throw new Error('clique falhou') }, { raiz, ...RAPIDO }), /clique falhou/)
+  assert.equal(existsSync(join(perfil, TRAVA_DOWNLOAD)), false, 'a trava ficou depois do erro da acao')
+}))
+
+test('baixarNaSaida: um baixador por vez; trava de processo vivo segura, a de processo morto sai', () => comBaixador(async (raiz, perfil, saida) => {
+  // dois juntos: o segundo so dispara a acao depois de o primeiro achar o arquivo dele
+  const ordem = []
+  const lento = baixarNaSaida(async () => { ordem.push('lento'); await new Promise(r => setTimeout(r, 100)); writeFileSync(join(saida, 'lento.csv'), 'l') }, { raiz, prazoMs: 5000, passoMs: 10 })
+  const pequeno = baixarNaSaida(() => { ordem.push('pequeno'); writeFileSync(join(saida, 'pequeno.csv'), 'p') }, { raiz, prazoMs: 5000, passoMs: 10 })
+  assert.deepEqual([await lento, await pequeno], [join(saida, 'lento.csv'), join(saida, 'pequeno.csv')])
+  assert.deepEqual(ordem, ['lento', 'pequeno'])
+  // a trava de outro processo vivo: a acao nunca roda
+  let rodou = false
+  writeFileSync(join(perfil, TRAVA_DOWNLOAD), '4242')
+  await assert.rejects(baixarNaSaida(() => { rodou = true }, { raiz, ...RAPIDO, vivo: () => true }), /outro robo/)
+  assert.equal(rodou, false)
+  assert.ok(existsSync(join(perfil, TRAVA_DOWNLOAD)), 'a trava do outro processo sumiu')
+  // a mesma trava com o processo morto sai, e o download segue
+  const caminho = await baixarNaSaida(() => writeFileSync(join(saida, 'depois.csv'), 'd'), { raiz, ...RAPIDO, vivo: () => false })
+  assert.equal(caminho, join(saida, 'depois.csv'))
+}))
+
+test('baixarNaSaida: saida em juncao pra fora para antes da acao', async () => {
+  for (const caso of ['dados e juncao pra fora', 'a saida e juncao pra fora']) {
+    // o perfil fica na raiz: a juncao toma o lugar de dados/
+    await comProjeto(caso, async proj => {
+      let rodou = false
+      await assert.rejects(baixarNaSaida(() => { rodou = true }, { raiz: proj, perfil: proj, ...RAPIDO }), /leva pra fora do projeto/, caso)
+      assert.equal(rodou, false, `${caso}: a acao rodou`)
+      assert.equal(existsSync(join(proj, TRAVA_DOWNLOAD)), false, `${caso}: a trava nasceu`)
+    })
+  }
+})
+
+test('conectar: noDefaults so quando pedido', async () => {
+  const raiz = temp()
+  const ch = chromeFalso({ [P]: 'g-1' })
+  try {
+    const perfil = perfilDedicado(raiz)
+    gravar(perfil, { porta: P, guid: 'g-1', saida: true })
+    const chamadas = []
+    const carregar = async () => ({ chromium: { connectOverCDP: (...a) => { chamadas.push(a); return 'browser' } } })
+    await conectar({ porta: P, perfil, carregar, fetchFn: ch.fetchFn })
+    await conectar({ porta: P, perfil, carregar, fetchFn: ch.fetchFn, noDefaults: true })
+    assert.deepEqual(chamadas, [[`http://127.0.0.1:${P}`], [`http://127.0.0.1:${P}`, { noDefaults: true }]])
   } finally { rmSync(raiz, { recursive: true, force: true }) }
 })
 
@@ -784,6 +942,24 @@ test('opcoesDeAbrir: --sem-janela, --fechar, nada, e opcao desconhecida ou as du
   assert.deepEqual(opcoesDeAbrir(['--fechar']), { headless: false, fechar: true })
   assert.throws(() => opcoesDeAbrir(['--headless']), /opcao desconhecida: --headless/)
   assert.throws(() => opcoesDeAbrir(['--sem-janela', '--fechar']), /um de cada vez/)
+})
+
+test('avisosDeAbrir: D24 so sem headless, pasta de saida so com perfil conferido, nada com Chrome recem-aberto', () => {
+  assert.equal(FECHAR_CHROME, 'node .claude/skills/conectar/scripts/abrir-chrome.mjs --fechar')
+  const aberto = { jaEstavaAberto: true, perfilConferido: true, porta: P, pid: null, semJanela: false, semPastaDeSaida: false }
+  assert.deepEqual(avisosDeAbrir(aberto), [], 'canario: Chrome com janela e pasta apontada nao avisa')
+  const semJanela = avisosDeAbrir({ ...aberto, semJanela: true })
+  assert.equal(semJanela.length, 1)
+  assert.match(semJanela[0], /sem janela porque um robo abriu/)
+  assert.ok(semJanela[0].includes(FECHAR_CHROME), 'a linha da D24 traz o --fechar do nucleo')
+  assert.deepEqual(avisosDeAbrir({ ...aberto, semJanela: true }, true), [], 'com headless pedido, a D24 nao avisa')
+  const pasta = avisosDeAbrir({ ...aberto, semPastaDeSaida: true }, true)
+  assert.equal(pasta.length, 1)
+  assert.match(pasta[0], /cai fora do projeto/)
+  assert.ok(pasta[0].includes(FECHAR_CHROME))
+  assert.deepEqual(avisosDeAbrir({ ...aberto, perfilConferido: false, semPastaDeSaida: true }), [], 'sem perfil conferido, nada da pasta')
+  assert.equal(avisosDeAbrir({ ...aberto, semJanela: true, semPastaDeSaida: true }).length, 2)
+  assert.deepEqual(avisosDeAbrir({ jaEstavaAberto: false, perfilConferido: true, porta: P, pid: 4321, semJanela: true, semPastaDeSaida: true }), [], 'Chrome recem-aberto nao avisa')
 })
 
 test('abrirChrome abre, espera a porta e grava a sentinela com o guid', async () => {

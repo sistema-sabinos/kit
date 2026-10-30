@@ -60,7 +60,7 @@ Antes do Degrau 1, três perguntas, nesta ordem:
 
 Cada vez que for usar o `navegador`, rodar antes o `abrir-chrome.mjs`: o servidor entra em qualquer Chrome que estiver na porta, e é o `abrir-chrome.mjs` que confere se esse Chrome é o deste projeto. Se ele avisar que a porta mudou, ligar o `navegador` de novo com a porta nova (`claude mcp remove navegador` e o passo 3) e fechar e abrir o Claude Code antes de usar: o `navegador` que já está rodando só pega a porta nova numa sessão nova.
 
-Tarefa sem você na frente (script de rotina) abre o Chrome sem janela, com `--sem-janela` no `abrir-chrome.mjs`: o login que você fez com janela vale sem janela. Com você na frente, a janela do Chrome dedicado pode ficar atrás de outra, mas minimizada trava o clique do robô. O que o robô baixa cai em `dados/navegador-saida/`.
+Tarefa sem você na frente (script de rotina) abre o Chrome sem janela, com `--sem-janela` no `abrir-chrome.mjs`: o login que você fez com janela vale sem janela. Com você na frente, a janela do Chrome dedicado pode ficar atrás de outra, mas minimizada trava o clique do robô. O que o robô baixa cai em `dados/navegador-saida/`, e o do script de rotina também: ele espera o arquivo pelo `baixarNaSaida` da lib do Chrome.
 
 Tarefa de vez em quando, com você na frente, também pode ir pelo Claude in Chrome (a extensão do Claude) instalado no Chrome dedicado: precisa de plano pago do Claude, liga só na hora com `/chrome`, e nunca se marca a opção "Enabled by default".
 

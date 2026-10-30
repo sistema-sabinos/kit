@@ -32,6 +32,11 @@
   script) e, se foi ela que abriu, fecha no fim (`fecharChrome` da lib), porque
   o Chrome segue aberto depois do script. Com a pessoa na frente, a janela pode
   ficar atrás de outra, mas minimizada trava o clique.
+- Script de rotina que baixa arquivo liga pelo `conectar({ noDefaults: true })`
+  e dispara o clique pelo `baixarNaSaida` da lib, que espera o arquivo em
+  `dados/navegador-saida/` e devolve o caminho dele. Um download por vez: com
+  outro script ligado no mesmo Chrome o arquivo some, e o ajudante para com o
+  aviso.
 - O `abrir-chrome.mjs` avisa que o Chrome está sem janela, ou que abriu antes da
   pasta de download apontar pro projeto: não fechar sozinho. Mostrar o aviso;
   quem fecha, pelo `--fechar`, é a pessoa, depois do robô terminar.

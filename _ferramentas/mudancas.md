@@ -807,3 +807,11 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto tem `.claude/skills/conectar/SKILL.md` sem o texto `lê sozinho pelo conector do Gmail`.
 **Como aplicar:** nada no projeto; o motor traz. Avisar que o código por email só funciona com o conector do Gmail ligado (item 3 do `/conectar`).
 **Como testar:** abrir `.claude/skills/conectar/SKILL.md`, seção "Regras": tem a regra da conexão que parou e a do código por email.
+
+## script-que-baixa-na-pasta-do-projeto
+
+**O que é:** o script de rotina que baixa um arquivo (relatório, planilha) espera ele chegar em `dados/navegador-saida/` pelo `baixarNaSaida` da lib do navegador, um download por vez, e para com aviso claro se o arquivo não chega. Quem abre o Chrome dedicado do Mercado Livre ou da mídia social ganha os mesmos avisos do `/conectar` quando ele já estava aberto.
+**Por quê:** antes o script de rotina não tinha jeito seguro de pegar o que baixava.
+**Te afeta se:** o projeto tem `.claude/skills/conectar/scripts/lib/navegador.mjs` sem o texto `baixarNaSaida`.
+**Como aplicar:** nada no projeto; o motor traz.
+**Como testar:** abrir `.claude/skills/conectar/referencias/navegador.md`: cita o `baixarNaSaida` e `dados/navegador-saida/`.

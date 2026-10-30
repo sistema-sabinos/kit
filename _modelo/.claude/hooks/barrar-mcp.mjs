@@ -36,16 +36,21 @@ export const MODOS_ASK_CALADO = []
 export const BARRA_NAVEGADOR = /run_code|evaluate|javascript|network_request|cookie|localstorage|sessionstorage|storage_state|webmcp/i
 
 // Playwright MCP: as de capability core da versao fixada (sobe sem --caps, entao o opt-in nem aparece);
-// Claude in Chrome: as que a sonda listou. As duas listas sem o que o BARRA_NAVEGADOR pega.
-export const LIBERADAS_NAVEGADOR = [
+// Claude in Chrome: as que a sonda listou. As duas listas sem o que o BARRA_NAVEGADOR pega. Cada servidor
+// so usa a sua (5.35): juntas, o browser_file_upload do Claude in Chrome herdava a regra do Playwright MCP.
+export const LIBERADAS_PLAYWRIGHT = [
   'browser_click', 'browser_close', 'browser_console_messages', 'browser_drag', 'browser_drop', 'browser_emulate_media',
   'browser_file_upload', 'browser_fill_form', 'browser_find', 'browser_handle_dialog', 'browser_hover', 'browser_navigate',
   'browser_navigate_back', 'browser_press_key', 'browser_resize', 'browser_select_option', 'browser_snapshot', 'browser_tabs',
   'browser_take_screenshot', 'browser_type', 'browser_wait_for',
+]
+export const LIBERADAS_CHROME_IA = [
   'browser_batch', 'computer', 'file_upload', 'find', 'form_input', 'get_page_text', 'gif_creator', 'list_connected_browsers',
   'navigate', 'read_console_messages', 'read_page', 'resize_window', 'select_browser', 'shortcuts_execute', 'shortcuts_list',
   'switch_browser', 'tabs_close_mcp', 'tabs_context_mcp', 'tabs_create_mcp', 'upload_image',
 ]
+const CHROME_IA = 'claude-in-chrome'
+const liberadasDo = servidor => servidor === CHROME_IA ? LIBERADAS_CHROME_IA : LIBERADAS_PLAYWRIGHT
 
 // campo com a lista de caminhos de cada ferramenta que sobe arquivo do disco pra pagina. O browser_drop
 // tambem le arquivo local ("as if dragged from outside the page", sonda C1a). O campo do Claude in Chrome
@@ -84,7 +89,7 @@ function real(p) {
   }
 }
 
-function dentroDaSaida(cwd, alvo) {
+export function dentroDaSaida(cwd, alvo) {
   if (typeof alvo !== 'string' || !alvo) return false
   const abs = real(resolve(cwd, alvo))
   const raiz = real(resolve(cwd))
@@ -116,9 +121,26 @@ function uploadLimpo(cwd, sufixo, entrada) {
   })
 }
 
-// formato do lote do Claude in Chrome nao medido (exemploBatch null na sonda C1): sem ler as acoes, barra
-function acoesDoBatch() {
-  return null
+// Lote do Claude in Chrome na forma medida no Claude Code 2.1.312 (recibo das provas C1b, 2026-10-29):
+// {"actions":[{"name":"<ferramenta>","input":{...}}]}. Qualquer desvio devolve null e o lote barra; formato
+// novo de versao futura barra a mais. Lote dentro de lote barra sem recursao.
+const objeto = x => x !== null && typeof x === 'object' && !Array.isArray(x)
+const soAsChaves = (x, chaves) => {
+  const k = Object.keys(x).sort()
+  return k.length === chaves.length && k.every((c, i) => c === chaves[i])
+}
+function acoesDoBatch(servidor, entrada) {
+  if (servidor !== CHROME_IA || !objeto(entrada) || !soAsChaves(entrada, ['actions'])) return null
+  const { actions } = entrada
+  if (!Array.isArray(actions) || actions.length === 0) return null
+  const acoes = []
+  for (const a of actions) {
+    if (!objeto(a) || !soAsChaves(a, ['input', 'name'])) return null
+    if (typeof a.name !== 'string' || a.name === 'browser_batch' || !LIBERADAS_CHROME_IA.includes(a.name)) return null
+    if (!objeto(a.input)) return null
+    acoes.push({ nome: a.name, entrada: a.input })
+  }
+  return acoes
 }
 
 function julgar(tool_name, tool_input, cwd) {
@@ -132,10 +154,10 @@ function julgar(tool_name, tool_input, cwd) {
     return barra('ferramenta fora do formato mcp__<servidor>__<ferramenta>')
   if (tool_input !== undefined && (tool_input === null || typeof tool_input !== 'object' || Array.isArray(tool_input)))
     return barra(LEITURA_FALHOU)
-  const ehNavegador = servidor === 'claude-in-chrome' || sufixo.startsWith('browser_') || sufixo.startsWith('webmcp_')
+  const ehNavegador = servidor === CHROME_IA || sufixo.startsWith('browser_') || sufixo.startsWith('webmcp_')
   if (ehNavegador) {
     if (sufixo === 'browser_batch') {
-      const acoes = acoesDoBatch(tool_input)
+      const acoes = acoesDoBatch(servidor, tool_input)
       if (!acoes) return barra('lote de ações do navegador num formato que a trava não lê')
       for (const acao of acoes) {
         const d = julgar(`mcp__${servidor}__${acao.nome}`, acao.entrada, cwd)
@@ -144,7 +166,7 @@ function julgar(tool_name, tool_input, cwd) {
       return passa()
     }
     if (BARRA_NAVEGADOR.test(sufixo)) return barra('ferramenta do navegador que lê o login da página ou roda código nela')
-    if (!LIBERADAS_NAVEGADOR.includes(sufixo)) return barra('ferramenta do navegador que a trava não conhece')
+    if (!liberadasDo(servidor).includes(sufixo)) return barra('ferramenta do navegador que a trava não conhece')
     if (tool_input && 'filename' in tool_input && !dentroDaSaida(cwd, tool_input.filename))
       return barra('arquivo do navegador fora de dados/navegador-saida/ (print de app vai nas pastas de print do app)')
     if (UPLOAD.has(sufixo) && !uploadLimpo(cwd, sufixo, tool_input)) return barra('upload de arquivo fora do projeto ou de segredo')

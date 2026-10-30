@@ -62,7 +62,8 @@ conta uma vez.
   e te conta o que fez. Tarefa de vez em quando vai com você na frente, sem script.
 - **Sem você na frente:** o script abre o Chrome sem janela (`--sem-janela`), e o login
   que você fez com janela vale sem janela. Com você na frente, a janela pode ficar atrás
-  de outra, mas minimizada trava o clique do robô.
+  de outra, mas minimizada trava o clique do robô. O que o script baixa cai em
+  `dados/navegador-saida/`, pelo `baixarNaSaida` da lib do Chrome.
 - **Com você na frente, outro jeito:** o Claude in Chrome (a extensão do Claude)
   instalado no Chrome dedicado, ligado só na hora com `/chrome`. Precisa de plano pago do
   Claude, e nunca se marca a opção "Enabled by default".

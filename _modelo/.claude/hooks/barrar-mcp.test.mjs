@@ -122,11 +122,53 @@ test('navegador: o nome com __ no sufixo nao vira leitura de outro servidor', ()
   assert.equal(decide('mcp__claude_ai_Gmail__get_message', {}), 'passa', 'canario: leitura de conta com nome normal passa')
 })
 
+// 5.35: cada servidor com a sua lista; antes, o Claude in Chrome herdava a regra de upload do Playwright MCP
+test('navegador: upload com nome do Playwright MCP no servidor do Claude in Chrome barra', () => {
+  for (const nome of ['browser_file_upload', 'browser_drop']) {
+    assert.equal(decide(`mcp__playwright__${nome}`, {}), 'passa', `canario: no playwright ${nome} sem paths passa`)
+    assert.equal(decide(`mcp__claude-in-chrome__${nome}`, {}), 'barra', nome)
+  }
+})
+
+// forma medida no Claude Code 2.1.312 (recibo das provas C1b, 2026-10-29); a bancada prende a mesma
+// medida ao arquivo de dados da sonda (trava-mcp.test.mjs)
+const LOTE = '{"actions":[{"name":"tabs_context_mcp","input":{}},{"name":"get_page_text","input":{"tabId":255428954}}]}'
+const lote = (entrada, servidor = 'claude-in-chrome') => decide(`mcp__${servidor}__browser_batch`, entrada)
+const comAcoes = (...acoes) => ({ actions: [...JSON.parse(LOTE).actions, ...acoes] })
+
 test('navegador: browser_batch julgado acao por acao', () => {
-  // o C1b nao rodou (D4, 5.29): o exemploBatch do arquivo de dados da bancada e null, entao o formato do
-  // lote nao foi medido e todo browser_batch barra, inclusive o lote so de leitura
-  for (const entrada of [{}, { actions: [] }, { actions: [{ tool: 'read_page', input: {} }] }, { actions: [{ name: 'javascript_tool', input: {} }] }])
-    assert.equal(decide('mcp__claude-in-chrome__browser_batch', entrada), 'barra', JSON.stringify(Object.keys(entrada)))
+  assert.equal(lote(JSON.parse(LOTE)), 'passa', 'canario: o lote medido passa')
+  assert.equal(lote(comAcoes({ name: 'computer', input: { action: 'screenshot' } })), 'passa', 'canario: computer vale como solto')
+  assert.equal(lote(comAcoes({ name: 'read_page', input: { filename: 'dados/navegador-saida/p.png' } })), 'passa', 'canario: filename na saida passa')
+  const ruins = {
+    'vazio': {}, 'lista vazia': { actions: [] }, 'actions texto': { actions: 'read_page' },
+    'actions objeto': { actions: { name: 'read_page', input: {} } },
+    'tool no lugar de name': comAcoes({ tool: 'read_page', input: {} }),
+    'params no lugar de input': comAcoes({ name: 'read_page', params: {} }),
+    'name com __': comAcoes({ name: 'read_page__x', input: {} }),
+    'input ausente': comAcoes({ name: 'read_page' }),
+    'input nulo': comAcoes({ name: 'read_page', input: null }),
+    'input lista': comAcoes({ name: 'read_page', input: [] }),
+    'acao nula': comAcoes(null),
+    'name fora de texto': comAcoes({ name: 7, input: {} }),
+    'chave a mais no topo': { ...JSON.parse(LOTE), extra: 1 },
+    'chave a mais na acao': comAcoes({ name: 'read_page', input: {}, extra: 1 }),
+    '__proto__ no topo': JSON.parse(LOTE.slice(0, -1) + ',"__proto__":{}}'),
+    '__proto__ na acao': JSON.parse('{"actions":[{"name":"read_page","input":{},"__proto__":{}}]}'),
+    'javascript_tool': comAcoes({ name: 'javascript_tool', input: { text: 'x' } }),
+    'read_network_requests': comAcoes({ name: 'read_network_requests', input: {} }),
+    'lote dentro de lote': comAcoes({ name: 'browser_batch', input: JSON.parse(LOTE) }),
+    'filename fora da saida': comAcoes({ name: 'read_page', input: { filename: 'tela.png' } }),
+    'file_upload': comAcoes({ name: 'file_upload', input: {} }),
+    'upload_image': comAcoes({ name: 'upload_image', input: {} }),
+    'nome do playwright': comAcoes({ name: 'browser_file_upload', input: {} }),
+  }
+  for (const [caso, entrada] of Object.entries(ruins)) assert.equal(lote(entrada), 'barra', caso)
+  assert.equal(lote(undefined), 'barra', 'sem tool_input')
+  // a acao ruim por ultimo: o laco olha todas
+  assert.equal(lote({ actions: [{ name: 'read_page', input: {} }, { name: 'find', input: {} }, { name: 'file_upload', input: {} }] }), 'barra', 'misto')
+  for (const servidor of ['navegador', 'playwright'])
+    assert.equal(lote(JSON.parse(LOTE), servidor), 'barra', `lote medido no servidor ${servidor}`)
 })
 
 test('fora do navegador: verbo de leitura no comeco passa e o resto pede', () => {

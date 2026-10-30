@@ -1,5 +1,5 @@
 {
- "versao": "5.30",
+ "versao": "5.31",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -106,7 +106,9 @@
    "5cbc8da34bfc02ec": "anterior-5.25",
    "7fdf84c880839752": "anterior-5.25",
    "8d5b1504383f2073": "5.28",
+   "9151e33d2569f308": "5.31",
    "9280c32f145569c2": "5.25",
+   "9dedbceac251ce65": "5.31",
    "dc6645080c92f7ba": "5.27",
    "fa1419833a314eb9": "anterior-5.25"
   },
@@ -990,6 +992,7 @@
    "9e15b3a48343157b": "5.11",
    "afc4edbb1dad5917": "4.4",
    "b05cf518d3ff9380": "5.29",
+   "bcd3eaf85f3ee0ae": "5.31",
    "cd9b1de6a860745d": "3.11",
    "cf6c2654215b51df": "3.6",
    "edb935dd12dc6bba": "anterior-5.7",
@@ -997,12 +1000,14 @@
   },
   ".claude/skills/conectar/referencias/escada.md": {
    "0102fd9974c17060": "anterior-5.26",
+   "010b3fa26ee3ee92": "5.31",
    "1f02c121256838d6": "5.29",
    "d03a2fdfd742a16a": "5.30",
    "fb798052c8ca8434": "5.26"
   },
   ".claude/skills/conectar/referencias/navegador.md": {
    "11e2cfe49948ceea": "5.30",
+   "4d6afac369829f89": "5.31",
    "67ea99aabbffdf42": "5.26",
    "b1a948f5ba9cacae": "anterior-5.26",
    "c7996eef77242697": "5.29",
@@ -1017,6 +1022,7 @@
   },
   ".claude/skills/conectar/scripts/abrir-chrome.mjs": {
    "32296e862b231a2a": "5.29",
+   "74a5de82345e8d1b": "5.31",
    "878abb5230aab462": "5.25"
   },
   ".claude/skills/conectar/scripts/chave.mjs": {
@@ -1036,12 +1042,15 @@
    "2efa9f9d15d66ef0": "5.25",
    "3d66b48cccb3fe56": "anterior-5.29",
    "3ebd19824a77612d": "anterior-5.29",
+   "41c9ad8da33dee06": "5.31",
    "4446401b7f854485": "5.29",
    "4f8e494a599d88b8": "anterior-5.26",
+   "5b3072c85347b63a": "5.31",
    "68dcbdade4293e05": "anterior-5.29",
    "763aa9bbd6fda064": "anterior-5.28",
    "790ae49c5947f424": "anterior-5.26",
    "94d2fcd5909e4206": "anterior-5.26",
+   "96bb2f3b168c2c99": "5.31",
    "abdfd4e88b1e9d72": "anterior-5.29",
    "b14f6abcb95264c3": "anterior-5.29",
    "b52c516a3ba925b6": "anterior-5.26",
@@ -2067,6 +2076,7 @@
   ".claude/skills/mercado-livre/scripts/abrir-chrome.mjs": {
    "02886102b262b6bd": "3.6",
    "807ef605e84abdde": "5.25",
+   "8dab9bca03bb532d": "5.31",
    "9934e366f88a70e7": "5.17"
   },
   ".claude/skills/mercado-livre/scripts/autorizar.mjs": {
@@ -2092,11 +2102,13 @@
   ".claude/skills/mercado-livre/scripts/lib/chrome.mjs": {
    "16f445e5578a13cb": "5.26",
    "19bb715b47768a9c": "anterior-5.26",
+   "20bcfb82e79a26d1": "5.31",
    "251870f5f397177e": "anterior-5.26",
    "29c8ca4d669a4df2": "anterior-5.29",
    "47b0a375f578796b": "5.27",
    "5c33f0a8f68ffbb3": "5.28",
    "6b43b8aa0c942fbd": "anterior-5.26",
+   "7105e9eee7b3614b": "5.31",
    "908a71ed29e50be5": "anterior-5.26",
    "9199df883327758e": "5.25",
    "91e35665775191df": "3.6",
@@ -2218,6 +2230,7 @@
    "f3cefa4e4cadd47d": "4.1"
   },
   ".claude/skills/midia-social/scripts/abrir-chrome.mjs": {
+   "43f1fdaa86d94b0b": "5.31",
    "a60b54af35c90f48": "4.1",
    "ce663cf13724f639": "5.25",
    "fcef3c2f61302208": "5.17"
@@ -2242,8 +2255,10 @@
    "5618eb42a88ef884": "5.27",
    "5a8f035c4887d6a5": "5.26",
    "5f3e78bcb7562782": "anterior-5.26",
+   "64f2eb9c490f3acc": "5.31",
    "73136ee25d4cbcc3": "anterior-5.25",
    "848c23ebd5a90e8c": "anterior-5.26",
+   "a106ff6330ff49e8": "5.31",
    "ae472972f2854f97": "anterior-5.26",
    "b6a5971853632bee": "anterior-5.26",
    "c425240b77a4c916": "5.25",
