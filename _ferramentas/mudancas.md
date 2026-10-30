@@ -799,3 +799,11 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto tem `.claude/skills/conectar/scripts/lib/navegador.mjs` sem o texto `apontarDownload`.
 **Como aplicar:** nada no projeto; o motor traz. Avisar que um Chrome dedicado que já estava aberto continua baixando na Downloads até ser fechado (`node .claude/skills/conectar/scripts/abrir-chrome.mjs --fechar`) e aberto de novo.
 **Como testar:** `node .claude/skills/conectar/scripts/abrir-chrome.mjs --sem-janela` abre o Chrome sem janela e diz a porta, e o `dados/chrome-perfil/Default/Preferences` tem `dados` e `navegador-saida` no `default_directory`.
+
+## conexao-que-parou-se-conserta
+
+**O que é:** quando uma conexão que funcionava para, o robô investiga o que mudou, tenta consertar ou passa pra outro caminho da escada do `/conectar`, e conta à pessoa o que fez. O código de verificação que o site manda pro email o robô lê sozinho pelo conector do Gmail, com limites (só na conversa, só do próprio site, até 10 minutos); SMS e captcha seguem com a pessoa. Os degraus 5 e 6 deixam de dizer "provisório" e passam a dizer onde foram testados.
+**Por quê:** antes, qualquer queda de conexão e todo código de verificação paravam o trabalho até a pessoa agir.
+**Te afeta se:** o projeto tem `.claude/skills/conectar/SKILL.md` sem o texto `lê sozinho pelo conector do Gmail`.
+**Como aplicar:** nada no projeto; o motor traz. Avisar que o código por email só funciona com o conector do Gmail ligado (item 3 do `/conectar`).
+**Como testar:** abrir `.claude/skills/conectar/SKILL.md`, seção "Regras": tem a regra da conexão que parou e a do código por email.

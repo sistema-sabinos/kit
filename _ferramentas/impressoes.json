@@ -1,5 +1,5 @@
 {
- "versao": "5.29",
+ "versao": "5.30",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -175,7 +175,8 @@
    "4c10e977e5c3cc50": "5.26",
    "5c2b406782b75d73": "anterior-3.7",
    "aadd8d45a14f5b4b": "4.3",
-   "f36add9b42324990": "3.7"
+   "f36add9b42324990": "3.7",
+   "fee1a7f33d1d580b": "5.30"
   },
   ".claude/skills/agendar/scripts/agendador.mjs": {
    "29e54bc4034e92fe": "anterior-3.7",
@@ -980,6 +981,7 @@
    "29765200f4f1cb63": "5.15",
    "4117a1453c2eed41": "5.18",
    "4f1fc59cb82d1817": "5.25",
+   "502523061d46a295": "5.30",
    "565a327091a62a23": "3.7",
    "8ff86dfa3dff582f": "4.1",
    "924bfd9b715a6ea4": "anterior-5.26",
@@ -996,9 +998,11 @@
   ".claude/skills/conectar/referencias/escada.md": {
    "0102fd9974c17060": "anterior-5.26",
    "1f02c121256838d6": "5.29",
+   "d03a2fdfd742a16a": "5.30",
    "fb798052c8ca8434": "5.26"
   },
   ".claude/skills/conectar/referencias/navegador.md": {
+   "11e2cfe49948ceea": "5.30",
    "67ea99aabbffdf42": "5.26",
    "b1a948f5ba9cacae": "anterior-5.26",
    "c7996eef77242697": "5.29",
@@ -1030,16 +1034,16 @@
    "268db5bfd61cdd32": "anterior-5.25",
    "2e5537810334c4e6": "anterior-5.26",
    "2efa9f9d15d66ef0": "5.25",
-   "3d66b48cccb3fe56": "5.29",
-   "3ebd19824a77612d": "5.29",
+   "3d66b48cccb3fe56": "anterior-5.29",
+   "3ebd19824a77612d": "anterior-5.29",
    "4446401b7f854485": "5.29",
    "4f8e494a599d88b8": "anterior-5.26",
-   "68dcbdade4293e05": "5.29",
+   "68dcbdade4293e05": "anterior-5.29",
    "763aa9bbd6fda064": "anterior-5.28",
    "790ae49c5947f424": "anterior-5.26",
    "94d2fcd5909e4206": "anterior-5.26",
-   "abdfd4e88b1e9d72": "5.29",
-   "b14f6abcb95264c3": "5.29",
+   "abdfd4e88b1e9d72": "anterior-5.29",
+   "b14f6abcb95264c3": "anterior-5.29",
    "b52c516a3ba925b6": "anterior-5.26",
    "cb171a98885e76ea": "5.28",
    "d71334e6a349b958": "anterior-5.26",
@@ -2089,7 +2093,7 @@
    "16f445e5578a13cb": "5.26",
    "19bb715b47768a9c": "anterior-5.26",
    "251870f5f397177e": "anterior-5.26",
-   "29c8ca4d669a4df2": "5.29",
+   "29c8ca4d669a4df2": "anterior-5.29",
    "47b0a375f578796b": "5.27",
    "5c33f0a8f68ffbb3": "5.28",
    "6b43b8aa0c942fbd": "anterior-5.26",
@@ -2097,7 +2101,7 @@
    "9199df883327758e": "5.25",
    "91e35665775191df": "3.6",
    "96fd691d08740769": "anterior-3.6",
-   "b9b51d98f58620fe": "5.29",
+   "b9b51d98f58620fe": "anterior-5.29",
    "f631e2a2303f54ee": "anterior-5.25",
    "fcd8ab9aed7a94fb": "5.29"
   },
@@ -2234,7 +2238,7 @@
   },
   ".claude/skills/midia-social/scripts/lib/chrome.mjs": {
    "039c3eeb8007aa8d": "5.28",
-   "14da08665c0aeaf9": "5.29",
+   "14da08665c0aeaf9": "anterior-5.29",
    "5618eb42a88ef884": "5.27",
    "5a8f035c4887d6a5": "5.26",
    "5f3e78bcb7562782": "anterior-5.26",
@@ -2245,7 +2249,7 @@
    "c425240b77a4c916": "5.25",
    "e6652f7e9ada8bde": "5.29",
    "e8366fdf7f8a6064": "4.1",
-   "feda197a19e1c30c": "5.29"
+   "feda197a19e1c30c": "anterior-5.29"
   },
   ".claude/skills/midia-social/scripts/lib/config.mjs": {
    "6f3cac16fa23c555": "anterior-4.1",
