@@ -8,7 +8,7 @@
 import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
+import { RAIZ } from '../../conectar/scripts/lib/raiz.mjs'
 import { lerEstilos } from './lib/estilos-md.mjs'
 import { lerArgs } from './lib/args.mjs'
 

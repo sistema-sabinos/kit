@@ -498,16 +498,16 @@ Loja, sem copiar nada.
 Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o pacote de
 marketplace existe e pode ser instalado depois pelo `/mapear`.
 
-### Vídeo (depois do marketplace)
+### Vídeo (depois do marketplace, pra todo mundo)
 
-Só quando o pacote de marketplace acabou de entrar. Perguntar na conversa, no
-formato de 4 partes:
+Perguntar a todo mundo, tenha entrado ou não o pacote de marketplace. Na
+conversa, no formato de 4 partes:
 
-> "Tenho também um pacote de vídeo: faz o vídeo do produto sem você filmar nada,
-> a partir das dúvidas que os compradores deixam nos concorrentes, e edita o
-> vídeo que você grava no celular, com corte, legenda, zoom e música. Editar o que
-> você gravou é grátis; gerar vídeo por IA custa alguns dólares por vídeo, sempre
-> mostrado antes de gastar. Quer que eu instale?
+> "Tenho um pacote de vídeo em pé, o formato do Shorts, do Reels e do TikTok:
+> edita o vídeo que você grava no celular, com corte, legenda, zoom e música.
+> Serve pra quem já posta vídeo assim ou pretende postar. Editar é grátis; as
+> partes pagas (imagem de fundo feita por IA e uma conferência final por IA) são
+> opcionais e sempre mostradas antes de gastar. Quer que eu instale?
 >
 > Pergunto porque ele pede uns 4 GB livres no computador na instalação (uns 3 GB
 > depois), então só entra se fizer sentido. Música e a maior parte dos efeitos
@@ -516,17 +516,41 @@ formato de 4 partes:
 >
 > Tipo: 'quero', 'quero, mas configuro outro dia', ou 'agora não'."
 
-Resposta positiva: copiar pro projeto as três pastas inteiras de
-`_modelo/.claude/skills/` (`configurar-video`, `video-produto`, `editar-video`)
-e, se ainda não estiver no projeto, a `assistir-video` (o vídeo usa ela na
-conferência final). Nunca copiar arquivo terminado em `.test.mjs` nem pasta
-`node_modules/`. Depois:
+Resposta positiva: copiar pro projeto as duas pastas inteiras de
+`_modelo/.claude/skills/` (`configurar-video`, `editar-video`) e, se ainda
+não estiverem no projeto, a `gerar-imagens` (faz a imagem de fundo do vídeo) e
+a `assistir-video` (o vídeo usa ela na conferência final). Nunca copiar arquivo
+terminado em `.test.mjs` nem pasta `node_modules/`. Depois:
 
 - Em `_contexto/ferramentas.md`: `| pacote de vídeo | instalado, motor ainda não | <AAAA-MM-DD> | o motor entra pela /configurar-video, uma vez |`
 - Em `tarefas.md`: "rodar `/configurar-video` num dia com tempo e internet boa (baixa uns 4 GB); ele termina com um vídeo de teste".
 
 Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o pacote de
 vídeo existe e pode ser instalado depois pelo `/mapear`.
+
+### Vídeo do produto (só com o marketplace)
+
+Só quando o pacote de marketplace acabou de entrar. Perguntar na conversa, no
+formato de 4 partes:
+
+> "Pro marketplace tenho também o vídeo do produto: faz o vídeo do anúncio sem
+> você filmar nada, a partir das dúvidas que os compradores deixam nos
+> concorrentes. Gerar vídeo por IA custa alguns dólares por vídeo, sempre
+> mostrado antes de gastar. Quer que eu instale?
+>
+> Pergunto porque ele usa o pacote de vídeo: se o vídeo ainda não entrou, entra
+> junto, com os mesmos 4 GB.
+>
+> Tipo: 'quero', ou 'agora não'."
+
+Resposta positiva: copiar pro projeto a pasta inteira `video-produto` de
+`_modelo/.claude/skills/` e, se ainda não estiverem no projeto,
+as quatro do bloco Vídeo (`configurar-video`, `editar-video`, `gerar-imagens`,
+`assistir-video`), com as duas anotações de lá. Nunca copiar arquivo terminado
+em `.test.mjs` nem pasta `node_modules/`.
+
+Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o vídeo do
+produto existe e pode ser instalado depois pelo `/mapear`.
 
 ### Mídia social (depois do marketplace)
 
@@ -861,7 +885,7 @@ base quanto as escolhidas ou criadas no Passo 4.
 O pacote de marketplace entra como uma linha só: "/mercado-livre, a sua esteira
 de marketplace, do produto novo ao anúncio publicado".
 O de vídeo e o de mídia social, quando entram, também: "/configurar-video, que
-prepara o vídeo (depois /video-produto e /editar-video)" e "/midia-social, os
+prepara o vídeo (depois /editar-video)" e "/midia-social, os
 seus posts da semana, agendados e medidos".
 O pacote criar app, quando entra, também: "/app-estudar, o começo do seu app (ele diz
 qual é o próximo passo ao terminar cada etapa)".

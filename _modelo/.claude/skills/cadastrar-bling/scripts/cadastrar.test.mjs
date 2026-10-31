@@ -476,7 +476,7 @@ test('--categorias testa a ligacao sem exigir a configuracao da /mercado-livre',
   // projeto sem .env e sem _contexto: o RAIZ dos scripts copiados e a pasta temporaria
   const raiz = mkdtempSync(join(tmpdir(), 'cadastrar-categorias-'))
   try {
-    for (const s of ['cadastrar-bling', 'mercado-livre']) cpSync(join(skills, s), join(raiz, '.claude', 'skills', s), { recursive: true })
+    for (const s of ['cadastrar-bling', 'mercado-livre', 'conectar']) cpSync(join(skills, s), join(raiz, '.claude', 'skills', s), { recursive: true })
     const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('BLING_')))
     const r = spawnSync(process.execPath, [join(raiz, '.claude', 'skills', 'cadastrar-bling', 'scripts', 'cadastrar.mjs'), '--categorias'], { cwd: raiz, env, encoding: 'utf8' })
     assert.equal(r.status, 1, r.stderr)

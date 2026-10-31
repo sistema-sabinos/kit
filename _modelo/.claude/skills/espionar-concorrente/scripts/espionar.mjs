@@ -531,16 +531,18 @@ export async function espionarAvulso({ item, raiz = RAIZ, hoje = dataLocal(), do
   return { arquivo, anuncio }
 }
 
-// O que o modo avulso imprime no fim: o caminho a partir da raiz do projeto e o comando da
-// /video-produto ja com ele. Anuncio que nao abriu vira erro, com o arquivo gravado mesmo assim.
-export function resumoAvulso(raiz, arquivo, anuncio) {
+// O que o modo avulso imprime no fim: o caminho a partir da raiz do projeto e, quando o projeto
+// tem a /video-produto (extra do ML desde a 5.37), o comando dela ja com ele. Anuncio que nao
+// abriu vira erro, com o arquivo gravado mesmo assim.
+export function resumoAvulso(raiz, arquivo, anuncio, { temVideo = existsSync(join(raiz, '.claude', 'skills', 'video-produto', 'scripts', 'video-produto.mjs')) } = {}) {
   if (anuncio.erro) throw new Error(`nao consegui ler o anuncio ${anuncio.id} (${anuncio.erro}). Confira o link e se o Chrome dedicado esta logado, e rode de novo.`)
   const rel = relative(raiz, arquivo).split(sep).join('/')
-  return [
+  const linhas = [
     `${anuncio.titulo}: ${anuncio.fotos?.length ?? 0} fotos, ${anuncio.avaliacoes?.avaliacoes?.length ?? 0} avaliacoes lidas, ${anuncio.perguntas ? 'perguntas lidas' : 'sem perguntas'}`,
     rel,
-    `pro video: node .claude/skills/video-produto/scripts/video-produto.mjs --mlb=${anuncio.id} --fase=1 --de-espionagem=${rel} --slug=<nome-do-seu-produto>`,
   ]
+  if (temVideo) linhas.push(`pro video: node .claude/skills/video-produto/scripts/video-produto.mjs --mlb=${anuncio.id} --fase=1 --de-espionagem=${rel} --slug=<nome-do-seu-produto>`)
+  return linhas
 }
 
 function abrirNoChrome(page) {

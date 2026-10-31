@@ -4,8 +4,8 @@
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, resolve, isAbsolute, relative } from 'node:path'
-import { RAIZ } from '../../../mercado-livre/scripts/lib/raiz.mjs'
-import { lerEnv } from '../../../mercado-livre/scripts/lib/env.mjs'
+import { RAIZ } from '../../../conectar/scripts/lib/raiz.mjs'
+import { lerEnv } from '../../../conectar/scripts/lib/env.mjs'
 
 export function pastaVideo({ raiz = RAIZ, env } = {}) {
   const e = env ?? { ...lerEnv(join(raiz, '.env')), ...(process.env.SABINOS_VIDEO ? { SABINOS_VIDEO: process.env.SABINOS_VIDEO } : {}) }

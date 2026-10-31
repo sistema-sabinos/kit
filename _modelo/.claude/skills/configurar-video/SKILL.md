@@ -3,9 +3,11 @@ name: configurar-video
 description: >
   Instala e testa tudo que o vídeo precisa neste computador (Node, Python, ffmpeg, o
   motor de edição, o programa que escuta a voz e escreve a legenda e o limpador de
-  ruído), pergunta antes de baixar cada coisa e fecha com um
+  ruído), pergunta antes de baixar cada coisa, define o orçamento do mês do gasto com IA
+  paga e fecha com um
   teste curtinho de uns 5 segundos. Use quando o usuário chamar /configurar-video, disser "configurar
-  video", "instalar o video", "preparar o computador pra editar video", ou quando outra
+  video", "instalar o video", "preparar o computador pra editar video", "quanto já gastei",
+  "mudar o orçamento", ou quando outra
   skill de vídeo (editar-video, video-produto) mandar rodar a configuração porque o motor
   não está pronto ou foi atualizado.
 ---
@@ -62,7 +64,7 @@ o `maquina.json` o item whisper vem `ok: false` com "rode o medir-maquina antes"
 Se vier `pastaComEspaco: true`, explique: o caminho da pasta do vídeo tem espaço no nome (por
 exemplo "Maria Silva") e o programa que escuta a voz não aceita isso. Mostre a pasta
 sugerida (`sugestaoPasta`) e, com o sim do aluno, grave a linha `SABINOS_VIDEO=<pasta>` no
-arquivo `.env` usando `gravarEnv` de `.claude/skills/mercado-livre/scripts/lib/env.mjs`.
+arquivo `.env` usando `gravarEnv` de `.claude/skills/conectar/scripts/lib/env.mjs`.
 Rode o conferir de novo antes de seguir.
 
 ### 3. Instalar o que falta, um item por vez
@@ -122,7 +124,41 @@ travado sem ela: a conferência de vídeo por IA (o "olho final"), a geração d
 voz gerada. Dá pra editar vídeo sem ela. Ofereça rodar o `/conectar` pra pôr a chave.
 Qualquer uso pago da chave só acontece com preço e autorização avisados na hora.
 
-### 5. Skills do Remotion
+### 5. Orçamento do mês
+
+Só com a chave (`tem` no passo 4). O orçamento é quanto a pessoa topa gastar por mês com
+IA paga: imagem feita por IA, olho final do vídeo e vídeo do produto. Ele é um limite a
+mais. Antes de todo gasto, o "pode ir" da pessoa continua valendo; quando um gasto não
+cabe no que sobrou do mês, o sistema para antes de gastar e explica.
+
+1. Pergunte quanto ela topa gastar por mês, em reais, quanto dura o vídeo dela de costume
+   (se não souber, 60 segundos) e quantas imagens por IA ela usa por vídeo (se não souber,
+   3; quem não usa, 0).
+2. Confira na web, hoje: o câmbio do dólar e, na página oficial de preços do Google AI, o
+   preço de uma imagem do Gemini e o preço do Gemini pra assistir um segundo de vídeo (é o
+   olho final). Guarde o endereço da página.
+3. Rode, numa linha só:
+   `node .claude/skills/configurar-video/scripts/orcamento.mjs --definir --orcamento-brl <reais por mês> --cambio <reais por dólar> --preco-segundo-usd <US$ por segundo> --preco-cena-usd <US$ por imagem> --fonte <endereço da página> --segundos <duração> --cenas <imagens>`
+4. Diga o que voltou, sem fazer conta de cabeça: "Um vídeo como o seu custa em média
+   US$ `media_video_usd` (R$ `media_video_brl` no câmbio de hoje, `cambio_brl_por_usd`).
+   Com esse orçamento dá em média `da_em_media_videos` vídeos por mês." Se vier
+   `historico`, diga também a média dos vídeos que ela já fez, que é mais fiel. Fale o
+   câmbio e a data que usou. Se vier `copia_do_texto_antigo`, o arquivo estava quebrado e
+   foi montado de novo: diga que o texto antigo dela ficou guardado nesse arquivo.
+
+O saldo só aparece quando a pessoa pergunta quanto já gastou. Aí rode
+`node .claude/skills/configurar-video/scripts/orcamento.mjs --saldo` e diga o orçamento,
+o gasto do mês e quanto sobra. Se `a_parte` tiver número maior que zero, diga que há linha
+fora da conta (quebrada, sem valor, em reais ou de outro serviço) e que ela não entrou no
+saldo. Se `reservas` tiver item com `vivo: false`, um gasto caiu no meio e pode ter sido
+cobrado: peça pra pessoa conferir no painel do Gemini. Não foi cobrado: feche com
+`--fechar-reserva <id>`. Foi: anote a linha em `dados/custos.jsonl` e feche.
+
+Quando um gasto para pelo orçamento, a mensagem já traz o gasto do mês, a média dada e o
+motivo provável. Repasse e ofereça subir o orçamento (rodar o `--definir` de novo) ou
+esperar o mês virar.
+
+### 6. Skills do Remotion
 
 O Remotion é a biblioteca que monta o vídeo. Existe um pacote de skills dele que ensina o
 Claude a usá-lo melhor. Explique que o `/find-skills` mostra o que são skills e como se
@@ -135,7 +171,7 @@ Esta é a exceção escrita à regra de nunca instalar skill de terceiro do jeit
 pacote é o oficial dos próprios autores do Remotion e ensina a biblioteca deles, então entra
 sem adaptar (decisão de 2026-10-05). Qualquer outra skill de fora segue a regra.
 
-### 6. Teste curtinho de uns 5 segundos
+### 7. Teste curtinho de uns 5 segundos
 
 Antes, rode `sincronizar-motor.mjs` de novo (e `instalar-motor.mjs` se ele pedir). O teste se recusa a carimbar se o motor de `_video` estiver diferente do kit. Rode `node .claude/skills/configurar-video/scripts/teste-rapido.mjs`. Ele monta um vídeo de
 uns 5 segundos com uma fala do kit, limpa a voz, escreve a legenda, renderiza e confere se a
@@ -146,14 +182,14 @@ Se falhar, leia a mensagem, diga ao aluno o que faltou em linguagem simples e vo
 passo 3 pro item certo. Se a mensagem disser "falta referencias/teste-voz.wav", o kit está
 incompleto: peça pra atualizar o SabinOS.
 
-### 7. Rodar de novo depois de atualizar o SabinOS
+### 8. Rodar de novo depois de atualizar o SabinOS
 
 Quando o SabinOS atualiza, o motor pode mudar, e as skills de vídeo vão mandar rodar esta de
 novo. Nesse caso basta: `sincronizar-motor.mjs` (só copia o que mudou, e `instalar-motor.mjs`
 só se ele pedir) e `teste-rapido.mjs`.
 O resto continua como estava.
 
-### 8. Mac
+### 9. Mac
 
 No Mac, avise o aluno com estas palavras: "Este caminho foi conferido por teste de código,
 sem máquina real. Se algo falhar, me conta a mensagem que aparecer que a gente acha o ajuste."

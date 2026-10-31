@@ -1679,3 +1679,32 @@ test('item 15: fase 3 aprovada com final/ travado da recado e deixa o aprovado e
   assert.ok(fs.existsSync(path.join(pasta, '_tmp', `${SLUG}.mp4`)), 'o video aprovado sumiu de _tmp')
   assert.ok(r.stderr.includes(path.join(pasta, '_tmp', `${SLUG}.mp4`)), 'o recado diz onde o aprovado ficou')
 })
+
+// Orcamento do mes (5.37): a trava unica nega e nenhuma peca paga e chamada, na fase 2 e na fase 3.
+// O projeto do gasto mora numa raiz a parte (raizGasto), com o orcamento ja gasto no mes.
+function comOrcamentoGasto(fazer) {
+  const raizGasto = fs.mkdtempSync(path.join(os.tmpdir(), 'video-produto-orcamento-'))
+  try {
+    fs.mkdirSync(path.join(raizGasto, '_contexto'))
+    fs.mkdirSync(path.join(raizGasto, 'dados'))
+    fs.writeFileSync(path.join(raizGasto, '_contexto', 'orcamento.md'), ['```orcamento', 'orcamento_mes_usd: 1', 'media_video_usd: 0.5', '```', ''].join('\n'))
+    fs.writeFileSync(path.join(raizGasto, 'dados', 'custos.jsonl'), JSON.stringify({ em: new Date().toISOString(), servico: 'gemini-imagem', usd: 1, contexto: 'mes gasto' }) + '\n')
+    return fazer(raizGasto)
+  } finally { fs.rmSync(raizGasto, { recursive: true, force: true }) }
+}
+
+for (const fase of [2, 3]) {
+  test(`fase ${fase} com o orcamento do mes acabado sai 3 e nao chama nenhuma peca paga, mesmo autorizada`, () => comOrcamentoGasto(async (raizGasto) => {
+    preparar(carimbado(roteiroValido()), { comMusica: false })
+    const chamadas = []
+    const paga = (nome) => async () => { chamadas.push(nome); throw new Error('nao devia chamar nada pago') }
+    const r = await chamar([`--mlb=${MLB}`, `--fase=${fase}`, ...PRECOS_AUTORIZADO], {
+      raizGasto, carregarConfiguracao: () => ({ limite_gasto_usd: 4 }),
+      gerarClipe: paga('clipe'), narrar: paga('narrar'), transcrever: paga('transcrever'), gerarMusica: paga('musica'),
+    })
+    assert.equal(r.status, 3, r.stderr)
+    assert.deepEqual(chamadas, [])
+    const j = JSON.parse(r.stdout.trim().split('\n').pop())
+    assert.match(j.parou, /orcamento do mes .* acabou/)
+  }))
+}

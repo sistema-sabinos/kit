@@ -10,7 +10,7 @@ import { existsSync, mkdirSync, realpathSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
+import { RAIZ } from '../../conectar/scripts/lib/raiz.mjs'
 import { caminhos, pastaVideo } from '../../configurar-video/scripts/lib/pasta-video.mjs'
 import { exe, rodarPython } from '../../configurar-video/scripts/lib/plataforma.mjs'
 

@@ -138,12 +138,17 @@ export function contrasteNoTexto(txt, html = false) {
 
 // Gate 9 (gate humano do gasto): o teto limite_gasto_usd e trava a mais, e o "pode ir" vale pra
 // todo gasto. Paragrafo ou item de lista que liga o "pode ir" a gasto "acima de" teto deixa a IA
-// gastar calada abaixo dele (a /mercado-livre dizia isso ate a 5.19). Devolve a linha de cada um.
+// gastar calada abaixo dele (a /mercado-livre dizia isso ate a 5.19). Desde a 5.37 vale o mesmo pro
+// orcamento do mes e o saldo: "dentro do orcamento roda sem pedir" troca o "pode ir" pelo orcamento, e
+// a decisao de 2026-10-30 foi o orcamento como limite a mais. Devolve a linha de cada um.
 export function podeIrSoAcimaDoTeto(txt) {
   return blocos(txt).filter(({ texto: t }) => {
     // bloco que ja diz a regra pra todo gasto pode falar do teto como trava a mais
-    const todoGasto = /\btodo gasto\b|mesmo (?:[\p{L} ]+ e )?(?:dentro|abaixo) do teto/iu.test(t)
-    return !todoGasto && /gastos? acima d[eo] (?:`?limite_gasto_usd`?|teto|limite)/i.test(t) && /pode ir/i.test(t)
+    const todoGasto = /\btodo gasto\b|mesmo (?:[\p{L} ]+ e )?(?:dentro|abaixo) do (?:teto|or[cç]amento)/iu.test(t)
+    if (todoGasto) return false
+    if (/gastos? acima d[eo] (?:`?limite_gasto_usd`?|teto|limite|or[cç]amento|saldo)/iu.test(t) && /pode ir/i.test(t)) return true
+    return /(?:dentro|abaixo) d[oa] (?:or[cç]amento|saldo)|cabe no (?:or[cç]amento|saldo)|com saldo\b/iu.test(t)
+      && /sem (?:pedir|perguntar|o ["“]?pode ir)|n[aã]o precisa (?:pedir|perguntar|do ["“]?pode ir)|dispensa o ["“]?pode ir/iu.test(t)
   }).map(b => b.ini)
 }
 

@@ -33,7 +33,7 @@ limite_gasto_usd: 4
 - `reputacao`: a cor atual da sua conta (verde, amarela, laranja, vermelha ou nova; exemplo: verde). Muda o desconto de frete
 - `loja_oficial` e `full`: `sim` ou `nao`
 - `fornecedores`: os nomes curtos das pastas em `fornecedores/`, separados por vírgula (exemplo: fornecedor-exemplo)
-- `limite_gasto_usd`: teto de gasto por rodada de imagens: acima disso o sistema para e pede pra dividir o lote ou subir o teto
+- `limite_gasto_usd`: teto de gasto por rodada de imagens: acima disso o sistema para e pede pra dividir o lote ou subir o teto. Com orçamento do mês em `_contexto/orcamento.md`, quem limita a imagem por IA é o orçamento
 
 O bloco abaixo diz o estilo das fotos do anúncio de cada categoria de produto, uma linha por categoria: `<categoria>: <estilo>`, com o estilo Limpo, Colorido ou Natural (`.claude/skills/gerar-imagens/referencias/estilos.md`) e, se quiser, cores suas no lugar das de partida (exemplo: `brinquedos: Colorido #FFF4D6 #FF6B6B #4D96FF`). O `/mercado-livre` grava a linha com o seu sim, na hora das fotos.
 

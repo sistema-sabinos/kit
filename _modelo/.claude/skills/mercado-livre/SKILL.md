@@ -284,8 +284,9 @@ perto de publicar sem bloqueio e propor continuar ele.
 - Custo: antes de todo gasto, mesmo pequeno e dentro do teto, mostrar a
   estimativa e esperar o "pode ir" da pessoa naquele momento. O
   `limite_gasto_usd` da configuração é uma trava a mais: lote que passa dele
-  para, e a saída é dividir o lote ou combinar subir o teto. O padrão do pacote
-  é custo zero.
+  para, e a saída é dividir o lote ou combinar subir o teto. Com orçamento do
+  mês em `_contexto/orcamento.md`, quem limita a imagem por IA é o orçamento, e
+  o `limite_gasto_usd` deixa de valer pra ela. O padrão do pacote é custo zero.
 - Bloqueio declarado: agente que reporta bloqueio (sem foto, dado faltando do
   fornecedor, Chrome fechado) grava em `status.json` em `bloqueios`; avisar e
   seguir pra outro produto se houver.

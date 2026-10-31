@@ -159,7 +159,9 @@ ffmpeg -y -f lavfi -i "gradients=s=1080x1920:c0=0x1b2a49:c1=0x4a6fa5:x0=540:y0=0
   assunto principal no centro. Depois do sim, rode:
   - codex: `node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau codex --cenas producao/<slug>/cenarios/cenas.json --uso video`
   - gemini, com o preço do dia já na primeira chamada e o `--autorizado` só
-    depois do sim: `node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau gemini --cenas producao/<slug>/cenarios/cenas.json --preco-usd <preço do dia> --contexto "cenario <slug>" --autorizado --uso video`
+    depois do sim: `node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau gemini --cenas producao/<slug>/cenarios/cenas.json --preco-usd <preço do dia> --contexto "cenario <slug>" --autorizado --uso video --video <slug>`
+    Saída 3 com `parou` é o limite de gasto (orçamento do mês ou teto por vez): repasse
+    a mensagem como veio, sem gerar.
 
   Abra as três (leitura de imagem), mostre ao aluno e pergunte qual.
 - Copie a escolhida para `producao/<slug>/public/cenario.png`.
@@ -432,13 +434,17 @@ nas camadas:
 
 1. Confira na web, hoje, o preço do Gemini para vídeo (página oficial de preços do
    Google AI) e faça a conta de um vídeo desta duração.
-2. Compare com o teto de gasto: o campo `limite_gasto_usd` do bloco
+2. Mostre sempre: "O olho final custa cerca de US$ X neste vídeo. Posso ir?". Quem
+   confere o limite é o próprio fiscal, antes de chamar o Gemini: com o orçamento do
+   mês definido (`_contexto/orcamento.md`, pelo `/configurar-video`), ele vê se o gasto
+   cabe no que sobrou do mês; sem orçamento, vale o teto por vez: o campo
+   `limite_gasto_usd` do bloco
    `mercado-livre` em `_contexto/mercado-livre.md` (sem o campo, o teto é US$ 4).
-   Passou do teto: diga quanto passa e pergunte se ele quer subir o teto ou seguir
-   sem o olho final. Dentro do teto, mostre: "O olho final custa cerca de US$ X
-   neste vídeo. Posso ir?".
+   Não coube: o relatório diz
+   "olho final pulado" com o motivo, e você repassa e pergunta se ele quer subir o
+   limite ou seguir sem o olho final.
 3. Só com o sim, rode o fiscal de novo com mais estes itens:
-   `--roteiro producao/<slug>/roteiro.md --preco-usd <valor em dólar do olho final> --autorizado --ver-video .claude/skills/assistir-video/ver-video.mjs --registrar-custo .claude/skills/configurar-video/scripts/lib/registrar-custo-cli.mjs`
+   `--roteiro producao/<slug>/roteiro.md --preco-usd <valor em dólar do olho final> --autorizado --video <slug> --ver-video .claude/skills/assistir-video/ver-video.mjs --registrar-custo .claude/skills/configurar-video/scripts/lib/registrar-custo-cli.mjs --liberar-gasto .claude/skills/conectar/scripts/lib/liberar-gasto-cli.mjs`
 4. O custo vira uma linha em `dados/custos.jsonl`, sozinho. Se o relatório disser
    que o `ver-video` falhou, pode ter havido cobrança: diga ao aluno para
    conferir no painel do Gemini.

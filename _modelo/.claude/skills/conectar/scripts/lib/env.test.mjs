@@ -8,7 +8,7 @@ import { RAIZ } from './raiz.mjs'
 import { parseEnv, lerEnv, gravarEnv } from './env.mjs'
 
 test('a raiz aponta pra pasta que tem esta skill dentro', () => {
-  assert.ok(existsSync(join(RAIZ, '.claude', 'skills', 'mercado-livre', 'SKILL.md')), `RAIZ deu ${RAIZ}`)
+  assert.ok(existsSync(join(RAIZ, '.claude', 'skills', 'conectar', 'SKILL.md')), `RAIZ deu ${RAIZ}`)
 })
 
 test('parseEnv ignora comentario, linha vazia e aspas, e nao deixa o CR do Windows colado no valor', () => {

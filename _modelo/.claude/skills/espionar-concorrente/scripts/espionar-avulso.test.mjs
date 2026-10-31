@@ -79,7 +79,7 @@ test('modo avulso de ponta a ponta: o link entra, o bruto sai em dados/concorren
     assert.deepEqual(readdirSync(raiz), ['dados'])
 
     // o comando que o script sugere roda de verdade, da raiz do projeto, com --dry-run
-    const linhas = resumoAvulso(raiz, arquivo, anuncio)
+    const linhas = resumoAvulso(raiz, arquivo, anuncio, { temVideo: true })
     assert.equal(linhas[1], `dados/concorrentes/_raw-concorrentes-${ID}.json`)
     const sugeridos = linhas[2].split(' ').filter(x => /^--(mlb|fase|de-espionagem)=/.test(x))
     assert.equal(sugeridos.length, 3, `canario: o comando sugerido traz --mlb, --fase e --de-espionagem (${linhas[2]})`)

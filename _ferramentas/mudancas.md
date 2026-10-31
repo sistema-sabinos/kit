@@ -823,3 +823,11 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto tem `.claude/skills/conectar/scripts/lib/navegador.mjs` sem o texto `.sabinos-baixando-vencido`.
 **Como aplicar:** nada no projeto; o motor traz.
 **Como testar:** abrir `.claude/skills/conectar/referencias/navegador.md`: cita `baixarNaSaida(acao, { pagina })`.
+
+## orcamento-do-mes
+
+**O que é:** um orçamento do mês pro gasto com IA paga (imagem por IA, olho final do vídeo e vídeo do produto), em `_contexto/orcamento.md`, que o `/configurar-video` monta junto com a pessoa e que mostra quantos vídeos ele dá, em média. Quando um gasto não cabe no que sobrou do mês, o sistema para antes de gastar e explica. O "pode ir" de cada gasto continua.
+**Por quê:** antes só havia um teto por vez (o `limite_gasto_usd`), e várias rodadas pequenas no mesmo mês passavam sem ninguém somar.
+**Te afeta se:** o projeto tem `.claude/skills/configurar-video/` e não tem `_contexto/orcamento.md`.
+**Como aplicar:** contar à pessoa que nada muda sozinho: sem orçamento, o `limite_gasto_usd` continua valendo como teto por vez, igual antes. Se ela quiser o orçamento do mês, rodar o passo "Orçamento do mês" do `/configurar-video`, que cria o arquivo. Com orçamento definido, o `limite_gasto_usd` deixa de valer pro gasto com IA (continua no arquivo, sem efeito) e quem limita é o orçamento.
+**Como testar:** sem orçamento, `node .claude/skills/configurar-video/scripts/orcamento.mjs --saldo` responde `"tipo":"lote"`; com orçamento, responde `"tipo":"mes"` com o orçamento que a pessoa escolheu.

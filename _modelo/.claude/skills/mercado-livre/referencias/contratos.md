@@ -271,8 +271,20 @@ A `/cadastrar-bling` cria o arquivo com o bloco `erp` e `canais` vazio; a
 ## 8. `dados/custos.jsonl`
 
 ```json
-{"em":"2026-09-23T14:00:00Z","servico":"gemini-imagem","usd":0.13,"contexto":"designer kit-5-suspiros"}
+{"em":"2026-09-23T11:00:00.000-03:00","servico":"gemini-imagem","usd":0.13,"contexto":"designer kit-5-suspiros"}
+{"em":"2026-10-31T21:40:12.512-03:00","servico":"gemini-fiscal-olho-final","usd":0.12,"contexto":"olho final do fiscal: final.mp4","video":"reel-1","segundos":58.4,"reserva":"<id da liberacao>"}
 ```
+
+Uma linha por cobrança. Obrigatórios: `em` (data e hora com o fuso da máquina, ou
+só a data), `servico`, `usd` e `contexto`. Opcionais: `video` (o slug do vídeo),
+`segundos`, `cenas`, `tentativa` e `reserva` (o id que a liberação do gasto deu).
+Quem grava é o `registrarCusto` de `conectar/scripts/lib/orcamento.mjs`; linha antiga
+com `em` em UTC (terminando em `Z`) continua valendo.
+
+O orçamento do mês (`_contexto/orcamento.md`) soma só as linhas do mês do calendário
+local com `servico` começando por `gemini`. Linha quebrada, sem data, com `usd` nulo,
+só com `brl` ou de outro serviço fica de fora da soma e aparece contada à parte no
+`--saldo` do `/configurar-video`.
 
 ## 9. `dados/decisoes.jsonl` (a ata)
 

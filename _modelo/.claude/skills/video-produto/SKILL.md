@@ -193,7 +193,10 @@ node .claude/skills/video-produto/scripts/video-produto.mjs --mlb=<MLB> --fase=2
 ```
 
 Sem `--autorizado` o script para e mostra a estimativa, sempre que qualquer
-chamada paga for rodar (clipe, voz ou música). Passando do teto
+chamada paga for rodar (clipe, voz ou música). Com o orçamento do mês definido
+(`_contexto/orcamento.md`, pelo `/configurar-video`), ele para quando a estimativa não
+cabe no que sobrou do mês, com a média e o motivo na mensagem: repasse como veio.
+Sem orçamento, vale o teto por vez: passando do
 `limite_gasto_usd` (configurado em `_contexto/mercado-livre.md`, padrão US$ 4),
 ele também para. Sem esse arquivo (projeto novo, sem a `/mercado-livre` rodada), o script avisa que usa o padrão de US$ 4 e que a configuração vem da `/mercado-livre`. A estimativa soma os clipes que faltam, a música se faltar e uma
 folga de US$ 0,01 por bloco com algo faltando (a voz custa frações de centavo).

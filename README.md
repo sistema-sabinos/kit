@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 5.32 (2026-10-30)
+Versão 5.33 (2026-10-31)
 
 Um sistema de trabalho com IA pro seu negócio, rodando dentro do VS Code com o Claude Code.
 
@@ -55,7 +55,7 @@ A marca tem duas metades em `marca/`: o visual e a voz com que o sistema escreve
 
 Quem vende em marketplace ganha, se quiser, o pacote `/mercado-livre`: do "posso vender esse produto?" ao anúncio publicado e à conta auditada, sem custo (as partes pagas são opcionais e sempre avisadas antes de rodar: gerar imagem por IA e a leitura das fotos dos concorrentes na `/engenharia-reversa`). O `/setup` oferece quando suas respostas falam em marketplace.
 
-Junto com ele vem mais um pacote opcional. O de vídeo faz o vídeo do produto sem você filmar (`/video-produto`, a partir das dúvidas dos compradores nos concorrentes; rode antes a `/espionar-concorrente`) e edita o vídeo que você gravou (`/editar-video`). A instalação, pela `/configurar-video`, pede uns 4 GB livres na hora e uns 3 GB depois (música e a maior parte dos efeitos você baixa grátis, e ele mostra onde; o pop e o acende o kit já cria); gerar vídeo por IA é pago, com o valor mostrado antes, e o teto padrão de gasto é US$ 4 por rodada.
+Quem edita ou posta vídeo em pé (Shorts, Reels, TikTok) ganha, se quiser, o pacote de vídeo, com ou sem marketplace: ele edita o vídeo que você gravou (`/editar-video`). Quem vende em marketplace ganha também o vídeo do produto sem você filmar (`/video-produto`, a partir das dúvidas dos compradores nos concorrentes; rode antes a `/espionar-concorrente`). A instalação, pela `/configurar-video`, pede uns 4 GB livres na hora e uns 3 GB depois (música e a maior parte dos efeitos você baixa grátis, e ele mostra onde; o pop e o acende o kit já cria); gerar vídeo por IA é pago, com o valor mostrado antes, e o teto padrão de gasto é US$ 4 por rodada. Se quiser, a `/configurar-video` monta com você um orçamento do mês e mostra quantos vídeos ele dá, em média.
 
 Quem posta em rede social ganha, se quiser, o pacote de redes sociais (`/midia-social`), com ou sem marketplace: faz a pauta da semana, agenda no Instagram, TikTok e YouTube pelo Buffer e mede o resultado, grátis (análise pelo Gemini opcional). O `/setup` oferece quando suas respostas falam em Instagram, TikTok, YouTube, post ou vídeo.
 

@@ -2,7 +2,7 @@
 // Gate 1 barra as letras seguidas de 6 ou mais digitos em qualquer arquivo do kit.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, readdirSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, readdirSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { argumentos, idDoAnuncio, escolherTopo, urlParaAbrir, vendidosDe, vendedorDe, perguntasDoTexto, palavrasDoTitulo, vocabulario, textoDoVocabulario, atributosConsensuais, fotosUnicas, avaliacoesDaPagina, dataDaPagina, dataRelativa, espionar, recalcularArquivos, acharProduto, mesclarAnuncios, oQueFaltaEspionar, pontoDePartida, limparFundo, somaAlertas, itemAvulso, arquivoAvulso, espionarAvulso, resumoAvulso } from './espionar.mjs'
@@ -586,6 +586,11 @@ test('espionarAvulso grava o bruto de um anuncio em dados/concorrentes, sem toca
     assert.match(bruto.anuncios[0].perguntas, /glúten/)
     assert.deepEqual(readdirSync(raiz), ['dados'])
     assert.equal(resumoAvulso(raiz, arquivo, anuncio)[1], `dados/concorrentes/_raw-concorrentes-${id('7770001')}.json`)
+    // projeto sem a /video-produto (extra do ML desde a 5.37): sem o comando dela; com ela, o comando aparece
+    assert.equal(resumoAvulso(raiz, arquivo, anuncio).length, 2)
+    mkdirSync(join(raiz, '.claude', 'skills', 'video-produto', 'scripts'), { recursive: true })
+    writeFileSync(join(raiz, '.claude', 'skills', 'video-produto', 'scripts', 'video-produto.mjs'), '')
+    assert.match(resumoAvulso(raiz, arquivo, anuncio)[2], /video-produto\.mjs --mlb=/)
     assert.throws(() => resumoAvulso(raiz, arquivo, { ...anuncio, erro: 'pagina: timeout' }), /nao consegui ler/)
   } finally {
     rmSync(raiz, { recursive: true, force: true })

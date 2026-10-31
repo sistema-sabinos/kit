@@ -7,11 +7,11 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempSync, writeFileSync, rmSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { REGRAS, montarPrompt, cotaEstourou, escolherModeloImagem, erroSemModelo, avisoDePreco, PRECO_IMAGEM, PRAZO_LISTA_MS, PRAZO_GERAR_MS, estimar, viaCodex, viaGemini, codigoDeSaida } from './gerar-cenario.mjs'
+import { REGRAS, montarPrompt, cotaEstourou, escolherModeloImagem, erroSemModelo, avisoDePreco, PRECO_IMAGEM, PRAZO_LISTA_MS, PRAZO_GERAR_MS, viaCodex, viaGemini, codigoDeSaida } from './gerar-cenario.mjs'
 import { rodarComPrazo } from './motor.mjs'
 import { EventEmitter } from 'node:events'
-import { CAMINHO_ENV } from '../../mercado-livre/scripts/lib/env.mjs'
-import { CAMINHO_CONFIG } from '../../mercado-livre/scripts/lib/config.mjs'
+import { CAMINHO_ENV } from '../../conectar/scripts/lib/env.mjs'
+import { CAMINHO_TETO as CAMINHO_CONFIG } from '../../conectar/scripts/lib/orcamento.mjs'
 
 const RAIZ_FALSA = join('/home', 'aluno', 'loja')
 const cenas = [
@@ -139,11 +139,6 @@ test('avisoDePreco: avisa so quando o preco passado fica abaixo do preco do mode
   }
 })
 
-test('estimar soma e confere o limite de gasto', () => {
-  assert.deepEqual(estimar({ n: 4, precoUsd: 0.05, limiteUsd: 2 }), { total: 0.2, cabe: true })
-  assert.deepEqual(estimar({ n: 50, precoUsd: 0.05, limiteUsd: 2 }), { total: 2.5, cabe: false })
-})
-
 test('viaCodex: sandbox de escrita, pasta do projeto, prompt no stdin; confere o disco', async () => {
   const vistos = []
   let gerado = false
@@ -228,9 +223,19 @@ test('viaGemini: escolhe o modelo pela lista, grava, registra custo por imagem',
   assert.equal(gravados.length, 2)
   assert.equal(gravados[0][1], 'png')
   assert.equal(custos.length, 2)
-  assert.deepEqual(Object.keys(custos[0]).sort(), ['contexto', 'em', 'servico', 'usd'])
+  // o em sai do registrador comum (hora local com o fuso); a linha leva a cena pra media do orcamento
+  assert.deepEqual(Object.keys(custos[0]).sort(), ['cenas', 'contexto', 'servico', 'usd'])
   assert.equal(custos[0].servico, 'gemini-imagem')
+  assert.equal(custos[0].cenas, 1)
   assert.equal(r.custo_usd, 0.14)
+})
+
+test('viaGemini leva o video e a reserva da liberacao pra linha de custo', async () => {
+  const { buscar } = geminiFalso({ respostas: [comImagem] })
+  const custos = []
+  await viaGemini([cenas[0]], { chave: 'k', precoUsd: 0.07, contexto: 'x', video: 'reel-1', reserva: 'r-1', buscar, gravar: () => {}, registrarCusto: (c) => custos.push(c), esperar: async () => {} })
+  assert.equal(custos[0].video, 'reel-1')
+  assert.equal(custos[0].reserva, 'r-1')
 })
 
 test('viaGemini: 429 espera e tenta de novo; resposta sem imagem nao cobra', async () => {

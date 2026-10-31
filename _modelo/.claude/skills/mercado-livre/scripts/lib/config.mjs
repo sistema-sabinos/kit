@@ -4,11 +4,12 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { RAIZ } from './raiz.mjs'
+import { TETO_PADRAO_USD } from '../../../conectar/scripts/lib/orcamento.mjs'
 
 export const CAMINHO_CONFIG = join(RAIZ, '_contexto', 'mercado-livre.md')
 export const NUMERICOS = new Set(['imposto_pct', 'margem_minima_rs', 'margem_minima_pct', 'margem_minima_kit_rs', 'limite_gasto_usd'])
 export const LISTAS = new Set(['fornecedores'])
-export const PADROES = { erp: 'nenhum', modelo: 'estoque', limite_gasto_usd: 4, loja_oficial: 'nao', full: 'nao' }
+export const PADROES = { erp: 'nenhum', modelo: 'estoque', limite_gasto_usd: TETO_PADRAO_USD, loja_oficial: 'nao', full: 'nao' }
 export const VALORES = { modelo: ['dropshipping', 'estoque'] }
 
 export function lerConfiguracao(texto) {

@@ -440,9 +440,27 @@ test('registrar mudanca sem id recusa antes de gravar', () => comPasta(raiz => {
   assert.throws(() => registrarMudanca({ projeto, estado: 'aplicada' }), /id obrigatorio/)
 }))
 
+// Rodada 5.37: o video saiu do ML, e a gerar-imagens e o video-produto viraram componentes.
+// Projeto montado como 5.32 (ML com a gerar-imagens, video com as tres skills), no kit de verdade:
+// segue com tudo instalado e nada da gerar-imagens nem do video-produto aparece como saido do kit.
+test('projeto 5.32 com o video antigo segue com video-produto e gerar-imagens, sem sugerir remover', () => comPasta(raiz => {
+  const kit = fileURLToPath(new URL('../', import.meta.url))
+  const skills = ['mercado-livre', 'gerar-imagens', 'configurar-video', 'video-produto', 'editar-video', 'assistir-video']
+  const arquivos = { '.sabinos/instalado.json': JSON.stringify({ versao: '5.32', arquivos: {} }) }
+  for (const s of skills) arquivos[`.claude/skills/${s}/SKILL.md`] = readFileSync(join(kit, '_modelo', '.claude', 'skills', s, 'SKILL.md'), 'utf8')
+  const projeto = montarProjeto(raiz, arquivos)
+  const plano = montarPlano({ kit, projeto })
+  for (const c of ['mercado-livre', 'gerar-imagens', 'video', 'video-produto', 'assistir-video']) assert.equal(plano.componentes[c], 'instalado', c)
+  assert.deepEqual(Object.keys(plano.puxadoPor).filter(c => c !== 'nucleo'), [])
+  const saidos = plano.itens.filter(i => i.acao === 'sugerir-remover').map(i => i.caminho)
+  assert.deepEqual(saidos.filter(c => /skills\/(gerar-imagens|video-produto|configurar-video|editar-video)\//.test(c)), [])
+  assert.ok(plano.itens.some(i => i.caminho === '.claude/skills/video-produto/SKILL.md' && i.acao === 'igual'), 'canario: o SKILL.md do video-produto entrou no plano')
+  assert.ok(!resumo(plano).includes('video-produto,') && !/ainda nao tem:.*(video-produto|gerar-imagens)/.test(resumo(plano)))
+}))
+
 test('componente video depende do assistir-video (o olho final do editar-video usa ele)', () => {
   const real = JSON.parse(readFileSync(fileURLToPath(new URL('./componentes.json', import.meta.url)), 'utf8'))
-  assert.deepEqual(real.componentes.video.depende, ['nucleo', 'mercado-livre', 'assistir-video'])
+  assert.deepEqual(real.componentes.video.depende, ['nucleo', 'assistir-video', 'gerar-imagens'])
 })
 
 // Rodada 5.28: o settings.json e misto (metade do kit, metade da pessoa). O deny e a trava do MCP

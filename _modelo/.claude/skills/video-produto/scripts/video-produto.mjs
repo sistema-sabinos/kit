@@ -18,8 +18,9 @@
 // --autorizado (o "pode ir" da pessoa). A estimativa da fase 2 soma: clipes que
 // faltam x 8 s x preco por segundo, a musica se faltar, e uma folga de US$ 0,01
 // por bloco com algo faltando (voz e transcricao de volta de 8 s custam fracoes
-// de centavo; a folga so existe pra estimativa nao subestimar). Passou do teto
-// `limite_gasto_usd` da configuracao, nao roda.
+// de centavo; a folga so existe pra estimativa nao subestimar). Nao cabe no
+// orcamento do mes (_contexto/orcamento.md) ou, sem ele, passa do teto
+// `limite_gasto_usd` da configuracao: nao roda (liberarGasto da lib do conectar).
 //
 // Codigos de saida: 0 ok; 1 falhou ou reprovou; 2 uso errado (inclui preco
 // ausente); 3 parou antes de gastar (sem aprovacao de gasto, sem --autorizado,
@@ -47,7 +48,8 @@ import { gerarMusica, ESTILOS } from './lib/musica.mjs'
 import { fetchComTimeout } from './lib/fetch-timeout.mjs'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
 import { carregarConfiguracao, PADROES } from '../../mercado-livre/scripts/lib/config.mjs'
-import { registrarCusto, estimar, liberarGasto } from '../../configurar-video/scripts/lib/custos.mjs'
+import { registrarCusto, estimar, liberarGasto, fecharReserva } from '../../configurar-video/scripts/lib/custos.mjs'
+import { lerOrcamento } from '../../conectar/scripts/lib/orcamento.mjs'
 import { realpathSync } from 'node:fs'
 
 export const SEGUNDOS_POR_BLOCO = 8
@@ -611,6 +613,31 @@ function limiteDeGasto(d) {
   }
 }
 
+// A trava unica do gasto avulso: orcamento do mes (_contexto/orcamento.md) ou, sem ele, o teto por lote
+// da configuracao. Liberado com orcamento do mes, a reserva fica no ctx.gasto e cada linha de custo
+// da fase leva o id dela; o main fecha no fim.
+function liberar(ctx, estimativaUsd) {
+  const { a, d } = ctx
+  const lib = liberarGasto({ estimativaUsd, autorizado: a.tem('autorizado') }, {
+    raiz: d.raizGasto, contexto: `video-produto ${ctx.slug || ctx.mlb}`,
+    lerOrcamento: () => lerOrcamento({ raiz: d.raizGasto, lerLote: () => limiteDeGasto(d) }),
+  })
+  if (lib.aviso) console.error(`[aviso] ${lib.aviso}`)
+  ctx.gasto.reserva = lib.reserva || null
+  return lib
+}
+
+function registrarDaFase(ctx) {
+  const { reserva } = ctx.gasto
+  if (!reserva) return ctx.d.registrarCusto
+  // cobranca que nao virou linha segura a reserva aberta no fim (ela conta ate alguem anotar e fechar)
+  return (linha, op) => {
+    const ok = ctx.d.registrarCusto({ ...linha, reserva }, op)
+    if (ok === false) ctx.gasto.semRegistro = true
+    return ok
+  }
+}
+
 // Quais modelos a rodada usa, pra quem passa o preco do dia saber qual linha da
 // tabela de precos consultar. Os nomes exatos o script descobre pela chave na hora
 // de chamar; aqui vai a familia de cada um (as mesmas regras de escolha do codigo).
@@ -751,7 +778,8 @@ function abrirProduto({ mlb, base, slug, nomeDaFase }) {
   return { pasta, coleta, roteiro }
 }
 
-async function fase2({ mlb, base, slug, a, d, precos }) {
+async function fase2(ctx) {
+  const { mlb, base, slug, a, d, precos } = ctx
   const aberto = abrirProduto({ mlb, base, slug, nomeDaFase: 'fase 2' })
   if (!aberto) return 1
   const { pasta, coleta, roteiro } = aberto
@@ -832,11 +860,10 @@ async function fase2({ mlb, base, slug, a, d, precos }) {
     }
 
     estimativa = calcularEstimativa()
-    const limiteUsd = limiteDeGasto(d)
     // o pode ir vale sempre que QUALQUER chamada paga vai rodar, mesmo que a
     // estimativa arredonde pra perto de zero
     if (precisaPagar) {
-      const lib = liberarGasto({ totalUsd: estimativa, limiteUsd, autorizado: a.tem('autorizado') })
+      const lib = liberar(ctx, estimativa)
       if (lib.codigo !== 0) {
         console.log(JSON.stringify({ parou: lib.parou, estimativa_usd: lib.estimativa_usd }))
         console.error(`[fase 2] parei antes de gastar: ${lib.parou}. Estimativa ${usd(estimativa)}.`)
@@ -850,8 +877,10 @@ async function fase2({ mlb, base, slug, a, d, precos }) {
     estimativa = calcularEstimativa()
     console.log(JSON.stringify({ estimativa_usd: estimativa, dry_run: true }))
     console.error(`[fase 2] ESTIMATIVA: ${usd(estimativa)} (clipes que faltam, musica se faltar e folga de voz). Nada foi gerado nem gasto.`)
-    const limiteUsd = limiteDeGasto(d)
-    if (estimativa > limiteUsd) console.error(`[fase 2] ATENCAO: passa do limite_gasto_usd (${usd(limiteUsd)}); a rodada paga vai parar. Divida em partes ou suba o teto.`)
+    // com orcamento do mes, quem diz se cabe e a liberacao da rodada paga (saldo so quando a pessoa pede)
+    let o = null
+    try { o = lerOrcamento({ raiz: d.raizGasto, lerLote: () => limiteDeGasto(d) }) } catch {}
+    if (o?.tipo === 'lote' && estimativa > o.usd) console.error(`[fase 2] ATENCAO: passa do limite_gasto_usd (${usd(o.usd)}); a rodada paga vai parar. Divida em partes ou suba o teto.`)
   } else {
     const faltam = []
     if (!precos.clipe) faltam.push('--preco-usd')
@@ -934,7 +963,7 @@ async function fase2({ mlb, base, slug, a, d, precos }) {
         r = await d.gerarClipe({
           prompt: promptDeClipe(bloco, { ator: roteiro.ator, produto: roteiro.produto, vozUnica: roteiro.vozUnica === true }),
           imagemPath: referencia, segundos: SEGUNDOS_POR_BLOCO, saida, dryRun,
-          precoUsdPorSegundo: precos.clipe, registrarCusto: d.registrarCusto, contexto, pastaVideo: pasta,
+          precoUsdPorSegundo: precos.clipe, registrarCusto: registrarDaFase(ctx), contexto, pastaVideo: pasta,
         })
       } catch (e) {
         console.error(explicarFalhaDoVeo(e))
@@ -962,11 +991,11 @@ async function fase2({ mlb, base, slug, a, d, precos }) {
         await d.narrar({
           texto: bloco.fala, voz: roteiro.voz, ator: roteiro.ator, saida: wav,
           precos: { entradaUsdMtok: precos.ttsEntrada, saidaUsdMtok: precos.ttsSaida },
-          registrarCusto: d.registrarCusto, contexto,
+          registrarCusto: registrarDaFase(ctx), contexto,
         })
         dito = await d.transcrever(wav, {
           precos: { entradaUsdMtok: precos.transcricaoEntrada, saidaUsdMtok: precos.transcricaoSaida },
-          registrarCusto: d.registrarCusto, contexto,
+          registrarCusto: registrarDaFase(ctx), contexto,
         })
       } catch (e) {
         // wav gravado mas nao conferido (a transcricao falhou) nao pode ficar:
@@ -1002,7 +1031,7 @@ async function fase2({ mlb, base, slug, a, d, precos }) {
       try {
         const m = await d.gerarMusica({
           estilo: roteiro.musica.estilo, segundos, saida: musica, precoUsd: precos.musica,
-          modelo: a.arg('modelo-musica'), registrarCusto: d.registrarCusto, contexto: `video-produto ${nome} musica`,
+          modelo: a.arg('modelo-musica'), registrarCusto: registrarDaFase(ctx), contexto: `video-produto ${nome} musica`,
         })
         total += m.custoUsd
         console.error(`[fase 2] cama de musica gerada (estilo ${roteiro.musica.estilo}, ${usd(m.custoUsd)}).`)
@@ -1032,7 +1061,8 @@ function moverVideo(d, de, para, depois) {
   }
 }
 
-async function fase3({ mlb, base, slug, a, d, precos }) {
+async function fase3(ctx) {
+  const { mlb, base, slug, a, d, precos } = ctx
   const aberto = abrirProduto({ mlb, base, slug, nomeDaFase: 'fase 3' })
   if (!aberto) return 1
   const { pasta, roteiro } = aberto
@@ -1064,7 +1094,7 @@ async function fase3({ mlb, base, slug, a, d, precos }) {
   if (!dryRun) {
     // a transcricao de um video de ate 1 minuto custa fracoes de centavo: a folga
     // de voz serve de estimativa, e o teto e conferido igual.
-    const lib = liberarGasto({ totalUsd: FOLGA_VOZ_USD, limiteUsd: limiteDeGasto(d), autorizado: a.tem('autorizado') })
+    const lib = liberar(ctx, FOLGA_VOZ_USD)
     if (lib.codigo !== 0) {
       console.log(JSON.stringify({ parou: lib.parou, estimativa_usd: lib.estimativa_usd }))
       console.error(`[fase 3] parei antes de gastar: ${lib.parou}. O gate de voz transcreve o video no Gemini (chamada paga, centavos).`)
@@ -1167,7 +1197,7 @@ async function fase3({ mlb, base, slug, a, d, precos }) {
   try {
     dito = await d.transcrever(wav, {
       precos: { entradaUsdMtok: precos.transcricaoEntrada, saidaUsdMtok: precos.transcricaoSaida },
-      registrarCusto: d.registrarCusto, contexto: `video-produto ${nome} gate-de-voz`,
+      registrarCusto: registrarDaFase(ctx), contexto: `video-produto ${nome} gate-de-voz`,
     })
   } catch (e) {
     console.error(`[voz] o video saiu em ${saida} e passou no gate tecnico, MAS o gate de voz nao rodou: ${e.message}`)
@@ -1204,6 +1234,7 @@ async function fase3({ mlb, base, slug, a, d, precos }) {
 
 const DEPS_PADRAO = {
   coletar, coletarDeEspionagem, gerarClipe, narrar, transcrever, gerarMusica, montarVideo, registrarCusto, carregarConfiguracao,
+  raizGasto: RAIZ,
   renomear: (de, para) => fs.renameSync(de, para),
 }
 
@@ -1252,10 +1283,14 @@ export async function main(argv = process.argv.slice(2), deps = {}) {
   const slug = a.arg('slug')
   if (!mlb || ![1, 2, 3].includes(fase)) { console.error(USO); return 2 }
 
-  const ctx = { mlb, base, slug, a, d, precos }
+  const ctx = { mlb, base, slug, a, d, precos, gasto: { reserva: null } }
   if (fase === 1) return fase1(ctx)
-  if (fase === 2) return fase2(ctx)
-  return fase3(ctx)
+  // a reserva do orcamento do mes (se houve) fecha no fim da fase, ate quando ela cai no meio
+  try { return fase === 2 ? await fase2(ctx) : await fase3(ctx) } finally {
+    const { reserva, semRegistro } = ctx.gasto
+    if (reserva && semRegistro) console.error(`[orcamento] a reserva ${reserva} ficou aberta e conta no orcamento do mes: anote a linha que faltou em dados/custos.jsonl e feche pelo --saldo do /configurar-video`)
+    else if (reserva) fecharReserva(reserva, { raiz: d.raizGasto })
+  }
 }
 
 // Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem

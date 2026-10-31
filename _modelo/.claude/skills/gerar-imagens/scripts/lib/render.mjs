@@ -5,7 +5,7 @@ import { createRequire } from 'node:module'
 import { existsSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { RAIZ } from '../../../mercado-livre/scripts/lib/raiz.mjs'
+import { RAIZ } from '../../../conectar/scripts/lib/raiz.mjs'
 
 export const INSTALAR = 'npm install --prefix .claude/skills/mercado-livre'
 

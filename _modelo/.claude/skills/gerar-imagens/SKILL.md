@@ -1,12 +1,17 @@
 ---
 name: gerar-imagens
-description: Faz as imagens do anúncio sozinha (capa, fotos de clima e peças com texto) a partir das fotos reais do produto e do mapa de fotos, pelo melhor motor que você tiver (Codex, Gemini ou nenhum), e junta tudo numa prancha pra você só aprovar ou pedir pra refazer. É a etapa 5.5 da esteira do Mercado Livre, usada pelo agente ml-designer. Use quando o usuário chamar /gerar-imagens, disser "faz as fotos do anúncio", "gera as imagens do [produto]", "refaz a foto 3", ou quando a /mercado-livre chegar nas imagens.
+description: Faz imagens pelo melhor motor que você tiver (Codex, Gemini ou nenhum), sem a IA desenhar o produto nem escrever texto. Serve pras imagens do anúncio (capa, fotos de clima e peças com texto, a partir das fotos reais do produto e do mapa de fotos, juntas numa prancha pra você só aprovar ou pedir pra refazer) e pro cenário de fundo do vídeo em pé. No anúncio é a etapa 5.5 da esteira do Mercado Livre, usada pelo agente ml-designer; no vídeo, a /editar-video chama ela. Use quando o usuário chamar /gerar-imagens, disser "faz as fotos do anúncio", "gera as imagens do [produto]", "refaz a foto 3", "gera um cenário pro vídeo", ou quando a /mercado-livre chegar nas imagens.
 ---
 
 # /gerar-imagens
 
 Você faz as imagens do anúncio. A pessoa só olha a prancha e responde
 "aprova tudo" ou "refaz a 3: mais clara".
+
+Pedido de cenário de fundo pra vídeo não segue o roteiro do anúncio abaixo
+(não tem `copy.json`, estilo nem foto de produto): siga o item "Imagem por IA"
+da `/editar-video`, que roda o `motor.mjs` e o `gerar-cenario.mjs` com
+`--uso video`.
 
 ## A regra que manda em tudo
 
@@ -90,7 +95,13 @@ as imagens finais em `anuncios/<slug>/imagens/NN-papel.jpg`, na ordem do mapa.
      novo: fazer essas cenas no `zero-ia` e dizer isso.
    - Saída 3 falando de `limite_gasto_usd`: o lote passou do teto. Dividir em
      lotes menores, dentro do que a pessoa autorizou, ou combinar com ela subir
-     o `limite_gasto_usd` em `_contexto/mercado-livre.md`.
+     o `limite_gasto_usd` em `_contexto/mercado-livre.md` (sem esse arquivo, vale
+     o teto padrão do kit). Esse teto por vez só vale enquanto o orçamento do mês
+     não foi definido.
+   - Saída 3 falando do orçamento do mês: o gasto não cabe no que sobrou do mês
+     (`_contexto/orcamento.md`), ou o mês acabou. Repassar a mensagem como veio,
+     com a média e o motivo, e oferecer subir o orçamento pelo `/configurar-video`
+     ou esperar o mês virar; no `ml-designer`, seguir no `zero-ia` e dizer no recibo.
    - Saída 3 falando de "pode ir": faltou a autorização. Parar e pedir; no
      `ml-designer`, seguir no `zero-ia` e dizer no recibo.
    - Saída 3 com `parou` no JSON: a chave liberou um modelo de imagem mais caro

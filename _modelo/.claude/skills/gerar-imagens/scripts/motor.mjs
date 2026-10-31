@@ -7,7 +7,7 @@
 // Uso: node .claude/skills/gerar-imagens/scripts/motor.mjs
 import { spawnSync, spawn, execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { lerEnv } from '../../mercado-livre/scripts/lib/env.mjs'
+import { lerEnv } from '../../conectar/scripts/lib/env.mjs'
 import { realpathSync } from 'node:fs'
 
 export function escolherDegrau({ codex, env }) {

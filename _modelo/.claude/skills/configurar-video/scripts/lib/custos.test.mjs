@@ -12,7 +12,11 @@ test('registrarCusto cria dados/ e grava uma linha no formato do kit', () => {
     assert.equal(ok, true)
     const linhas = readFileSync(join(raiz, 'dados', 'custos.jsonl'), 'utf8').trim().split('\n')
     assert.equal(linhas.length, 1)
-    assert.deepEqual(JSON.parse(linhas[0]), { em: '2026-10-04T12:00:00.000Z', servico: 'gemini-video', usd: 0.4, contexto: 'video-produto x bloco-1' })
+    const l = JSON.parse(linhas[0])
+    // em com o deslocamento do fuso da maquina, mesmo instante
+    assert.equal(new Date(l.em).getTime(), Date.parse('2026-10-04T12:00:00Z'))
+    assert.match(l.em, /[+-]\d{2}:\d{2}$/)
+    assert.deepEqual({ ...l, em: 0 }, { em: 0, servico: 'gemini-video', usd: 0.4, contexto: 'video-produto x bloco-1' })
   } finally { rmSync(raiz, { recursive: true, force: true }) }
 })
 
@@ -24,11 +28,12 @@ test('falha ao gravar so avisa e devolve false, nunca lanca', () => {
   assert.match(avisos[0], /anote a mao/)
 })
 
-test('estimar e liberarGasto: teto e pode ir', () => {
+test('estimar e liberarGasto (o reexport da lib comum): teto por lote e pode ir', () => {
   assert.deepEqual(estimar({ n: 56, precoUsd: 0.05, limiteUsd: 4 }), { total: 2.8, cabe: true })
-  assert.equal(liberarGasto({ totalUsd: 5, limiteUsd: 4, autorizado: true }).codigo, 3)
-  assert.match(liberarGasto({ totalUsd: 2, limiteUsd: 4, autorizado: false }).parou, /pode ir/)
-  assert.equal(liberarGasto({ totalUsd: 2, limiteUsd: 4, autorizado: true }).codigo, 0)
+  const lote = { lerOrcamento: () => ({ tipo: 'lote', usd: 4 }) }
+  assert.equal(liberarGasto({ estimativaUsd: 5, autorizado: true }, lote).codigo, 3)
+  assert.match(liberarGasto({ estimativaUsd: 2, autorizado: false }, lote).parou, /pode ir/)
+  assert.equal(liberarGasto({ estimativaUsd: 2, autorizado: true }, lote).codigo, 0)
 })
 
 test('custoPorTokens usa usageMetadata e devolve null sem uso', () => {

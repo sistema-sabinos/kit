@@ -5,18 +5,20 @@
 // assunto do lugar no centro, porque o que sobrar nas bordas e cortado.
 // Uso:
 //   node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau codex --cenas <cenas.json> [--uso video]
-//   node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau gemini --cenas <cenas.json> --preco-usd 0.05 --contexto "designer <slug>" [--autorizado] [--uso video]
+//   node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau gemini --cenas <cenas.json> --preco-usd 0.05 --contexto "designer <slug>" [--autorizado] [--uso video] [--video <slug>]
 // cenas.json: [{ "out": "anuncios/<slug>/cenarios/cozinha.png", "descricao": "..." }]
 // --preco-usd e o preco por imagem conferido na pagina oficial do Gemini NO DIA.
+// --video <slug>: o video em que o cenario entra, anotado na linha de custo pra media do orcamento do mes.
+// O gasto passa pela trava unica (liberarGasto do conectar): orcamento do mes ou, sem ele, teto por lote.
 // Saida: 0 tudo gerado; 1 falhou alguma cena; 2 uso errado; 3 parou antes de gastar.
 import { rodarComPrazo } from './motor.mjs'
-import { existsSync, statSync, readFileSync, writeFileSync, mkdirSync, appendFileSync, realpathSync } from 'node:fs'
-import { dirname, join, relative, resolve, isAbsolute } from 'node:path'
+import { existsSync, statSync, readFileSync, writeFileSync, mkdirSync, realpathSync } from 'node:fs'
+import { dirname, relative, resolve, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
-import { lerEnv } from '../../mercado-livre/scripts/lib/env.mjs'
-import { carregarConfiguracao, PADROES } from '../../mercado-livre/scripts/lib/config.mjs'
-import { fetchComTimeout } from '../../mercado-livre/scripts/lib/fetch-timeout.mjs'
+import { RAIZ } from '../../conectar/scripts/lib/raiz.mjs'
+import { lerEnv } from '../../conectar/scripts/lib/env.mjs'
+import { liberarGasto, fecharReserva, registrarCusto as registrarComum } from '../../conectar/scripts/lib/orcamento.mjs'
+import { fetchComTimeout } from '../../conectar/scripts/lib/fetch-timeout.mjs'
 import { lerArgs, numero } from './lib/args.mjs'
 
 const API = 'https://generativelanguage.googleapis.com/v1beta'
@@ -110,11 +112,6 @@ export function avisoDePreco(modelo, precoUsd, tabela = PRECO_IMAGEM) {
   return `parou antes de gastar: a sua chave libera o ${modelo}, e o preco dele (conferido em ${p.conferido_em}) era US$ ${p.usd} por imagem, acima do --preco-usd ${precoUsd}. Confira o preco desse modelo na pagina oficial e rode de novo com o --preco-usd certo: a estimativa e o pode ir mudam com ele.`
 }
 
-export function estimar({ n, precoUsd, limiteUsd }) {
-  const total = Math.round(n * precoUsd * 10000) / 10000
-  return { total, cabe: total <= limiteUsd }
-}
-
 export async function viaCodex(cenas, { raiz = RAIZ, uso, executar = rodarComPrazo, carimbo = (p) => existsSync(p) ? statSync(p).mtimeMs : null } = {}) {
   for (const c of cenas) {
     const rel = relative(raiz, resolve(c.out))
@@ -139,10 +136,11 @@ export async function viaCodex(cenas, { raiz = RAIZ, uso, executar = rodarComPra
 }
 
 export async function viaGemini(cenas, {
-  chave, precoUsd, contexto, uso,
+  chave, precoUsd, contexto, uso, video, reserva, raiz = RAIZ,
   buscar = fetchComTimeout,
   gravar = (p, b) => { mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, b) },
-  registrarCusto = (linha) => { mkdirSync(join(RAIZ, 'dados'), { recursive: true }); appendFileSync(join(RAIZ, 'dados', 'custos.jsonl'), JSON.stringify(linha) + '\n') },
+  // o registrador comum so avisa quando nao grava; aqui a falha vira erro pro aviso de baixo
+  registrarCusto = (linha) => { if (!registrarComum(linha, { raiz, avisar: () => {} })) throw new Error('nao consegui gravar dados/custos.jsonl') },
   esperar = (ms) => new Promise(r => setTimeout(r, ms)),
 }) {
   const lista = await (await buscar(`${API}/models?key=${chave}&pageSize=300`, {}, { timeoutMs: PRAZO_LISTA_MS })).json()
@@ -154,13 +152,16 @@ export async function viaGemini(cenas, {
   const geradas = []
   const faltaram = []
   let pagas = 0
+  let semRegistro = 0
+  let incertas = 0
   // Resposta 200 com imagem ja foi cobrada pelo Google: o custo se registra sempre, salvando
   // ou nao o arquivo. Falha no registro so avisa, nunca devolve a cena pra fila.
   const cobrar = (out) => {
     pagas++
     try {
-      registrarCusto({ em: new Date().toISOString(), servico: 'gemini-imagem', usd: precoUsd, contexto })
+      registrarCusto({ servico: 'gemini-imagem', usd: precoUsd, contexto, cenas: 1, ...(video ? { video } : {}), ...(reserva ? { reserva } : {}) })
     } catch (e) {
+      semRegistro++
       console.error(`[gemini] ${out}: imagem gerada e cobrada (US$ ${precoUsd}) mas a linha de custo nao foi gravada em dados/custos.jsonl; anote isso a mao. Motivo: ${e.message}`)
     }
   }
@@ -171,8 +172,10 @@ export async function viaGemini(cenas, {
       for (let tentativa = 1; tentativa <= 3; tentativa++) {
         const r = await buscar(`${API}/models/${modelo}:generateContent?key=${chave}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) }, { timeoutMs: PRAZO_GERAR_MS })
         if (r.status === 429 && tentativa < 3) { await esperar(20000 * tentativa); continue }
-        if (r.status === 200) json = await r.json()
-        else {
+        if (r.status === 200) {
+          // 200 cujo corpo nao chegou inteiro pode ter sido cobrado: sem linha, a reserva fica aberta
+          try { json = await r.json() } catch (e) { incertas++; throw new Error(`resposta 200 que nao chegou inteira, pode ter sido cobrada: ${e.message}`) }
+        } else {
           // 400 e 403 costumam ser chave invalida ou faturamento desligado: a pessoa precisa ouvir.
           let msg = ''
           try { msg = (await r.json())?.error?.message || '' } catch { msg = '' }
@@ -199,16 +202,12 @@ export async function viaGemini(cenas, {
       faltaram.push(c.out)
     }
   }
-  return { geradas, faltaram, custo_usd: Math.round(pagas * precoUsd * 10000) / 10000, modelo }
+  return { geradas, faltaram, custo_usd: Math.round(pagas * precoUsd * 10000) / 10000, modelo, ...(semRegistro ? { cobradas_sem_registro: semRegistro } : {}), ...(incertas ? { cobranca_incerta: incertas } : {}) }
 }
 
 // Codigo de saida do resultado de um degrau: parar antes de gastar (3) vale mais que cena faltando (1).
 export function codigoDeSaida(r) {
   return r.parou ? 3 : r.faltaram.length ? 1 : 0
-}
-
-function limiteDeGasto() {
-  try { return carregarConfiguracao().limite_gasto_usd } catch { return PADROES.limite_gasto_usd }
 }
 
 // Compara os caminhos reais: chamado por junção ou link (a ponte .agents/skills), o argv vem
@@ -220,8 +219,9 @@ function chamadoDireto() {
 const ehCli = chamadoDireto()
 // Saida por process.exitCode, nunca process.exit: depois de rede paga, sair na marra pode cortar a
 // gravacao do custo no meio (licao 3.12). 0 ok, 1 faltou imagem ou erro, 2 entrada ruim, 3 parou antes de gastar.
-async function main() {
-  const a = lerArgs(process.argv.slice(2))
+// raiz, ler e buscar trocam a raiz do projeto, o .env e a rede nos testes; no CLI vale o padrao.
+export async function main(argv = process.argv.slice(2), { raiz = RAIZ, ler = lerEnv, buscar } = {}) {
+  const a = lerArgs(argv)
   let cenas
   try {
     if (!['codex', 'gemini'].includes(a.degrau) || !a.cenas || ![undefined, 'video', 'anuncio'].includes(a.uso)) throw new Error('uso: --degrau codex|gemini --cenas <cenas.json> [--uso video|anuncio] (veja o topo do arquivo)')
@@ -238,14 +238,24 @@ async function main() {
     }
     const precoUsd = numero(a, 'preco-usd', undefined, { min: 0.001, max: 5 })
     if (precoUsd === undefined) { console.error('falta --preco-usd: confira o preco por imagem do Gemini na pagina oficial hoje e passe aqui'); process.exitCode = 2; return }
-    const est = estimar({ n: cenas.length, precoUsd, limiteUsd: limiteDeGasto() })
-    if (!est.cabe) { console.log(JSON.stringify({ parou: 'passa do limite_gasto_usd da configuracao', estimativa_usd: est.total })); process.exitCode = 3; return }
-    if (!a.autorizado) { console.log(JSON.stringify({ parou: 'precisa do pode ir da pessoa', estimativa_usd: est.total, imagens: cenas.length })); process.exitCode = 3; return }
-    const chave = lerEnv().GEMINI_API_KEY
-    if (!chave) { console.error('falta GEMINI_API_KEY no .env (o /conectar ensina a pegar)'); process.exitCode = 2; return }
-    const r = await viaGemini(cenas, { chave, precoUsd, contexto: a.contexto || 'gerar-imagens', uso: a.uso })
-    console.log(JSON.stringify(r, null, 2))
-    process.exitCode = codigoDeSaida(r)
+    const contexto = a.contexto || 'gerar-imagens'
+    const estimativa = Math.round(cenas.length * precoUsd * 10000) / 10000
+    const lib = liberarGasto({ estimativaUsd: estimativa, autorizado: a.autorizado === true }, { raiz, contexto })
+    if (lib.aviso) console.error(`[aviso] ${lib.aviso}`)
+    if (lib.codigo !== 0) { console.log(JSON.stringify({ parou: lib.parou, estimativa_usd: estimativa, imagens: cenas.length })); process.exitCode = 3; return }
+    let r = null
+    try {
+      const chave = ler().GEMINI_API_KEY
+      if (!chave) { console.error('falta GEMINI_API_KEY no .env (o /conectar ensina a pegar)'); process.exitCode = 2; return }
+      r = await viaGemini(cenas, { chave, precoUsd, contexto, uso: a.uso, video: typeof a.video === 'string' ? a.video : undefined, reserva: lib.reserva, raiz, ...(buscar ? { buscar } : {}) })
+      console.log(JSON.stringify(r, null, 2))
+      process.exitCode = codigoDeSaida(r)
+    } finally {
+      // cobranca sem linha ou incerta: a reserva fica contando no orcamento ate a pessoa anotar a linha e fechar pelo --saldo
+      if (r?.cobradas_sem_registro && lib.reserva) console.error(`[orcamento] a reserva ${lib.reserva} ficou aberta e conta no orcamento do mes: anote a linha que faltou e feche pelo --saldo do /configurar-video`)
+      else if (r?.cobranca_incerta && lib.reserva) console.error(`[orcamento] a reserva ${lib.reserva} ficou aberta e conta no orcamento do mes: o Google respondeu e a resposta caiu no meio, entao a imagem pode ter sido cobrada; confira no painel de faturamento, anote a linha se foi e feche pelo --saldo do /configurar-video`)
+      else fecharReserva(lib.reserva, { raiz })
+    }
   } catch (e) { console.error(e.message); process.exitCode = 1 }
 }
 

@@ -8,7 +8,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, realpathSy
 import { dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
-import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
+import { RAIZ } from '../../conectar/scripts/lib/raiz.mjs'
 import { caminhos, pastaVideo } from '../../configurar-video/scripts/lib/pasta-video.mjs'
 
 // So conta caminho que termina em arquivo de verdade: comentario ("biblioteca/sfx/.") e modelo ("<nome>", "${x}") ficam de fora.

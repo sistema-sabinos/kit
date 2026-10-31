@@ -62,8 +62,8 @@ node .claude/skills/espionar-concorrente/scripts/espionar.mjs --mlb <link ou có
 Lê esse anúncio, todas as opiniões (até 100) e as perguntas dele, no mesmo
 ritmo de gente da coleta normal, e grava
 `dados/concorrentes/_raw-concorrentes-<MLB>.json`. Não mexe no vocabulário, nos
-atributos nem no arquivo da categoria. A última linha que ele mostra é o
-comando da fase 1 da `/video-produto` já com esse arquivo; falta só trocar o
+atributos nem no arquivo da categoria. Se o projeto tem a `/video-produto`, a
+última linha que ele mostra é o comando da fase 1 dela já com esse arquivo; falta só trocar o
 `--slug` pelo nome do produto da pessoa, sem marca. Código de produto de
 catálogo (`MLBU`) não abre sozinho: peça o link da página do anúncio. O mesmo
 arquivo serve pra `/ler-avaliacoes --de-espionagem`.

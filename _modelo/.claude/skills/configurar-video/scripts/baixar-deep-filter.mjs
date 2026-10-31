@@ -9,7 +9,7 @@ import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { exe } from './lib/plataforma.mjs'
 import { caminhos, pastaVideo } from './lib/pasta-video.mjs'
-import { fetchComTimeout } from '../../mercado-livre/scripts/lib/fetch-timeout.mjs'
+import { fetchComTimeout } from '../../conectar/scripts/lib/fetch-timeout.mjs'
 
 const BASE_URL = 'https://github.com/Rikorose/DeepFilterNet/releases/download/v0.5.6/'
 export const URLS = {

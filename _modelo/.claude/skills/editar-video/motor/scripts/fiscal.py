@@ -16,7 +16,9 @@ Limite conhecido: dois elementos da MESMA camada encostados nao sao medidos (a c
 
   7. olho final (Gemini, PAGO): so roda com --roteiro, --preco-usd e --autorizado juntos, e so se 1 a 6 passaram.
      Assiste o video inteiro contra o roteiro e julga o que script nao julga. Sem preco ou sem autorizacao, avisa e
-     pula. O custo vai pro dados/custos.jsonl, uma linha, pelo registrar-custo-cli.mjs.
+     pula. Antes de chamar, passa pela trava do gasto (liberar-gasto-cli.mjs do conectar: orcamento do mes ou teto
+     por lote); sem liberacao, avisa e pula. O custo vai pro dados/custos.jsonl, uma linha, pelo
+     registrar-custo-cli.mjs, com a reserva da liberacao, o --video e os segundos do final.
 
 Teste do portao pago: `--so-olho-final` pula render e gates e roda so o passo 7 (os caminhos do render viram opcionais).
 
@@ -24,7 +26,7 @@ Uso: fiscal.py <Composicao> <final.mp4> <bruto.mp4> <pasta-saida> --remotion <re
              --props-base <props.json> [--props-verificar <props.json>] [--transcrever <transcrever.mjs> [--modelo small|medium]]
              [--midia <_video>/midia]
              [--roteiro <roteiro.md> --preco-usd <US$ do olho final, preco do dia> --autorizado
-              --ver-video <ver-video.mjs> --registrar-custo <registrar-custo-cli.mjs>]
+              --ver-video <ver-video.mjs> --registrar-custo <registrar-custo-cli.mjs> [--video <slug>]]
 
 Quem chama e o orquestrador do kit, que escolhe o Python da maquina e passa os caminhos; nenhum caminho de ferramenta
 e escrito aqui. Os outros .py (loudness, zona-segura, verificar-video) sao chamados com o mesmo Python que roda este
@@ -37,8 +39,11 @@ e escrito aqui. Os outros .py (loudness, zona-segura, verificar-video) sao chama
                    de fala sem legenda e pulada com aviso
   --registrar-custo CLI que grava o custo; padrao: configurar-video/scripts/lib/registrar-custo-cli.mjs ao lado da
                    pasta desta skill (so existe dentro do kit; o orquestrador passa o caminho certo)
+  --liberar-gasto  CLI da trava do gasto; padrao: conectar/scripts/lib/liberar-gasto-cli.mjs, achada a partir do
+                   --registrar-custo. Sem ela o olho final nao roda.
+  --video          slug do video, anotado na linha de custo pra media do orcamento do mes
 Sai APROVADO ou REPROVADO (codigo 1), com relatorio.md, falhas.json e quadros/ na pasta de saida."""
-import argparse, json, re, subprocess, sys
+import argparse, json, os, re, subprocess, sys
 from pathlib import Path
 import cv2
 import numpy as np
@@ -61,6 +66,8 @@ ap.add_argument("--ver-video", default=None)
 ap.add_argument("--raiz-custo", default=None, help="raiz do projeto onde o registrar-custo grava dados/custos.jsonl (padrao: a do kit)")
 ap.add_argument("--so-olho-final", action="store_true", help="so o olho final (teste do portao pago): sem render e sem gates")
 ap.add_argument("--registrar-custo", default=str(AQUI.parents[2] / "configurar-video" / "scripts" / "lib" / "registrar-custo-cli.mjs"))
+ap.add_argument("--liberar-gasto", default=None)
+ap.add_argument("--video", default=None, help="slug do video, anotado na linha de custo")
 ARGS = ap.parse_args()
 if not ARGS.so_olho_final and not (ARGS.remotion and ARGS.public_dir and ARGS.props_base):
     ap.error("faltam --remotion, --public-dir e --props-base")
@@ -72,6 +79,9 @@ def caminho_abs(p):
 
 COMP = ARGS.composicao
 TRANSCREVER, VER_VIDEO, REGISTRAR_CUSTO = caminho_abs(ARGS.transcrever), caminho_abs(ARGS.ver_video), caminho_abs(ARGS.registrar_custo)
+# sem --liberar-gasto, a CLI mora no conectar ao lado do registrador (skills/configurar-video/scripts/lib ->
+# skills/conectar/scripts/lib): no motor instalado em _video a pasta deste arquivo nao fica dentro das skills
+LIBERAR_GASTO = caminho_abs(ARGS.liberar_gasto) or (str(Path(REGISTRAR_CUSTO).parents[3] / "conectar" / "scripts" / "lib" / "liberar-gasto-cli.mjs") if REGISTRAR_CUSTO else None)
 FINAL, BRUTO, SAIDA = Path(ARGS.final).resolve(), Path(ARGS.bruto).resolve(), Path(ARGS.saida).resolve()
 REMOTION = Path(ARGS.remotion).resolve() if ARGS.remotion else None
 PUBLIC = Path(ARGS.public_dir).resolve() if ARGS.public_dir else None
@@ -137,6 +147,30 @@ def roda(cmd, **kw):
     return r.returncode, (r.stdout or "") + (r.stderr or "")
 
 
+def liberar_gasto():
+    """A trava unica do gasto avulso (liberar-gasto-cli.mjs do conectar). Sem a CLI ou sem resposta legivel, o gasto
+    nao acontece: devolve codigo 3 com o motivo. O pid e o deste processo, dono da reserva ate o registro fechar."""
+    cli = Path(LIBERAR_GASTO) if LIBERAR_GASTO else None
+    if not cli or not cli.exists():
+        return {"codigo": 3, "parou": f"nao achei a trava de gasto ({cli})"}
+    cmd = ["node", str(cli), "--usd", str(ARGS.preco_usd), "--autorizado", "--pid", str(os.getpid()),
+           "--contexto", f"olho final do fiscal: {FINAL.name}"] + (["--raiz", ARGS.raiz_custo] if ARGS.raiz_custo else [])
+    r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    try:
+        return json.loads((r.stdout or "").strip().splitlines()[-1])
+    except (IndexError, ValueError):
+        return {"codigo": 3, "parou": "a trava de gasto nao respondeu: " + (r.stderr or "")[:200]}
+
+
+def segundos_do_video(p):
+    cap = cv2.VideoCapture(str(p))
+    try:
+        fps, n = cap.get(cv2.CAP_PROP_FPS) or 0, cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0
+        return round(n / fps, 1) if fps > 0 and n > 0 else None
+    finally:
+        cap.release()
+
+
 def olho_final(falhas, avisos):
     """Olho final (Gemini, PAGO): so roda com --roteiro, --preco-usd, --autorizado e --ver-video, e so se a conferencia por
     script passou, pra nao pagar por video que ja ia voltar. So problema GRAVE reprova; o leve vai como aviso."""
@@ -145,6 +179,10 @@ def olho_final(falhas, avisos):
         faltou = [n for n, ok in (("--preco-usd (preco do dia)", ARGS.preco_usd is not None), ("--autorizado (o sim da pessoa)", ARGS.autorizado), ("--ver-video", bool(ARGS.ver_video))) if not ok]
         avisos.append({"tipo": "olho final", "seg": 0, "texto": "olho final pulado (e pago): falta " + ", ".join(faltou), "etapa": ETAPA["render"]})
     elif ROTEIRO and not falhas:
+        lib = liberar_gasto()
+        if lib.get("codigo") != 0:
+            avisos.append({"tipo": "olho final", "seg": 0, "texto": "olho final pulado (e pago): " + str(lib.get("parou", "a trava de gasto nao liberou")), "etapa": ETAPA["render"]})
+            return
         pergunta = (
             "Voce e o revisor final de um Reel vertical em portugues antes de ir pra quem pediu. Assista e ouca o video "
             "inteiro e compare com o roteiro abaixo (colunas Fala, Na tela, Som). Aponte so o que um espectador perceberia: "
@@ -162,12 +200,16 @@ def olho_final(falhas, avisos):
                            capture_output=True, text=True, errors="replace", encoding="utf-8")
         (SAIDA / "olho-final.md").write_text(r.stdout, encoding="utf-8")
         if r.returncode != 0:
-            avisos.append({"tipo": "custo", "seg": 0, "texto": "o ver-video falhou: pode ter sido cobrado mesmo assim, confira no painel do Gemini e anote a mao em dados/custos.jsonl se tiver cobrado", "etapa": ETAPA["render"]})
+            reserva = f"; depois feche a reserva {lib['reserva']} pelo --saldo do /configurar-video, que ate la ela conta no orcamento do mes" if lib.get("reserva") else ""
+            avisos.append({"tipo": "custo", "seg": 0, "texto": "o ver-video falhou: pode ter sido cobrado mesmo assim, confira no painel do Gemini e anote a mao em dados/custos.jsonl se tiver cobrado" + reserva, "etapa": ETAPA["render"]})
         if r.returncode == 0:   # respondeu: a cobranca aconteceu, uma linha so
             custo = Path(REGISTRAR_CUSTO)
             if custo.exists():
+                seg = segundos_do_video(FINAL)
+                extra = ((["--reserva", lib["reserva"]] if lib.get("reserva") else []) + (["--video", ARGS.video] if ARGS.video else [])
+                         + (["--segundos", str(seg)] if seg else []))
                 subprocess.run(["node", str(custo), "--servico", "gemini-fiscal-olho-final", "--usd", str(ARGS.preco_usd),
-                                "--contexto", f"olho final do fiscal: {FINAL.name}"] + (["--raiz", ARGS.raiz_custo] if ARGS.raiz_custo else []))
+                                "--contexto", f"olho final do fiscal: {FINAL.name}"] + (["--raiz", ARGS.raiz_custo] if ARGS.raiz_custo else []) + extra)
             else:
                 avisos.append({"tipo": "custo", "seg": 0, "texto": f"o olho final custou US$ {ARGS.preco_usd} e a linha NAO foi gravada (nao achei {custo}); anote a mao em dados/custos.jsonl", "etapa": ETAPA["render"]})
         etapa_olho = {"roteiro": "roteiro (reescrever a linha) e depois a voz de novo", "graficos": ETAPA["posicao"],
