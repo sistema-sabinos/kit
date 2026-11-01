@@ -1,5 +1,5 @@
 {
- "versao": "5.34",
+ "versao": "5.35",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -121,8 +121,10 @@
    "1c53f9dc9f6d5234": "5.18",
    "257f711f05823e64": "anterior-5.25",
    "27d749e4d886a15a": "anterior-5.18",
+   "28fd331885a0943a": "5.35",
    "2e04205877922f47": "anterior-5.16",
    "32b75db6997a3604": "5.2",
+   "32f250b275b51743": "5.35",
    "347cdcd8331a58bb": "anterior-5.25",
    "4c8ed1cd92061a29": "anterior-5.25",
    "5c10d1994106faa7": "anterior-3.4",
@@ -136,6 +138,7 @@
    "80c28918c3dbcf24": "anterior-3.4",
    "87378536fb81af2e": "5.21",
    "8c4478be9a1cbfa3": "anterior-5.2",
+   "929f3733df8d322e": "5.35",
    "92b524d2230c73d0": "5.20",
    "97d787854e560346": "anterior-3.4",
    "9ac027150d098274": "5.14",
@@ -149,13 +152,15 @@
    "c18cb4d20ca7ec60": "anterior-3.4",
    "c756f0bfcb7c93e2": "anterior-5.17",
    "cde3337045e2b22b": "anterior-5.25",
+   "ce8c301e96d76591": "5.35",
    "d22b5db888eb93db": "anterior-5.14",
    "d6af3a2490fdda31": "5.25",
    "dc304d6be3c7bbf9": "5.22",
    "dc7b2245bb529b80": "5.16",
-   "de1e65f3a11c5190": "5.34",
+   "de1e65f3a11c5190": "anterior-5.34",
    "e01b1eb119cc7801": "anterior-3.4",
-   "eeafddc6716393dc": "anterior-5.25"
+   "eeafddc6716393dc": "anterior-5.25",
+   "f1368f1bb0300b93": "5.35"
   },
   ".claude/settings.json": {
    "388f86e186bd40a6": "5.28",
@@ -1624,7 +1629,7 @@
    "27001008a219ec85": "anterior-5.12",
    "40e699e88f9df833": "5.14",
    "41ad1aa730169c84": "anterior-5.2",
-   "4dbeb5bd04499bd0": "5.34",
+   "4dbeb5bd04499bd0": "anterior-5.34",
    "5047bbb2910d7a40": "5.33",
    "559a1233a63e7e78": "anterior-5.12",
    "69004ec1c5eb2d73": "anterior-3.7",

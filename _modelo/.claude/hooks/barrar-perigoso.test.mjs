@@ -1828,3 +1828,83 @@ test('5.39 (D54): rm com opcao que so o PowerShell tem barra, o rm do bash segue
 test('5.39 (D54): a regra do rm do PowerShell com a entrada gigante termina em tempo linear', () => {
   terminaNoTeto([['rm repetido', 'rm '.repeat(200000) + '-r'], ['opcao repetida', 'rm' + ' -re'.repeat(100000) + 'x']])
 })
+
+// 5.40 (decisao 3 da 5.39): o `rm -r pasta` e seguro no bash, mas na ferramenta PowerShell e
+// Remove-Item -Recurse e apaga a pasta sem perguntar. So la, o hook pergunta ao aluno pelo
+// permissionDecision "ask" (saida 0 com o JSON no stdout); o que ja barrava segue barrando
+const HOOK_540 = fileURLToPath(new URL('./barrar-perigoso.mjs', import.meta.url))
+const hookNaFerramenta = (tool_name, command) => {
+  const entrada = tool_name ? { tool_name, tool_input: { command } } : { tool_input: { command } }
+  return spawnSync(process.execPath, [HOOK_540], { input: JSON.stringify(entrada), encoding: 'utf8' })
+}
+const perguntaDe = r => {
+  try {
+    const s = JSON.parse(r.stdout).hookSpecificOutput
+    return s.hookEventName === 'PreToolUse' && s.permissionDecision === 'ask' ? s.permissionDecisionReason : null
+  } catch { return null }
+}
+
+test('5.40: na ferramenta PowerShell o rm -r pergunta ao aluno, com cada alvo e o comando inteiro', () => {
+  const casos = [
+    ['rm -r pasta', 'a pasta pasta inteira'], ['rm -R pasta', 'a pasta pasta inteira'],
+    ['rm -r "Minha Pasta"', 'a pasta Minha Pasta inteira'], ['cd x; rm -r y', 'a pasta y inteira'],
+    ['Invoke-Expression "rm -r x"', 'a pasta x inteira'], ['rm -r a; rm -r b', 'as pastas a e b inteiras'],
+    ['rm -r (gci x)', 'uma pasta inteira'],
+    // comum do chat 1 da 5.40: a atribuicao roda o rm igual, e o valor de opcao nao e o alvo
+    ['$x = rm -r pasta', 'a pasta pasta inteira'], ['$null=rm -r pasta', 'a pasta pasta inteira'],
+    ['rm -r -ErrorAction SilentlyContinue pasta', 'a pasta pasta inteira'],
+    ['rm -r -Exclude manter pasta', 'a pasta pasta inteira'], ['rm -r -Force:$false -Path dados', 'a pasta dados inteira'],
+    ['rm -r -LiteralPath:dados', 'a pasta dados inteira'], ['rm -r -- -velha', 'a pasta -velha inteira'],
+    // segunda volta da comum: operador ponto, return e crase de continuacao de linha rodam o rm igual
+    ['. rm -r pasta', 'a pasta pasta inteira'], ['return rm -r pasta', 'a pasta pasta inteira'],
+    ['rm `' + String.fromCharCode(10) + '-r pasta', 'a pasta pasta inteira'],
+    // final do Codex: comentario de bloco antes do rm, e lista de caminhos com virgula
+    ['<# limpa #> rm -r pasta', 'a pasta pasta inteira'], ['rm -r a, b', 'as pastas a e b inteiras'],
+    ['rm -r a,b', 'as pastas a e b inteiras'], ['rm -r -Path a ,b', 'as pastas a e b inteiras'],
+    // segunda volta da final: o <# entre aspas e texto, o rm depois dele roda
+    ["Write-Output '<#'; rm -r pasta", 'a pasta pasta inteira'], ['Write-Host "<#"; rm -r pasta', 'a pasta pasta inteira'],
+  ]
+  for (const [command, trecho] of casos) {
+    const r = hookNaFerramenta('PowerShell', command)
+    assert.strictEqual(r.status, 0, command + ': saida ' + r.status + ' (' + r.stderr + ')')
+    const motivo = perguntaDe(r)
+    assert.ok(motivo, command + ': deveria perguntar, stdout ' + JSON.stringify(r.stdout))
+    assert.ok(motivo.includes(trecho), command + ': sem "' + trecho + '" em ' + motivo)
+    assert.ok(motivo.includes('Pode? Comando: ' + command.replace(/\s+/g, ' ')), command + ': sem o comando inteiro em ' + motivo)
+  }
+  const longo = 'rm -r pasta; ' + 'ls; '.repeat(200)
+  const motivo = perguntaDe(hookNaFerramenta('PowerShell', longo))
+  assert.ok(motivo && motivo.includes('cortado') && motivo.length < 500, 'comando longo: ' + motivo)
+})
+
+test('5.40: a pergunta com a entrada gigante termina em tempo linear e o texto fica curto', () => {
+  for (const [nome, command, trecho] of [['rm -r repetido', 'rm -r x; '.repeat(100000), 'e mais 99990 pastas inteiras'],
+    ['iex repetido', 'iex "rm -r x" '.repeat(50000), 'a pasta x inteira'], ['parenteses', '('.repeat(200000) + 'rm -r x', 'cortado'],
+    ['ponto repetido', '. '.repeat(200000) + 'rm -r x', 'a pasta x inteira'],
+    ['comentario aberto', '<#'.repeat(100000) + '#> rm -r x', 'a pasta x inteira'],
+    ['lista comprida', 'rm -r ' + 'a,'.repeat(100000) + 'b', 'e mais 99991 pastas inteiras']]) {
+    const r = spawnSync(process.execPath, [HOOK_540], {
+      input: JSON.stringify({ tool_name: 'PowerShell', tool_input: { command } }), encoding: 'utf8', timeout: 30000,
+    })
+    assert.ok(!r.error, nome + ': o hook nao terminou no teto de 30 s')
+    const motivo = perguntaDe(r)
+    assert.ok(motivo && motivo.includes(trecho) && motivo.length < 800, nome + ': ' + (motivo || r.stdout).slice(0, 300))
+  }
+})
+
+test('5.40: fora da ferramenta PowerShell nada pergunta, e o que barra segue barrando', () => {
+  // canario: o mesmo comando pergunta na ferramenta PowerShell
+  assert.ok(perguntaDe(hookNaFerramenta('PowerShell', 'rm -r pasta')), 'canario: rm -r pasta no PowerShell nao perguntou')
+  for (const [ferramenta, command] of [['Bash', 'rm -r pasta'], ['Monitor', 'rm -r pasta'], [null, 'rm -r pasta'],
+    ['PowerShell', 'rm arquivo.txt'], ['PowerShell', 'echo "rm -r x"'], ['PowerShell', 'git rm -r x']]) {
+    const r = hookNaFerramenta(ferramenta, command)
+    assert.strictEqual(r.status, 0, ferramenta + ' ' + command + ': saida ' + r.status)
+    assert.strictEqual(r.stdout, '', ferramenta + ' ' + command + ': nao deveria perguntar')
+  }
+  // pergunta e barra no mesmo comando: barrar ganha (achado 1 da comum no plano da 5.40)
+  for (const command of ['rm -rf pasta', 'Remove-Item -Recurse pasta', 'rm -r pasta; rm -rf outra']) {
+    const r = hookNaFerramenta('PowerShell', command)
+    assert.strictEqual(r.status, 2, command + ': saida ' + r.status + ' em vez de 2')
+    assert.strictEqual(r.stdout, '', command + ': barrou e ainda perguntou')
+  }
+})

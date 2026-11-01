@@ -17,7 +17,8 @@
 // sem garantia; com as perguntas desligadas, so esta trava segura. O exit 2 daqui para o
 // comando antes das regras de permissao, em qualquer modo, e vale dentro de subagente.
 // A pasta-mae (SabinOS-Sistema/.claude/settings.json) nao liga esta trava; so o projeto.
-// Barra comando destrutivo antes de ele rodar, pelo hook PreToolUse do Claude Code.
+// Barra comando destrutivo antes de ele rodar, pelo hook PreToolUse do Claude Code. Desde a
+// 5.40, um caso so pergunta em vez de barrar: o `rm -r` na ferramenta PowerShell (ver a entrada).
 // Le o JSON do hook na entrada padrao, olha tool_input.command, e sai com codigo 2
 // pra bloquear, escrevendo o motivo no stderr (o assistente le esse texto e explica).
 // Conferido na doc oficial (code.claude.com/docs/en/hooks, 2026-09-21): exit 2 bloqueia,
@@ -723,8 +724,8 @@ function removeItemPerigoso(comando) {
 // hifen e a forma com parentese, que na ferramenta PowerShell apagam a pasta sem perguntar. Opcao
 // que so existe no PowerShell barra pelo mesmo caminho do Remove-Item: hifen com -re ate -recurse
 // (o rm do bash recusa o -e) ou traco (U+2013 a U+2015) com -r ate -recurse (no bash vira nome de
-// arquivo). O `rm -r pasta` de uma letra segue livre: no bash e seguro (correcao 1), e no
-// PowerShell fica com a decisao 3 do plano da 5.39. O `git rm` com essas opcoes barra a toa (o git
+// arquivo). O `rm -r pasta` de uma letra segue livre: no bash e seguro (correcao 1), e na
+// ferramenta PowerShell pergunta ao aluno desde a 5.40 (perguntaDoPowershell). O `git rm` com essas opcoes barra a toa (o git
 // recusa as duas). A opcao termina em espaco, fim ou pontuacao de comando: com o \b, `rm -re.txt`
 // e `rm -- -recurse-backup.txt` (arquivo com hifen no nome) barravam a toa (Codex final da 5.39)
 const RE_RM_COMANDO = nomeDeComando('rm')
@@ -732,6 +733,107 @@ const TRACO_SO_PS = '[' + String.fromCharCode(0x2013, 0x2014, 0x2015) + ']'
 const RE_OPCAO_RECURSE_SO_PS = new RegExp(String.raw`\s(?:-re(?:c(?:u(?:r(?:s(?:e)?)?)?)?)?|${TRACO_SO_PS}r(?:e(?:c(?:u(?:r(?:s(?:e)?)?)?)?)?)?)(?![\w.-])`, 'gi')
 function rmDoPowershellPerigoso(comando) {
   return opcaoDepoisDaPalavra(textoDoComando(comando), RE_RM_COMANDO, RE_OPCAO_RECURSE_SO_PS, FIM_DO_COMANDO)
+}
+
+// rodada 5.40 (decisao 3 da 5.39): o `rm -r pasta` de uma letra segue livre no ehPerigoso (no bash
+// e seguro), mas na ferramenta PowerShell e Remove-Item -Recurse e apaga a pasta sem perguntar. La
+// o hook pergunta ao aluno (ver a entrada, no fim). Le o marcado palavra por palavra, como o git:
+// o rm tem de ser o programa do comando (`git rm -r x` nao pergunta) e o alvo entre aspas sai
+// inteiro. Desce em cada trecho entre aspas de quem executa (`Invoke-Expression "rm -r x"`), como o
+// ehPerigoso. Devolve um alvo por rm recursivo achado (null quando nao da pra ler) ou null
+const RE_OPCAO_R_PS = new RegExp(String.raw`^${TRACO}r(?:e(?:c(?:u(?:r(?:s(?:e)?)?)?)?)?)?(?::\S*)?$`, 'i')
+const RE_COMECA_OPCAO = new RegExp('^' + TRACO)
+// comum do chat 1 da 5.40: a atribuicao na frente roda o rm igual (`$x = rm -r pasta`, `$null=rm ...`),
+// e sai pelo RE_ATRIBUICAO da leitura de segredo; e o valor de opcao nao e o alvo (`rm -r -ErrorAction SilentlyContinue pasta`): chave do Remove-Item
+// (learn.microsoft.com/powershell/module/microsoft.powershell.management/remove-item) e comum dos
+// cmdlets nao pede valor; -Path, -LiteralPath e os apelidos dele dao o alvo; o resto come a palavra
+// seguinte. O nome pode vir abreviado, e o valor colado com dois pontos (`-Path:dados`)
+const CHAVES_RM = ['recurse', 'force', 'whatif', 'confirm', 'verbose', 'debug']
+const DAO_O_ALVO = ['path', 'literalpath', 'pspath', 'lp']
+// final do Codex: o caminho pode ser uma lista com virgula (`rm -r a, b`, `rm -r a ,b`), que segue
+// pelas palavras seguintes enquanto a virgula liga uma na outra
+function listaDesde(args, j, primeiro) {
+  let texto = primeiro
+  while (j + 1 < args.length && (texto.endsWith(',') || args[j + 1].startsWith(','))) texto += args[++j]
+  return texto
+}
+function alvoDoRm(args) {
+  for (let j = 0; j < args.length; j++) {
+    const a = args[j]
+    if (a === '--') return args[j + 1] === undefined ? undefined : listaDesde(args, j + 1, args[j + 1])
+    if (!RE_COMECA_OPCAO.test(a)) return listaDesde(args, j, a)
+    const [nome, ...resto] = a.slice(1).toLowerCase().split(':')
+    const colado = a.slice(a.indexOf(':') + 1)
+    if (nome && DAO_O_ALVO.some(n => n.startsWith(nome))) {
+      if (resto.length) return listaDesde(args, j, colado)
+      return args[j + 1] === undefined ? undefined : listaDesde(args, j + 1, args[j + 1])
+    }
+    if (resto.length || (nome && CHAVES_RM.some(n => n.startsWith(nome)))) continue
+    j++
+  }
+  return undefined
+}
+// segunda volta da comum: o operador ponto e o return na frente rodam o rm igual (o & ja separa
+// comando), e a crase no fim da linha continua o comando na linha de baixo (`rm `+quebra+`-r pasta`).
+// Final do Codex: o comentario de bloco (`<# ... #>`) some antes, por indexOf, pra entrada gigante
+// seguir linear; o comentario sem fim come o resto, como no PowerShell. Segunda volta da final: o
+// `<#` dentro de aspas e texto (`Write-Output '<#'; rm -r pasta`), entao a leitura pula as aspas
+const ANTES_DO_PROGRAMA = new Set(['.', 'return', 'throw'])
+function semComentarioDeBloco(texto) {
+  let saida = ''
+  let aspa = null
+  for (let i = 0; i < texto.length; i++) {
+    const c = texto[i]
+    if (aspa) { if (c === aspa) aspa = null }
+    else if (c === '"' || c === "'") aspa = c
+    else if (c === '<' && texto[i + 1] === '#') {
+      const fecha = texto.indexOf('#>', i + 2)
+      if (fecha < 0) return saida
+      saida += ' '
+      i = fecha + 1
+      continue
+    }
+    saida += c
+  }
+  return saida
+}
+export function perguntaDoPowershell(comando) {
+  if (typeof comando !== 'string' || comando.length === 0) return null
+  const { suspeitos, marcado } = classificarTrechosEntreAspas(semComentarioDeBloco(comando.replace(/`\r?\n/g, '  ')))
+  const alvos = []
+  for (const seg of comandosDoTexto(marcado)) {
+    const todas = seg.replace(RE_ATRIBUICAO, '').match(/\S+/g)
+    let k = 0
+    while (todas && k < todas.length - 1 && ANTES_DO_PROGRAMA.has(todas[k].toLowerCase())) k++
+    if (!todas || nomeDoPrograma(todas[k]) !== 'rm') continue
+    const args = todas.slice(k + 1)
+    if (!args.some(p => RE_OPCAO_R_PS.test(p))) continue
+    const lista = alvoDoRm(args)
+    const pedacos = lista === undefined ? [undefined] : lista.split(',').filter(p => p)
+    for (const alvo of pedacos.length ? pedacos : [undefined]) {
+      const legivel = alvo && alvo !== VAZIO && !alvo.includes(SUB) && !alvo.includes('$')
+      alvos.push(legivel ? alvo.split(NUL).join(' ').split(ASPA).join('') : null)
+    }
+  }
+  for (const suspeito of new Set(suspeitos)) alvos.push(...(perguntaDoPowershell(suspeito) || []))
+  return alvos.length ? alvos : null
+}
+
+// o sim do aluno libera o comando inteiro, entao a pergunta nomeia cada alvo e fecha com o comando
+// (achado 2 da comum no plano da 5.40); comando comprido sai cortado, com o aviso
+const MAX_COMANDO_NA_PERGUNTA = 300
+const MAX_NOMES_NA_PERGUNTA = 10
+export function textoDaPergunta(alvos, comando) {
+  const nomes = alvos.slice(0, MAX_NOMES_NA_PERGUNTA).map(a => a ?? 'outra pasta')
+  if (alvos.length > MAX_NOMES_NA_PERGUNTA) nomes.push(`mais ${alvos.length - MAX_NOMES_NA_PERGUNTA} pastas`)
+  const quais = alvos.length === 1
+    ? (alvos[0] === null ? 'uma pasta inteira' : `a pasta ${alvos[0]} inteira`)
+    : `as pastas ${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]} inteiras`
+  const linha = comando.replace(/\s+/g, ' ').trim()
+  const mostrado = linha.length > MAX_COMANDO_NA_PERGUNTA
+    ? linha.slice(0, MAX_COMANDO_NA_PERGUNTA) + ' ... (comando cortado: pede pra IA mostrar ele inteiro antes de responder)'
+    : linha
+  return `A IA quer apagar ${quais}, com tudo que tem dentro, sem volta. Pode? Comando: ${mostrado}`
 }
 
 // correcao 7: "erase" e sinonimo de "del" no cmd e aceita a mesma sintaxe (/s), doc da
@@ -1545,7 +1647,25 @@ if (chamadoDireto()) {
     try { motivo = ehPerigoso(comando, { cwd: entrada && entrada.cwd }) } catch {
       motivo = 'a trava nao conseguiu ler este comando (erro dentro dela); quebre o comando em partes menores'
     }
-    if (!motivo) process.exit(0)
+    if (!motivo) {
+      // rodada 5.40: barrar ganha de perguntar (o ehPerigoso vem antes). So na ferramenta PowerShell,
+      // o rm recursivo pergunta pelo permissionDecision "ask" (doc conferida em 2026-11-01,
+      // code.claude.com/docs/en/hooks, "PreToolUse decision control": saida 0 com o JSON no stdout,
+      // e o motivo aparece pra pessoa na caixa de confirmacao). Medido no Claude Code 2.1.312: o
+      // tool_name chega como "PowerShell", e no `claude -p` a pergunta vira recusa, inclusive com
+      // as perguntas desligadas. Sem process.exit aqui: ele podia cortar o stdout no meio
+      let alvos = null
+      if (entrada && entrada.tool_name === 'PowerShell') {
+        try { alvos = perguntaDoPowershell(comando) } catch { alvos = [null] }
+      }
+      if (alvos) {
+        process.stdout.write(JSON.stringify({ hookSpecificOutput: {
+          hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: textoDaPergunta(alvos, comando),
+        } }))
+        return
+      }
+      process.exit(0)
+    }
     process.stderr.write(
       `Um comando foi barrado antes de rodar, porque ${motivo}.\n` +
       `Pare aqui: explique pro usuario o que voce estava tentando fazer e peca a ele\n` +
