@@ -1,5 +1,5 @@
 {
- "versao": "5.33",
+ "versao": "5.34",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -126,6 +126,7 @@
    "347cdcd8331a58bb": "anterior-5.25",
    "4c8ed1cd92061a29": "anterior-5.25",
    "5c10d1994106faa7": "anterior-3.4",
+   "5ffd8508c7dd0570": "5.34",
    "674ef4ee189695e7": "anterior-5.16",
    "69abaccc92f8f447": "anterior-3.4",
    "6cbf20ced5193a6f": "anterior-5.16",
@@ -152,6 +153,7 @@
    "d6af3a2490fdda31": "5.25",
    "dc304d6be3c7bbf9": "5.22",
    "dc7b2245bb529b80": "5.16",
+   "de1e65f3a11c5190": "5.34",
    "e01b1eb119cc7801": "anterior-3.4",
    "eeafddc6716393dc": "anterior-5.25"
   },
@@ -1086,8 +1088,8 @@
   },
   ".claude/skills/conectar/scripts/lib/orcamento.mjs": {
    "57134da64deccb1a": "5.33",
-   "5b049630dd19d172": "5.33",
-   "e11ad809077ab330": "5.33"
+   "5b049630dd19d172": "anterior-5.33",
+   "e11ad809077ab330": "anterior-5.33"
   },
   ".claude/skills/conectar/scripts/lib/raiz.mjs": {
    "628d16ee88ccfa76": "5.25"
@@ -1112,7 +1114,7 @@
    "00599ad37bfc268e": "5.7",
    "0fddc9337613abd0": "5.33",
    "16241c78f0f3aced": "5.12",
-   "23471bfc432b7655": "5.33",
+   "23471bfc432b7655": "anterior-5.33",
    "2a23e655e557ee84": "anterior-4.1",
    "327d9941713362e3": "5.11",
    "552cc44a12557f79": "anterior-4.1",
@@ -1125,7 +1127,7 @@
    "c6f1609608b21fc9": "anterior-4.1",
    "cb1b8e9aecd1815c": "4.2",
    "d191c431b568142a": "5.18",
-   "d94b09caa6b96e00": "5.33",
+   "d94b09caa6b96e00": "anterior-5.33",
    "da23fb7faf5b1f1f": "anterior-4.1",
    "fd672deed906d6b7": "5.25"
   },
@@ -1174,7 +1176,7 @@
    "002291387e22a208": "5.33",
    "20c580bcc5323afa": "4.1",
    "2600f6c7f59cee84": "anterior-4.1",
-   "f921af561055ffaa": "5.33"
+   "f921af561055ffaa": "anterior-5.33"
   },
   ".claude/skills/configurar-video/scripts/lib/pasta-video.mjs": {
    "b8f5ba120d2948db": "anterior-4.1",
@@ -1198,7 +1200,7 @@
    "e883814cfc6e926c": "anterior-4.1"
   },
   ".claude/skills/configurar-video/scripts/orcamento.mjs": {
-   "56fbae7d3b892178": "5.33",
+   "56fbae7d3b892178": "anterior-5.33",
    "d33f39feaf0b698f": "5.33"
   },
   ".claude/skills/configurar-video/scripts/sincronizar-motor.mjs": {
@@ -1249,17 +1251,17 @@
   },
   ".claude/skills/editar-video/SKILL.md": {
    "113e26c3d74ccd8e": "4.2",
-   "1bcdbe5f106b6d80": "5.33",
-   "233763265a3d47a1": "5.33",
+   "1bcdbe5f106b6d80": "anterior-5.33",
+   "233763265a3d47a1": "anterior-5.33",
    "272dcbe3b1ee7248": "5.18",
    "2a9a2224ed048671": "anterior-5.17",
    "347d70d8a587e38e": "anterior-4.1",
    "3e36f035602f746f": "4.1",
    "43458286b4490a60": "5.17",
-   "4787b0152e77cf76": "5.33",
+   "4787b0152e77cf76": "anterior-5.33",
    "62b3bfd574d0bfc1": "anterior-4.1",
    "67f43cb18e1dcbd8": "anterior-5.17",
-   "78b09168e8d94994": "5.33",
+   "78b09168e8d94994": "anterior-5.33",
    "80f5ceb16b9fa1ea": "anterior-5.17",
    "8f30ce1fb8f68e80": "anterior-5.17",
    "9262d2054927206b": "anterior-5.14",
@@ -1317,11 +1319,11 @@
    "18eae0b3f5099676": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/fiscal.py": {
-   "0acaa09bc0602719": "5.33",
+   "0acaa09bc0602719": "anterior-5.33",
    "2aa86b5d1b2883ee": "4.1",
    "3676aee8951000fc": "anterior-4.1",
    "37e039d12ac4a2d3": "5.33",
-   "7b3d2e03ea9c6a8b": "5.33",
+   "7b3d2e03ea9c6a8b": "anterior-5.33",
    "7b600056cf4b2441": "anterior-4.1",
    "968752482627dd35": "5.17",
    "e62124f59dbe498b": "anterior-4.1",
@@ -1603,6 +1605,7 @@
   ".claude/skills/espionar-concorrente/SKILL.md": {
    "2b4783b1fbf85faa": "anterior-5.1",
    "45d0233966318c9e": "5.1",
+   "55c48e885f0b6778": "5.34",
    "78ed15ba668acd9c": "5.2",
    "988b8c49ba269d3c": "5.26",
    "a10d165b994cf990": "5.7",
@@ -1617,9 +1620,11 @@
    "04611e9d5010c7b1": "anterior-3.7",
    "07a36da8d565fa10": "anterior-4.1",
    "180849aeca7c65b9": "anterior-3.6",
+   "1e44ade25668a167": "5.34",
    "27001008a219ec85": "anterior-5.12",
    "40e699e88f9df833": "5.14",
    "41ad1aa730169c84": "anterior-5.2",
+   "4dbeb5bd04499bd0": "5.34",
    "5047bbb2910d7a40": "5.33",
    "559a1233a63e7e78": "anterior-5.12",
    "69004ec1c5eb2d73": "anterior-3.7",
@@ -1695,11 +1700,11 @@
   },
   ".claude/skills/gerar-imagens/SKILL.md": {
    "0ede41dc238bba7a": "4.2",
-   "12df92f5f923f000": "5.33",
+   "12df92f5f923f000": "anterior-5.33",
    "34c83a7b91cb71c0": "5.33",
-   "4339d48c1838f300": "5.33",
+   "4339d48c1838f300": "anterior-5.33",
    "4d9613bd46433985": "3.9",
-   "761c7e8e1f26c9ed": "5.33",
+   "761c7e8e1f26c9ed": "anterior-5.33",
    "774bba6bf16360f2": "anterior-3.9",
    "79b208a3578ac0d1": "anterior-3.9",
    "886a75eb4476f53b": "anterior-5.20",
@@ -1754,16 +1759,16 @@
    "1bb39c0b68783194": "5.20",
    "22f39f97b7384ac7": "3.9",
    "2811540d929d0f4c": "5.21",
-   "3dc709461105d86e": "5.33",
+   "3dc709461105d86e": "anterior-5.33",
    "4b87267b5e5f9c96": "anterior-3.9",
    "4c973bd7eaed6b6a": "anterior-5.20",
    "5584c54c7c066744": "5.33",
    "6d45de1dc1e8eb40": "anterior-3.9",
    "890378d2a20f4a8a": "anterior-5.20",
    "935589122a28b89a": "anterior-3.9",
-   "996e986b493de66e": "5.33",
+   "996e986b493de66e": "anterior-5.33",
    "a96f0c6787fedef5": "5.7",
-   "e333f793b0f4b7ac": "5.33",
+   "e333f793b0f4b7ac": "anterior-5.33",
    "e7afe7d353e59e65": "5.15"
   },
   ".claude/skills/gerar-imagens/scripts/lib/args.mjs": {
@@ -2597,6 +2602,7 @@
    "a51895614460e0c3": "5.25",
    "adbe9181368d46a4": "anterior-4.1",
    "bd56f40eb2e51e57": "3.6",
+   "cb4483dfa642dadd": "5.34",
    "de9a671d869cafa2": "4.1",
    "e9152c210ca76e1d": "3.7"
   },
@@ -2940,7 +2946,7 @@
    "7438d34526a8b9d1": "anterior-5.18",
    "83b4703dc16cb8da": "5.14",
    "8ddb3451a853a4dd": "anterior-5.14",
-   "912959882b13aaab": "5.33",
+   "912959882b13aaab": "anterior-5.33",
    "9d30dc06fd38a964": "anterior-5.18",
    "aa31084fcfbf985c": "anterior-5.14",
    "b7b938c98ed74917": "anterior-4.1",
@@ -3055,7 +3061,7 @@
    "ffd0c94cf2f16051": "3.0"
   },
   "_contexto/orcamento.md": {
-   "4c4e366b138dbb52": "5.33",
+   "4c4e366b138dbb52": "anterior-5.33",
    "8ddd4cf4223eafcc": "5.33"
   },
   "_contexto/pessoas/.gitkeep": {

@@ -65,7 +65,7 @@ ritmo de gente da coleta normal, e grava
 atributos nem no arquivo da categoria. Se o projeto tem a `/video-produto`, a
 última linha que ele mostra é o comando da fase 1 dela já com esse arquivo; falta só trocar o
 `--slug` pelo nome do produto da pessoa, sem marca. Código de produto de
-catálogo (`MLBU`) não abre sozinho: peça o link da página do anúncio. O mesmo
+catálogo (`MLBU`, ou o código que vem depois do `/p/` no link) não abre sozinho: peça o link completo da página do anúncio. O mesmo
 arquivo serve pra `/ler-avaliacoes --de-espionagem`.
 
 ### 1. O que espionar

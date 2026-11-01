@@ -150,7 +150,12 @@ export async function coletarBusca(page, termo, { maxItens = 120, maxPaginas = 2
     await espera(1200)
     const caiu = sessaoCaiu({ url: page.url(), host: 'mercadolivre.com.br' })
     if (caiu) return { total: 0, itens: [], url, erro: AVISO[caiu] }
-    const daPagina = await page.evaluate(extrairCards)
+    let daPagina = await page.evaluate(extrairCards)
+    // a primeira busca depois de abrir o Chrome pode passar da espera fixa (prova com login de 2026-10-31)
+    for (let t = 0; pagina === 1 && !daPagina.length && t < 6; t++) {
+      await espera(2500)
+      daPagina = await page.evaluate(extrairCards)
+    }
     if (!daPagina.length) {
       if (pagina === 1) return { total: 0, itens: [], url, erro: 'nenhum anuncio lido: a busca veio vazia ou a pagina mudou (olhe a janela do Chrome dedicado)' }
       break

@@ -1807,3 +1807,24 @@ test('5.28 (fechamento, interna, volta 2): as regras mexidas com a entrada gigan
     ['IO.File Exists', '[IO.File]::Exists '.repeat(100000) + ENV], ['dolar chave', '${'.repeat(100000) + 'x} = gc ' + ENV],
   ])
 })
+
+// 5.39 (D54): o rm e apelido do Remove-Item no PowerShell do Windows, e com opcao que so o
+// PowerShell tem (-re ate -recurse, ou o traco no lugar do hifen) apaga a pasta sem perguntar
+const TRACOS_PS = [0x2013, 0x2014, 0x2015].map(c => String.fromCharCode(c))
+export const RM_DO_POWERSHELL = [
+  'rm -Recurse ~/Documentos', 'rm pasta -Recurse', 'rm -re pasta', 'rm -rec pasta', 'RM -RECURSE pasta',
+  'rm (gci | select -First 1) -Recurse', 'rm -Recurse:$true pasta', 'ls; rm pasta -Recurse',
+  ...TRACOS_PS.map(t => 'rm pasta ' + t + 'Recurse'), 'rm pasta ' + TRACOS_PS[0] + 'r',
+]
+
+test('5.39 (D54): rm com opcao que so o PowerShell tem barra, o rm do bash segue como antes', () => {
+  assert.strictEqual(RM_DO_POWERSHELL.length, 12)
+  deveBarrar(RM_DO_POWERSHELL)
+  devePassar(['rm -r pasta', 'rm -f arquivo.txt', 'rm arquivo.txt', 'git rm -r --cached x', 'git rm --cached a.txt',
+    'rm -readme.txt', 'rm notas.md; ls -Recurse', 'echo "rm -Recurse apaga"', 'cat videos/rm -re.txt',
+    'rm -- -re.txt', 'rm -- -recurse-backup.txt', 'rm -re.txt', 'rm -Recurse-velho.log'])
+})
+
+test('5.39 (D54): a regra do rm do PowerShell com a entrada gigante termina em tempo linear', () => {
+  terminaNoTeto([['rm repetido', 'rm '.repeat(200000) + '-r'], ['opcao repetida', 'rm' + ' -re'.repeat(100000) + 'x']])
+})

@@ -83,13 +83,19 @@ test('deduplicar acrescenta tipo e vendidos (os formatos que a busca mostra) e t
 })
 
 // Pagina falsa: cada "tela" e o que extrairCards devolveria; clicar em Seguinte anda uma tela.
-function paginaFalsa(telas, { urlDoLogin = null, travarNoSeguinte = false } = {}) {
+// vaziasAntes: quantas leituras da primeira tela voltam vazias antes dos cards aparecerem.
+function paginaFalsa(telas, { urlDoLogin = null, travarNoSeguinte = false, vaziasAntes = 0 } = {}) {
   let atual = 0
   let url = ''
+  let vazias = vaziasAntes
   return {
     goto: async u => { url = urlDoLogin || u },
     url: () => url,
-    evaluate: async f => (f.name === 'extrairCards' ? telas[atual] : undefined),
+    evaluate: async f => {
+      if (f.name !== 'extrairCards') return undefined
+      if (vazias > 0) { vazias--; return [] }
+      return telas[atual]
+    },
     locator: () => ({ count: async () => (atual < telas.length - 1 ? 1 : 0) }),
     click: async () => { if (!travarNoSeguinte) { atual++; url = `${url.split('#')[0]}#p${atual + 1}` } },
   }
@@ -116,6 +122,14 @@ test('coletarBusca devolve erro (e lista vazia, nunca preco inventado) quando ca
   assert.deepEqual(r.itens, [])
   const vazio = await coletarBusca(paginaFalsa([[]]), 'bala', semEspera)
   assert.match(vazio.erro, /nenhum anuncio/)
+})
+
+// Prova com login de 2026-10-31: na primeira busca depois de abrir o Chrome os cards demoraram
+// mais que a espera fixa e a coleta desistiu com a busca ja na tela.
+test('coletarBusca espera os cards da primeira pagina que demoram a aparecer', async () => {
+  const r = await coletarBusca(paginaFalsa([[card('a', '1000001')]], { vaziasAntes: 3 }), 'bala', semEspera)
+  assert.equal(r.erro, undefined)
+  assert.deepEqual(r.itens.map(i => i.titulo), ['a'])
 })
 
 test('coletar consulta o buybox do primeiro produto de catalogo e segue quando uma busca falha', async () => {

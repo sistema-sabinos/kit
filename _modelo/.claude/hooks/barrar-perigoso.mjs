@@ -718,6 +718,22 @@ function removeItemPerigoso(comando) {
     RE_OPCAO_RECURSE, FIM_DO_COMANDO)
 }
 
+// rodada 5.39 (D54): o rm e apelido do Remove-Item no PowerShell do Windows, e a regra dele (r e f
+// juntos, a do bash) deixava livres `rm -Recurse pasta`, `rm pasta -Recurse`, o traco no lugar do
+// hifen e a forma com parentese, que na ferramenta PowerShell apagam a pasta sem perguntar. Opcao
+// que so existe no PowerShell barra pelo mesmo caminho do Remove-Item: hifen com -re ate -recurse
+// (o rm do bash recusa o -e) ou traco (U+2013 a U+2015) com -r ate -recurse (no bash vira nome de
+// arquivo). O `rm -r pasta` de uma letra segue livre: no bash e seguro (correcao 1), e no
+// PowerShell fica com a decisao 3 do plano da 5.39. O `git rm` com essas opcoes barra a toa (o git
+// recusa as duas). A opcao termina em espaco, fim ou pontuacao de comando: com o \b, `rm -re.txt`
+// e `rm -- -recurse-backup.txt` (arquivo com hifen no nome) barravam a toa (Codex final da 5.39)
+const RE_RM_COMANDO = nomeDeComando('rm')
+const TRACO_SO_PS = '[' + String.fromCharCode(0x2013, 0x2014, 0x2015) + ']'
+const RE_OPCAO_RECURSE_SO_PS = new RegExp(String.raw`\s(?:-re(?:c(?:u(?:r(?:s(?:e)?)?)?)?)?|${TRACO_SO_PS}r(?:e(?:c(?:u(?:r(?:s(?:e)?)?)?)?)?)?)(?![\w.-])`, 'gi')
+function rmDoPowershellPerigoso(comando) {
+  return opcaoDepoisDaPalavra(textoDoComando(comando), RE_RM_COMANDO, RE_OPCAO_RECURSE_SO_PS, FIM_DO_COMANDO)
+}
+
 // correcao 7: "erase" e sinonimo de "del" no cmd e aceita a mesma sintaxe (/s), doc da
 // Microsoft confirma os dois como apelido do mesmo Remove-Item; cobrir um so e deixar
 // o gemeo de fora era o buraco que esta rodada veio fechar
@@ -1374,6 +1390,8 @@ const PERIGOS_DISCO = [
 
 const PERIGOS = [
   { teste: rmPerigoso, motivo: 'apaga uma pasta inteira de uma vez' },
+  // rm com opcao que so o PowerShell tem: ver rmDoPowershellPerigoso
+  { teste: rmDoPowershellPerigoso, motivo: 'apaga uma pasta inteira de uma vez, sem pedir confirmacao (a Microsoft confirma: so confirma quando NAO usa -Recurse)' },
   // as regras de git (push forcado ou apagando branch, reset --hard, checkout e restore na
   // pasta inteira, checkout -f, switch --discard-changes, clean, stash clear e drop) moram no
   // gitPerigoso, que le o marcado (ver ehPerigoso). --force-with-lease e a variante segura

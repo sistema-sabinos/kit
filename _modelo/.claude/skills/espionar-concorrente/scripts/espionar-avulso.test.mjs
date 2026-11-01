@@ -96,3 +96,23 @@ test('modo avulso de ponta a ponta: o link entra, o bruto sai em dados/concorren
     rmSync(raiz, { recursive: true, force: true })
   }
 })
+
+// caso da 5.38: so o codigo de um produto de catalogo monta um link que abre pagina sem o anuncio
+test('modo avulso com pagina sem anuncio (codigo de catalogo) sai com erro, abre uma pagina so e nao grava', { skip: pular }, async () => {
+  const raiz = mkdtempSync(join(tmpdir(), 'espionar-avulso-sem-'))
+  try {
+    const abertos = []
+    const vazia = '<html><body><main><p>Parece que esta pagina nao existe</p><a href="https://www.mercadolivre.com.br/perguntas/exemplo">Ver todas as perguntas</a></main></body></html>'
+    const abrir = async url => { abertos.push(url); await pagina.setContent(vazia) }
+    const item = itemAvulso(L + '11111111')
+    await assert.rejects(espionarAvulso({
+      item, raiz, hoje: '2026-11-01', dormir: async () => {}, log: () => {},
+      ...leitoresDoChrome(pagina, abrir, { espera: async () => {} }),
+    }), /link completo/)
+    assert.deepEqual(abertos, [item.url], 'so a pagina do codigo abre, nenhuma aba de perguntas')
+    assert.deepEqual(readdirSync(raiz), [], 'nada gravado')
+    assert.deepEqual(barradas, [], 'a pagina nao pediu nada pra rede')
+  } finally {
+    rmSync(raiz, { recursive: true, force: true })
+  }
+})

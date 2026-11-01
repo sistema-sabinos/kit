@@ -2,7 +2,7 @@
 // Gate 1 barra as letras seguidas de 6 ou mais digitos em qualquer arquivo do kit.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, readdirSync, mkdirSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, readdirSync, mkdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { argumentos, idDoAnuncio, escolherTopo, urlParaAbrir, vendidosDe, vendedorDe, perguntasDoTexto, palavrasDoTitulo, vocabulario, textoDoVocabulario, atributosConsensuais, fotosUnicas, avaliacoesDaPagina, dataDaPagina, dataRelativa, espionar, recalcularArquivos, acharProduto, mesclarAnuncios, oQueFaltaEspionar, pontoDePartida, limparFundo, somaAlertas, itemAvulso, arquivoAvulso, espionarAvulso, resumoAvulso } from './espionar.mjs'
@@ -142,6 +142,14 @@ test('fotosUnicas mantem foto com o codigo mas sem o sufixo de data/letra', () =
   const codigo = id('5010003')
   const semSufixo = `https://http2.mlstatic.com/D_Q_NP_555666-${codigo}.jpg`
   assert.deepEqual(fotosUnicas([semSufixo]), [semSufixo])
+})
+
+// Vendedor internacional: o codigo da foto vem com CBT no lugar do ML<letra> (anuncio real de 2026-10-31).
+test('fotosUnicas aceita a foto de vendedor internacional (codigo CBT)', () => {
+  const pequena = 'https://http2.mlstatic.com/D_Q_NP_797809-CBT117368676744_102026-R.webp'
+  const grande = 'https://http2.mlstatic.com/D_NQ_NP_2X_797809-CBT117368676744_102026-F.webp'
+  const outra = 'https://http2.mlstatic.com/D_Q_NP_842675-CBT118591520793_102026-R.webp'
+  assert.deepEqual([...fotosUnicas([pequena, grande, outra])].sort(), [grande, outra].sort())
 })
 
 // O rotulo do resumo e o medido na pagina real em 2026-10-08; os comentarios seguem a estrutura
@@ -594,5 +602,36 @@ test('espionarAvulso grava o bruto de um anuncio em dados/concorrentes, sem toca
     assert.throws(() => resumoAvulso(raiz, arquivo, { ...anuncio, erro: 'pagina: timeout' }), /nao consegui ler/)
   } finally {
     rmSync(raiz, { recursive: true, force: true })
+  }
+})
+
+test('espionarAvulso sem titulo lido (so o codigo de produto de catalogo, caso da 5.38) sai com erro pedindo o link completo e nao grava', async () => {
+  // o codigo do catalogo tem o formato do de anuncio: o link montado abre uma pagina sem o anuncio
+  const item = itemAvulso(id('11111111'))
+  assert.equal(item.url, 'https://produto.mercadolivre.com.br/' + L + '-11111111')
+  for (const titulo of [null, undefined, '']) {
+    const raiz = mkdtempSync(join(tmpdir(), 'avulso-sem-titulo-'))
+    try {
+      const perguntas = []
+      const avaliacoes = []
+      await assert.rejects(espionarAvulso({
+        item, raiz, hoje: '2026-11-01', dormir: async () => {},
+        // links de perguntas e de opinioes preenchidos de proposito: nenhuma aba a mais pode abrir
+        lerAnuncio: async () => ({ titulo, preco: null, subtitulo: null, fotos: [], atributos: {}, link_perguntas: 'q1', link_avaliacoes: 'r1', avaliacoes_pagina: { comentarios: [] } }),
+        lerAvaliacoes: async link => { avaliacoes.push(link); return {} },
+        lerPerguntas: async link => { perguntas.push(link); return ABA },
+      }), e => {
+        assert.match(e.message, /link completo/, `titulo ${titulo}`)
+        assert.ok(e.message.includes('/p/'), `cita o /p/ do link: ${e.message}`)
+        assert.match(e.message, /Nada foi gravado/)
+        return true
+      })
+      assert.deepEqual(perguntas, [], `titulo ${titulo}: a aba de perguntas nao abre`)
+      assert.deepEqual(avaliacoes, [], `titulo ${titulo}: a pagina de opinioes nao abre`)
+      assert.equal(existsSync(arquivoAvulso(raiz, item.id)), false)
+      assert.deepEqual(readdirSync(raiz), [], `titulo ${titulo}: nada gravado`)
+    } finally {
+      rmSync(raiz, { recursive: true, force: true })
+    }
   }
 })
