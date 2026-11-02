@@ -17,7 +17,7 @@ import { sessaoCaiu, AVISO } from '../../conectar/scripts/lib/navegador.mjs'
 import { tokenMl } from '../../mercado-livre/scripts/lib/tokens.mjs'
 import { mlGet } from '../../mercado-livre/scripts/lib/ml-api.mjs'
 import { lerEnv } from '../../mercado-livre/scripts/lib/env.mjs'
-import { carregarConfiguracao, PADROES } from '../../mercado-livre/scripts/lib/config.mjs'
+import { liberarGasto, fecharReserva } from '../../conectar/scripts/lib/orcamento.mjs'
 import { slugDe, lerJson, gravarJson, dataLocal } from '../../mercado-livre/scripts/lib/pipeline.mjs'
 import { coletarBusca, tipoDoLink } from '../../pesquisar-tendencia/scripts/coletar-cdp.mjs'
 import { lerPagina, fotosUnicas, urlParaAbrir } from '../../espionar-concorrente/scripts/espionar.mjs'
@@ -143,23 +143,48 @@ function gravarSaidas(c, coleta, fichas) {
 
 // O portao de custo. Devolve o codigo em vez de encerrar o processo: process.exit com a conexao
 // do Gemini aberta derruba o Node no Windows (visto no ensaio de 2026-10-04, codigo 127 em vez de 3).
-// Codigo 3 = parou antes de gastar (fora da tabela, acima do limite, ou sem o --sim).
-export async function passoVer({ porAnuncio, chave, hoje, limite, sim, descobrir = descobrirModelo, ver = verFotos, log = () => {} }) {
+// Codigo 3 = parou antes de gastar (fora da tabela, a trava do conectar parou, ou sem o --sim).
+// A trava e a unica do kit: orcamento do mes quando definido, senao o limite_gasto_usd por lote. O pedido
+// a trava e o teto (a estimativa com folga, porque o consumo de tokens varia em volta da media medida).
+// Teto do gasto real: o mesmo teto mostrado a pessoa e reservado no orcamento (a trava ja conferiu que
+// ele cabe no orcamento do mes ou no limite_gasto_usd por lote).
+export async function passoVer({ porAnuncio, chave, hoje, sim, descobrir = descobrirModelo, ver = verFotos, log = () => {},
+  liberar = (pedido) => liberarGasto(pedido, { contexto: 'engenharia-reversa' }), fechar = fecharReserva }) {
   const fotos = porAnuncio.reduce((n, x) => n + x.fotos.length, 0)
   const modelo = await descobrir(chave)
   const est = estimar({ fotos, modelo, hoje })
   if (est.recusado) return { codigo: 3, saida: { parou: est.recusado, modelo, fotos } }
-  const resumo = { modelo, fotos, estimativa_usd: est.usd, minutos: est.minutos, preco_conferido_em: est.preco.conferido_em, promocional_ate: est.preco.promocional_ate, limite_gasto_usd: limite }
-  if (est.usd > limite) return { codigo: 3, saida: { parou: 'passa do limite_gasto_usd da configuracao', ...resumo } }
-  if (!sim) return { codigo: 3, saida: { parou: 'precisa do pode ir da pessoa', ...resumo } }
-  const r = await ver(porAnuncio, { modelo, chave, preco: precoDoDia(modelo, hoje) }, { log, limite })
+  const teto = Math.ceil(est.usd * FOLGA_TETO * 100) / 100
+  const resumo = { modelo, fotos, estimativa_usd: est.usd, teto_usd: teto, minutos: est.minutos, preco_conferido_em: est.preco.conferido_em, promocional_ate: est.preco.promocional_ate }
+  const lib = liberar({ estimativaUsd: teto, autorizado: sim })
+  if (lib.aviso) resumo.aviso = lib.aviso
+  if (lib.codigo !== 0) return { codigo: 3, saida: { parou: lib.parou, ...resumo } }
+  const reserva = lib.reserva || null
+  const limite = teto
+  const aberta = `A reserva ${reserva} do orcamento do mes ficou aberta e conta no saldo: anote em dados/custos.jsonl o que foi cobrado sem linha e feche pelo --saldo do /configurar-video`
+  let r
+  try { r = await ver(porAnuncio, { modelo, chave, preco: precoDoDia(modelo, hoje), reserva }, { log, limite }) } catch (e) {
+    // cobranca que nao virou linha: a reserva fica aberta, ate alguem anotar e fechar
+    if (reserva) e.message = `${e.message}. ${aberta}`
+    throw e
+  }
+  // cobranca incerta para a rodada no verFotos e segura a reserva aberta
+  if (r.incertas) return { codigo: 1, fichas: r.fichas, erro: `uma resposta do Gemini nao chegou inteira e pode ter sido cobrada; parei pra nao seguir pagando sem saber, e o relatorio nao foi refeito${reserva ? `. ${aberta}` : ''}` }
+  // fechar que falha nao pode jogar fora as fichas pagas: vira aviso, e a reserva segue contando ate fechar a mao
+  let naoFechou = null
+  if (reserva) try { fechar(reserva) } catch (e) { naoFechou = `nao consegui fechar a reserva ${reserva} do orcamento do mes (${e.message}); ela segue contando no saldo ate alguem fechar pelo --saldo do /configurar-video` }
+  if (naoFechou) return { codigo: 0, fichas: r.fichas, aviso: naoFechou }
   // Falha em massa (cota, rede) deixa um grupo sem ficha e fabrica "regra": a rodada nao vale.
   const todas = Object.values(r.fichas).flat()
   const comErro = todas.filter(f => f.erro).length
-  if (r.parou) return { codigo: 1, fichas: r.fichas, erro: `parei no limite_gasto_usd (US$ ${r.gasto_usd} de US$ ${limite}) antes de ler todas as fotos; o relatorio nao foi refeito` }
+  if (r.parou) return { codigo: 1, fichas: r.fichas, erro: `parei no teto do gasto (US$ ${r.gasto_usd} de US$ ${limite}) antes de ler todas as fotos; o relatorio nao foi refeito` }
   if (todas.length && comErro / todas.length > ERRO_MAX) return { codigo: 1, fichas: r.fichas, erro: `${comErro} de ${todas.length} fotos deram erro no Gemini (cota, rede ou chave); o relatorio nao foi refeito pra nao tirar conclusao de leitura pela metade` }
+  // o custo de uma chamada so se sabe depois dela: a ultima foto pode passar do teto, e a pessoa fica sabendo
+  if (r.gasto_usd > teto + 1e-9) return { codigo: 0, fichas: r.fichas, aviso: `a ultima foto custou mais que a media e o gasto real (US$ ${r.gasto_usd}) passou do teto de US$ ${teto}; tudo ficou anotado em dados/custos.jsonl` }
   return { codigo: 0, fichas: r.fichas }
 }
+// folga do teto sobre a estimativa: a media de tokens por foto e medida, e a rodada real varia em volta dela
+export const FOLGA_TETO = 1.25
 export const ERRO_MAX = 0.2
 
 const fotosEmDisco = coleta => coleta.lidos.map(a => ({ id: a.id, titulo: a.titulo, fotos: (a.fotos_locais ?? []).filter(f => existsSync(f)) }))
@@ -222,9 +247,7 @@ if (ehCli) {
       const c = caminhos(a.slug, coleta.data)
       const chave = lerEnv().GEMINI_API_KEY
       if (!chave) throw Object.assign(new Error('falta GEMINI_API_KEY no .env (o /conectar ensina a pegar)'), { codigo: 2 })
-      let limite = PADROES.limite_gasto_usd
-      try { limite = carregarConfiguracao().limite_gasto_usd ?? limite } catch {}
-      const r = await passoVer({ porAnuncio: fotosEmDisco(coleta), chave, hoje, limite, sim: a.sim, log: m => console.error(m) })
+      const r = await passoVer({ porAnuncio: fotosEmDisco(coleta), chave, hoje, sim: a.sim, log: m => console.error(m) })
       if (r.codigo === 3) console.log(JSON.stringify(r.saida))
       else if (r.codigo === 1) {
         // o que foi pago fica em disco, pra ninguem pagar de novo sem saber
@@ -234,6 +257,7 @@ if (ehCli) {
         gravarJson(c.fichas, r.fichas)
         const res = gravarSaidas(c, coleta, r.fichas)
         console.log(recibo(res, { relatorio: c.relatorio, pasta: c.pasta }))
+        if (r.aviso) console.log(`AVISO: ${r.aviso}`)
       }
       process.exitCode = r.codigo
     }

@@ -2,13 +2,15 @@
 // texto, evidencia, confianca). Regras duras:
 // - modelo descoberto na hora pela lista da API, nunca nome escrito aqui (modelo some sem aviso);
 // - preco numa tabela datada; modelo fora da tabela RECUSA estimar e manda conferir o preco;
-// - a linha de custo vai pro dados/custos.jsonl assim que a chamada paga volta, antes de
-//   interpretar a resposta: se o JSON vier quebrado, o dinheiro ja foi gasto e fica anotado;
+// - a linha de custo vai pro dados/custos.jsonl, pelo registrador comum do conectar, assim que a
+//   chamada paga volta, antes de interpretar a resposta: se o JSON vier quebrado, o dinheiro ja foi
+//   gasto e fica anotado;
 // - campo que o modelo nao ve com seguranca vale null.
-import { readFileSync, appendFileSync, mkdirSync } from 'node:fs'
-import { extname, join } from 'node:path'
-import { RAIZ } from '../../../mercado-livre/scripts/lib/raiz.mjs'
+// A liberacao do gasto (orcamento do mes ou teto por lote) e do rx.mjs, que chama este arquivo.
+import { readFileSync } from 'node:fs'
+import { extname } from 'node:path'
 import { fetchComTimeout } from '../../../mercado-livre/scripts/lib/fetch-timeout.mjs'
+import { registrarCusto as registrarComum } from '../../../conectar/scripts/lib/orcamento.mjs'
 
 const API = 'https://generativelanguage.googleapis.com/v1beta'
 
@@ -93,20 +95,19 @@ export function validarFicha(f) {
 
 const MIMES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' }
 
-async function chamarGemini({ modelo, chave, corpo, buscar = fetchComTimeout }) {
+export async function chamarGemini({ modelo, chave, corpo, buscar = fetchComTimeout }) {
   // Prazo longo: e geracao (leitura da foto), mas com fim, pra conexao presa nao parar a rodada.
   const r = await buscar(`${API}/models/${modelo}:generateContent?key=${chave}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) }, { timeoutMs: 3 * 60_000 })
   if (!r.ok) throw new Error(`Gemini ${r.status}: ${(await r.text()).slice(0, 200)}`)
-  return r.json()
+  // 200 cujo corpo nao chegou inteiro pode ter sido cobrado sem a linha: a reserva do orcamento fica aberta
+  try { return await r.json() } catch (e) { throw Object.assign(new Error(`resposta 200 que nao chegou inteira, pode ter sido cobrada: ${e.message}`), { incerta: true }) }
 }
 
-export const registrarCusto = (linha, raiz = RAIZ) => {
-  mkdirSync(join(raiz, 'dados'), { recursive: true })
-  appendFileSync(join(raiz, 'dados', 'custos.jsonl'), JSON.stringify(linha) + '\n')
-}
+// o registrador comum so avisa quando nao grava; aqui a falha vira erro, pra rodada parar de pagar
+const registrarCusto = (linha, raiz) => { if (!registrarComum(linha, { avisar: () => {}, ...(raiz ? { raiz } : {}) })) throw new Error('nao consegui gravar dados/custos.jsonl') }
 
 // Uma chamada paga por foto. O custo sai dos tokens que a propria resposta informa.
-export async function fichaDaFoto(caminho, contexto, { modelo, chave, preco, chamar = chamarGemini, registrar = registrarCusto, ler = readFileSync, agora = () => new Date().toISOString() }) {
+export async function fichaDaFoto(caminho, contexto, { modelo, chave, preco, reserva, raiz, chamar = chamarGemini, registrar = (l) => registrarCusto(l, raiz), ler = readFileSync }) {
   const mime = MIMES[extname(caminho).toLowerCase()] || 'image/jpeg'
   const corpo = {
     contents: [{ parts: [
@@ -120,7 +121,7 @@ export async function fichaDaFoto(caminho, contexto, { modelo, chave, preco, cha
   const saida = (j.usageMetadata?.candidatesTokenCount ?? 0) + (j.usageMetadata?.thoughtsTokenCount ?? 0)
   const usd = Math.round(custoUsd(entrada, saida, preco) * 1e6) / 1e6
   // anotar e condicao pra seguir: se o arquivo nao aceita a linha, a rodada inteira para
-  try { registrar({ em: agora(), servico: 'gemini-visao', modelo, tokens_entrada: entrada, tokens_saida: saida, usd, contexto: `engenharia-reversa ${contexto.id ?? ''}`.trim() }) } catch (e) {
+  try { registrar({ servico: 'gemini-visao', modelo, tokens_entrada: entrada, tokens_saida: saida, usd, contexto: `engenharia-reversa ${contexto.id ?? ''}`.trim(), area: 'ml', ...(reserva ? { reserva } : {}) }) } catch (e) {
     throw Object.assign(new Error(`a foto ${contexto.ordem} de ${contexto.id ?? '?'} foi cobrada (US$ ${usd}) e o custo nao foi anotado em dados/custos.jsonl (${e.message}); parei pra nao seguir pagando sem anotar. Anote essa linha a mao`), { fatal: true })
   }
   if (contexto.gasto) contexto.gasto.usd += usd
@@ -130,26 +131,36 @@ export async function fichaDaFoto(caminho, contexto, { modelo, chave, preco, cha
   return { ...ficha, ordem: contexto.ordem, valida: !erros.length, erros }
 }
 
-// fotosPorAnuncio: [{ id, titulo, fotos: [caminho...] }] -> { fichas: { [id]: [ficha...] }, gasto_usd, parou }
+// fotosPorAnuncio: [{ id, titulo, fotos: [caminho...] }] -> { fichas: { [id]: [ficha...] }, gasto_usd, parou, incertas }
 // Foto que falha vira ficha com erro e a rodada segue; custo que nao pode ser anotado para tudo.
-// `limite` e o teto do gasto REAL (a soma das linhas anotadas), alem do teto da estimativa.
+// `limite` e o teto do gasto REAL (a soma das linhas anotadas), alem do teto da estimativa. Antes de
+// cada foto, so segue se cabe mais uma pelo custo da foto mais cara ate ali (a media medida, na primeira).
+// `incertas` conta as respostas 200 que nao chegaram inteiras: podem ter sido cobradas sem linha, e a
+// rodada para na primeira, pra o que sobrou da reserva cobrir a cobranca que ninguem sabe quanto foi.
 export async function verFotos(fotosPorAnuncio, opcoes, { log = () => {}, limite = Infinity } = {}) {
   const fichas = {}
   const gasto = { usd: 0 }
   let parou = false
+  let incertas = 0
+  let maior = opcoes.preco ? custoUsd(TOKENS_POR_FOTO.entrada, TOKENS_POR_FOTO.saida, opcoes.preco) : 0
+  let medida = false
   for (const a of fotosPorAnuncio) {
     if (parou) break
     fichas[a.id] = []
     for (const [i, caminho] of a.fotos.entries()) {
-      if (gasto.usd >= limite - 1e-9) { parou = true; break }
+      if (gasto.usd + maior > limite + 1e-9) { parou = true; break }
       const contexto = { id: a.id, titulo: a.titulo, ordem: i + 1, total: a.fotos.length, gasto }
+      const antes = gasto.usd
       try { fichas[a.id].push(await fichaDaFoto(caminho, contexto, opcoes)) } catch (e) {
         if (e.fatal) throw e
         fichas[a.id].push({ ordem: i + 1, erro: String(e.message).slice(0, 200), valida: false })
+        if (e.incerta) { incertas++; parou = true; break }
       }
+      const desta = gasto.usd - antes
+      if (desta > 0) { maior = medida ? Math.max(maior, desta) : desta; medida = true }
     }
     log(`${a.id}: ${fichas[a.id].filter(f => f.valida).length} de ${a.fotos.length} fotos lidas`)
   }
-  if (parou) log(`parei no limite de gasto: US$ ${Math.round(gasto.usd * 1e4) / 1e4} de US$ ${limite}`)
-  return { fichas, gasto_usd: Math.round(gasto.usd * 1e6) / 1e6, parou }
+  if (parou && !incertas) log(`parei no limite de gasto: US$ ${Math.round(gasto.usd * 1e4) / 1e4} de US$ ${limite}`)
+  return { fichas, gasto_usd: Math.round(gasto.usd * 1e6) / 1e6, parou, incertas }
 }

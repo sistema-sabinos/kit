@@ -277,14 +277,18 @@ A `/cadastrar-bling` cria o arquivo com o bloco `erp` e `canais` vazio; a
 
 Uma linha por cobrança. Obrigatórios: `em` (data e hora com o fuso da máquina, ou
 só a data), `servico`, `usd` e `contexto`. Opcionais: `video` (o slug do vídeo),
-`segundos`, `cenas`, `tentativa` e `reserva` (o id que a liberação do gasto deu).
-Quem grava é o `registrarCusto` de `conectar/scripts/lib/orcamento.mjs`; linha antiga
-com `em` em UTC (terminando em `Z`) continua valendo.
+`segundos`, `cenas`, `tentativa`, `reserva` (o id que a liberação do gasto deu),
+`area` (`video`, `imagem`, `ml` ou `outros`), `modelo`, `tokens_entrada`,
+`tokens_saida` e `tokens`. Quem grava é o `registrarCusto` de
+`conectar/scripts/lib/orcamento.mjs` (a `/midia-social` grava por ele também); linha
+antiga com `em` em UTC (terminando em `Z`) continua valendo.
 
-O orçamento do mês (`_contexto/orcamento.md`) soma só as linhas do mês do calendário
-local com `servico` começando por `gemini`. Linha quebrada, sem data, com `usd` nulo,
-só com `brl` ou de outro serviço fica de fora da soma e aparece contada à parte no
-`--saldo` do `/configurar-video`.
+O orçamento do mês (`_contexto/orcamento.md`) soma as linhas do mês do calendário
+local com `servico` começando por `gemini` ou com `area`. Linha quebrada, sem data,
+com `usd` nulo, só com `brl` ou de outro serviço sem `area` fica de fora da soma e
+aparece contada à parte no `--saldo` do `/configurar-video`. O `--saldo` também mostra
+o extrato por área (`por_area`); linha sem `area` cai pelo serviço: `gemini-imagem` em
+imagem, `gemini-visao` (a `/engenharia-reversa`) no ML e o resto do Gemini em vídeo.
 
 ## 9. `dados/decisoes.jsonl` (a ata)
 

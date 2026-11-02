@@ -2,9 +2,10 @@
 // Nenhum teste abre navegador de verdade: o Playwright entra falso.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync, existsSync } from 'node:fs'
+import { mkdtempSync, rmSync, existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { INSTALAR, acharPlaywright, abrirNavegador, opcoesDaFoto, comPagina, fotografar } from './render.mjs'
 
 function falso(registro, { launchFalha = false, screenshotFalha = false } = {}) {
@@ -34,12 +35,46 @@ function falso(registro, { launchFalha = false, screenshotFalha = false } = {}) 
   })
 }
 
-test('acharPlaywright sem o pacote instalado lanca com o comando de instalar', () => {
+test('acharPlaywright sem o pacote instalado lanca com o comando de instalar na propria skill', () => {
   const dir = mkdtempSync(join(tmpdir(), 'render-'))
   try {
     assert.throws(() => acharPlaywright(dir), e => e.message.includes(INSTALAR))
-    assert.ok(INSTALAR.includes('npm install --prefix .claude/skills/mercado-livre'))
+    assert.ok(INSTALAR.includes('npm install --prefix .claude/skills/gerar-imagens'))
   } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// Playwright de mentira instalado dentro de uma skill: package.json da skill e o pacote em node_modules.
+function instalar(raiz, skill, { comPacote = true } = {}) {
+  const pasta = join(raiz, '.claude', 'skills', skill)
+  mkdirSync(pasta, { recursive: true })
+  writeFileSync(join(pasta, 'package.json'), '{"name":"x","type":"module"}')
+  if (!comPacote) return
+  const pw = join(pasta, 'node_modules', 'playwright')
+  mkdirSync(pw, { recursive: true })
+  writeFileSync(join(pw, 'package.json'), '{"name":"playwright","main":"index.js"}')
+  writeFileSync(join(pw, 'index.js'), '')
+}
+
+// D57: o projeto so de video (sem o ML) acha o Playwright pela propria gerar-imagens
+test('acharPlaywright procura na gerar-imagens, depois no ML e na midia social', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'render-'))
+  try {
+    instalar(dir, 'midia-social')
+    assert.match(acharPlaywright(dir), /midia-social/)
+    instalar(dir, 'mercado-livre')
+    assert.match(acharPlaywright(dir), /mercado-livre/)
+    // package.json sem o pacote instalado nao para a busca
+    instalar(dir, 'gerar-imagens', { comPacote: false })
+    assert.match(acharPlaywright(dir), /mercado-livre/)
+    instalar(dir, 'gerar-imagens')
+    assert.match(acharPlaywright(dir), /gerar-imagens/)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('a gerar-imagens tem package.json proprio com o Playwright na mesma faixa do ML', () => {
+  const skills = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
+  const ler = (s) => JSON.parse(readFileSync(join(skills, s, 'package.json'), 'utf8'))
+  assert.equal(ler('gerar-imagens').dependencies.playwright, ler('mercado-livre').dependencies.playwright)
 })
 
 test('abrirNavegador pede o Chrome do computador', async () => {

@@ -91,7 +91,7 @@ export function rodar(argv, { raiz = RAIZ, agora = new Date() } = {}) {
   if (a.saldo) {
     const s = saldoDoMes({ raiz, agora })
     if (s.tipo !== 'mes') return { codigo: 0, saida: s }
-    return { codigo: 0, saida: { tipo: s.tipo, orcamento_usd: s.orcamento_usd, gasto_usd: s.gasto_usd, reservado_usd: s.reservado_usd, saldo_usd: s.saldo_usd, a_parte: s.a_parte, reservas: s.reservas.map(({ id, falta_usd, contexto, em, vivo }) => ({ id, falta_usd, contexto, em, vivo })) } }
+    return { codigo: 0, saida: { tipo: s.tipo, orcamento_usd: s.orcamento_usd, gasto_usd: s.gasto_usd, reservado_usd: s.reservado_usd, saldo_usd: s.saldo_usd, por_area: s.por_area, a_parte: s.a_parte, reservas: s.reservas.map(({ id, falta_usd, contexto, em, vivo }) => ({ id, falta_usd, contexto, em, vivo })) } }
   }
   if (typeof a['fechar-reserva'] === 'string') return { codigo: 0, saida: { fechou: fecharReserva(a['fechar-reserva'], { raiz }) } }
   if (!a.definir) return { codigo: 2, saida: { erro: 'uso: --definir (com o orcamento e os precos do dia), --saldo ou --fechar-reserva <id>' } }

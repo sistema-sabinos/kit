@@ -1,5 +1,5 @@
 {
- "versao": "5.35",
+ "versao": "5.36",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -121,10 +121,10 @@
    "1c53f9dc9f6d5234": "5.18",
    "257f711f05823e64": "anterior-5.25",
    "27d749e4d886a15a": "anterior-5.18",
-   "28fd331885a0943a": "5.35",
+   "28fd331885a0943a": "anterior-5.35",
    "2e04205877922f47": "anterior-5.16",
    "32b75db6997a3604": "5.2",
-   "32f250b275b51743": "5.35",
+   "32f250b275b51743": "anterior-5.35",
    "347cdcd8331a58bb": "anterior-5.25",
    "4c8ed1cd92061a29": "anterior-5.25",
    "5c10d1994106faa7": "anterior-3.4",
@@ -138,7 +138,7 @@
    "80c28918c3dbcf24": "anterior-3.4",
    "87378536fb81af2e": "5.21",
    "8c4478be9a1cbfa3": "anterior-5.2",
-   "929f3733df8d322e": "5.35",
+   "929f3733df8d322e": "anterior-5.35",
    "92b524d2230c73d0": "5.20",
    "97d787854e560346": "anterior-3.4",
    "9ac027150d098274": "5.14",
@@ -160,7 +160,7 @@
    "de1e65f3a11c5190": "anterior-5.34",
    "e01b1eb119cc7801": "anterior-3.4",
    "eeafddc6716393dc": "anterior-5.25",
-   "f1368f1bb0300b93": "5.35"
+   "f1368f1bb0300b93": "anterior-5.35"
   },
   ".claude/settings.json": {
    "388f86e186bd40a6": "5.28",
@@ -703,6 +703,7 @@
   ".claude/skills/carrossel/SKILL.md": {
    "063c2253900f3eae": "5.14",
    "4b5d320f97f8b63c": "5.7",
+   "b6772eb3c30d4985": "5.36",
    "bbd1700511d9e0ad": "5.18",
    "d05d20c7dd0ecfcc": "5.20"
   },
@@ -1092,6 +1093,7 @@
    "fe4c18d08f805794": "anterior-5.32"
   },
   ".claude/skills/conectar/scripts/lib/orcamento.mjs": {
+   "32dcaacb59754f87": "5.36",
    "57134da64deccb1a": "5.33",
    "5b049630dd19d172": "anterior-5.33",
    "e11ad809077ab330": "anterior-5.33"
@@ -1122,12 +1124,14 @@
    "23471bfc432b7655": "anterior-5.33",
    "2a23e655e557ee84": "anterior-4.1",
    "327d9941713362e3": "5.11",
+   "43b867bbe58bd01c": "5.36",
    "552cc44a12557f79": "anterior-4.1",
    "58e6941b7f33136a": "anterior-4.1",
    "65b9510e6d597851": "4.1",
    "66ea8160e98d55fc": "anterior-4.1",
    "7a1e2048e8c2ce10": "5.17",
    "88d396d7c2ece819": "anterior-4.1",
+   "ba4c5563cd046633": "5.36",
    "c60a74eac85d8bb8": "anterior-4.1",
    "c6f1609608b21fc9": "anterior-4.1",
    "cb1b8e9aecd1815c": "4.2",
@@ -1205,6 +1209,7 @@
    "e883814cfc6e926c": "anterior-4.1"
   },
   ".claude/skills/configurar-video/scripts/orcamento.mjs": {
+   "379c88c53c846c8f": "5.36",
    "56fbae7d3b892178": "anterior-5.33",
    "d33f39feaf0b698f": "5.33"
   },
@@ -1553,9 +1558,13 @@
   },
   ".claude/skills/engenharia-reversa/SKILL.md": {
    "214dad63b9615ebe": "anterior-4.1",
+   "3919e8662caa6169": "5.36",
    "608a46e53d3cb405": "4.1",
    "75d2c224464a8257": "5.26",
-   "c14c688042a736bf": "anterior-4.1"
+   "8cf4ae2b4e5d257e": "5.36",
+   "9decf7319fc2f54f": "5.36",
+   "c14c688042a736bf": "anterior-4.1",
+   "f0d285977fc4ed47": "5.36"
   },
   ".claude/skills/engenharia-reversa/scripts/fixtures/busca.html": {
    "95d1b14b9262d9d2": "4.1"
@@ -1593,6 +1602,8 @@
    "938772a293e21cfd": "anterior-4.1"
   },
   ".claude/skills/engenharia-reversa/scripts/lib/ver.mjs": {
+   "17868d82cbda7f44": "5.36",
+   "203c8de5b6fc7a28": "5.36",
    "4e7cd41e1d13f3aa": "5.20",
    "a4f4814bab241540": "4.1",
    "ae5252d045f53653": "anterior-4.1",
@@ -1600,10 +1611,15 @@
    "d30711418e38d9d9": "5.25"
   },
   ".claude/skills/engenharia-reversa/scripts/rx.mjs": {
+   "05fa2e2ec106ee74": "5.36",
+   "15e049351f1d47a7": "5.36",
+   "21bb7e425cfb8072": "5.36",
    "5344cce994af7caa": "anterior-4.1",
    "5ad90a7698f7d49b": "5.20",
    "9fad01ab77765b3b": "anterior-4.1",
    "b7693bee4584baff": "anterior-4.1",
+   "c1e9e3bca1699e2a": "5.36",
+   "d0aa10504f0e41f0": "5.36",
    "ebbd658b26568149": "5.25",
    "f482021e4aace71c": "4.1"
   },
@@ -1721,6 +1737,9 @@
    "b05dd65a07e9d83d": "4.9",
    "b7e3f15d3eb8422c": "4.4"
   },
+  ".claude/skills/gerar-imagens/package.json": {
+   "202c8f2dcc4751e5": "5.36"
+  },
   ".claude/skills/gerar-imagens/referencias/estilos.md": {
    "2e328967cb6a45c0": "4.9",
    "422779be6e0606ef": "3.9",
@@ -1792,6 +1811,7 @@
   ".claude/skills/gerar-imagens/scripts/lib/render.mjs": {
    "359710c4e19e7589": "5.33",
    "7cc05061aa391aa2": "anterior-3.9",
+   "8552987d29277eee": "5.36",
    "c1c0fe2865a4ae42": "5.11",
    "d117876f99035f9b": "4.9",
    "f5aedd3650245885": "3.9"
@@ -2120,6 +2140,7 @@
    "415226e22c145ba4": "anterior-3.6",
    "4706170e41028ad4": "5.14",
    "488208f27400e75b": "anterior-3.6",
+   "4da7fcf7b4bff774": "5.36",
    "5614c8432b6e5836": "anterior-3.11",
    "5c885fb59ae9b1a6": "3.8",
    "65493612a81aba2f": "5.12",
@@ -2253,6 +2274,7 @@
    "fa0d373d2bd9b6ac": "3.6"
   },
   ".claude/skills/midia-social/SKILL.md": {
+   "4718b20e824e3d16": "5.36",
    "540a7a372d208ceb": "5.25",
    "55888f860fba1714": "5.26",
    "872d2a150d454253": "anterior-4.1",
@@ -2355,6 +2377,7 @@
    "a0d1e805522ccb32": "4.1"
   },
   ".claude/skills/midia-social/scripts/lib/custos.mjs": {
+   "45bf4d7a7092891c": "5.36",
    "9fd5b725f8de29ce": "5.20",
    "9fe851b919e5fdbc": "anterior-4.1",
    "deb9fc4eac992106": "4.1"

@@ -30,8 +30,10 @@ Serve em dois momentos: antes de escolher produto, pra entender o nicho; e na
   (a `/mercado-livre` ensina)
 - `.claude/skills/conectar/referencias/navegador.md`, os cuidados com o
   Chrome dedicado: ler antes de rodar
-- Pra parte paga, `GEMINI_API_KEY` no `.env` (o `/conectar` ensina) e
-  `limite_gasto_usd` em `_contexto/mercado-livre.md`
+- Pra parte paga, `GEMINI_API_KEY` no `.env` (o `/conectar` ensina). O gasto
+  respeita o orçamento do mês do projeto (`_contexto/orcamento.md`) quando ele
+  existe; sem ele, vale o `limite_gasto_usd` de `_contexto/mercado-livre.md`
+  como teto de cada rodada
 
 ## Fluxo
 
@@ -86,9 +88,12 @@ node .claude/skills/engenharia-reversa/scripts/rx.mjs --termo "<busca>" --ver
 ```
 
 Isso nunca gasta: mostra o modelo, quantas fotos, a estimativa em dólar e em
-minutos e a data em que o preço foi conferido, e para (código 3). Mostrar isso
-à pessoa e esperar o "pode ir" dela **naquele momento**, mesmo que outra rodada
-já tenha sido aprovada. Com o sim:
+minutos e a data em que o preço foi conferido, e para (código 3). Se o campo
+`parou` disser que o gasto não cabe no orçamento do mês ou passa do teto,
+contar isso à pessoa com as palavras do script e não seguir. Cabendo, mostrar
+a estimativa e o teto (`teto_usd`, o máximo que a rodada pode gastar, porque o
+consumo varia um pouco em volta da estimativa) e esperar o "pode ir" dela
+**naquele momento**, mesmo que outra rodada já tenha sido aprovada. Com o sim:
 
 ```bash
 node .claude/skills/engenharia-reversa/scripts/rx.mjs --termo "<busca>" --ver --sim
@@ -96,10 +101,14 @@ node .claude/skills/engenharia-reversa/scripts/rx.mjs --termo "<busca>" --ver --
 
 Se o script recusar porque o modelo não está na tabela de preço, conferir o
 preço na página oficial do Gemini e avisar quem mantém o kit; nunca chutar.
-Cada foto paga vira uma linha em `dados/custos.jsonl`, e o gasto real também
-para no `limite_gasto_usd`. Se mais de 1 em cada 5 fotos der erro (cota, rede,
-chave) ou o limite cortar a leitura, o script sai com código 1, guarda as fichas
-lidas e não refaz o relatório: avisar a pessoa e não rodar de novo sem o "pode ir".
+Cada foto paga vira uma linha em `dados/custos.jsonl`, e o gasto real para no
+`teto_usd` que a pessoa viu. O custo de cada foto só se sabe depois dela, então
+a última pode passar um pouco do teto: aí a saída traz uma linha `AVISO` com o
+valor, e a pessoa ouve isso com as palavras do script. Se mais de 1 em cada 5 fotos der erro (cota, rede, chave) ou o teto cortar
+a leitura, o script sai com código 1, guarda as fichas lidas e não refaz o
+relatório: avisar a pessoa e não rodar de novo sem o "pode ir". Se a mensagem
+disser que uma reserva do orçamento ficou aberta, repetir à pessoa o que ela
+manda fazer.
 
 ### 5. Recibo no chat
 

@@ -127,12 +127,32 @@ test('gerarSaidas: sem fichas sao 5 testes; com fichas sao 10 e a anatomia sai',
 
 // O portao de custo do --ver. Regressao do ensaio de 2026-10-04: process.exit com a conexao do
 // Gemini aberta derrubava o Node no Windows (codigo 127 em vez de 3); agora a funcao devolve o codigo.
-function portao({ modelo = 'gemini-3.8-flash', fotos = 160, limite = 2, sim = false, devolve = { fichas: { A: [] }, gasto_usd: 0, parou: false } } = {}) {
+// A trava entra falsa: { tipo: 'lote', usd } imita o teto por lote; { tipo: 'mes', saldo } imita o orcamento do mes.
+function trava({ tipo = 'lote', usd = 2, saldo = 10 } = {}) {
+  const t = { pedidos: [], fechadas: [] }
+  t.liberar = (p) => {
+    t.pedidos.push(p)
+    if (tipo === 'lote') {
+      if (p.estimativaUsd > usd) return { codigo: 3, parou: `passa do limite_gasto_usd (US$ ${usd})`, estimativa_usd: p.estimativaUsd }
+      if (!p.autorizado) return { codigo: 3, parou: 'precisa do pode ir da pessoa (rode de novo com --autorizado depois do sim)', estimativa_usd: p.estimativaUsd }
+      return { codigo: 0, estimativa_usd: p.estimativaUsd, reserva: null }
+    }
+    if (p.estimativaUsd > saldo) return { codigo: 3, parou: 'este gasto nao cabe no que sobrou do orcamento do mes', estimativa_usd: p.estimativaUsd }
+    if (!p.autorizado) return { codigo: 3, parou: 'precisa do pode ir da pessoa (rode de novo com --autorizado depois do sim)', estimativa_usd: p.estimativaUsd }
+    return { codigo: 0, estimativa_usd: p.estimativaUsd, reserva: 'res-1' }
+  }
+  t.fechar = (id) => t.fechadas.push(id)
+  return t
+}
+
+function portao({ modelo = 'gemini-3.8-flash', fotos = 160, sim = false, devolve = { fichas: { A: [] }, gasto_usd: 0, parou: false, incertas: 0 }, t = trava() } = {}) {
   const chamadas = []
   const porAnuncio = [{ id: 'A', titulo: 't', fotos: Array(fotos).fill('f.jpg') }]
   return {
     chamadas,
-    rodar: () => passoVer({ porAnuncio, chave: 'k', hoje: '2026-10-04', limite, sim, descobrir: async () => modelo, ver: async (lista, op, extra) => { chamadas.push([op.modelo, extra.limite]); return devolve } }),
+    t,
+    rodar: () => passoVer({ porAnuncio, chave: 'k', hoje: '2026-10-04', sim, descobrir: async () => modelo, liberar: t.liberar, fechar: t.fechar,
+      ver: async (lista, op, extra) => { chamadas.push([op.modelo, extra.limite, op.reserva]); if (devolve instanceof Error) throw devolve; return devolve } }),
   }
 }
 
@@ -140,8 +160,11 @@ test('passoVer sem --sim: estima, para com codigo 3 e nunca chama o Gemini', asy
   const p = portao()
   const r = await p.rodar()
   assert.equal(r.codigo, 3)
-  assert.equal(r.saida.parou, 'precisa do pode ir da pessoa')
+  assert.match(r.saida.parou, /pode ir/)
   assert.deepEqual([r.saida.modelo, r.saida.fotos, r.saida.estimativa_usd, r.saida.preco_conferido_em], ['gemini-3.8-flash', 160, 0.82, '2026-10-04'])
+  // o pedido a trava e o teto: a estimativa com a folga, pra cima no centavo (0,82 x 1,25 = 1,025)
+  assert.equal(r.saida.teto_usd, 1.03)
+  assert.deepEqual(p.t.pedidos, [{ estimativaUsd: 1.03, autorizado: false }])
   assert.deepEqual(p.chamadas, [])
 })
 
@@ -150,19 +173,73 @@ test('passoVer: modelo fora da tabela e estimativa acima do limite param sem gas
   const r1 = await fora.rodar()
   assert.equal(r1.codigo, 3)
   assert.match(r1.saida.parou, /tabela de preco/)
-  const caro = portao({ fotos: 1000, limite: 2, sim: true })
+  const caro = portao({ fotos: 1000, sim: true })
   const r2 = await caro.rodar()
   assert.equal(r2.codigo, 3)
   assert.match(r2.saida.parou, /limite_gasto_usd/)
   assert.deepEqual([...fora.chamadas, ...caro.chamadas], [])
 })
 
-test('passoVer com --sim dentro do limite chama o Gemini com o modelo descoberto', async () => {
+// D56: o orcamento do mes manda; nao cabe, nem com --sim chega no Gemini
+test('passoVer com orcamento do mes: nao cabe para com a mensagem da trava e nunca chama o Gemini', async () => {
+  const p = portao({ sim: true, t: trava({ tipo: 'mes', saldo: 0.5 }) })
+  const r = await p.rodar()
+  assert.equal(r.codigo, 3)
+  assert.match(r.saida.parou, /nao cabe no que sobrou do orcamento do mes/)
+  assert.deepEqual(p.chamadas, [])
+  assert.deepEqual(p.t.fechadas, [])
+})
+
+// comum do bloco, segunda volta: sem orcamento do mes, o teto real e o teto mostrado, nunca o limite_gasto_usd
+test('passoVer com --sim dentro do limite chama o Gemini com o modelo descoberto e o teto mostrado', async () => {
   const p = portao({ sim: true })
   const r = await p.rodar()
   assert.equal(r.codigo, 0)
   assert.deepEqual(r.fichas, { A: [] })
-  assert.deepEqual(p.chamadas, [['gemini-3.8-flash', 2]])
+  assert.deepEqual(p.chamadas, [['gemini-3.8-flash', 1.03, null]])
+  assert.deepEqual(p.t.fechadas, [])
+})
+
+test('passoVer liberado pelo orcamento do mes: teto e a propria reserva, que fecha no fim', async () => {
+  const p = portao({ sim: true, t: trava({ tipo: 'mes', saldo: 10 }) })
+  const r = await p.rodar()
+  assert.equal(r.codigo, 0)
+  assert.deepEqual(p.chamadas, [['gemini-3.8-flash', 1.03, 'res-1']])
+  assert.deepEqual(p.t.fechadas, ['res-1'])
+})
+
+// Final do Codex da 5.42: a ultima foto pode passar do teto (custo so se sabe depois); a pessoa e avisada
+test('passoVer com gasto real acima do teto termina com o aviso e o valor', async () => {
+  const p = portao({ sim: true, t: trava({ tipo: 'mes' }), devolve: { fichas: { A: [{ ordem: 1, valida: true }] }, gasto_usd: 1.2, parou: false, incertas: 0 } })
+  const r = await p.rodar()
+  assert.equal(r.codigo, 0)
+  assert.match(r.aviso, /US\$ 1\.2\) passou do teto de US\$ 1\.03/)
+  // canario: dentro do teto, sem aviso
+  assert.equal((await portao({ sim: true }).rodar()).aviso, undefined)
+})
+
+// Final do Codex da 5.42, segunda volta: fechar que falha nao derruba as fichas pagas
+test('passoVer com falha ao fechar a reserva devolve as fichas e o aviso', async () => {
+  const t = trava({ tipo: 'mes' })
+  t.fechar = () => { throw new Error('outro gasto do projeto esta conferindo o orcamento') }
+  const fichas = { A: [{ ordem: 1, valida: true }] }
+  const r = await portao({ sim: true, t, devolve: { fichas, gasto_usd: 0.01, parou: false, incertas: 0 } }).rodar()
+  assert.equal(r.codigo, 0)
+  assert.deepEqual(r.fichas, fichas)
+  assert.match(r.aviso, /nao consegui fechar a reserva res-1/)
+})
+
+// Revisao do plano da 5.42, achado 2: cobranca incerta ou sem linha segura a reserva aberta
+test('passoVer com cobranca incerta ou custo sem linha deixa a reserva aberta e diz como fechar', async () => {
+  const incerta = portao({ sim: true, t: trava({ tipo: 'mes' }), devolve: { fichas: { A: [{ ordem: 1, valida: true }] }, gasto_usd: 0.01, parou: false, incertas: 1 } })
+  const r = await incerta.rodar()
+  assert.equal(r.codigo, 1)
+  assert.match(r.erro, /pode ter sido cobrada/)
+  assert.match(r.erro, /reserva res-1 .* aberta/)
+  assert.deepEqual(incerta.t.fechadas, [])
+  const semLinha = portao({ sim: true, t: trava({ tipo: 'mes' }), devolve: Object.assign(new Error('a foto 1 foi cobrada e o custo nao foi anotado'), { fatal: true }) })
+  await assert.rejects(semLinha.rodar(), /reserva res-1 .* aberta/)
+  assert.deepEqual(semLinha.t.fechadas, [])
 })
 
 // Regressao da revisao final de 2026-10-04: cota estourada no meio nao pode virar "regra".
@@ -174,7 +251,7 @@ test('passoVer: mais de 20% das fotos com erro ou parada no limite saem com codi
   assert.deepEqual(r.fichas, fichas)
   const limite = await portao({ sim: true, devolve: { fichas: { A: [{ ordem: 1, valida: true }] }, gasto_usd: 2, parou: true } }).rodar()
   assert.equal(limite.codigo, 1)
-  assert.match(limite.erro, /limite/)
+  assert.match(limite.erro, /teto do gasto/)
 })
 
 // Regressao da revisao final de 2026-10-04: catalogo que chega por patrocinado tambem ganha escada.

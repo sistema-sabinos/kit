@@ -316,9 +316,14 @@ Se o usuário já tiver chave de algum serviço pago de imagem (OpenAI, Stabilit
 1. **Preço do dia.** Abrir a página oficial de preços do serviço, hoje, e anotar o preço por imagem no tamanho que vai ser pedido. Preço de imagem por IA muda de um mês pro outro: nunca dizer de memória.
 2. **Avisar o custo antes.** Mostrar a conta: "São N imagens a US$ X cada, total US$ Y, pelo preço de hoje na página do <serviço>. Pode ir?"
 3. **Esperar o "pode ir".** Sem ele, nada é gerado.
-4. **Registrar o gasto** em `dados/custos.jsonl`, uma linha por rodada, no contrato `{em, servico, usd, contexto}`. O registrador do pacote faz isso:
+4. **Conferir o orçamento do mês** antes de gerar:
    ```bash
-   node .claude/skills/midia-social/scripts/lib/custos.mjs --servico "<serviço> (carrossel)" --usd <total em dólar> --contexto "<slug>, N imagens"
+   node .claude/skills/conectar/scripts/lib/liberar-gasto-cli.mjs --usd <total em dólar> --autorizado --contexto "<slug>, carrossel"
+   ```
+   Código 3: nada é gerado, e a pessoa ouve o motivo do campo `parou`, com as palavras dele. Código 0: gerar.
+5. **Registrar o gasto** em `dados/custos.jsonl`, uma linha por rodada, no contrato `{em, servico, usd, contexto}`, com a `reserva` que a liberação devolveu (sem `reserva` na resposta, sem o `--reserva`). O registrador do pacote faz isso:
+   ```bash
+   node .claude/skills/midia-social/scripts/lib/custos.mjs --servico "<serviço> (carrossel)" --usd <total em dólar> --contexto "<slug>, N imagens" --area imagem --reserva <reserva>
    ```
 
 Imagem gerada por IA no slide deixa o `post.md` com `ia: sim`.

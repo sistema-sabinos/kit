@@ -27,12 +27,14 @@ function comArquivo(texto, fazer) {
 const bloco = (...linhas) => ['# Configuracao', '', '```mercado-livre', ...linhas, '```', ''].join(NL)
 const blocoOrc = (...linhas) => ['# Orcamento do mes', '', 'Texto pra pessoa.', '', '```orcamento', ...linhas, '```', ''].join(NL)
 
-// Projeto de mentira: { ml, orcamento, custos } viram arquivos na raiz temporaria.
-async function comProjeto({ ml, orcamento, custos } = {}, fazer) {
+// Projeto de mentira: { ml, orcamento, custos } viram arquivos na raiz temporaria; video: false e o projeto
+// sem a /configurar-video (so de ML).
+async function comProjeto({ ml, orcamento, custos, video = true } = {}, fazer) {
   const raiz = mkdtempSync(join(tmpdir(), 'orcamento-'))
   try {
     mkdirSync(join(raiz, '_contexto'))
     mkdirSync(join(raiz, 'dados'))
+    if (video) mkdirSync(join(raiz, '.claude', 'skills', 'configurar-video'), { recursive: true })
     if (ml) writeFileSync(join(raiz, '_contexto', 'mercado-livre.md'), ml)
     if (orcamento) writeFileSync(join(raiz, '_contexto', 'orcamento.md'), orcamento)
     if (custos) writeFileSync(join(raiz, 'dados', 'custos.jsonl'), custos.map(l => typeof l === 'string' ? l : JSON.stringify(l)).join(NL) + NL)
@@ -136,6 +138,51 @@ test('isca: linha so com brl, usd nulo, quebrada, sem data e fora da lista saem 
   assert.equal(g.usd, 0.5)
   assert.deepEqual(g.a_parte, { quebradas: 2, nulas: 1, so_brl: 1, fora_da_lista: 1 })
 })
+
+// D56: a linha da midia-social (servico de fora do Gemini, com area) conta; a de app feita a mao, sem area, nao
+test('linha com area entra na soma mesmo com servico fora da lista; sem area segue a parte', () => {
+  const agora = new Date(2026, 9, 15, 12)
+  const em = emLocal(new Date(2026, 9, 10, 12))
+  const texto = [
+    JSON.stringify({ em, servico: 'openai (carrossel)', usd: 0.4, area: 'imagem' }),
+    JSON.stringify({ em, servico: 'dominio do app', usd: 12 }),
+  ].join(NL)
+  const g = gastoDoMes(texto, { agora })
+  assert.equal(g.usd, 0.4)
+  assert.equal(g.a_parte.fora_da_lista, 1)
+})
+
+// D58: o extrato por area, a soma dos baldes fecha com o gasto do mes
+test('extrato: cada servico cai no balde certo e a area gravada vence o servico', () => {
+  const agora = new Date(2026, 9, 15, 12)
+  const em = emLocal(new Date(2026, 9, 10, 12))
+  const linhas = [
+    { servico: 'gemini-imagem', usd: 0.25 },
+    { servico: 'gemini-visao', usd: 0.5 },
+    { servico: 'gemini-fiscal-olho-final', usd: 1 },
+    { servico: 'gemini-tts', usd: 0.125 },
+    { servico: 'gemini-video', usd: 2 },
+    { servico: 'gemini (pauta)', usd: 0.03, area: 'outros' },
+    { servico: 'openai (carrossel)', usd: 0.4, area: 'imagem' },
+  ]
+  const g = gastoDoMes(linhas.map(l => JSON.stringify({ em, ...l })).join(NL), { agora })
+  assert.deepEqual(g.por_area, { video: 3.125, imagem: 0.65, ml: 0.5, outros: 0.03 })
+  assert.equal(Object.values(g.por_area).reduce((a, b) => a + b, 0).toFixed(6), g.usd.toFixed(6))
+})
+
+test('saldo do mes traz o extrato por area', () => comProjeto({ orcamento: blocoOrc('orcamento_mes_usd: 10'), custos: [{ em: emLocal(), servico: 'gemini-visao', usd: 1 }, { em: emLocal(), servico: 'gemini-imagem', usd: 2 }] }, (raiz) => {
+  const s = saldoDoMes({ raiz })
+  assert.equal(s.gasto_usd, 3)
+  assert.deepEqual(s.por_area, { video: 0, imagem: 2, ml: 1, outros: 0 })
+}))
+
+// D57: projeto so de ML nao tem a /configurar-video, entao o aviso que manda rodar ela some
+test('leitor sem a /configurar-video no projeto: teto por lote sem o aviso; com ela, com o aviso', () => comProjeto({ ml: bloco('limite_gasto_usd: 7'), video: false }, (raiz) => {
+  assert.deepEqual(lerOrcamento({ raiz }), { tipo: 'lote', usd: 7 })
+  assert.equal(liberarGasto({ estimativaUsd: 1, autorizado: true }, { raiz }).aviso, undefined)
+  mkdirSync(join(raiz, '.claude', 'skills', 'configurar-video'), { recursive: true })
+  assert.equal(lerOrcamento({ raiz }).aviso, SEM_ORCAMENTO)
+}))
 
 // B4: a trava unica
 test('cabe: libera sem mostrar saldo e grava a reserva da estimativa', () => comProjeto({ orcamento: blocoOrc('orcamento_mes_usd: 10'), custos: [{ em: emLocal(), servico: 'gemini-imagem', usd: 3 }] }, (raiz) => {
@@ -244,6 +291,15 @@ test('registrarCusto grava em com o deslocamento local e so os opcionais que vie
   assert.equal(new Date(l.em).getTime(), Date.parse('2026-10-31T23:30:00Z'))
   assert.match(l.em, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}$/)
   assert.deepEqual(Object.keys(l), ['em', 'servico', 'usd', 'contexto', 'video', 'cenas'])
+}))
+
+test('registrarCusto grava area, modelo e tokens; area fora da lista nao grava', () => comProjeto({}, (raiz) => {
+  registrarCusto({ servico: 'gemini-visao', usd: 0.01, contexto: 'c', area: 'ml', modelo: 'm', tokens_entrada: 10, tokens_saida: 5 }, { raiz })
+  registrarCusto({ servico: 'x', usd: 0.01, contexto: 'c', area: 'qualquer', tokens: 7 }, { raiz })
+  const [a, b] = readFileSync(join(raiz, 'dados', 'custos.jsonl'), 'utf8').trim().split(NL).map(l => JSON.parse(l))
+  assert.deepEqual([a.area, a.modelo, a.tokens_entrada, a.tokens_saida], ['ml', 'm', 10, 5])
+  assert.equal(b.area, undefined)
+  assert.equal(b.tokens, 7)
 }))
 
 test('emLocal: em Sao Paulo a hora e a local e o deslocamento e -03:00', () => {

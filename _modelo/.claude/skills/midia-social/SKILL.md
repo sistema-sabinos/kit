@@ -75,10 +75,17 @@ conta o resultado.
 
 So o Gemini e pago, e e opcional. Antes de qualquer uso, o comando diz quanto vai custar e espera o
 "pode ir". Todo gasto vira uma linha em `dados/custos.jsonl`. O Gemini assistindo video (pelo
-`ver-video.mjs` da `/assistir-video`) anota sozinho; outro gasto pago anota com:
+`ver-video.mjs` da `/assistir-video`) anota sozinho. Outro gasto pago passa pelo orcamento do mes
+do projeto: depois do "pode ir" e antes de gastar, rodar
 ```
-node .claude/skills/midia-social/scripts/lib/custos.mjs --servico "<servico>" --usd <valor em dolar> --tokens <n>
+node .claude/skills/conectar/scripts/lib/liberar-gasto-cli.mjs --usd <estimativa em dolar> --autorizado --contexto "<o que e>"
 ```
+Codigo 3: nao gastar e contar a pessoa o motivo do campo `parou`, com as palavras dele. Codigo 0:
+gastar e, no fim, anotar com a `reserva` que a liberacao devolveu:
+```
+node .claude/skills/midia-social/scripts/lib/custos.mjs --servico "<servico>" --usd <valor em dolar> --tokens <n> --reserva <reserva>
+```
+Sem `reserva` na resposta (projeto sem orcamento do mes), anotar sem o `--reserva`.
 
 ## Chrome dedicado
 

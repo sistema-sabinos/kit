@@ -11,8 +11,11 @@ import { RAIZ } from './raiz.mjs'
 
 export const TETO_PADRAO_USD = 4
 export const CAMINHO_TETO = join(RAIZ, '_contexto', 'mercado-livre.md')
-// so entra na soma do mes linha de servico com um destes prefixos (o gasto de app em brl fica de fora)
+// entra na soma do mes linha de servico com um destes prefixos ou com area da lista (o gasto de app feito a
+// mao, sem area, fica de fora)
 export const SERVICOS_DO_ORCAMENTO = ['gemini']
+// os baldes do extrato do --saldo; linha antiga sem area cai no balde pelo servico (areaDaLinha)
+export const AREAS = ['video', 'imagem', 'ml', 'outros']
 // a media do historico so aparece com este minimo de videos (estimativa da ata, a calibrar com dado de aluno)
 export const MINIMO_VIDEOS_HISTORICO = 3
 export const SEM_ORCAMENTO = 'orcamento do mes ainda nao definido, rode /configurar-video'
@@ -55,14 +58,17 @@ export function lerBlocoOrcamento(texto) {
   return c
 }
 
-// { tipo: 'mes', usd, bloco } com orcamento definido; { tipo: 'lote', usd, aviso } sem ele.
+// { tipo: 'mes', usd, bloco } com orcamento definido; { tipo: 'lote', usd, aviso } sem ele. O aviso so sai
+// pra quem tem a /configurar-video, que e quem define o orcamento (o projeto so de ML nao tem).
 export function lerOrcamento({ raiz = RAIZ, lerLote = () => lerTeto(join(raiz, '_contexto', 'mercado-livre.md')) } = {}) {
   const { orcamento } = caminhos(raiz)
   if (existsSync(orcamento)) {
     const bloco = lerBlocoOrcamento(readFileSync(orcamento, 'utf8'))
     if (bloco.orcamento_mes_usd !== undefined) return { tipo: 'mes', usd: bloco.orcamento_mes_usd, bloco }
   }
-  return { tipo: 'lote', usd: lerLote(), aviso: SEM_ORCAMENTO }
+  const lote = { tipo: 'lote', usd: lerLote() }
+  if (existsSync(join(raiz, '.claude', 'skills', 'configurar-video'))) lote.aviso = SEM_ORCAMENTO
+  return lote
 }
 
 // O mes da linha no calendario local: data sem hora se le pela propria string (new Date('2026-11-01') e
@@ -78,11 +84,20 @@ export function mesDaLinha(em) {
 const doOrcamento = (servico) => typeof servico === 'string' && SERVICOS_DO_ORCAMENTO.some(p => servico.startsWith(p))
 const arred = (n) => Math.round(n * 1e6) / 1e6
 
-// Gasto do mes: so linha do mes local corrente e de servico da lista. Linha quebrada, sem data, com usd nulo,
-// so com brl ou de servico fora da lista sai da soma e aparece contada a parte, nunca vira zero calada.
+// O balde do extrato: a area gravada vale; sem ela, pelo servico (imagem e a engenharia reversa do ML tem
+// servico proprio; o resto do Gemini e video: olho final, clipe, narracao, musica e o Gemini assistindo).
+export function areaDaLinha(j) {
+  if (AREAS.includes(j?.area)) return j.area
+  if (j?.servico === 'gemini-imagem') return 'imagem'
+  if (j?.servico === 'gemini-visao') return 'ml'
+  return doOrcamento(j?.servico) ? 'video' : 'outros'
+}
+
+// Gasto do mes: so linha do mes local corrente e de servico da lista ou com area. Linha quebrada, sem data,
+// com usd nulo, so com brl ou fora da lista sai da soma e aparece contada a parte, nunca vira zero calada.
 export function gastoDoMes(texto, { agora = new Date() } = {}) {
   const mes = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}`
-  const r = { usd: 0, linhas: [], porReserva: {}, a_parte: { quebradas: 0, nulas: 0, so_brl: 0, fora_da_lista: 0 } }
+  const r = { usd: 0, linhas: [], porReserva: {}, por_area: Object.fromEntries(AREAS.map(a => [a, 0])), a_parte: { quebradas: 0, nulas: 0, so_brl: 0, fora_da_lista: 0 } }
   for (const l of String(texto).split(/\r?\n/)) {
     if (!l.trim()) continue
     let j
@@ -90,13 +105,15 @@ export function gastoDoMes(texto, { agora = new Date() } = {}) {
     const m = mesDaLinha(j?.em)
     if (!m) { r.a_parte.quebradas++; continue }
     if (m !== mes) continue
-    if (!doOrcamento(j.servico)) { r.a_parte.fora_da_lista++; continue }
+    if (!doOrcamento(j.servico) && !AREAS.includes(j.area)) { r.a_parte.fora_da_lista++; continue }
     if (typeof j.usd !== 'number' || !Number.isFinite(j.usd)) { r.a_parte[j.brl !== undefined ? 'so_brl' : 'nulas']++; continue }
     r.usd += j.usd
+    r.por_area[areaDaLinha(j)] += j.usd
     r.linhas.push(j)
     if (j.reserva) r.porReserva[j.reserva] = (r.porReserva[j.reserva] || 0) + j.usd
   }
   r.usd = arred(r.usd)
+  for (const a of AREAS) r.por_area[a] = arred(r.por_area[a])
   return r
 }
 
@@ -118,7 +135,7 @@ export function saldoDoMes({ raiz = RAIZ, orcamento, agora = new Date(), vivo = 
   const g = gastoDoMes(lerTexto(c.custos), { agora })
   const reservas = lerReservas(c.reservas).map(x => ({ ...x, falta_usd: arred(Math.max(0, x.usd - (g.porReserva[x.id] || 0))), vivo: vivo(x.pid) }))
   const reservado = arred(reservas.reduce((s, x) => s + x.falta_usd, 0))
-  return { tipo: 'mes', orcamento_usd: o.usd, gasto_usd: g.usd, reservado_usd: reservado, saldo_usd: arred(o.usd - g.usd - reservado), reservas, a_parte: g.a_parte, linhas: g.linhas, bloco: o.bloco }
+  return { tipo: 'mes', orcamento_usd: o.usd, gasto_usd: g.usd, reservado_usd: reservado, saldo_usd: arred(o.usd - g.usd - reservado), por_area: g.por_area, reservas, a_parte: g.a_parte, linhas: g.linhas, bloco: o.bloco }
 }
 
 export function processoVivo(pid) {
@@ -236,10 +253,12 @@ export function emLocal(d = new Date()) {
 }
 
 // Toda cobranca vira UMA linha em dados/custos.jsonl ({em, servico, usd, contexto} e os opcionais video,
-// segundos, cenas, tentativa e reserva). Falha ao gravar so avisa: a cobranca ja aconteceu.
-export function registrarCusto({ servico, usd: valor, contexto, video, segundos, cenas, tentativa, reserva }, { raiz = RAIZ, avisar = console.error, agora = () => new Date() } = {}) {
+// segundos, cenas, tentativa, reserva, area, modelo e tokens). Area fora da lista nao grava: o extrato
+// classifica pelo servico. Falha ao gravar so avisa: a cobranca ja aconteceu.
+export function registrarCusto({ servico, usd: valor, contexto, video, segundos, cenas, tentativa, reserva, area, modelo, tokens_entrada, tokens_saida, tokens }, { raiz = RAIZ, avisar = console.error, agora = () => new Date() } = {}) {
   const linha = { em: emLocal(agora()), servico, usd: arred(valor), contexto }
-  for (const [k, v] of Object.entries({ video, segundos, cenas, tentativa, reserva })) if (v !== undefined && v !== null && v !== '') linha[k] = v
+  if (!AREAS.includes(area)) area = undefined
+  for (const [k, v] of Object.entries({ video, segundos, cenas, tentativa, reserva, area, modelo, tokens_entrada, tokens_saida, tokens })) if (v !== undefined && v !== null && v !== '') linha[k] = v
   try {
     mkdirSync(join(raiz, 'dados'), { recursive: true })
     appendFileSync(join(raiz, 'dados', 'custos.jsonl'), JSON.stringify(linha) + '\n')

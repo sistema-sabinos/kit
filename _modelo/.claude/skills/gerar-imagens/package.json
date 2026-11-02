@@ -1,0 +1,9 @@
+{
+  "name": "sabinos-gerar-imagens",
+  "private": true,
+  "description": "Dependencias dos scripts que desenham imagem no SabinOS. Instalar da raiz do projeto: npm install --prefix .claude/skills/gerar-imagens",
+  "type": "module",
+  "dependencies": {
+    "playwright": "^1.63.0"
+  }
+}

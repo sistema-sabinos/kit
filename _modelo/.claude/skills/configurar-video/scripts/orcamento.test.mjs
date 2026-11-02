@@ -5,15 +5,19 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { rodar, calcularMedias, consumoPorVideo, gravarBloco } from './orcamento.mjs'
-import { lerOrcamento, liberarGasto, MINIMO_VIDEOS_HISTORICO } from '../../conectar/scripts/lib/orcamento.mjs'
+import { lerOrcamento, liberarGasto, registrarCusto, MINIMO_VIDEOS_HISTORICO } from '../../conectar/scripts/lib/orcamento.mjs'
 
 const NL = String.fromCharCode(10)
 const CRLF = String.fromCharCode(13, 10)
 const DEFINIR = ['--definir', '--orcamento-usd', '10', '--preco-segundo-usd', '0,002', '--preco-cena-usd', '0.04', '--fonte', 'https://ai.google.dev/gemini-api/docs/pricing', '--segundos', '60', '--cenas', '3']
 
+// o projeto de mentira tem a /configurar-video, como o de verdade que roda este script
 function comRaiz(fazer) {
   const raiz = mkdtempSync(join(tmpdir(), 'orcamento-cfg-'))
-  try { mkdirSync(join(raiz, '_contexto')); mkdirSync(join(raiz, 'dados')); return fazer(raiz) } finally { rmSync(raiz, { recursive: true, force: true }) }
+  try {
+    mkdirSync(join(raiz, '_contexto')); mkdirSync(join(raiz, 'dados')); mkdirSync(join(raiz, '.claude', 'skills', 'configurar-video'), { recursive: true })
+    return fazer(raiz)
+  } finally { rmSync(raiz, { recursive: true, force: true }) }
 }
 
 test('definir grava o bloco, faz a media e o "da em media X videos" arredondado pra baixo', () => comRaiz((raiz) => {
@@ -88,6 +92,17 @@ test('--saldo so quando pedem: orcamento, gasto, reservas abertas; e --fechar-re
   assert.equal(s.reservas[0].vivo, false)
   assert.deepEqual(rodar(['--fechar-reserva', lib.reserva], { raiz }).saida, { fechou: true })
   assert.equal(rodar(['--saldo'], { raiz }).saida.saldo_usd, 10)
+}))
+
+// D58: o saldo diz onde foi o dinheiro
+test('--saldo traz o extrato por area: video, imagem, ML e outros', () => comRaiz((raiz) => {
+  rodar(DEFINIR, { raiz })
+  registrarCusto({ servico: 'gemini-fiscal-olho-final', usd: 0.5, contexto: 'c' }, { raiz })
+  registrarCusto({ servico: 'gemini-imagem', usd: 0.25, contexto: 'c' }, { raiz })
+  registrarCusto({ servico: 'gemini-visao', usd: 1, contexto: 'c', area: 'ml' }, { raiz })
+  const s = rodar(['--saldo'], { raiz }).saida
+  assert.deepEqual(s.por_area, { video: 0.5, imagem: 0.25, ml: 1, outros: 0 })
+  assert.equal(s.gasto_usd, 1.75)
 }))
 
 test('--saldo sem orcamento diz o teto por lote e manda definir', () => comRaiz((raiz) => {

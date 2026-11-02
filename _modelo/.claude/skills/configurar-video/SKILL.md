@@ -148,9 +148,14 @@ cabe no que sobrou do mês, o sistema para antes de gastar e explica.
 
 O saldo só aparece quando a pessoa pergunta quanto já gastou. Aí rode
 `node .claude/skills/configurar-video/scripts/orcamento.mjs --saldo` e diga o orçamento,
-o gasto do mês e quanto sobra. Se `a_parte` tiver número maior que zero, diga que há linha
+o gasto do mês e quanto sobra. Diga também onde o dinheiro foi, pelo `por_area`: quanto foi
+em vídeo, em imagem e no Mercado Livre (`ml`), e em outros quando for maior que zero. Use os
+valores que o script deu, sem somar nem arredondar de cabeça. Se `a_parte` tiver número maior que zero, diga que há linha
 fora da conta (quebrada, sem valor, em reais ou de outro serviço) e que ela não entrou no
-saldo. Se `reservas` tiver item com `vivo: false`, um gasto caiu no meio e pode ter sido
+saldo. Reserva de gasto feito à mão nesta conversa (o `contexto` diz qual, como o carrossel
+ou outro gasto da mídia social) aparece com `vivo: false` até a linha dele ser anotada: se esse
+gasto ainda está em andamento, ela não caiu, então deixe aberta. Fora isso, se `reservas` tiver
+item com `vivo: false`, um gasto caiu no meio e pode ter sido
 cobrado: peça pra pessoa conferir no painel do Gemini. Não foi cobrado: feche com
 `--fechar-reserva <id>`. Foi: anote a linha em `dados/custos.jsonl` e feche.
 
