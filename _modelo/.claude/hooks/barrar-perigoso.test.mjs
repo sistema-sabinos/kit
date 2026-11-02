@@ -1908,3 +1908,48 @@ test('5.40: fora da ferramenta PowerShell nada pergunta, e o que barra segue bar
     assert.strictEqual(r.stdout, '', command + ': barrou e ainda perguntou')
   }
 })
+
+// 5.43 (resto da 5.39): o nome da familia do Remove-Item entre aspas em posicao
+// de comando (`& "rm" -Recurse pasta`, `"rm" -rf pasta` no bash) roda o comando, e o limpo apagava
+// o nome junto com as aspas
+const NOMES_543 = ['Remove-Item', 'ri', 'del', 'erase', 'rd', 'rmdir', 'rm']
+const ANTES_543 = ['& ', '&', '. ', 'ls; ', 'ls && ', 'ls | ', '', '(', 'if ($a) { ', 'ls' + String.fromCharCode(10)]
+export const NOME_ENTRE_ASPAS = [
+  ...NOMES_543.flatMap(n => ANTES_543.flatMap(a => ['"', "'"].map(q => a + q + n + q + ' -Recurse pasta'))),
+  ...ANTES_543.map(a => a + '"rm" -rf pasta'), "'rm' -rf pasta", '& "rd" /s /q pasta', '"rmdir" /s pasta',
+  '& "REMOVE-ITEM" -Recurse x', '& "Remove-Item" x -Recurse', '& "rm" -rf x',
+  '& "/opt/Meu Git/usr/bin/rm.exe" -rf x', '"/usr/bin/rm" -rf x',
+  '& "Microsoft.PowerShell.Management' + barra + 'Remove-Item" -Recurse x',
+  'Invoke-Expression ' + "'" + '& "rm" -Recurse x' + "'", 'bash -c ' + "'" + '"rm" -rf x' + "'",
+]
+
+test('5.43: nome da familia do Remove-Item entre aspas em posicao de comando barra', () => {
+  assert.strictEqual(NOME_ENTRE_ASPAS.length, NOMES_543.length * ANTES_543.length * 2 + ANTES_543.length + 11)
+  deveBarrar(NOME_ENTRE_ASPAS)
+  devePassar(['& "rm" arquivo.txt', '& "rm" -r x', 'echo ' + "'" + '& "rm" -Recurse x' + "'", 'Write-Output "rm" -Recurse',
+    '& "git" status', '& "rmx" -Recurse x', '& "arm" -Recurse x', 'git commit -m ' + "'" + '"rm" -rf x' + "'",
+    '& "Remove-Item" arquivo.txt', 'ls "rm" -Recurse', '& "rm"-velho.txt -Recurse'])
+})
+
+// comum do chat 1: o caminho saia junto com as aspas e levava o que roda antes do programa
+test('5.43: o caminho entre aspas fica, e o que roda dentro dele segue barrando', () => {
+  deveBarrar(['"$(git reset --hard)/rm" arquivo.txt', '& "$(Get-Content .env)/rm" arquivo.txt'])
+  // canario: com outro programa no fim do caminho o git ja barrava
+  deveBarrar(['"$(git reset --hard)/outro" arquivo.txt'])
+})
+
+// final do Codex: a aspa do outro tipo dentro do caminho soltava o comando
+test('5.43: caminho entre aspas com a aspa do outro tipo dentro segue barrando', () => {
+  deveBarrar([`& "/home/O'Brien/git/rm.exe" -rf pasta`, `& "/home/O'Brien/git/rm.exe" -rf pasta; echo 'oi'`,
+    `& '/opt/a"b/rm' -rf x`, `& "/tmp/echo 'a/rm" -rf pasta; echo 'b'`])
+  // canario: sem o apostrofo ja barrava
+  deveBarrar(['& "/home/OBrien/git/rm.exe" -rf pasta'])
+  // segunda volta da final: a aspa de dentro do $() e argumento do que roda antes
+  deveBarrar([`"$(git 'reset' --hard)/rm" arquivo.txt`, `& "$(Get-Content '.env')/rm" arquivo.txt`])
+})
+
+test('5.43: a troca do nome entre aspas com a entrada gigante termina em tempo linear', () => {
+  terminaNoTeto([['aspas sem fecho', '& "rm'.repeat(100000)], ['caminho comprido', '& "' + 'a/'.repeat(200000) + 'rm'],
+    ['nome repetido', '& "rm" '.repeat(100000) + '-Recurse'], ['separador repetido', ';"'.repeat(200000) + 'rm" -rf x'],
+    ['quebras de linha', String.fromCharCode(10).repeat(400000) + 'echo ok']])
+})

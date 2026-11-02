@@ -735,6 +735,22 @@ function rmDoPowershellPerigoso(comando) {
   return opcaoDepoisDaPalavra(textoDoComando(comando), RE_RM_COMANDO, RE_OPCAO_RECURSE_SO_PS, FIM_DO_COMANDO)
 }
 
+// rodada 5.43 (resto da 5.39): o nome entre aspas em posicao de comando roda o
+// comando (`& "rm" -Recurse pasta` e `. "Remove-Item" -Recurse x` no PowerShell, `"rm" -rf pasta` no
+// bash), e o limpo apagava o nome junto com as aspas. Antes das regras, o nome da familia do
+// Remove-Item (com caminho na frente e .exe atras opcionais) perde as aspas quando vem no comeco, depois
+// de ; & | ( { ou quebra de linha, com o operador ponto opcional. Nome partido por aspas (`r"m"`), atras
+// de outro programa (`sudo "rm"`) ou em variavel segue de fora (furos nomeados na T51).
+// Comum do chat 1: o caminho fica (tirar ele sumia com o `$(git reset --hard)` que roda antes), e
+// depois do separador so espaco e tab, porque o \s relia cada quebra de linha seguinte (quadrado).
+// Final do Codex: a aspa do outro tipo cabe no caminho (`"/home/O'Brien/rm"`) e sai como _, senao
+// casava com uma aspa mais adiante e o limpo apagava a opcao junto
+const NOME_APAGADOR = String.raw`(?:Remove-Item|ri|del|erase|rd|rmdir|rm)(?:\.exe)?`
+const RE_NOME_ENTRE_ASPAS = new RegExp(String.raw`((?:^|[;&|\n({])[ \t]*(?:\.[ \t]*)?)(?:"((?:[^"\n]*[\\/])?${NOME_APAGADOR})"|'((?:[^'\n]*[\\/])?${NOME_APAGADOR})')(?=[\s;&|)]|$)`, 'gi')
+function nomeDoApagadorSemAspas(comando) {
+  return comando.replace(RE_NOME_ENTRE_ASPAS, (m, antes, duplas, simples) => antes + (duplas ?? simples).replace(/["']/g, '_'))
+}
+
 // rodada 5.40 (decisao 3 da 5.39): o `rm -r pasta` de uma letra segue livre no ehPerigoso (no bash
 // e seguro), mas na ferramenta PowerShell e Remove-Item -Recurse e apaga a pasta sem perguntar. La
 // o hook pergunta ao aluno (ver a entrada, no fim). Le o marcado palavra por palavra, como o git:
@@ -1598,6 +1614,11 @@ export function ehPerigoso(comando, opcoes = {}) {
     const motivoSuspeito = ehPerigoso(suspeito, { cwd })
     if (motivoSuspeito) return motivoSuspeito
   }
+  // 5.43: o nome do apagador sem aspas e uma leitura a mais, depois da do comando como veio (segunda
+  // volta da final: trocar o comando no lugar escondia o `$(git 'reset' --hard)` do caminho). O texto
+  // trocado e mais curto (perde as aspas), entao a recursao termina
+  const semAspas = nomeDoApagadorSemAspas(comando)
+  if (semAspas !== comando) return ehPerigoso(semAspas, { cwd })
   return null
 }
 

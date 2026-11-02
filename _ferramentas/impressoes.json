@@ -1,5 +1,5 @@
 {
- "versao": "5.36",
+ "versao": "5.37",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -131,11 +131,14 @@
    "5ffd8508c7dd0570": "5.34",
    "674ef4ee189695e7": "anterior-5.16",
    "69abaccc92f8f447": "anterior-3.4",
+   "6a1806b914760ef5": "5.37",
+   "6b169041e5058595": "5.37",
    "6cbf20ced5193a6f": "anterior-5.16",
    "6d228326dc602827": "anterior-5.2",
    "7e2f5249847a016e": "anterior-5.14",
    "7f49bdedf01aa4cb": "anterior-5.25",
    "80c28918c3dbcf24": "anterior-3.4",
+   "85f36e068692ed3c": "5.37",
    "87378536fb81af2e": "5.21",
    "8c4478be9a1cbfa3": "anterior-5.2",
    "929f3733df8d322e": "anterior-5.35",
@@ -148,10 +151,12 @@
    "b22bfd36cf2bdc5f": "anterior-5.22",
    "b9a2703d4bb40fdc": "3.4",
    "bac80ace5565c8af": "anterior-5.25",
+   "bd4960464822d7f9": "5.37",
    "c12c233da6d843a0": "5.17",
    "c18cb4d20ca7ec60": "anterior-3.4",
    "c756f0bfcb7c93e2": "anterior-5.17",
    "cde3337045e2b22b": "anterior-5.25",
+   "ce7f522a92c43398": "5.37",
    "ce8c301e96d76591": "5.35",
    "d22b5db888eb93db": "anterior-5.14",
    "d6af3a2490fdda31": "5.25",
@@ -1131,7 +1136,7 @@
    "66ea8160e98d55fc": "anterior-4.1",
    "7a1e2048e8c2ce10": "5.17",
    "88d396d7c2ece819": "anterior-4.1",
-   "ba4c5563cd046633": "5.36",
+   "ba4c5563cd046633": "anterior-5.36",
    "c60a74eac85d8bb8": "anterior-4.1",
    "c6f1609608b21fc9": "anterior-4.1",
    "cb1b8e9aecd1815c": "4.2",
@@ -1561,10 +1566,10 @@
    "3919e8662caa6169": "5.36",
    "608a46e53d3cb405": "4.1",
    "75d2c224464a8257": "5.26",
-   "8cf4ae2b4e5d257e": "5.36",
-   "9decf7319fc2f54f": "5.36",
+   "8cf4ae2b4e5d257e": "anterior-5.36",
+   "9decf7319fc2f54f": "anterior-5.36",
    "c14c688042a736bf": "anterior-4.1",
-   "f0d285977fc4ed47": "5.36"
+   "f0d285977fc4ed47": "anterior-5.36"
   },
   ".claude/skills/engenharia-reversa/scripts/fixtures/busca.html": {
    "95d1b14b9262d9d2": "4.1"
@@ -1603,7 +1608,7 @@
   },
   ".claude/skills/engenharia-reversa/scripts/lib/ver.mjs": {
    "17868d82cbda7f44": "5.36",
-   "203c8de5b6fc7a28": "5.36",
+   "203c8de5b6fc7a28": "anterior-5.36",
    "4e7cd41e1d13f3aa": "5.20",
    "a4f4814bab241540": "4.1",
    "ae5252d045f53653": "anterior-4.1",
@@ -1611,15 +1616,15 @@
    "d30711418e38d9d9": "5.25"
   },
   ".claude/skills/engenharia-reversa/scripts/rx.mjs": {
-   "05fa2e2ec106ee74": "5.36",
-   "15e049351f1d47a7": "5.36",
+   "05fa2e2ec106ee74": "anterior-5.36",
+   "15e049351f1d47a7": "anterior-5.36",
    "21bb7e425cfb8072": "5.36",
    "5344cce994af7caa": "anterior-4.1",
    "5ad90a7698f7d49b": "5.20",
    "9fad01ab77765b3b": "anterior-4.1",
    "b7693bee4584baff": "anterior-4.1",
-   "c1e9e3bca1699e2a": "5.36",
-   "d0aa10504f0e41f0": "5.36",
+   "c1e9e3bca1699e2a": "anterior-5.36",
+   "d0aa10504f0e41f0": "anterior-5.36",
    "ebbd658b26568149": "5.25",
    "f482021e4aace71c": "4.1"
   },
