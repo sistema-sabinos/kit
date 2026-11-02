@@ -152,9 +152,10 @@ o gasto do mês e quanto sobra. Diga também onde o dinheiro foi, pelo `por_area
 em vídeo, em imagem e no Mercado Livre (`ml`), e em outros quando for maior que zero. Use os
 valores que o script deu, sem somar nem arredondar de cabeça. Se `a_parte` tiver número maior que zero, diga que há linha
 fora da conta (quebrada, sem valor, em reais ou de outro serviço) e que ela não entrou no
-saldo. Reserva de gasto feito à mão nesta conversa (o `contexto` diz qual, como o carrossel
-ou outro gasto da mídia social) aparece com `vivo: false` até a linha dele ser anotada: se esse
-gasto ainda está em andamento, ela não caiu, então deixe aberta. Fora isso, se `reservas` tiver
+saldo. Reserva de gasto feito à mão (o `contexto` diz qual, como o carrossel ou outro gasto
+da mídia social) fica com `vivo: true` por 2 horas desde que abriu, então a de um gasto em
+andamento não aparece como caída. Se o gasto dela ainda está rodando nesta conversa depois
+disso, ela não caiu, então deixe aberta. Fora isso, se `reservas` tiver
 item com `vivo: false`, um gasto caiu no meio e pode ter sido
 cobrado: peça pra pessoa conferir no painel do Gemini. Não foi cobrado: feche com
 `--fechar-reserva <id>`. Foi: anote a linha em `dados/custos.jsonl` e feche.

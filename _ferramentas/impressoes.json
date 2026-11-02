@@ -1,5 +1,5 @@
 {
- "versao": "5.37",
+ "versao": "5.38",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -131,8 +131,8 @@
    "5ffd8508c7dd0570": "5.34",
    "674ef4ee189695e7": "anterior-5.16",
    "69abaccc92f8f447": "anterior-3.4",
-   "6a1806b914760ef5": "5.37",
-   "6b169041e5058595": "5.37",
+   "6a1806b914760ef5": "anterior-5.37",
+   "6b169041e5058595": "anterior-5.37",
    "6cbf20ced5193a6f": "anterior-5.16",
    "6d228326dc602827": "anterior-5.2",
    "7e2f5249847a016e": "anterior-5.14",
@@ -151,12 +151,12 @@
    "b22bfd36cf2bdc5f": "anterior-5.22",
    "b9a2703d4bb40fdc": "3.4",
    "bac80ace5565c8af": "anterior-5.25",
-   "bd4960464822d7f9": "5.37",
+   "bd4960464822d7f9": "anterior-5.37",
    "c12c233da6d843a0": "5.17",
    "c18cb4d20ca7ec60": "anterior-3.4",
    "c756f0bfcb7c93e2": "anterior-5.17",
    "cde3337045e2b22b": "anterior-5.25",
-   "ce7f522a92c43398": "5.37",
+   "ce7f522a92c43398": "anterior-5.37",
    "ce8c301e96d76591": "5.35",
    "d22b5db888eb93db": "anterior-5.14",
    "d6af3a2490fdda31": "5.25",
@@ -1060,6 +1060,7 @@
    "5580a5dce7142ef5": "5.33"
   },
   ".claude/skills/conectar/scripts/lib/liberar-gasto-cli.mjs": {
+   "bc8a3cddf742d1d8": "5.38",
    "c5291e074ed164ff": "5.33"
   },
   ".claude/skills/conectar/scripts/lib/navegador.mjs": {
@@ -1098,6 +1099,7 @@
    "fe4c18d08f805794": "anterior-5.32"
   },
   ".claude/skills/conectar/scripts/lib/orcamento.mjs": {
+   "24a8c090b1f1eaf9": "5.38",
    "32dcaacb59754f87": "5.36",
    "57134da64deccb1a": "5.33",
    "5b049630dd19d172": "anterior-5.33",
@@ -1130,12 +1132,14 @@
    "2a23e655e557ee84": "anterior-4.1",
    "327d9941713362e3": "5.11",
    "43b867bbe58bd01c": "5.36",
+   "491107dc826da894": "5.38",
    "552cc44a12557f79": "anterior-4.1",
    "58e6941b7f33136a": "anterior-4.1",
    "65b9510e6d597851": "4.1",
    "66ea8160e98d55fc": "anterior-4.1",
    "7a1e2048e8c2ce10": "5.17",
    "88d396d7c2ece819": "anterior-4.1",
+   "97ac5369730a2605": "5.38",
    "ba4c5563cd046633": "anterior-5.36",
    "c60a74eac85d8bb8": "anterior-4.1",
    "c6f1609608b21fc9": "anterior-4.1",

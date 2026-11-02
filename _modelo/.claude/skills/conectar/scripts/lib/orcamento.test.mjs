@@ -250,6 +250,28 @@ test('reserva: o gasto registrado com ela desconta do que falta, fechar devolve 
   assert.equal(s.reservas.find(x => x.id === morto.reserva).vivo, false)
 }))
 
+// 5.44: a reserva do gasto feito a mao (pid null, a CLI sem --pid) fica viva por 2 horas desde que abriu
+test('reserva a mao: sem pid e com ate 2 horas depois, viva antes do ate e morta depois; a antiga sem ate segue morta', () => comProjeto({ orcamento: blocoOrc('orcamento_mes_usd: 10') }, (raiz) => {
+  const t0 = new Date()
+  const r = liberarGasto({ estimativaUsd: 1, autorizado: true }, { raiz, pid: null, agora: () => t0 })
+  const arq = join(raiz, 'dados', 'orcamento-reservas.json')
+  const gravada = JSON.parse(readFileSync(arq, 'utf8')).find(x => x.id === r.reserva)
+  assert.equal('pid' in gravada, false)
+  assert.equal(Date.parse(gravada.ate) - Date.parse(gravada.em), 2 * 60 * 60 * 1000)
+  const em = (ms) => new Date(t0.getTime() + ms)
+  assert.equal(saldoDoMes({ raiz, agora: em(60 * 60 * 1000) }).reservas.find(x => x.id === r.reserva).vivo, true)
+  assert.equal(saldoDoMes({ raiz, agora: em(2 * 60 * 60 * 1000 + 1000) }).reservas.find(x => x.id === r.reserva).vivo, false)
+  // a antiga (sem pid e sem ate) e a de pid vivo ficam como antes
+  const lista = JSON.parse(readFileSync(arq, 'utf8'))
+  lista.push({ id: 'antiga', usd: 1, em: emLocal(t0), contexto: '' })
+  writeFileSync(arq, JSON.stringify(lista))
+  const vivo = liberarGasto({ estimativaUsd: 1, autorizado: true }, { raiz, pid: process.pid, agora: () => t0 })
+  const s = saldoDoMes({ raiz, agora: em(60 * 60 * 1000) })
+  assert.equal(s.reservas.find(x => x.id === 'antiga').vivo, false)
+  assert.equal(s.reservas.find(x => x.id === vivo.reserva).vivo, true)
+  assert.equal('ate' in JSON.parse(readFileSync(arq, 'utf8')).find(x => x.id === vivo.reserva), false)
+}))
+
 test('trava de processo morto se rouba; a de processo vivo espera e estoura o prazo', () => comProjeto({}, (raiz) => {
   writeFileSync(join(raiz, 'dados', 'orcamento.trava'), JSON.stringify({ pid: 2147483646, dono: 'velho' }))
   assert.equal(comTrava(raiz, () => 'entrou'), 'entrou')

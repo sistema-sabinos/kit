@@ -29,6 +29,16 @@ test('cabe e autorizado: sai 0 com a reserva no nome do pid passado', () => comR
   assert.equal(reservas[0].pid, 4242)
 }))
 
+// 5.44: sem --pid e gasto feito a mao, e a reserva nasce sem pid e com ate 2 horas depois (antes levava o pid da CLI,
+// que sai logo, e aparecia morta com o gasto em andamento)
+test('sem --pid: a reserva nasce sem pid e com ate 2 horas depois do em', () => comRaiz(5, (raiz) => {
+  const r = rodar(['--usd', '0.5', '--autorizado', '--raiz', raiz])
+  assert.equal(r.status, 0, r.stderr)
+  const [reserva] = JSON.parse(readFileSync(join(raiz, 'dados', 'orcamento-reservas.json'), 'utf8'))
+  assert.equal('pid' in reserva, false)
+  assert.equal(Date.parse(reserva.ate) - Date.parse(reserva.em), 2 * 60 * 60 * 1000)
+}))
+
 test('sem --autorizado, acima do saldo ou sem --usd valido: sai 3 com o motivo', () => comRaiz(5, (raiz) => {
   for (const [args, motivo] of [[['--usd', '0.5'], /pode ir/], [['--usd', '9', '--autorizado'], /nao cabe/], [['--usd', 'muito', '--autorizado'], /--usd valido/]]) {
     const r = rodar([...args, '--raiz', raiz])

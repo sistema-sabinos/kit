@@ -4,7 +4,8 @@
 // sem resposta da trava, o gasto nao acontece.
 // Uso: node liberar-gasto-cli.mjs --usd 0.05 [--autorizado] [--pid <pid de quem vai gastar>] [--contexto "texto"] [--raiz <pasta>]
 // O pid vai na reserva: quem gasta e quem chamou (a CLI sai logo), e a reserva dele fecha pelo
-// registrar-custo-cli.mjs com --reserva.
+// registrar-custo-cli.mjs com --reserva. Sem --pid e gasto feito a mao (5.44): a reserva vai sem pid e com o
+// relogio do PRAZO_RESERVA_MAO_MS, porque o pid da propria CLI morria na hora.
 import { fileURLToPath } from 'node:url'
 import { realpathSync } from 'node:fs'
 import { liberarGasto } from './orcamento.mjs'
@@ -25,7 +26,7 @@ export function rodar(argv) {
   const usd = Number(a.usd)
   if (!Number.isFinite(usd) || usd < 0) return { codigo: 3, parou: 'faltou --usd valido; o gasto parou antes de comecar' }
   const pid = Number(a.pid)
-  const op = { contexto: typeof a.contexto === 'string' ? a.contexto : '', ...(Number.isInteger(pid) && pid > 0 ? { pid } : {}) }
+  const op = { contexto: typeof a.contexto === 'string' ? a.contexto : '', pid: Number.isInteger(pid) && pid > 0 ? pid : null }
   if (typeof a.raiz === 'string') op.raiz = a.raiz
   return liberarGasto({ estimativaUsd: usd, autorizado: a.autorizado === true }, op)
 }

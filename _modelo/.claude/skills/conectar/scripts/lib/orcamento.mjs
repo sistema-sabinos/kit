@@ -21,6 +21,8 @@ export const MINIMO_VIDEOS_HISTORICO = 3
 export const SEM_ORCAMENTO = 'orcamento do mes ainda nao definido, rode /configurar-video'
 const NUMERICOS = new Set(['orcamento_mes_usd', 'preco_segundo_usd', 'preco_cena_usd', 'segundos_por_video', 'cenas_por_video', 'media_video_usd'])
 const PRAZO_TRAVA_MS = 10_000
+// 5.44: a reserva do gasto feito a mao (sem pid de quem gasta) fica viva por este prazo desde que abriu
+export const PRAZO_RESERVA_MAO_MS = 2 * 60 * 60 * 1000
 
 const caminhos = (raiz) => ({
   orcamento: join(raiz, '_contexto', 'orcamento.md'),
@@ -127,13 +129,20 @@ function lerReservas(p) {
 }
 
 // Saldo = orcamento - gasto do mes - o que falta gastar das reservas abertas. Reserva de processo que morreu
-// conta ate alguem fechar pelo --saldo: a chamada paga pode ter sido cobrada sem a linha.
+// conta ate alguem fechar pelo --saldo: a chamada paga pode ter sido cobrada sem a linha. A feita a mao (sem pid,
+// com ate) vale pelo relogio; a antiga sem pid e sem ate segue morta.
+function reservaViva(x, agora, vivo) {
+  if (Number.isInteger(x.pid)) return vivo(x.pid)
+  const ate = Date.parse(x.ate)
+  return Number.isFinite(ate) && agora.getTime() < ate
+}
+
 export function saldoDoMes({ raiz = RAIZ, orcamento, agora = new Date(), vivo = processoVivo } = {}) {
   const c = caminhos(raiz)
   const o = orcamento ?? lerOrcamento({ raiz })
   if (o.tipo !== 'mes') return { tipo: 'lote', teto_lote_usd: o.usd, aviso: o.aviso }
   const g = gastoDoMes(lerTexto(c.custos), { agora })
-  const reservas = lerReservas(c.reservas).map(x => ({ ...x, falta_usd: arred(Math.max(0, x.usd - (g.porReserva[x.id] || 0))), vivo: vivo(x.pid) }))
+  const reservas = lerReservas(c.reservas).map(x => ({ ...x, falta_usd: arred(Math.max(0, x.usd - (g.porReserva[x.id] || 0))), vivo: reservaViva(x, agora, vivo) }))
   const reservado = arred(reservas.reduce((s, x) => s + x.falta_usd, 0))
   return { tipo: 'mes', orcamento_usd: o.usd, gasto_usd: g.usd, reservado_usd: reservado, saldo_usd: arred(o.usd - g.usd - reservado), por_area: g.por_area, reservas, a_parte: g.a_parte, linhas: g.linhas, bloco: o.bloco }
 }
@@ -216,14 +225,18 @@ export function liberarGasto({ estimativaUsd, autorizado }, { raiz = RAIZ, lerOr
   }
   try {
     return comTrava(raiz, () => {
-      const s = saldoDoMes({ raiz, orcamento: o, agora: agora(), vivo })
+      const t = agora()
+      const s = saldoDoMes({ raiz, orcamento: o, agora: t, vivo })
       if (s.saldo_usd <= 0) return { codigo: 3, parou: parada(s, estimativa_usd, true), estimativa_usd }
       if (estimativa_usd > s.saldo_usd) return { codigo: 3, parou: parada(s, estimativa_usd, false), estimativa_usd }
       if (!autorizado) return { codigo: 3, parou: 'precisa do pode ir da pessoa (rode de novo com --autorizado depois do sim)', estimativa_usd }
       const { reservas } = caminhos(raiz)
       const id = randomUUID()
       const lista = lerReservas(reservas)
-      lista.push({ id, usd: estimativa_usd, pid, em: emLocal(agora()), contexto })
+      // pid null e gasto feito a mao: sem pid pra conferir, a reserva leva o ate do relogio
+      lista.push(pid === null
+        ? { id, usd: estimativa_usd, em: emLocal(t), ate: emLocal(new Date(t.getTime() + PRAZO_RESERVA_MAO_MS)), contexto }
+        : { id, usd: estimativa_usd, pid, em: emLocal(t), contexto })
       writeFileSync(reservas, JSON.stringify(lista, null, 2) + '\n')
       return { codigo: 0, estimativa_usd, reserva: id }
     }, { vivo })
