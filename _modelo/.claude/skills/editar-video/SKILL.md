@@ -213,6 +213,12 @@ tiras de `trab/cru/`, com o `trab/cru/bordas.md` do lado, e grave
 `producao/<slug>/trab/decupagem.md` (assunto, gancho, arco, takes repetidos e a
 tabela de cortes, com o corte final de cada trecho).
 
+Opcional e pago: o Gemini ouve o cru e diz que take foi mais bem dito (você vê
+as folhas, mas não ouve). Rode primeiro sem `--autorizado`, que só estima:
+`node .claude/skills/editar-video/scripts/gemini-cru.mjs producao/<slug>/bruto/<arquivo>.mp4 producao/<slug>/trab/cru/bordas.md producao/<slug>/trab/cru/gemini.md`.
+Mostre a conta ao aluno; com o sim, rode de novo com `--preco-usd <valor> --autorizado --video <slug>`.
+Saída 3 é parada antes de gastar: repasse a mensagem como veio.
+
 **3.2c Mapa do corte.** Mostre ao aluno, em até 5 linhas: o que fica, o que sai,
 se algo mexe no roteiro aprovado e por quê. Pergunte "Posso montar assim?" e só
 siga com o sim.
@@ -228,6 +234,8 @@ Ele recusa sem a decupagem, com trecho fora dela e com trechos que repetiriam
 fala: corrija o `decupagem.md` e rode de novo. Ele imprime a duração e os cortes
 medidos de verdade. Guarde esses números: são os `cortesSeg` do estilo cenário
 próprio. Se ele avisar HDR ou fora de 9:16, abra um quadro e mostre ao aluno.
+Ele também grava `trab/emendas.md`, uma linha por emenda: com aviso, siga a
+seção "Depois de montar" do `referencias/decupagem.md` antes de seguir.
 
 **3.4 Voz limpa.** Tira ruído e nivela o volume:
 
@@ -258,13 +266,16 @@ então o erro vai direto pra legenda. Confira por amostra que as palavras estão
    `producao/<slug>/public/pessoa.mp4`.
 2. Abra um quadro de cada bloco (com o ffmpeg) e meça onde fica o topo da cabeça.
    Isso decide onde cabe a palavra-chave.
-3. Escreva `producao/<slug>/edicao.json` seguindo `referencias/videov2.md`: os
+3. Leia `referencias/insercoes.md`, grave `producao/<slug>/trab/insercoes.md`
+   (onde entra print, foto ou clipe por cima da fala, e de onde vem) e mostre ao
+   aluno. Cada inserção aprovada vira um item de `segmentos`.
+4. Escreva `producao/<slug>/edicao.json` seguindo `referencias/videov2.md`: os
    `cortesSeg` do passo 3.3, `escalasSeg` (1,0 no bloco com frase atrás da
    cabeça), `chaves`, `cartoes`, `flashes`, `ondas`, `sfx` e, se pedir, `cameraLenta` (a
    palavra repetida devagar, no máximo uma ou duas por vídeo; no bloco com frase
    atrás da cabeça, `"escala": 1.0` nela). O zoom segue
    `referencias/movimento.md`. Todo tempo sai da palavra na fala alinhada.
-4. Gere as props:
+5. Gere as props:
 
 ```
 node .claude/skills/editar-video/scripts/py.mjs preparar-props.py producao/<slug>/edicao.json producao/<slug>/props.json --public-dir producao/<slug>/public --midia <_video>/midia
@@ -362,7 +373,7 @@ dois, o `pop` e o `acende`, que ele mesmo gera. O resto da biblioteca é do alun
 1. Efeitos: escolha pela coluna "Uso" de `<_video>/midia/biblioteca/sfx/registro.md`.
    Cada gráfico que entra tem um. No cenário próprio vão no `sfx` do
    `edicao.json`; no verde, na lista `SFX` da composição. No cenário próprio, depois
-   de pôr os efeitos, gere as props de novo (o mesmo comando do Passo 4A, item 4):
+   de pôr os efeitos, gere as props de novo (o mesmo comando do Passo 4A, item 5):
    sem isso o render sai sem os sons.
 2. Música: 3 a 5 candidatas de `<_video>/midia/biblioteca/musica/registro.md`
    pelo clima do assunto, uma amostra de 12 segundos de cada uma, e a pergunta
@@ -527,6 +538,7 @@ projeto e avise o aluno do que mudou.
 - `referencias/decupagem.md`: assistir o cru e escolher os cortes (só no passo 3.2b).
 - `referencias/camadas.md`: o estilo do fundo verde, passo a passo.
 - `referencias/videov2.md`: o `edicao.json` do cenário próprio, campo por campo.
+- `referencias/insercoes.md`: imagem por cima da fala (só no passo 4A).
 - `referencias/movimento.md`: zoom, corte e abertura.
 - `referencias/som.md`: efeitos, música e volume.
 - `referencias/acabamento.md`: grão, vinheta e luz.

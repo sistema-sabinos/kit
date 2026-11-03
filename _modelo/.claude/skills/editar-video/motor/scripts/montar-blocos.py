@@ -8,6 +8,8 @@ arco, e com trechos que se sobrepoem (repetiriam fala).
 Bruto fora de 9:16 (deitado, quadrado) e cortado no centro, com aviso; a medida ja conta a rotacao do celular.
 Bruto HDR (HLG ou PQ, comum em celular) e convertido pra cor normal (bt709); sem o filtro zscale no ffmpeg, so
 remarca a cor e avisa.
+Cada bloco de audio entra e sai com rampa de 10 ms (sem a rampa a emenda estala). Depois de montar, confere cada
+emenda no bruto (emendas.py: pulo do rosto, degrau de ruido e voz na borda) e grava emendas.md ao lado da saida.
 
 Uso: node .claude/skills/editar-video/scripts/py.mjs montar-blocos.py BRUTO.mp4 SAIDA.mp4 INI:FIM [INI:FIM ...] --decupagem DECUPAGEM.md
 Ex.: node .claude/skills/editar-video/scripts/py.mjs montar-blocos.py producao/<slug>/bruto/fala.mp4 producao/<slug>/trab/fala-montada.mp4 13.60:18.30 21.05:22.55 --decupagem producao/<slug>/trab/decupagem.md
@@ -18,6 +20,7 @@ import argparse, json, os, subprocess, sys, re
 HDR = {"arib-std-b67": "HLG", "smpte2084": "PQ"}
 TONEMAP = "zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,format=yuv420p"
 REMARCAR = "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709"
+RAMPA = 0.01
 
 def sondar(bruto):
     o = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
@@ -90,7 +93,8 @@ def main():
     fc = []
     for k, (i, f) in enumerate(partes):
         fc.append(f"[0:v]trim=start={i:.3f}:end={f:.3f},setpts=PTS-STARTPTS,{pre},fps=30[v{k}];"
-                  f"[0:a]atrim=start={i:.3f}:end={f:.3f},asetpts=PTS-STARTPTS[a{k}]")
+                  f"[0:a]atrim=start={i:.3f}:end={f:.3f},asetpts=PTS-STARTPTS,"
+                  f"afade=t=in:d={RAMPA}:curve=tri,afade=t=out:st={max(0.0, f - i - RAMPA):.3f}:d={RAMPA}:curve=tri[a{k}]")
     fc.append("".join(f"[v{k}][a{k}]" for k in range(len(partes))) + f"concat=n={len(partes)}:v=1:a=1[v][a]")
     cmd = ["ffmpeg", "-y", "-v", "error", "-i", a.bruto, "-filter_complex", ";".join(fc), "-map", "[v]", "-map", "[a]",
            "-c:v", "libx264", "-crf", "16", "-preset", "medium", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", a.saida]
@@ -107,6 +111,14 @@ def main():
         cand = [(t, sc) for t, sc in pares.items() if abs(t - fim) <= 0.35]
         cortes.append(max(cand, key=lambda x: x[1])[0] if cand else fim)
     print("cortes medidos por cena: " + " ".join(f"{c:.2f}" for c in cortes))
+    if len(partes) > 1:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import emendas
+        linhas = emendas.medir(a.bruto, partes)
+        destino = os.path.join(os.path.dirname(os.path.abspath(a.saida)), "emendas.md")
+        open(destino, "w", encoding="utf-8").write("# Emendas da fala montada\n\n" + emendas.tabela(linhas) + "\n")
+        com = [l for l in linhas if emendas.avisos(l)]
+        print(f"emendas: {len(linhas)} conferidas, {len(com)} com aviso, em {destino}")
 
 if __name__ == "__main__":
     main()

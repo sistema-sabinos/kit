@@ -16,6 +16,10 @@ quase sempre vem de escolher pelo texto sem ver a imagem.
    Quadro com marca vermelha ("virado" ou "sem rosto") é borda ruim.
 3. O que a marca não pega e só o olho vê: olho fechado no começo, mão no rosto,
    boca já aberta antes de falar, pessoa saindo do quadro, alguém passando atrás.
+4. **O `trab/cru/gemini.md`, se existir** (o Gemini ouviu o cru). Ele diz que
+   trecho tropeçou e qual take de frase repetida foi mais bem dito: use na
+   escolha do take. Ele vê só 1 quadro por segundo, então a borda segue pela
+   tira, nunca por ele.
 
 ## As regras do corte
 
@@ -74,3 +78,19 @@ Na coluna `trecho` vai o **corte final** (começo e fim, em segundos, com duas
 casas): é exatamente o que o `montar-blocos.py` recebe, sem folga somada. Uma
 linha por trecho do `bordas.md`, com `sim` ou `nao` e o motivo em poucas
 palavras. Todo trecho `sim` vai para o `montar-blocos.py`, e só eles.
+
+## Depois de montar
+
+O `montar-blocos.py` grava `trab/emendas.md`, uma linha por emenda entre dois
+blocos. Com aviso:
+
+- **Voz no fim do bloco** ou **no começo do seguinte**: o corte caiu no meio da
+  voz. Leve aquela borda pra dentro da pausa (o fim mais pra frente, o começo
+  mais pra trás, sem passar do corte sugerido do `bordas.md`), acerte a tabela
+  de cortes e monte de novo.
+- **Rosto pula**: a cabeça muda de lugar de um bloco pro outro e o corte salta.
+  No cenário próprio, ponha escala diferente nos dois blocos (`movimento.md`,
+  troca de plano a cada corte); se os dois precisam de 1,0, mude a borda.
+- **Degrau de ruído**: o ruído de fundo muda de nível na emenda. A voz limpa do
+  3.4 costuma resolver; ouça a emenda depois dela e, se ainda se ouvir, mude a
+  borda.

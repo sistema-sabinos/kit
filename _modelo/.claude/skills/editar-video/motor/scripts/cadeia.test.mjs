@@ -198,6 +198,51 @@ test('5.47: montar-blocos recusa sem decupagem, com trecho fora dela, sem motivo
   assert.equal(r.status, 0, semTraco(r.stderr))
 }))
 
+test('5.48: montar-blocos poe rampa na emenda: a voz nao salta do zero ao pico no primeiro milissegundo', () => comTemp((d) => {
+  // 250 Hz (periodo de 4 ms): o bloco 1 acaba em fase zero (1,500 s) e o bloco 2 comeca no pico (2,501 s)
+  const bruto = join(d, 'bruto.mp4'), sai = join(d, 'montado.mp4')
+  ff('-f', 'lavfi', '-i', 'testsrc2=s=320x568:r=30:d=4', '-f', 'lavfi', '-i', 'sine=f=250:d=4:sample_rate=48000', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'pcm_s16le', join(d, 'bruto.mov'))
+  ff('-i', join(d, 'bruto.mov'), '-c:v', 'copy', '-c:a', 'aac', '-b:a', '320k', bruto)
+  const r = py('montar-blocos.py', [bruto, sai, '0.500:1.500', '2.501:3.500', ...decupagem(d, ['0.500:1.500', '2.501:3.500'])])
+  assert.equal(r.status, 0, semTraco(r.stderr))
+  const x = amostras(sai, 0, 2, 48000)
+  const pico = Math.max(...x.slice(48000 * 0.3, 48000 * 0.7).map(Math.abs))
+  const junta = Math.max(...x.slice(48000, 48000 + 48).map(Math.abs))   // o primeiro 1 ms do bloco 2
+  assert.ok(pico > 0.1, `canario: o tom chegou ao montado (pico ${pico})`)
+  assert.ok(junta < 0.35 * pico, `degrau na emenda: ${junta} contra pico ${pico}`)
+}))
+
+test('5.48: montar-blocos grava o emendas.md e marca voz cortada na borda', () => comTemp((d) => {
+  // fala de 0,5 a 1,5 s e de 2,5 a 3,5 s, silencio no resto
+  const bruto = join(d, 'bruto.mp4'), sai = join(d, 'trab', 'montado.mp4')
+  ff('-f', 'lavfi', '-i', 'testsrc2=s=320x568:r=30:d=4', '-f', 'lavfi', '-i', "aevalsrc='if(between(t,0.5,1.5)+between(t,2.5,3.5),0.5*sin(2*PI*300*t),0)':s=48000:d=4",
+    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '256k', bruto)
+  const tabela = () => readFileSync(join(d, 'trab', 'emendas.md'), 'utf8')
+  // canario: cortes na pausa, emenda limpa
+  let r = py('montar-blocos.py', [bruto, sai, '0.30:1.70', '2.30:3.70', ...decupagem(d, ['0.30:1.70', '2.30:3.70'])])
+  assert.equal(r.status, 0, semTraco(r.stderr))
+  assert.match(r.stdout, /emendas: 1 conferidas, 0 com aviso/)
+  assert.match(tabela(), /^\| 1 \| 1[.]40 \| 1[.]70 > 2[.]30 \| sem rosto \| [0-9.]+ \| ok \|$/m)
+  // o bloco 1 acaba no meio da fala: voz no fim; o 2 comeca na pausa
+  r = py('montar-blocos.py', [bruto, sai, '0.30:1.20', '2.30:3.70', ...decupagem(d, ['0.30:1.20', '2.30:3.70'])])
+  assert.equal(r.status, 0, semTraco(r.stderr))
+  assert.match(r.stdout, /1 com aviso/)
+  assert.match(tabela(), /\| sem rosto \| - \| voz no fim do bloco \|$/m)
+  assert.doesNotMatch(tabela(), /voz no comeco/)
+}))
+
+test('5.48: pulo do rosto em larguras de rosto, None sem rosto num dos lados', () => comTemp((d) => {
+  const r = funcaoDoPy('emendas.py', 'pulo', [
+    'assert f((100, 100, 50), (100, 100, 50)) == 0',
+    'assert abs(f((100, 100, 50), (130, 140, 50)) - 1.0) < 1e-9  # 50 px de deslocamento numa largura de 50',
+    'assert abs(f((100, 100, 40), (100, 100, 60)) - 0.4) < 1e-9  # so a largura muda: 20 sobre a media 50',
+    'assert f(None, (1, 1, 1)) is None and f((1, 1, 1), None) is None',
+    'print("ok")',
+  ].join('\n'), d)
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.match(r.stdout, /ok/)
+}))
+
 test('5.47: achar_trechos divide o corrido nas pausas curtas e deixa a gravacao com silencio como era', () => comTemp((d) => {
   const r = funcaoDoPy('blocos.py', 'achar_trechos', [
     'J = 20  # janelas por segundo (passo 0,05 s)',

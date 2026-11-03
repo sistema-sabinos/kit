@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 5.39 (2026-11-02)
+Versão 5.40 (2026-11-03)
 
 Um sistema de trabalho com IA pro seu negócio, rodando dentro do VS Code com o Claude Code.
 

@@ -11,7 +11,7 @@ export const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..',
 // Preco muda: conferir na pagina e trocar aqui, com a data nova. Modelo fora da tabela grava
 // os tokens com usd null, e quem le confere o preco.
 export const PRECOS = {
-  'gemini-3.8-flash': { entrada: 0.75, saida: 3.75, promocional_ate: '2026-12-31', depois: { entrada: 1.5, saida: 7.5 }, conferido_em: '2026-10-04' },
+  'gemini-3.8-flash': { entrada: 0.75, saida: 3.75, promocional_ate: '2026-12-31', depois: { entrada: 1.5, saida: 7.5 }, conferido_em: '2026-11-03' },
   'gemini-3.1-pro-preview': { entrada: 2, saida: 12, conferido_em: '2026-10-04' },
 }
 
