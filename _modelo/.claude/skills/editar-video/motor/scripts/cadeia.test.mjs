@@ -157,14 +157,136 @@ test('paginas-camadas grava paginas, palavras e duracao da voz em um JSON', () =
   assert.equal(j.palavras.length, 4)
 }))
 
+// decupagem do passo 3.2b (5.47): as tres secoes e uma linha "sim" com motivo por trecho
+function decupagem(d, trechos, { secoes = ['Assunto', 'Gancho', 'Arco'], motivo = 'fala inteira e de frente', extra = [] } = {}) {
+  const arq = join(d, 'decupagem.md')
+  writeFileSync(arq, ['# Decupagem', '', ...secoes.flatMap((s) => [`## ${s}`, 'texto da secao', '']), '## Cortes', '',
+    '| trecho | fica | motivo |', '|---|---|---|', ...trechos.map((t) => `| ${t} | sim | ${motivo} |`), ...extra, ''].join('\n'))
+  return ['--decupagem', arq]
+}
+
 test('montar-blocos junta os trechos e imprime os cortes medidos', () => comTemp((d) => {
   const bruto = join(d, 'bruto.mp4'), sai = join(d, 'montado.mp4')
   ff('-f', 'lavfi', '-i', 'testsrc2=s=320x568:r=30:d=4', '-f', 'lavfi', '-i', 'sine=f=300:d=4', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', bruto)
-  const r = py('montar-blocos.py', [bruto, sai, '0.5:1.5', '2.5:3.5'])
+  const r = py('montar-blocos.py', [bruto, sai, '0.5:1.5', '2.5:3.5', ...decupagem(d, ['0.5:1.5', '2.5:3.5'])])
   assert.equal(r.status, 0, semTraco(r.stderr))
   assert.match(r.stdout, /2 blocos/)
   assert.ok(existsSync(sai))
   assert.ok(Math.abs(Number(sonda(sai, { sel: 'v:0', campo: 'width' })) - 1080) < 1)
+  // o corte da decupagem e o final, sem folga somada: 1 s + 1 s
+  assert.ok(Math.abs(duracao(sai) - 2) < 0.1, String(duracao(sai)))
+}))
+
+test('5.47: montar-blocos recusa sem decupagem, com trecho fora dela, sem motivo, sem secao e com sobreposicao', () => comTemp((d) => {
+  const bruto = join(d, 'bruto.mp4'), sai = join(d, 'montado.mp4')
+  ff('-f', 'lavfi', '-i', 'testsrc2=s=320x568:r=30:d=4', '-f', 'lavfi', '-i', 'sine=f=300:d=4', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', bruto)
+  const recusa = (args, padrao) => {
+    const r = py('montar-blocos.py', [bruto, sai, ...args])
+    assert.notEqual(r.status, 0, 'devia recusar: ' + args.join(' '))
+    assert.match(semTraco(r.stderr), padrao)
+    assert.equal(existsSync(sai), false)
+  }
+  recusa(['0.5:1.5'], /--decupagem/)
+  recusa(['0.5:1.5', '--decupagem', join(d, 'nao-existe.md')], /assista o cru/)
+  recusa(['0.5:1.5', '2.5:3.5', ...decupagem(d, ['0.5:1.5'])], /2[.]5:3[.]5 nao esta na tabela/)
+  recusa(['0.5:1.5', ...decupagem(d, ['0.5:1.5', '2.5:3.5'])], /marca 2[.]5:3[.]5 como 'sim', mas ele nao foi passado/)
+  recusa(['0.5:1.5', ...decupagem(d, ['0.5:1.5'], { motivo: '' })], /sem motivo/)
+  recusa(['0.5:1.5', ...decupagem(d, ['0.5:1.5'], { secoes: ['Assunto', 'Arco'] })], /Gancho/)
+  recusa(['0.5:1.6', '1.5:2.5', ...decupagem(d, ['0.5:1.6', '1.5:2.5'])], /se sobrepoem/)
+  // canario: a mesma tabela com a linha "nao" a mais e trechos encostados monta
+  const r = py('montar-blocos.py', [bruto, sai, '0.5:1.5', '1.5:2.5', ...decupagem(d, ['0.5:1.5', '1.5:2.5'], { extra: ['| 2.6:3.5 | nao | tropeco, repetiu depois |'] })])
+  assert.equal(r.status, 0, semTraco(r.stderr))
+}))
+
+test('5.47: achar_trechos divide o corrido nas pausas curtas e deixa a gravacao com silencio como era', () => comTemp((d) => {
+  const r = funcaoDoPy('blocos.py', 'achar_trechos', [
+    'J = 20  # janelas por segundo (passo 0,05 s)',
+    '# com silencio: 3 frases de 2 s com 2 s de silencio (-60 dB) entre elas',
+    'db = np.full(14 * J, -60.0)',
+    'for ini in (1, 5, 9): db[ini * J:(ini + 2) * J] = -10',
+    'piso, t = f(db)',
+    'assert [(round(i, 2), round(fim, 2)) for i, fim in t] == [(1.0, 3.0), (5.0, 7.0), (9.0, 11.0)], t',
+    '# corrido: 20 s de fala sem silencio, com uma pausa de 0,2 s (-25 dB) a cada 1,5 s: o percentil 10 cai na fala',
+    'db = np.full(20 * J, -10.0)',
+    'for k in range(1, 13): db[int(k * 1.5 * J):int(k * 1.5 * J) + 4] = -25',
+    'piso, t = f(db, max_frase=7.0)',
+    'assert len(t) >= 3 and max(fim - i for i, fim in t) <= 7.0, t',
+    'assert all(t[k][1] <= t[k + 1][0] for k in range(len(t) - 1)), t',
+    'piso, t1 = f(db, max_frase=1e9)',
+    'assert len(t1) == 1, t1  # canario: sem o limite, o corrido vira um trecho so',
+    '# ruido de fundo alto entre frases (-20 dB) passa no limiar global; o local separa as frases',
+    'db = np.full(30 * J, -60.0); db[4 * J:26 * J] = -20',
+    'for ini in (5, 12, 19): db[ini * J:(ini + 3) * J] = -7',
+    'piso, t1 = f(db, max_frase=1e9)',
+    'assert len(t1) == 1, t1  # canario: no limiar global o ruido e fala e vira um trecho so de 22 s',
+    'piso, t = f(db, max_frase=7.0)',
+    'assert [(round(i, 2), round(fim, 2)) for i, fim in t] == [(5.0, 8.0), (12.0, 15.0), (19.0, 22.0)], t',
+    '# pausa curta a 0,4 s do comeco: partir ali deixaria um pedaco menor que o minimo, que sumiria (achado da comum)',
+    'db = np.full(160, -10.0); db[8:12] = -30',
+    'piso, t = f(db, max_frase=7.0)',
+    'assert round(t[0][0], 2) == 0.0 and round(t[-1][1], 2) == 8.0, t',
+    '# fala de 0,4 s separada por 0,6 s no limiar local: gruda no vizinho em vez de sumir (achado da final)',
+    'db = np.full(240, -60.0); db[20:220] = -10; db[28:40] = -30',
+    'piso, t = f(db, max_frase=7.0)',
+    'assert round(t[0][0], 2) == 1.0 and round(t[-1][1], 2) == 11.0, t',
+    '# fala mais baixa nas bordas sem frase a separar: o trecho fica inteiro (segunda volta da final)',
+    'db = np.full(260, -60.0); db[20:240] = -10; db[20:60] = -25; db[200:240] = -25',
+    'piso, t = f(db, max_frase=7.0)',
+    'assert round(t[0][0], 2) == 1.0 and round(t[-1][1], 2) == 12.0, t',
+    'print("ok")',
+  ].join('\n'), d)
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.match(r.stdout, /ok/)
+}))
+
+test('5.47: assistir-cru a 25 fps pega quadro em tempo entre dois quadros, sem borda preta (achado da comum)', () => comTemp((d) => {
+  const bruto = join(d, 'bruto.mp4'), blocos = join(d, 'blocos.md'), cru = join(d, 'cru')
+  ff('-f', 'lavfi', '-i', 'color=c=white:s=320x568:r=25:d=4', '-f', 'lavfi', '-i', 'sine=f=300:d=4', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', bruto)
+  // inicio 1,02: o corte sugerido cai em 0,82, entre os quadros de 0,80 e 0,84
+  writeFileSync(blocos, ['| n | inicio (s) | fim (s) | dur (s) | whisper |', '|---|---|---|---|---|', '| 1 | 1.02 | 2.02 | 1.00 | frase |', ''].join('\n'))
+  const r = py('assistir-cru.py', [bruto, blocos, cru])
+  assert.equal(r.status, 0, semTraco(r.stderr))
+  assert.match(readFileSync(join(cru, 'bordas.md'), 'utf8'), /0[.]82:2[.]17/, 'canario: o corte sugerido cai entre dois quadros')
+  // 6 quadros de 216 de largura; o miolo de cada um (fora do rotulo de baixo) tem de ser branco
+  const px = spawnSync('ffmpeg', ['-v', 'error', '-i', join(cru, 'tira-01.jpg'), '-f', 'rawvideo', '-pix_fmt', 'gray', '-'], { maxBuffer: 1 << 24 }).stdout
+  for (let k = 0; k < 6; k++) {
+    let soma = 0
+    for (let y = 50; y < 300; y++) for (let x = k * 216 + 20; x < k * 216 + 196; x++) soma += px[y * 1296 + x]
+    assert.ok(soma / (250 * 176) > 200, `quadro ${k + 1} da tira saiu escuro: ${soma / (250 * 176)}`)
+  }
+}))
+
+test('5.47: assistir-cru grava folhas, uma tira por trecho e o bordas.md com o corte sugerido sem invadir o vizinho', () => comTemp((d) => {
+  const bruto = join(d, 'bruto.mp4'), blocos = join(d, 'blocos.md'), cru = join(d, 'cru')
+  ff('-f', 'lavfi', '-i', 'testsrc2=s=320x568:r=30:d=6', '-f', 'lavfi', '-i', 'sine=f=300:d=6', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', bruto)
+  writeFileSync(blocos, ['| n | inicio (s) | fim (s) | dur (s) | whisper |', '|---|---|---|---|---|',
+    '| 1 | 1.00 | 2.00 | 1.00 | primeira frase |', '| 2 | 2.10 | 3.00 | 0.90 | segunda frase |', ''].join('\n'))
+  const r = py('assistir-cru.py', [bruto, blocos, cru])
+  assert.equal(r.status, 0, semTraco(r.stderr))
+  assert.ok(existsSync(join(cru, 'folha-01.jpg')))
+  assert.ok(existsSync(join(cru, 'tira-01.jpg')) && existsSync(join(cru, 'tira-02.jpg')))
+  const md = readFileSync(join(cru, 'bordas.md'), 'utf8')
+  // folga de 0,15 s e 0,20 s cortada no meio da pausa de 0,10 s: 2,05 dos dois lados
+  assert.match(md, /[|] 1 [|] 1[.]00:2[.]00 [|] 0[.]80:2[.]05 [|]/)
+  assert.match(md, /[|] 2 [|] 2[.]10:3[.]00 [|] 2[.]05:3[.]15 [|]/)
+  // a imagem de teste nao tem rosto: a borda sai marcada
+  assert.match(md, /sem rosto em 0[.]80/)
+  // de novo na mesma pasta com um trecho so: a tira 2 da rodada anterior sai (achado da final)
+  writeFileSync(blocos, ['| n | inicio (s) | fim (s) | dur (s) | whisper |', '|---|---|---|---|---|', '| 1 | 1.00 | 2.00 | 1.00 | primeira frase |', ''].join('\n'))
+  const r2 = py('assistir-cru.py', [bruto, blocos, cru])
+  assert.equal(r2.status, 0, semTraco(r2.stderr))
+  assert.ok(existsSync(join(cru, 'tira-01.jpg')), 'canario: a tira 1 foi gravada de novo')
+  assert.equal(existsSync(join(cru, 'tira-02.jpg')), false, 'a tira 2 da rodada anterior ficou na pasta')
+  const m = funcaoDoPy('assistir-cru.py', 'marca_rosto', [
+    'frente = np.array([[0, 0, 100, 100, 40, 40, 60, 40, 50, 55, 0, 0, 0, 0, 0.9]])',
+    'virado = np.array([[0, 0, 100, 100, 40, 40, 60, 40, 58, 55, 0, 0, 0, 0, 0.9]])',
+    'assert f(frente) == "", f(frente)',
+    'assert f(virado) == "virado", f(virado)',
+    'assert f(None) == "sem rosto"',
+    'print("ok")',
+  ].join('\n'), d)
+  assert.equal(m.status, 0, semTraco(m.stderr) + semTraco(m.stdout))
+  assert.match(m.stdout, /ok/)
 }))
 
 // P1: caixa branca (largura x altura) do quadrado no primeiro quadro, em cinza
@@ -193,7 +315,7 @@ const quadrado = (c) => Math.abs(c.l / c.a - 1) < 0.05
 
 test('P1: canario, o bruto vertical de controle sai com o quadrado quadrado e sem aviso', () => comTemp((d) => {
   const b = brutoQuadrado(d, 'vert.mp4', '360x640'), s = join(d, 's.mp4')
-  const r = py('montar-blocos.py', [b, s, '0.3:1.5'])
+  const r = py('montar-blocos.py', [b, s, '0.3:1.5', ...decupagem(d, ['0.3:1.5'])])
   assert.equal(r.status, 0, semTraco(r.stderr))
   assert.doesNotMatch(r.stdout, /aviso/)
   const c = caixaBranca(s)
@@ -202,7 +324,7 @@ test('P1: canario, o bruto vertical de controle sai com o quadrado quadrado e se
 
 test('P1: corte central, bruto deitado sai cortado no centro, sem esticar, e avisa', () => comTemp((d) => {
   const b = brutoQuadrado(d, 'deitado.mp4', '640x360'), s = join(d, 's.mp4')
-  const r = py('montar-blocos.py', [b, s, '0.3:1.5'])
+  const r = py('montar-blocos.py', [b, s, '0.3:1.5', ...decupagem(d, ['0.3:1.5'])])
   assert.equal(r.status, 0, semTraco(r.stderr))
   assert.match(r.stdout, /fora de 9:16/)
   assert.equal(sonda(s, { sel: 'v:0', campo: 'sample_aspect_ratio' }), '1:1')
@@ -212,7 +334,7 @@ test('P1: corte central, bruto deitado sai cortado no centro, sem esticar, e avi
 
 test('P1: corte central, bruto quadrado sai cortado no centro, sem esticar', () => comTemp((d) => {
   const b = brutoQuadrado(d, 'q.mp4', '480x480'), s = join(d, 's.mp4')
-  const r = py('montar-blocos.py', [b, s, '0.3:1.5'])
+  const r = py('montar-blocos.py', [b, s, '0.3:1.5', ...decupagem(d, ['0.3:1.5'])])
   assert.equal(r.status, 0, semTraco(r.stderr))
   assert.match(r.stdout, /fora de 9:16/)
   const c = caixaBranca(s)
@@ -224,7 +346,7 @@ test('P1: corte central com rotacao do celular, em pe gravado com rotacao nao av
   const emPe = girar(d, deit, 'empe-rot.mp4'), deitRot = girar(d, vert, 'deitado-rot.mp4')
   assert.match(spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'stream_side_data=rotation', '-of', 'csv=p=0', emPe], { encoding: 'utf8' }).stdout, /90/, 'canario: a rotacao nao foi gravada')
   const s1 = join(d, 's1.mp4'), s2 = join(d, 's2.mp4')
-  const r1 = py('montar-blocos.py', [emPe, s1, '0.3:1.5']), r2 = py('montar-blocos.py', [deitRot, s2, '0.3:1.5'])
+  const r1 = py('montar-blocos.py', [emPe, s1, '0.3:1.5', ...decupagem(d, ['0.3:1.5'])]), r2 = py('montar-blocos.py', [deitRot, s2, '0.3:1.5', ...decupagem(d, ['0.3:1.5'])])
   assert.equal(r1.status, 0, semTraco(r1.stderr)); assert.equal(r2.status, 0, semTraco(r2.stderr))
   assert.doesNotMatch(r1.stdout, /fora de 9:16/)
   assert.match(r2.stdout, /fora de 9:16/)
@@ -253,7 +375,7 @@ for (const trc of ['arib-std-b67', 'smpte2084']) {
     const filtros = spawnSync('ffmpeg', ['-hide_banner', '-filters'], { encoding: 'utf8' }).stdout
     assert.ok(/\szscale\s/.test(filtros) && /\stonemap\s/.test(filtros), 'este ffmpeg nao tem zscale; rode /configurar-video')
     const s = join(d, 's.mp4')
-    const r = py('montar-blocos.py', [brutoHdr(d, trc), s, '0.3:1.5'])
+    const r = py('montar-blocos.py', [brutoHdr(d, trc), s, '0.3:1.5', ...decupagem(d, ['0.3:1.5'])])
     assert.equal(r.status, 0, semTraco(r.stderr))
     assert.match(r.stdout, /HDR .*convertido/)
     assert.equal(sonda(s, { sel: 'v:0', campo: 'color_transfer' }), 'bt709')
@@ -265,7 +387,7 @@ for (const trc of ['arib-std-b67', 'smpte2084']) {
 
 test('P1: HDR sem zscale sai remarcado em bt709 com aviso de cor lavada', () => comTemp((d) => {
   const s = join(d, 's.mp4')
-  const r = py('montar-blocos.py', [brutoHdr(d, 'arib-std-b67'), s, '0.3:1.5'], { env: { ...ENV, EDITAR_VIDEO_SEM_ZSCALE: '1' } })
+  const r = py('montar-blocos.py', [brutoHdr(d, 'arib-std-b67'), s, '0.3:1.5', ...decupagem(d, ['0.3:1.5'])], { env: { ...ENV, EDITAR_VIDEO_SEM_ZSCALE: '1' } })
   assert.equal(r.status, 0, semTraco(r.stderr))
   assert.match(r.stdout, /nao tem o filtro zscale/)
   assert.equal(sonda(s, { sel: 'v:0', campo: 'color_transfer' }), 'bt709')
@@ -837,7 +959,7 @@ test('scripts que gravam arquivo criam a pasta de saida que ainda nao existe (al
 }))
 
 test('todo .py que grava arquivo pela linha de comando cria a pasta antes', () => {
-  const gravam = ['alinhar.py', 'blocos.py', 'camera_lenta.py', 'chroma.py', 'mix-final.py', 'montar-blocos.py', 'paginas-camadas.py', 'paginas-legenda.py', 'preparar-props.py', 'profundidade.py', 'sincronizar-bruto.py', 'tratar-voz.py', 'guias-olhada.py']
+  const gravam = ['alinhar.py', 'assistir-cru.py', 'blocos.py', 'camera_lenta.py', 'chroma.py', 'mix-final.py', 'montar-blocos.py', 'paginas-camadas.py', 'paginas-legenda.py', 'preparar-props.py', 'profundidade.py', 'sincronizar-bruto.py', 'tratar-voz.py', 'guias-olhada.py']
   for (const nome of gravam) assert.match(readFileSync(script(nome), 'utf8'), /os\.makedirs\(/, nome)
 })
 

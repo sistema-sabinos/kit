@@ -29,7 +29,10 @@ O que vale para os dois jeitos vem primeiro. Depois vem o que muda em cada um.
   É a checagem mais barata de todas.
 - **Fale frase por frase.** Dê 2 segundos de silêncio entre uma frase e outra. Se
   errar, respire, espere 2 segundos e repita a frase do começo, sem parar a
-  gravação. O sistema acha esses silêncios e corta o erro.
+  gravação. O sistema acha esses silêncios e corta o erro. Gravar corrido, sem
+  parar entre as frases, também funciona: o sistema acha as pausas curtas entre
+  elas. Mas é com o silêncio que o corte sai mais limpo, e errou, repita a frase
+  inteira.
 - **Comece já falando e termine antes de virar o rosto** para ler o roteiro.
   Cabeça virando ou olhar parado no começo e no fim das frases denuncia que é
   leitura.

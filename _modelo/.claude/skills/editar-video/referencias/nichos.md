@@ -49,6 +49,22 @@ não pede destaque fica sem nada por cima além da legenda.
   importa.
 - Abertura forte: `abertura` com zoom maior e a primeira `chaves` já no segundo 1.
 
+## Opinião ou comentário (criador de YouTube e Shorts)
+
+- A opinião em uma frase abre o vídeo, com a primeira `chaves` nela: quem rola o
+  feed decide ali se fica.
+- O assunto comentado (manchete, post, trecho de vídeo) entra em `segmentos`, curto,
+  com a fonte escrita na tela; a pessoa volta logo pra dar a opinião.
+- Cada argumento ganha uma `chaves` com a palavra dele; o mais forte vai por último.
+- Fecho com pergunta pra comentar ("e você, concorda?") num `cartoes` com o pop.
+
+## Vlog e dia a dia (criador de YouTube e Shorts)
+
+- Clipes curtos do dia em `segmentos`, com a voz por cima contando o que acontece;
+  a pessoa falando pra câmera amarra um clipe no outro.
+- O momento-chave do dia vira a primeira `chaves`, já no começo, como promessa.
+- Hora ou lugar entram num `cartoes` pequeno, quando ajudam a seguir a história.
+
 ## Anúncio de produto
 
 - O nome do produto é a primeira `chaves`; preço e condição vão num `cartoes`.

@@ -86,14 +86,15 @@ Todos os comandos abaixo que começam assim servem para os dois sistemas
    - **Fale com "você"**, de forma solta, como conversa. Termo técnico só se for
      explicado.
    - **A última frase puxa a seguinte**, e o fecho é uma chamada ligada à promessa
-     do vídeo ("se você vende pela internet, me segue").
+     do vídeo ("se você quer mais dicas assim, me segue" ou, num canal de
+     opinião, "comenta aqui o que você acha").
    - O tempo é o que o conteúdo pede. Corte o que dá para tirar sem perder nada.
    - Número, preço e regra de plataforma entram conferidos na fonte, no dia.
    - Se o assunto é saúde, suplemento, emagrecimento ou dinheiro, passe pelo
      "Promessa e regras" de `referencias/checklist-qc.md` antes de mostrar.
    - Escreva `roteiro.md` como tabela com as colunas **Fala**, **Na tela** e
      **Som**. A coluna "Na tela" diz o gráfico ou o recurso de cada frase; as
-     ideias por tipo de vídeo (aula, receita, anúncio, review, depoimento e outros)
+     ideias por tipo de vídeo (aula, opinião, vlog, receita, anúncio, review e outros)
      estão em `referencias/nichos.md`.
 5. **Roteiro que veio da `/pauta`.** Ele tem outras colunas:
    `Bloco | Fala (literal) | O que aparece na tela | Duracao`. Leia assim:
@@ -197,23 +198,36 @@ texto com o whisper:
 node .claude/skills/editar-video/scripts/py.mjs blocos.py producao/<slug>/bruto/<arquivo>.mp4 producao/<slug>/trab/blocos.md --modelo <modelo>
 ```
 
-Saiu uma tabela (número, início, fim, duração e texto de cada bloco). Escolha os
-blocos que ficam. Fala fora do roteiro que completa a frase fica ("olha isso
-aqui", "e o mais importante"). Só sai erro de fala: tropeço, palavra trocada,
-frase cortada no meio.
+Saiu uma tabela (número, início, fim, duração e texto de cada bloco). Serve para
+gravação frase por frase e para gravação corrida: trecho longo se divide sozinho
+nas pausas curtas. Ainda não escolha nada.
 
-**3.3 Montar a fala.** Junte os blocos escolhidos (cada um com 0,20 s antes e
-0,15 s depois):
+**3.2b Assistir o cru.** Antes de cortar, veja o vídeo inteiro como um editor:
 
 ```
-node .claude/skills/editar-video/scripts/py.mjs montar-blocos.py producao/<slug>/bruto/<arquivo>.mp4 producao/<slug>/trab/fala-montada.mp4 <ini>:<fim> <ini>:<fim>
+node .claude/skills/editar-video/scripts/py.mjs assistir-cru.py producao/<slug>/bruto/<arquivo>.mp4 producao/<slug>/trab/blocos.md producao/<slug>/trab/cru
 ```
 
-Ele imprime a duração e os cortes medidos de verdade. Guarde esses números: são os
-`cortesSeg` do estilo cenário próprio. Corte onde a pessoa já está falando e
-termine antes de ela virar o rosto para ler: aumente `--antes` ou `--depois` se
-preciso, e abra um quadro de cada borda para conferir. Se ele avisar HDR ou fora
-de 9:16, abra um quadro e mostre ao aluno.
+Leia `referencias/decupagem.md` e siga o que ele manda: abra as folhas e as
+tiras de `trab/cru/`, com o `trab/cru/bordas.md` do lado, e grave
+`producao/<slug>/trab/decupagem.md` (assunto, gancho, arco, takes repetidos e a
+tabela de cortes, com o corte final de cada trecho).
+
+**3.2c Mapa do corte.** Mostre ao aluno, em até 5 linhas: o que fica, o que sai,
+se algo mexe no roteiro aprovado e por quê. Pergunte "Posso montar assim?" e só
+siga com o sim.
+
+**3.3 Montar a fala.** Junte os trechos `sim` da decupagem, com o corte final de
+cada um, na ordem da tabela:
+
+```
+node .claude/skills/editar-video/scripts/py.mjs montar-blocos.py producao/<slug>/bruto/<arquivo>.mp4 producao/<slug>/trab/fala-montada.mp4 <ini>:<fim> <ini>:<fim> --decupagem producao/<slug>/trab/decupagem.md
+```
+
+Ele recusa sem a decupagem, com trecho fora dela e com trechos que repetiriam
+fala: corrija o `decupagem.md` e rode de novo. Ele imprime a duração e os cortes
+medidos de verdade. Guarde esses números: são os `cortesSeg` do estilo cenário
+próprio. Se ele avisar HDR ou fora de 9:16, abra um quadro e mostre ao aluno.
 
 **3.4 Voz limpa.** Tira ruído e nivela o volume:
 
@@ -510,6 +524,7 @@ projeto e avise o aluno do que mudou.
 ## Referências
 
 - `referencias/receita-gravacao.md`: como gravar (cenário próprio e fundo verde).
+- `referencias/decupagem.md`: assistir o cru e escolher os cortes (só no passo 3.2b).
 - `referencias/camadas.md`: o estilo do fundo verde, passo a passo.
 - `referencias/videov2.md`: o `edicao.json` do cenário próprio, campo por campo.
 - `referencias/movimento.md`: zoom, corte e abertura.

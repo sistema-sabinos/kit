@@ -1,5 +1,5 @@
 {
- "versao": "5.38",
+ "versao": "5.39",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -1139,7 +1139,7 @@
    "66ea8160e98d55fc": "anterior-4.1",
    "7a1e2048e8c2ce10": "5.17",
    "88d396d7c2ece819": "anterior-4.1",
-   "97ac5369730a2605": "5.38",
+   "97ac5369730a2605": "anterior-5.38",
    "ba4c5563cd046633": "anterior-5.36",
    "c60a74eac85d8bb8": "anterior-4.1",
    "c6f1609608b21fc9": "anterior-4.1",
@@ -1290,6 +1290,7 @@
    "a6e531245cdbec57": "5.15",
    "a738a4269d0a195a": "anterior-5.17",
    "af7449311c2006a5": "5.33",
+   "bc628cbda1c6c229": "5.39",
    "df0097b3f3560d30": "5.14"
   },
   ".claude/skills/editar-video/motor/.gitignore": {
@@ -1322,9 +1323,18 @@
    "c33e6cf4672f6e13": "4.1",
    "fe284cca349f6711": "5.18"
   },
+  ".claude/skills/editar-video/motor/scripts/assistir-cru.py": {
+   "296bbfcd608979f0": "5.39",
+   "3dce366cb4e82fdc": "5.39",
+   "574e3c10d729b077": "5.39"
+  },
   ".claude/skills/editar-video/motor/scripts/blocos.py": {
    "1d15f5c7a2702fb3": "anterior-4.1",
-   "83e5770487c547c3": "4.1"
+   "213faa0cc402c7b3": "5.39",
+   "4d0731bb5a5e32cf": "5.39",
+   "6f1ca91cc9e6f629": "5.39",
+   "83e5770487c547c3": "4.1",
+   "9b03544e60c0fe7f": "5.39"
   },
   ".claude/skills/editar-video/motor/scripts/camera_lenta.py": {
    "13615726a168b266": "5.17"
@@ -1379,6 +1389,7 @@
   ".claude/skills/editar-video/motor/scripts/montar-blocos.py": {
    "46a792634d2ae125": "anterior-4.1",
    "4b2867b4e5aa32e9": "5.17",
+   "dc3e2f30b38c182f": "5.39",
    "f7c7f34b1b2accf3": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/paginas-camadas.py": {
@@ -1490,16 +1501,22 @@
    "e8d9b98fa7170f83": "4.1",
    "fb97afbf39144f2a": "anterior-5.17"
   },
+  ".claude/skills/editar-video/referencias/decupagem.md": {
+   "6375ac45f994b4b0": "5.39",
+   "f7c404156f905484": "5.39"
+  },
   ".claude/skills/editar-video/referencias/movimento.md": {
    "f56c6ba8a159cfe1": "4.1"
   },
   ".claude/skills/editar-video/referencias/nichos.md": {
    "07e6795a177338f5": "anterior-5.17",
-   "b034216e1088b0c0": "5.17"
+   "b034216e1088b0c0": "5.17",
+   "b04f4ca4de6c3c6e": "5.39"
   },
   ".claude/skills/editar-video/referencias/receita-gravacao.md": {
    "2b22b103030ba5b3": "anterior-4.1",
-   "ccf32302761cbe6b": "4.1"
+   "ccf32302761cbe6b": "4.1",
+   "ef93361077278af1": "5.39"
   },
   ".claude/skills/editar-video/referencias/som.md": {
    "3555e27848d24f2e": "5.17",
