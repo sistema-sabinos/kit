@@ -18,6 +18,7 @@ import { montarPlano, brasiliaParaUTC, utcDeBrasilia, linhasValidas, gravarPubli
 
 const FILA_GRATIS = 10
 const SCRIPT = 'node .claude/skills/publicar-social/scripts/publicar-social.mjs'
+export const SEM_CONFIRMAR = 'Barrada pela trava publicar-social, regra confirmar: simulacao, nada subiu nem agendou; pra valer, repetir com --confirmar depois do "pode ir". Diga ao usuario o nome da trava e da regra e decida o proximo passo; nao refaca esta acao por outro caminho.'
 
 export function argumentos(v) {
   const a = { pasta: null, quando: null, capa: null, redes: null, confirmar: false, substituir: false, apagar: null }
@@ -178,7 +179,8 @@ async function main(v) {
   if (!existsSync(dir)) throw new Error(`nao achei producao/${a.pasta}`)
   const plano = montarPlano({ dir, quando: a.quando, capa: a.capa, redes: a.redes, config })
   mostrar(plano, a.quando)
-  if (!a.confirmar) { console.log('\nSimulacao. Nada subiu nem agendou. Pra valer: repetir com --confirmar, depois do "pode ir".'); return }
+  // 5.49 (bloco C, 2026-11-03): a parada sem --confirmar sai no formato das travas do kit
+  if (!a.confirmar) { console.log(`\n${SEM_CONFIRMAR}`); return }
   exigir({ config, env }, ['organizacao_buffer'])
   const arqPub = join(dir, 'publicacao.md')
   const org = config.organizacao_buffer

@@ -6,7 +6,7 @@ import { join, relative, dirname, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { hashArquivo, ignorado, componenteDe } from './atualizar-projeto.mjs'
+import { hashArquivo, ignorado, componenteDe, vaiNaTabelaMae } from './atualizar-projeto.mjs'
 // a mesma lista de cara de chave do backup automatico do aluno: o zip nunca sai com o que
 // o backup dele seguraria
 import { caraDeChave } from '../_modelo/.claude/hooks/auto-sync.mjs'
@@ -18,6 +18,7 @@ const CAMPOS_MUDANCA = ['O que é', 'Por quê', 'Te afeta se', 'Como aplicar', '
 // e no repositorio publico, e a lista escrita aqui seria ela mesma o vazamento. Na pasta-mae
 // do aluno o arquivo nao existe, a lista fica vazia e so os detectores estruturais rodam.
 const CAMINHO_PROIBIDOS = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'bancada', 'proibidos.json')
+const GERADOR_IMPRESSOES = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'bancada', 'gerar-impressoes.mjs')
 
 export function carregarProibidos(caminho = CAMINHO_PROIBIDOS) {
   if (!existsSync(caminho)) return []
@@ -688,23 +689,12 @@ export function rodarGates(dirKit, opcoes = {}) {
 
   // Gate 9: travas de seguranca do settings.json.
   // Protegem o aluno na origem, em vez de so avisar depois que o estrago aconteceu.
-  // Rodada 5.28 (ata, T5): o .env vai em deny. A pessoa cola a chave e o script grava; a regra de
-  // permissao nao alcanca script (doc de permissions, conferida na sonda C1c: deny de Read barra Read,
-  // cat, Edit e Write no caminho, vale no bypassPermissions, e um node lendo o arquivo segue rodando).
-  // O Read(./.env) fica mesmo coberto pelo Read(**/.env), porque o "Te afeta se" do mudancas.md o procura
-  // pelo nome; o Read(./.env.*) fica fora (D6), e o .env.example segue legivel. O ask antigo que a pessoa
-  // ja tinha fica inerte, porque o deny vale antes do ask, e por isso o gate nao o acusa: o /atualizar-kit
-  // nunca tira nada da pessoa. Sessao de navegador e o perfil do Chrome do dia a dia tambem vao em deny
-  // (a forma ~/ provada na sonda C1c). A trava do MCP (barrar-mcp, T2 a T4) vai nos dois settings, pra
-  // toda ferramenta de todo servidor, com onFailure block (hook que nao sobe barra a chamada), e o
-  // run_code_unsafe dos dois servidores do Playwright MCP fica em deny, segunda camada se o hook sumir.
-  const DENY_OBRIGATORIO = ['Read(./.env)', 'Read(**/.env)', 'Read(**/.env.local)', 'Read(**/.env.*.local)', 'Read(./secrets/**)', 'Read(./.secrets/**)', 'Read(./dados/sessao/**)', 'Read(./dados/chrome-perfil/**)', 'Read(**/.auth/**)', 'Read(**/*.har)', 'Read(**/storage-state*.json)', 'Read(**/*totp*.json)', 'Read(~/AppData/Local/Google/Chrome/User Data/**)', 'Read(~/Library/Application Support/Google/Chrome/**)', 'mcp__playwright__browser_run_code_unsafe', 'mcp__navegador__browser_run_code_unsafe']
-  // 5.28 fechamento: a pasta-mae trabalha nos projetos de dentro dela (/syncar, /atualizar-kit), e a
-  // forma ./ so vale na raiz dela; ali as pastas de chave e de sessao vao na forma **/
-  const NA_MAE_EM_TODA_PASTA = ['Read(./secrets/**)', 'Read(./.secrets/**)', 'Read(./dados/sessao/**)', 'Read(./dados/chrome-perfil/**)']
+  // A trava do MCP (barrar-mcp, T2 a T4) vai nos dois settings, pra toda ferramenta de todo servidor,
+  // com onFailure block (hook que nao sobe barra a chamada).
+  // 5.49 (bloco B, 2026-11-03, blocos 1, 2 e 11): saiu a cobranca do deny de leitura (o .env, as
+  // pastas de chave e de sessao, o perfil do Chrome e o run_code_unsafe) e do SessionStart da anotacao do
+  // navegador. O gate segue so conferindo que o permissions, quando existe, traz listas.
   for (const rel of ['.claude/settings.json', '_modelo/.claude/settings.json']) {
-    const denyObrigatorio = rel.startsWith('_modelo/') ? DENY_OBRIGATORIO
-      : DENY_OBRIGATORIO.map(r => NA_MAE_EM_TODA_PASTA.includes(r) ? r.replace('Read(./', 'Read(**/') : r)
     const settings = join(dirKit, rel)
     if (!existsSync(settings)) continue
     let cfg
@@ -729,10 +719,6 @@ export function rodarGates(dirKit, opcoes = {}) {
       tipoOk = false
     }
     if (!tipoOk) continue
-    for (const regra of denyObrigatorio) {
-      if (!deny.includes(regra))
-        falhas.push({ gate: 9, arquivo: rel, detalhe: `permissions.deny sem a regra ${regra}` })
-    }
     const blocoMcp = ((cfg.hooks && cfg.hooks.PreToolUse) || []).find(entrada =>
       (entrada.hooks || []).some(h => typeof h.command === 'string' && h.command.includes('barrar-mcp')))
     if (!blocoMcp) {
@@ -743,14 +729,8 @@ export function rodarGates(dirKit, opcoes = {}) {
       if (!blocoMcp.hooks.some(h => typeof h.command === 'string' && h.command.includes('barrar-mcp') && h.onFailure === 'block'))
         falhas.push({ gate: 9, arquivo: rel, detalhe: 'barrar-mcp sem onFailure block' })
     }
-    // 5.31: sem a anotacao do SessionStart a conferencia do navegador barra sempre; o bloco vai sem
-    // matcher, senao a abertura nao anota (Codex final da 5.31)
-    const inicio = cfg.hooks && cfg.hooks.SessionStart
-    if (!(Array.isArray(inicio) && inicio.some(entrada => !entrada.matcher &&
-      (entrada.hooks || []).some(h => typeof h.command === 'string' && h.command.includes('barrar-mcp')))))
-      falhas.push({ gate: 9, arquivo: rel, detalhe: 'hooks.SessionStart sem o barrar-mcp (anotacao do navegador)' })
     // o hook de comando destrutivo nasce so no _modelo (a pasta que vira projeto do aluno);
-    // a pasta-mae faz setup e atualizacao, e leva a trava de leitura e a do MCP (5.28)
+    // a pasta-mae faz setup e atualizacao, e leva a do MCP (5.28; a de leitura saiu na 5.49)
     if (rel.startsWith('_modelo/')) {
       const pre = (cfg.hooks && cfg.hooks.PreToolUse) || []
       const entradaComBarreira = pre.find(entrada =>
@@ -803,6 +783,20 @@ export function rodarGates(dirKit, opcoes = {}) {
           falha10(rel, `impressao digital ausente: ${BANCADA}`)
         if (r.startsWith('.claude/') && !regras.mistos.includes(r) && !componenteDe(r, regras))
           falha10(rel, 'arquivo de .claude/ sem componente: o atualizador nunca o levaria')
+      }
+      // 5.49 (bloco 13, 2026-11-03): a tabela "mae" e o que deixa o /atualizar-kit dar um sim so ao
+      // que a pessoa nao mexeu na pasta-mae. Sem ela, ou sem o conteudo de hoje, tudo vira editado.
+      // So se confere na bancada, onde o gerador mora: na pasta-mae do aluno, nota dele em docs/ e
+      // skill que ele criou nunca tem impressao, e o aviso sairia falso em todo /atualizar-kit
+      // (o motor ja deixa esses de fora). 5.49 (bloco 13, 2026-11-03), revisao interna.
+      const BANCADA_MAE = 'rodar bancada/gerar-impressoes.mjs antes do zip'
+      if (!(opcoes.naBancada ?? existsSync(GERADOR_IMPRESSOES))) naoRodou.push({ gate: 10, parcial: true, motivo: 'a tabela mae so se confere na bancada (normal fora da bancada)' })
+      else if (!imp.mae || typeof imp.mae !== 'object') falha10('_ferramentas/impressoes.json', `sem a tabela mae: ${BANCADA_MAE}`)
+      else {
+        for (const rel of arquivos) {
+          if (vaiNaTabelaMae(rel, regras) && !imp.mae[rel]?.[hashArquivo(readFileSync(join(dirKit, rel)))])
+            falha10(rel, `impressao digital ausente na tabela mae: ${BANCADA_MAE}`)
+        }
       }
       for (const [nome, c] of Object.entries(regras.componentes)) {
         for (const dep of c.depende) if (!regras.componentes[dep]) falha10('_ferramentas/componentes.json', `${nome} depende de ${dep}, que nao existe`)

@@ -33,7 +33,8 @@ Serve em dois momentos: antes de escolher produto, pra entender o nicho; e na
 - Pra parte paga, `GEMINI_API_KEY` no `.env` (o `/conectar` ensina). O gasto
   respeita o orçamento do mês do projeto (`_contexto/orcamento.md`) quando ele
   existe; sem ele, vale o `limite_gasto_usd` de `_contexto/mercado-livre.md`
-  como teto de cada rodada
+  como teto de cada rodada. Passou do teto: mostrar o valor, pedir o "pode ir"
+  citando ele e rodar com `--acima-do-teto <valor>` junto do `--ver --sim`
 
 ## Fluxo
 

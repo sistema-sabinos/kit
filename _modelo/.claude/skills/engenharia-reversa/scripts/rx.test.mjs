@@ -145,13 +145,13 @@ function trava({ tipo = 'lote', usd = 2, saldo = 10 } = {}) {
   return t
 }
 
-function portao({ modelo = 'gemini-3.8-flash', fotos = 160, sim = false, devolve = { fichas: { A: [] }, gasto_usd: 0, parou: false, incertas: 0 }, t = trava() } = {}) {
+function portao({ modelo = 'gemini-3.8-flash', fotos = 160, sim = false, acimaDoTeto, devolve = { fichas: { A: [] }, gasto_usd: 0, parou: false, incertas: 0 }, t = trava() } = {}) {
   const chamadas = []
   const porAnuncio = [{ id: 'A', titulo: 't', fotos: Array(fotos).fill('f.jpg') }]
   return {
     chamadas,
     t,
-    rodar: () => passoVer({ porAnuncio, chave: 'k', hoje: '2026-10-04', sim, descobrir: async () => modelo, liberar: t.liberar, fechar: t.fechar,
+    rodar: () => passoVer({ porAnuncio, chave: 'k', hoje: '2026-10-04', sim, acimaDoTeto, descobrir: async () => modelo, liberar: t.liberar, fechar: t.fechar,
       ver: async (lista, op, extra) => { chamadas.push([op.modelo, extra.limite, op.reserva]); if (devolve instanceof Error) throw devolve; return devolve } }),
   }
 }
@@ -178,6 +178,16 @@ test('passoVer: modelo fora da tabela e estimativa acima do limite param sem gas
   assert.equal(r2.codigo, 3)
   assert.match(r2.saida.parou, /limite_gasto_usd/)
   assert.deepEqual([...fora.chamadas, ...caro.chamadas], [])
+})
+
+// 5.49 (bloco C, 2026-11-03): o --acima-do-teto chega a trava como acimaDoTetoUsd
+test('passoVer repassa o --acima-do-teto pra trava do gasto', async () => {
+  const p = portao({ sim: true, acimaDoTeto: 1.5 })
+  await p.rodar()
+  assert.deepEqual(p.t.pedidos, [{ estimativaUsd: 1.03, autorizado: true, acimaDoTetoUsd: 1.5 }])
+  assert.equal(argumentos(['--termo', 'x', '--ver', '--sim', '--acima-do-teto', '2,5']).acimaDoTeto, 2.5)
+  assert.throws(() => argumentos(['--termo', 'x', '--ver', '--sim', '--acima-do-teto', 'muito']), /--acima-do-teto precisa do valor/)
+  assert.throws(() => argumentos(['--termo', 'x', '--ver', '--acima-do-teto', '2']), /so vale junto com --ver --sim/)
 })
 
 // D56: o orcamento do mes manda; nao cabe, nem com --sim chega no Gemini

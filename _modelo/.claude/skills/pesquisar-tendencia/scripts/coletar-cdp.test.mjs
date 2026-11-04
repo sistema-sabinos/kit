@@ -7,6 +7,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { argumentos, lerEntrada, urlDaBusca, chaveDoAnuncio, tipoDoLink, deduplicar, coletarBusca, coletar, mesclarBruto, oQueFalta } from './coletar-cdp.mjs'
+import { SINAL_LOGIN } from '../../conectar/scripts/lib/navegador.mjs'
 
 const L = 'MLB'
 const id = n => L + n
@@ -84,14 +85,16 @@ test('deduplicar acrescenta tipo e vendidos (os formatos que a busca mostra) e t
 
 // Pagina falsa: cada "tela" e o que extrairCards devolveria; clicar em Seguinte anda uma tela.
 // vaziasAntes: quantas leituras da primeira tela voltam vazias antes dos cards aparecerem.
-function paginaFalsa(telas, { urlDoLogin = null, travarNoSeguinte = false, vaziasAntes = 0 } = {}) {
+// pedeLogin: a pagina mostra o formulario de entrada (o sinal que o paginaPedeLogin le).
+function paginaFalsa(telas, { urlDoLogin = null, pedeLogin = false, travarNoSeguinte = false, vaziasAntes = 0 } = {}) {
   let atual = 0
   let url = ''
   let vazias = vaziasAntes
   return {
     goto: async u => { url = urlDoLogin || u },
     url: () => url,
-    evaluate: async f => {
+    evaluate: async (f, arg) => {
+      if (arg === SINAL_LOGIN) return pedeLogin
       if (f.name !== 'extrairCards') return undefined
       if (vazias > 0) { vazias--; return [] }
       return telas[atual]
@@ -116,10 +119,15 @@ test('coletarBusca para na pagina 1 quando o Seguinte nao muda a URL, sem recole
   assert.deepEqual(r.itens.map(i => i.titulo), ['a'])
 })
 
+// 5.49 (bloco C, 2026-11-03): cair no login se le na pagina (formulario de entrada), nao
+// mais pelo login no endereco; o endereco com login e sem formulario segue coletando.
 test('coletarBusca devolve erro (e lista vazia, nunca preco inventado) quando cai no login', async () => {
-  const r = await coletarBusca(paginaFalsa([[card('a', '1000001')]], { urlDoLogin: 'https://www.mercadolivre.com.br/login?x' }), 'bala', semEspera)
+  const r = await coletarBusca(paginaFalsa([[card('a', '1000001')]], { urlDoLogin: 'https://www.mercadolivre.com.br/login?x', pedeLogin: true }), 'bala', semEspera)
   assert.match(r.erro, /login/)
   assert.deepEqual(r.itens, [])
+  const soEndereco = await coletarBusca(paginaFalsa([[card('a', '1000001')]], { urlDoLogin: 'https://www.mercadolivre.com.br/login?x' }), 'bala', semEspera)
+  assert.equal(soEndereco.erro, undefined, 'login so no endereco nao para')
+  assert.deepEqual(soEndereco.itens.map(i => i.titulo), ['a'])
   const vazio = await coletarBusca(paginaFalsa([[]]), 'bala', semEspera)
   assert.match(vazio.erro, /nenhum anuncio/)
 })

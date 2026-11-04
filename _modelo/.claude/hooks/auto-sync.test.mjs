@@ -260,6 +260,9 @@ test('cara de chave fica fora do backup, o resto sobe, e o recado some quando re
     // o mesmo cabecalho de todo recado (de, quando, precisa de acao), que o /iniciar le
     assert.match(texto, /^de: dono\nquando: 2026-10-05\nprecisa de ação: sim\n/)
     assert.match(texto, /- config\.md: tem cara de chave de API/)
+    // 5.49 (bloco C, 2026-11-03): o corpo abre no formato das travas do kit
+    assert.match(texto, /\n\nBarrada pela trava auto-sync, regra cara-de-chave: estes arquivos ficaram fora do backup/)
+    assert.ok(texto.includes('não refaça esta ação por outro caminho.'))
     assert.ok(!texto.includes(CHAVE_FALSA), 'o recado nunca repete a chave')
     // a resposta seguinte, sem nada novo, nao reescreve o recado nem faz commit
     assert.equal(autoSync(r.a, new Date(2026, 9, 6, 9, 0)), 'nada')
@@ -375,7 +378,10 @@ test('arquivo acima do limite fica fora do backup e o recado diz o tamanho', () 
     assert.equal(autoSync(r.a, AGORA, { limiteBytes: 1024 }), 'enviado')
     assert.ok(temNoRemoto(r, 'leve.md'))
     assert.ok(!temNoRemoto(r, 'video-cru.pdf'))
-    assert.match(readFileSync(join(r.a, '_memoria', 'recados', '2026-10-05-dono-auto-sync-segurou.md'), 'utf8'), /- video-cru\.pdf: passa de /)
+    const texto = readFileSync(join(r.a, '_memoria', 'recados', '2026-10-05-dono-auto-sync-segurou.md'), 'utf8')
+    assert.match(texto, /- video-cru\.pdf: passa de /)
+    // 5.49 (bloco C, 2026-11-03): a regra do arquivo grande no formato das travas
+    assert.match(texto, /Barrada pela trava auto-sync, regra arquivo-grande: /)
   } finally { rmSync(r.raiz, { recursive: true, force: true }) }
 })
 

@@ -64,7 +64,7 @@ conta o resultado.
    `CLOUDFLARE_ACCOUNT_ID` `R2_BUCKET` `R2_URL_PUBLICA` (R2); Instagram `IG_ACCESS_TOKEN`
    `IG_TOKEN_VENCE_EM`; YouTube `YOUTUBE_CLIENT_ID` `YOUTUBE_REFRESH_TOKEN`. Ler o resultado linha a
    linha (o deposito e um dos dois, entao o codigo de saida nao serve) e dizer, em linguagem simples, o
-   que esta pronto e o que falta, apontando a secao do guia de cada um. A IA nunca abre o `.env`.
+   que esta pronto e o que falta, apontando a secao do guia de cada um. O valor da chave nunca aparece no chat.
 2. Com o Buffer ligado, rodar `node .claude/skills/midia-social/scripts/canais.mjs` (so leitura) e
    conferir que as redes continuam conectadas.
 3. Olhar o retrato mais novo em `dados/instagram/<perfil>/` e as pastas de `producao/` com post
@@ -80,6 +80,10 @@ do projeto: depois do "pode ir" e antes de gastar, rodar
 ```
 node .claude/skills/conectar/scripts/lib/liberar-gasto-cli.mjs --usd <estimativa em dolar> --autorizado --contexto "<o que e>"
 ```
+Se a estimativa passa do teto por vez
+(o `limite_gasto_usd` do `_contexto/mercado-livre.md`, ou US$ 4 sem esse arquivo ou sem o campo),
+o "pode ir" ja citou o valor: junte `--acima-do-teto <o valor citado>` nessa mesma chamada, sem
+perguntar de novo. O orcamento do mes nao aceita esse jeito.
 Codigo 3: nao gastar e contar a pessoa o motivo do campo `parou`, com as palavras dele. Codigo 0:
 gastar e, no fim, anotar com a `reserva` que a liberacao devolveu:
 ```
@@ -101,4 +105,4 @@ node .claude/skills/midia-social/scripts/abrir-chrome.mjs
 - Nada publica sem o "pode ir" da pessoa naquele momento.
 - Nunca logar no Instagram pra coletar: so pagina publica.
 - Copiar o principio de um post de sucesso, nunca a frase.
-- Chave de API vai no `.env`; senha nunca vai no chat, e senha de site nao se guarda, salvo na conta em que voce ligar o relogin automatico.
+- Chave de API vai no `.env`; senha nunca vai no chat. Senha de site tambem vai no `.env`: a IA le de la pra fazer o login e nunca mostra.

@@ -20,7 +20,8 @@
 // por bloco com algo faltando (voz e transcricao de volta de 8 s custam fracoes
 // de centavo; a folga so existe pra estimativa nao subestimar). Nao cabe no
 // orcamento do mes (_contexto/orcamento.md) ou, sem ele, passa do teto
-// `limite_gasto_usd` da configuracao: nao roda (liberarGasto da lib do conectar).
+// `limite_gasto_usd` da configuracao: nao roda (liberarGasto da lib do conectar), salvo com o
+// --acima-do-teto=<valor do pode ir> (5.49, bloco C).
 //
 // Codigos de saida: 0 ok; 1 falhou ou reprovou; 2 uso errado (inclui preco
 // ausente); 3 parou antes de gastar (sem aprovacao de gasto, sem --autorizado,
@@ -49,6 +50,7 @@ import { fetchComTimeout } from './lib/fetch-timeout.mjs'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
 import { carregarConfiguracao, PADROES } from '../../mercado-livre/scripts/lib/config.mjs'
 import { registrarCusto, estimar, liberarGasto, fecharReserva } from '../../configurar-video/scripts/lib/custos.mjs'
+import { RECADO_TRAVA } from '../../conectar/scripts/lib/orcamento.mjs'
 import { lerOrcamento } from '../../conectar/scripts/lib/orcamento.mjs'
 import { realpathSync } from 'node:fs'
 
@@ -145,7 +147,8 @@ export function validarEstruturaDoRoteiro(roteiro) {
 const CENA_FALANDO = /(?<![a-zà-ÿ])(fal(?:a|ando|ar)|diz(?:|endo)|explic(?:a|ando)|narra(?:|ndo)|convers(?:a|ando))(?![a-zà-ÿ])/i
 
 export function avisosDoRoteiro(roteiro) {
-  const avisos = []
+  // 5.49 (bloco C, 2026-11-03): a palavra comum do gate de Clips (troca, entrega, valor) avisa aqui
+  const avisos = [...(validarRoteiro(roteiro).avisos ?? [])]
   if (roteiro?.vozUnica === true) {
     (roteiro.blocos ?? []).forEach((b, i) => {
       if (b?.tipo !== 'pessoa') return
@@ -218,13 +221,15 @@ export function podeGastar(roteiro, { dryRun = false } = {}) {
   // existe pra avisar do gasto.
   const nClipes = roteiro?.blocos?.length ?? MIN_BLOCOS
 
+  // 5.49 (bloco C, 2026-11-03): a parada sai no formato das travas do kit (trava carimbo-do-roteiro)
   if (!roteiro?.aprovadoEm) {
     return {
       ok: false,
       motivo: [
-        'roteiro sem aprovacao: o campo "aprovadoEm" nao esta no roteiro.json.',
+        'Barrada pela trava carimbo-do-roteiro, regra sem-aprovacao: roteiro sem aprovacao, o campo "aprovadoEm" nao esta no roteiro.json.',
         `A fase paga gasta dinheiro de verdade (${nClipes} clipes de ${SEGUNDOS_POR_BLOCO}s no Omni, mais voz e musica, conta Gemini pre-paga),`,
         'entao ela nao roda antes do gate 1.',
+        RECADO_TRAVA,
         ...comoAprovar,
       ].join('\n'),
     }
@@ -239,9 +244,10 @@ export function podeGastar(roteiro, { dryRun = false } = {}) {
       ok: false,
       motivo: [
         roteiro.aprovadoHash
-          ? 'o roteiro MUDOU depois da aprovacao: o texto que esta no roteiro.json agora nao e o que voce leu.'
-          : 'o carimbo de aprovacao e antigo e nao guarda a impressao digital do conteudo, entao nao da pra provar que o texto atual e o aprovado.',
+          ? 'Barrada pela trava carimbo-do-roteiro, regra roteiro-mudou: o roteiro MUDOU depois da aprovacao, o texto que esta no roteiro.json agora nao e o que voce leu.'
+          : 'Barrada pela trava carimbo-do-roteiro, regra carimbo-antigo: o carimbo de aprovacao e antigo e nao guarda a impressao digital do conteudo, entao nao da pra provar que o texto atual e o aprovado.',
         'A aprovacao vale pro texto aprovado (fala, cena, ator, produto, voz, musica, advertencias e marcas), nao pro arquivo.',
+        RECADO_TRAVA,
         ...comoAprovar,
       ].join('\n'),
     }
@@ -534,6 +540,7 @@ const USO = [
   '',
   '  --dry-run             sem gastar API: na fase 2 so mostra os prompts e o custo; na fase 3 monta e pula o gate de voz (sai 3, "incompleto")',
   '  --autorizado          o "pode ir" da pessoa: sem ele, qualquer rodada paga para (sai 3) e mostra a estimativa',
+  '  --acima-do-teto=<US$> sem orcamento do mes, o valor que a pessoa ouviu no pode ir pra rodada acima do limite_gasto_usd (igual ou maior que a estimativa, junto do --autorizado)',
   '  --preco-usd=<US$/s>   preco do dia do clipe do Gemini Omni Flash por segundo (obrigatorio na fase 2 fora do dry-run)',
   '  --preco-musica-usd=<US$>               preco do dia de uma musica (obrigatorio se faltar a musica)',
   '  --preco-tts-entrada=<US$/Mtok> --preco-tts-saida=<US$/Mtok>                   precos do dia da voz',
@@ -552,6 +559,8 @@ const FLAGS_COM_VALOR = [
   'mlb', 'fase', 'foto', 'producao', 'slug', 'modelo-musica',
   'preco-usd', 'preco-musica-usd', 'preco-tts-entrada', 'preco-tts-saida',
   'preco-transcricao-entrada', 'preco-transcricao-saida', 'de-espionagem',
+  // 5.49 (bloco C, 2026-11-03): o valor do pode ir acima do teto por lote
+  'acima-do-teto',
 ]
 const FLAGS_DE_PRECO = FLAGS_COM_VALOR.filter((f) => f.startsWith('preco-'))
 
@@ -618,7 +627,8 @@ function limiteDeGasto(d) {
 // da fase leva o id dela; o main fecha no fim.
 function liberar(ctx, estimativaUsd) {
   const { a, d } = ctx
-  const lib = liberarGasto({ estimativaUsd, autorizado: a.tem('autorizado') }, {
+  const acima = a.arg('acima-do-teto')
+  const lib = liberarGasto({ estimativaUsd, autorizado: a.tem('autorizado'), acimaDoTetoUsd: acima === undefined ? undefined : Number(String(acima).replace(',', '.')) }, {
     raiz: d.raizGasto, contexto: `video-produto ${ctx.slug || ctx.mlb}`,
     lerOrcamento: () => lerOrcamento({ raiz: d.raizGasto, lerLote: () => limiteDeGasto(d) }),
   })
@@ -756,6 +766,7 @@ async function fase1({ mlb, base, slug, a, d }) {
   const caminhoMd = path.join(pasta, 'roteiro.md')
   fs.writeFileSync(caminhoMd, md)
   console.log(md)
+  for (const aviso of avisosDoRoteiro(roteiro)) console.error(`[aviso] ${aviso}`)
   console.error([
     `[gate de conteudo] roteiro aprovado nas regras do ML e na regra da casa. Texto em ${caminhoMd}.`,
     roteiro.aprovadoEm
@@ -825,7 +836,8 @@ async function fase2(ctx) {
 
   const dryRun = a.tem('dry-run')
   const liberado = podeGastar(roteiro, { dryRun })
-  if (!liberado.ok) { console.error(`[gate 1] ${liberado.motivo}`); return 3 }
+  // 5.49 (bloco C): a parada comeca pelo "Barrada pela trava", sem prefixo na frente
+  if (!liberado.ok) { console.error(liberado.motivo); return 3 }
 
   const musica = path.join(pasta, 'musica.mp3')
   const arquivosDoBloco = (i) => ({
@@ -880,7 +892,7 @@ async function fase2(ctx) {
     // com orcamento do mes, quem diz se cabe e a liberacao da rodada paga (saldo so quando a pessoa pede)
     let o = null
     try { o = lerOrcamento({ raiz: d.raizGasto, lerLote: () => limiteDeGasto(d) }) } catch {}
-    if (o?.tipo === 'lote' && estimativa > o.usd) console.error(`[fase 2] ATENCAO: passa do limite_gasto_usd (${usd(o.usd)}); a rodada paga vai parar. Divida em partes ou suba o teto.`)
+    if (o?.tipo === 'lote' && estimativa > o.usd) console.error(`[fase 2] ATENCAO: passa do limite_gasto_usd (${usd(o.usd)}); a rodada paga vai parar. Mostre o valor, peca o pode ir citando ele e rode com --acima-do-teto=${estimativa} --autorizado, ou divida em partes ou suba o teto.`)
   } else {
     const faltam = []
     if (!precos.clipe) faltam.push('--preco-usd')
@@ -1089,7 +1101,8 @@ async function fase3(ctx) {
   // aprovado, ou roda com --dry-run e o gate de voz e pulado.
   const dryRun = a.tem('dry-run')
   const liberado = podeGastar(roteiro, { dryRun })
-  if (!liberado.ok) { console.error(`[gate 1] ${liberado.motivo}`); return 3 }
+  // 5.49 (bloco C): a parada comeca pelo "Barrada pela trava", sem prefixo na frente
+  if (!liberado.ok) { console.error(liberado.motivo); return 3 }
 
   if (!dryRun) {
     // a transcricao de um video de ate 1 minuto custa fracoes de centavo: a folga

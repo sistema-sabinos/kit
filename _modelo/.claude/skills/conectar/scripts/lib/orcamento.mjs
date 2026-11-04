@@ -211,25 +211,54 @@ function parada(s, estimativaUsd, acabou) {
   return `${comeco}${aberto}.${media} Motivo: ${motivoProvavel(s)}. Suba o orcamento no /configurar-video ou espere o mes virar.`
 }
 
+// 5.49 (bloco C, 2026-11-03): a parada da trava de gasto sai no formato das travas do kit, com a
+// regra que parou (teto-do-lote, orcamento-do-mes, pode-ir, arquivo-quebrado ou erro-na-trava).
+export const RECADO_TRAVA = 'Diga ao usuario o nome da trava e da regra e decida o proximo passo; nao refaca esta acao por outro caminho.'
+export function barradaGasto(regra, motivo) {
+  return `Barrada pela trava gasto, regra ${regra}: ${String(motivo).replace(/\.\s*$/, '')}. ${RECADO_TRAVA}`
+}
+const PODE_IR = 'precisa do pode ir da pessoa (rode de novo com --autorizado depois do sim)'
+// 5.49 (Codex final, 2026-11-04): o valor citado no pode ir (acimaDoTetoUsd) e teto tambem abaixo do limite por
+// lote e com orcamento do mes: o /agendar passa o valor por rodada mostrado no agendamento, e a rodada que estima
+// mais que ele para. Antes so se conferia acima do limite por lote, e US$ 3 passava com US$ 1 citado
+function passaDoCitado(estimativa_usd, acimaDoTetoUsd) {
+  if (acimaDoTetoUsd === undefined || acimaDoTetoUsd === null) return null
+  const citado = Number(acimaDoTetoUsd)
+  if (Number.isFinite(citado) && citado >= estimativa_usd) return null
+  return { codigo: 3, parou: barradaGasto('pode-ir', `este gasto (${usd(estimativa_usd)}) passa do valor citado no pode ir (${acimaDoTetoUsd}): mostre o valor novo a pessoa e peca o pode ir citando ele`), estimativa_usd }
+}
+
 // A trava unica. 0 libera; 3 parou (nao cabe, acabou, arquivo quebrado ou falta o pode ir). Com orcamento do mes,
 // a liberacao reserva a estimativa sob a trava, pra dois gastos juntos nao lerem o mesmo saldo; quem gastou passa a
 // reserva no registrarCusto e fecha com fecharReserva no fim. Liberado nunca mostra saldo.
-export function liberarGasto({ estimativaUsd, autorizado }, { raiz = RAIZ, lerOrcamento: ler = () => lerOrcamento({ raiz }), pid = process.pid, contexto = '', agora = () => new Date(), vivo = processoVivo } = {}) {
+// 5.49 (bloco C, 2026-11-03): acima do limite_gasto_usd (teto por lote), passa com o acimaDoTetoUsd (o valor
+// que a pessoa ouviu no pode ir, --acima-do-teto) igual ou maior que a estimativa, e o autorizado. O orcamento do
+// mes segue duro: la o acimaDoTetoUsd nao vale nada.
+export function liberarGasto({ estimativaUsd, autorizado, acimaDoTetoUsd }, { raiz = RAIZ, lerOrcamento: ler = () => lerOrcamento({ raiz }), pid = process.pid, contexto = '', agora = () => new Date(), vivo = processoVivo } = {}) {
   const estimativa_usd = arred(estimativaUsd)
   let o
-  try { o = ler() } catch (e) { return { codigo: 3, parou: e.message, estimativa_usd } }
+  try { o = ler() } catch (e) { return { codigo: 3, parou: barradaGasto('arquivo-quebrado', e.message), estimativa_usd } }
   if (o.tipo !== 'mes') {
-    if (estimativa_usd > o.usd) return { codigo: 3, parou: `passa do limite_gasto_usd (US$ ${o.usd}); divida em partes ou suba o teto em _contexto/mercado-livre.md`, estimativa_usd, aviso: o.aviso }
-    if (!autorizado) return { codigo: 3, parou: 'precisa do pode ir da pessoa (rode de novo com --autorizado depois do sim)', estimativa_usd, aviso: o.aviso }
+    if (estimativa_usd > o.usd) {
+      const comoPassar = `mostre o valor a pessoa, peca o pode ir citando ele e rode de novo com --acima-do-teto ${estimativa_usd} --autorizado, ou divida em partes ou suba o teto em _contexto/mercado-livre.md`
+      if (acimaDoTetoUsd === undefined || acimaDoTetoUsd === null) return { codigo: 3, parou: barradaGasto('teto-do-lote', `este gasto (${usd(estimativa_usd)}) passa do limite_gasto_usd (US$ ${o.usd}) por lote: ${comoPassar}`), estimativa_usd, aviso: o.aviso }
+      const citado = Number(acimaDoTetoUsd)
+      if (!Number.isFinite(citado) || citado < estimativa_usd) return { codigo: 3, parou: barradaGasto('teto-do-lote', `o --acima-do-teto (${acimaDoTetoUsd}) e menor que a estimativa (${usd(estimativa_usd)}), que passa do limite_gasto_usd (US$ ${o.usd}): ${comoPassar}`), estimativa_usd, aviso: o.aviso }
+    }
+    const passou = passaDoCitado(estimativa_usd, acimaDoTetoUsd)
+    if (passou) return { ...passou, aviso: o.aviso }
+    if (!autorizado) return { codigo: 3, parou: barradaGasto('pode-ir', PODE_IR), estimativa_usd, aviso: o.aviso }
     return { codigo: 0, estimativa_usd, reserva: null, aviso: o.aviso }
   }
+  const passou = passaDoCitado(estimativa_usd, acimaDoTetoUsd)
+  if (passou) return passou
   try {
     return comTrava(raiz, () => {
       const t = agora()
       const s = saldoDoMes({ raiz, orcamento: o, agora: t, vivo })
-      if (s.saldo_usd <= 0) return { codigo: 3, parou: parada(s, estimativa_usd, true), estimativa_usd }
-      if (estimativa_usd > s.saldo_usd) return { codigo: 3, parou: parada(s, estimativa_usd, false), estimativa_usd }
-      if (!autorizado) return { codigo: 3, parou: 'precisa do pode ir da pessoa (rode de novo com --autorizado depois do sim)', estimativa_usd }
+      if (s.saldo_usd <= 0) return { codigo: 3, parou: barradaGasto('orcamento-do-mes', parada(s, estimativa_usd, true)), estimativa_usd }
+      if (estimativa_usd > s.saldo_usd) return { codigo: 3, parou: barradaGasto('orcamento-do-mes', parada(s, estimativa_usd, false)), estimativa_usd }
+      if (!autorizado) return { codigo: 3, parou: barradaGasto('pode-ir', PODE_IR), estimativa_usd }
       const { reservas } = caminhos(raiz)
       const id = randomUUID()
       const lista = lerReservas(reservas)
@@ -240,7 +269,7 @@ export function liberarGasto({ estimativaUsd, autorizado }, { raiz = RAIZ, lerOr
       writeFileSync(reservas, JSON.stringify(lista, null, 2) + '\n')
       return { codigo: 0, estimativa_usd, reserva: id }
     }, { vivo })
-  } catch (e) { return { codigo: 3, parou: `nao consegui conferir o orcamento (${e.message}); o gasto parou antes de comecar`, estimativa_usd } }
+  } catch (e) { return { codigo: 3, parou: barradaGasto('arquivo-quebrado', `nao consegui conferir o orcamento (${e.message}); o gasto parou antes de comecar`), estimativa_usd } }
 }
 
 // Tira a reserva da conta (o que ela nao gastou volta pro saldo). Sem id (gasto por lote), nada a fazer.

@@ -19,7 +19,7 @@ Explicar em uma frase antes de começar:
 
 > "Vou criar um cofre na nuvem pro seu trabalho (chama GitHub, é grátis). Se o computador quebrar, nada se perde. Preciso que você crie uma conta, eu te guio."
 
-1. Verificar se `git` está instalado; se não, a IA instala com o ok da pessoa, como no `/setup` da pasta-mãe: no Windows pelo `winget install --id Git.Git -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity` e a pessoa só clica em **Sim** na janela do Windows; no Mac a IA roda `xcode-select --install` e diz que abriu uma janela da Apple, pra clicar em **Instalar** e depois em **Concordo**. Nunca passar comando pra pessoa digitar no terminal
+1. Verificar se `git` está instalado; se não, a IA avisa e instala, como no `/setup` da pasta-mãe: no Windows pelo `winget install --id Git.Git -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity` e a pessoa só clica em **Sim** na janela do Windows; no Mac a IA roda `xcode-select --install` e diz que abriu uma janela da Apple, pra clicar em **Instalar** e depois em **Concordo**. Nunca passar comando pra pessoa digitar no terminal
 2. Configurar `user.name` e `user.email` se estiverem vazios (perguntar nome e email)
 3. `git init` se a pasta não for repositório ou for pedaço de um repositório de fora (`git rev-parse --show-prefix` não vazio)
 4. `.gitignore`: projeto criado pelo `/setup` já nasce com o do molde, fechado por padrão (tudo fica fora do backup e só entra o tipo liberado: texto, planilha, imagem, PDF, script). Pasta sem `.gitignore`: copiar o `../_modelo/.gitignore` da pasta-mãe; sem pasta-mãe por perto, criar com pelo menos `.env`, `.env.*`, `.origem`, `.backup-falhou`, `node_modules/`, `*.log` e os formatos de vídeo e áudio (o GitHub recusa arquivo acima de 100 MB). Já existe: nunca sobrescrever.
@@ -31,7 +31,7 @@ Explicar em uma frase antes de começar:
      `git push` abre o navegador sozinho e a pessoa só clica em autorizar. Não pedir
      senha nem token.
    - **Mac:** o git que vem com o macOS **não** traz gerenciador de credencial. Antes
-     do push, a IA instala o GitHub CLI com o ok da pessoa (`brew install gh` se já
+     do push, a IA avisa e instala o GitHub CLI, sem esperar resposta (`brew install gh` se já
      houver Homebrew; sem ele, baixar o instalador `.pkg` de cli.github.com e abrir com
      `open`, dizendo pra clicar em **Continuar** e **Instalar** e que a senha, se pedir,
      é a de ligar o Mac). Depois, último caso mastigado, porque o login é da pessoa: a
@@ -93,7 +93,7 @@ Dentro do projeto, no primeiro `/syncar` daquele computador: sem `.origem` na ra
 
 ## Regras
 
-- **Nunca** commitar `.env` nem arquivo com chave ou senha. Se aparecer chave em arquivo rastreado, avisar e mostrar arquivo e linha (nunca o valor); a pessoa abre o `.env` no editor e cola numa linha `NOME=valor`; a IA roda `node .claude/skills/conectar/scripts/chave.mjs bate NOME --em <arquivo>:<linha>` e só com `bate` tira a chave do arquivo, antes de commitar (a IA nunca grava o `.env`). Senha de site em arquivo: apagar dali, porque senha de site não se guarda, salvo na conta em que a pessoa ligar o relogin automático
+- **Nunca** commitar `.env` nem arquivo com chave ou senha. Se aparecer chave em arquivo rastreado, avisar e mostrar arquivo e linha (nunca o valor); a pessoa abre o `.env` no editor e cola numa linha `NOME=valor`; a IA roda `node .claude/skills/conectar/scripts/chave.mjs bate NOME --em <arquivo>:<linha>` e só com `bate` tira a chave do arquivo, antes de commitar (a IA nunca grava o `.env`). Senha de site em arquivo: igual à chave, a pessoa cola no `.env` numa linha `NOME=valor` e a IA confere com o mesmo `bate` antes de tirar do arquivo; senha de site também vai no `.env`, e a IA lê de lá só pra fazer o login, sem mostrar no chat
 - Repositório sempre privado por padrão
 - Nunca forçar o envio (`--force`) nem apagar o lado de lá pra o envio passar: a trava barra, e esse atalho é o que perde o trabalho do sócio
 - Nunca `git reset --hard`, `git checkout -- .` nem `git clean`: apagam o trabalho que ainda não subiu. Pra voltar atrás no meio de uma junção, só `git rebase --abort`

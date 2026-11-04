@@ -233,6 +233,46 @@ test('sem orcamento: teto por lote igual a antes, com o aviso de orcamento nao d
   assert.ok(!existsSync(join(raiz, 'dados', 'orcamento-reservas.json')), 'teto por lote nao reserva')
 }))
 
+// 5.49 (bloco C, 2026-11-03): acima do teto por lote, o pode ir que cita o valor passa a valer.
+test('teto por lote: acima dele passa com o --acima-do-teto igual ou maior que a estimativa e autorizado', () => comProjeto({ ml: bloco('limite_gasto_usd: 4') }, (raiz) => {
+  const sem = liberarGasto({ estimativaUsd: 5, autorizado: true }, { raiz })
+  assert.equal(sem.codigo, 3)
+  assert.match(sem.parou, /^Barrada pela trava gasto, regra teto-do-lote: .*--acima-do-teto 5 --autorizado/)
+  assert.equal(liberarGasto({ estimativaUsd: 5, autorizado: true, acimaDoTetoUsd: 5 }, { raiz }).codigo, 0, 'valor igual a estimativa passa')
+  assert.equal(liberarGasto({ estimativaUsd: 5, autorizado: true, acimaDoTetoUsd: 6 }, { raiz }).codigo, 0, 'valor maior passa')
+  const menor = liberarGasto({ estimativaUsd: 5, autorizado: true, acimaDoTetoUsd: 4.99 }, { raiz })
+  assert.equal(menor.codigo, 3)
+  assert.match(menor.parou, /regra teto-do-lote: o --acima-do-teto \(4\.99\) e menor que a estimativa/)
+  assert.equal(liberarGasto({ estimativaUsd: 5, autorizado: true, acimaDoTetoUsd: NaN }, { raiz }).codigo, 3, 'valor que nao e numero para')
+  const semSim = liberarGasto({ estimativaUsd: 5, autorizado: false, acimaDoTetoUsd: 5 }, { raiz })
+  assert.match(semSim.parou, /^Barrada pela trava gasto, regra pode-ir: precisa do pode ir/)
+}))
+
+// 5.49 (Codex final, 2026-11-04): o valor citado e teto tambem abaixo do limite por lote e com orcamento do mes
+// (o /agendar passa o valor por rodada mostrado no agendamento)
+test('valor citado: abaixo do teto por lote e com orcamento do mes, a estimativa maior que ele para', async () => {
+  await comProjeto({ ml: bloco('limite_gasto_usd: 4') }, (raiz) => {
+    const r = liberarGasto({ estimativaUsd: 3, autorizado: true, acimaDoTetoUsd: 1 }, { raiz })
+    assert.equal(r.codigo, 3, 'US$ 3 com US$ 1 citado para')
+    assert.match(r.parou, /^Barrada pela trava gasto, regra pode-ir: este gasto \(US\$ 3\.00\) passa do valor citado no pode ir \(1\)/)
+    assert.equal(liberarGasto({ estimativaUsd: 3, autorizado: true, acimaDoTetoUsd: 3 }, { raiz }).codigo, 0, 'citado igual passa')
+    assert.equal(liberarGasto({ estimativaUsd: 3, autorizado: true }, { raiz }).codigo, 0, 'sem citado, abaixo do teto, passa')
+  })
+  await comProjeto({ orcamento: blocoOrc('orcamento_mes_usd: 10') }, (raiz) => {
+    const r = liberarGasto({ estimativaUsd: 3, autorizado: true, acimaDoTetoUsd: 1 }, { raiz })
+    assert.equal(r.codigo, 3, 'com orcamento do mes tambem para')
+    assert.match(r.parou, /regra pode-ir: este gasto \(US\$ 3\.00\) passa do valor citado/)
+    assert.ok(!existsSync(join(raiz, 'dados', 'orcamento-reservas.json')), 'parado antes de reservar')
+  })
+})
+
+test('orcamento do mes segue duro: o --acima-do-teto nao passa gasto que nao cabe', () => comProjeto({ orcamento: blocoOrc('orcamento_mes_usd: 2') }, (raiz) => {
+  const r = liberarGasto({ estimativaUsd: 5, autorizado: true, acimaDoTetoUsd: 50 }, { raiz })
+  assert.equal(r.codigo, 3)
+  assert.match(r.parou, /^Barrada pela trava gasto, regra orcamento-do-mes: este gasto \(US\$ 5\.00\) nao cabe/)
+  assert.match(r.parou, /Diga ao usuario o nome da trava e da regra e decida o proximo passo; nao refaca esta acao por outro caminho\.$/)
+}))
+
 test('reserva: o gasto registrado com ela desconta do que falta, fechar devolve a sobra, e a de processo morto segue contando', () => comProjeto({ orcamento: blocoOrc('orcamento_mes_usd: 10') }, (raiz) => {
   const r = liberarGasto({ estimativaUsd: 4, autorizado: true }, { raiz })
   registrarCusto({ servico: 'gemini-imagem', usd: 1, contexto: 'x', reserva: r.reserva }, { raiz })

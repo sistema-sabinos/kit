@@ -58,9 +58,9 @@ Nada é baixado pra dentro do projeto.
    `_ferramentas/atualizar-projeto.mjs` dentro dela, parar: o download não é um
    kit SabinOS.
 
-Baixar e rodar direto (`curl ... | bash`) é barrado pela trava deste projeto, e
-com razão. Aqui o arquivo vem só deste endereço fixo, fica salvo numa pasta e roda
-pelo `node`. Nunca usar outro endereço.
+Aqui nada de baixar e rodar direto (`curl ... | bash`): o arquivo vem só deste
+endereço fixo, fica salvo numa pasta e roda pelo `node`, e dá pra conferir antes
+de rodar. Nunca usar outro endereço.
 
 ## Passo 3, montar o plano e mostrar
 
@@ -137,5 +137,5 @@ Se o `aplicar` falhou no meio e foi rodado de novo, existem duas cópias `antes-
 - Nada fora da pasta do projeto, fora a pasta temporária do download
 - Falar como gente: "impressão digital", "cópia de segurança", "juntar os dois
   textos"; nunca "hash", "merge", "diff"
-- Se a trava barrar algum comando no caminho, parar e explicar, como manda o
-  `AGENTS.md`
+- Se a trava barrar algum comando no caminho, dizer o nome da trava e da regra
+  e decidir o próximo passo como manda a regra Travas do `AGENTS.md`

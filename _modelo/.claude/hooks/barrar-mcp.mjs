@@ -1,31 +1,26 @@
 #!/usr/bin/env node
 // O QUE ESTA TRAVA E: a rede de protecao das ferramentas de fora (MCP): navegador, email, redes.
-// No navegador ela barra o que le o login da pagina (cookie, armazenamento, rede com cabecalho)
-// ou roda codigo dentro dela, barra a ferramenta que ela nao conhece, e so deixa gravar arquivo
-// (print, snapshot) na pasta de saida e subir arquivo do proprio projeto fora de segredo. Fora do
-// navegador, ler (buscar, listar, abrir) passa, e o resto (mandar, apagar, publicar) pergunta antes.
+// 5.49 (bloco B, 2026-11-03): no projeto do aluno ela so barra subir arquivo de senha pelo
+// navegador (de qualquer pasta, pelo caminho escrito e pelo real, solto ou dentro do lote do Claude in
+// Chrome), o lote num formato que ela nao le, o nome fora do formato e a entrada que ela nao entende.
+// Saiu o resto (decisoes de 2026-11-03, blocos 1 a 3): a barra de
+// codigo e login no navegador, a lista de ferramenta conhecida, o print fora da pasta de saida, o
+// upload de fora do projeto, a conferencia do Chrome dedicado e a pergunta da acao de conta.
+// Com { estrito: true } (so a bancada passa, T45) valem as regras de antes, inteiras.
 // O QUE ELA NAO E: uma garantia. Ela julga pelo nome da ferramenta e pelos campos que conhece, e
-// nao enxerga o que o servidor faz por dentro nem o que roda por fora do assistente. A primeira
-// linha de defesa e o perfil de navegador separado do dia a dia e o deny de leitura do settings.json;
-// esta trava e a segunda.
+// nao enxerga o que o servidor faz por dentro nem o que roda por fora do assistente.
 // Diferente da trava de comando (barrar-perigoso.mjs), aqui o que a trava nao entende barra:
 // entrada ilegivel, nome fora do formato mcp__<servidor>__<ferramenta> e erro dentro dela (ata da
 // rodada 5.28, recomendacao coletiva, T2 a T4).
 // Doc conferida em 2026-10-23 (code.claude.com/docs/en/hooks): o matcher mcp__.* pega toda ferramenta
 // de todo servidor, o exit 2 no PreToolUse barra mesmo com allow, e o permissionDecision "ask" no
-// stdout faz o Claude Code perguntar. A sonda C1 da 5.28 provou o tool_name real
+// stdout faz o Claude Code perguntar (so o porteiro da bancada pede, pelo estrito). A sonda C1 da 5.28 provou o tool_name real
 // (mcp__playwright__browser_navigate) e que o ask pergunta no interativo nos quatro modos e vira negado
 // no -p, sem nunca executar calado (por isso MODOS_ASK_CALADO nasce vazio).
 // A lista do navegador vem da sonda C1 da 5.28 (pacote do Playwright MCP na versao 0.0.83, e o Claude in
 // Chrome do Claude Code 2.1.308); o arquivo da sonda fica na bancada e um teste de la confere esta copia.
 // Ferramenta do Playwright MCP com filename grava relativo a raiz do projeto (README do pacote, 0.0.83),
 // mesmo com --output-dir, que so vale pro nome automatico: por isso o filename se julga contra a raiz.
-// No servidor navegador (o do Chrome dedicado, rodada 5.30) a trava ainda confere, a cada chamada que
-// passaria, que ele veio do escopo local e que o Chrome na porta em que foi ligado e o deste projeto:
-// pega o Chrome de outro projeto na mesma porta e a porta que mudou. Nao pega o Chrome trocado entre
-// a conferencia e a chamada, alguns milissegundos depois.
-// No SessionStart (5.31) ela so anota a porta com que o navegador nasceu nesta janela, sem stdout e
-// saindo 0; a conferencia usa a anotada, entao religar no meio da sessao barra ate o Claude Code reabrir.
 import { realpathSync, statSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -54,23 +49,24 @@ const liberadasDo = servidor => servidor === CHROME_IA ? LIBERADAS_CHROME_IA : L
 
 // campo com a lista de caminhos de cada ferramenta que sobe arquivo do disco pra pagina. O browser_drop
 // tambem le arquivo local ("as if dragged from outside the page", sonda C1a). O campo do Claude in Chrome
-// nao foi medido (a sonda C1b ficou pra 5.29), e sem ele os dois barram sempre.
+// nao foi medido (a sonda C1b ficou pra 5.29): no estrito os dois barram sempre, e fora dele a trava
+// olha todo texto da entrada.
 const CAMPO_DO_UPLOAD = { browser_file_upload: 'paths', browser_drop: 'paths', file_upload: null, upload_image: null }
 const UPLOAD = new Set(Object.keys(CAMPO_DO_UPLOAD))
 // onde o navegador grava snapshot e console; as duas listas sao exportadas pro .gitignore da bancada
 export const SAIDA_NAVEGADOR = 'dados/navegador-saida'
 // onde as skills de app guardam o print (app-construir, app-comparar, app-visual, app-testar)
 export const PASTAS_DE_PRINT = ['app/telas-minhas', 'app/prints', 'app/defeitos', 'app/visual']
-// sobre o caminho relativo com / e em minusculas: no Windows .ENV abre o mesmo arquivo que .env
+// sobre o caminho com / e em minusculas: no Windows .ENV abre o mesmo arquivo que .env
 const SEGREDO_NO_CAMINHO = /(^|\/)\.env|(^|\/)dados\/(sessao|chrome-perfil)\/|\.har$|storage-state[^/]*\.json$|(^|\/)\.auth\/|(^|\/)\.?secrets\/|(^|\/)[^/]*totp[^/]*\.json$/
 
 // em portugues desde o chat 7 da 5.28: o servidor do Bling do kit (cadastrar-bling/mcp) e so leitura
 export const VERBO_LEITURA = /^(get|list|search|read|query|find|describe|view|listar|buscar|consultar|ler|obter|ver|saldo)(_|[A-Z]|$)/
 
 const LEITURA_FALHOU = 'a trava não conseguiu ler esta chamada'
-const passa = () => ({ decisao: 'passa', motivo: '' })
-const pede = motivo => ({ decisao: 'pede', motivo })
-const barra = motivo => ({ decisao: 'barra', motivo })
+const passa = () => ({ decisao: 'passa', motivo: '', regra: '' })
+const pede = (regra, motivo) => ({ decisao: 'pede', motivo, regra })
+const barra = (regra, motivo) => ({ decisao: 'barra', motivo, regra })
 
 const relativo = (base, alvo) => relative(base, alvo).split(sep).join('/').toLowerCase()
 function dentro(base, alvo) {
@@ -100,6 +96,7 @@ export function dentroDaSaida(cwd, alvo) {
   return false
 }
 
+// estrito (a bancada): so arquivo do projeto, fora de segredo, e que ja existe
 function uploadLimpo(cwd, sufixo, entrada) {
   const campo = CAMPO_DO_UPLOAD[sufixo]
   if (!campo) return false
@@ -121,128 +118,119 @@ function uploadLimpo(cwd, sufixo, entrada) {
   })
 }
 
+// 5.49 (bloco B, 2026-11-03): fora do estrito, so o arquivo de senha nao sobe, de qualquer pasta.
+// Cada texto da entrada vale como caminho: o escrito (barra invertida vira /) e o real, que pega o atalho
+// com nome comum apontando pro .env. O campo do Claude in Chrome nao foi medido, entao todo texto conta.
+const comBarra = p => p.split(String.fromCharCode(92)).join('/').toLowerCase()
+function textosDe(x, acc = []) {
+  if (typeof x === 'string') acc.push(x)
+  else if (Array.isArray(x)) for (const v of x) textosDe(v, acc)
+  else if (x && typeof x === 'object') for (const v of Object.values(x)) textosDe(v, acc)
+  return acc
+}
+// 5.49 (autonomia, 2026-11-04): a lista que a trava nao le sai com regra propria, upload-ilegivel; antes
+// saia como upload-de-senha e a IA dizia ao usuario que uma foto comum era arquivo de senha
+const ILEGIVEL = barra('upload-ilegivel', 'a lista de arquivos do upload veio num formato que a trava não lê')
+function sobeSenha(cwd, sufixo, entrada) {
+  const campo = CAMPO_DO_UPLOAD[sufixo]
+  const lista = campo && entrada ? entrada[campo] : undefined
+  if (lista !== undefined && !Array.isArray(lista)) return ILEGIVEL
+  for (const p of textosDe(entrada)) {
+    if (!p) continue
+    const abs = resolve(cwd, p)
+    if (SEGREDO_NO_CAMINHO.test(comBarra(p)) || SEGREDO_NO_CAMINHO.test(comBarra(real(abs))))
+      return barra('upload-de-senha', 'upload de arquivo de senha ou de sessão logada')
+  }
+  // pasta inteira sobe pelo input de pasta da pagina, com o .env que tiver dentro (revisao interna).
+  // 5.49 (bloco B, 2026-11-03, revisao do bloco): sem campo medido (Claude in Chrome) todo texto conta
+  // aqui tambem, senao a pasta do projeto e a dados/sessao sem a barra no fim subiam caladas
+  for (const p of campo ? (Array.isArray(lista) ? lista : []) : textosDe(entrada).filter(Boolean)) {
+    if (typeof p !== 'string' || !p) return ILEGIVEL
+    try { if (statSync(real(resolve(cwd, p))).isDirectory()) return barra('upload-de-senha', 'upload de pasta inteira, que leva junto o arquivo de senha que tiver dentro') } catch {}
+  }
+  return null
+}
+
 // Lote do Claude in Chrome na forma medida no Claude Code 2.1.312 (recibo das provas C1b, 2026-10-29):
 // {"actions":[{"name":"<ferramenta>","input":{...}}]}. Qualquer desvio devolve null e o lote barra; formato
-// novo de versao futura barra a mais. Lote dentro de lote barra sem recursao.
+// novo de versao futura barra a mais. Lote dentro de lote barra sem recursao. No estrito so ferramenta
+// da lista; fora dele (5.49, bloco B) nome novo passa e e julgado como solto.
 const objeto = x => x !== null && typeof x === 'object' && !Array.isArray(x)
 const soAsChaves = (x, chaves) => {
   const k = Object.keys(x).sort()
   return k.length === chaves.length && k.every((c, i) => c === chaves[i])
 }
-function acoesDoBatch(servidor, entrada) {
+function acoesDoBatch(servidor, entrada, estrito) {
   if (servidor !== CHROME_IA || !objeto(entrada) || !soAsChaves(entrada, ['actions'])) return null
   const { actions } = entrada
   if (!Array.isArray(actions) || actions.length === 0) return null
   const acoes = []
   for (const a of actions) {
     if (!objeto(a) || !soAsChaves(a, ['input', 'name'])) return null
-    if (typeof a.name !== 'string' || a.name === 'browser_batch' || !LIBERADAS_CHROME_IA.includes(a.name)) return null
+    if (typeof a.name !== 'string' || !a.name || a.name === 'browser_batch') return null
+    if (estrito && !LIBERADAS_CHROME_IA.includes(a.name)) return null
     if (!objeto(a.input)) return null
     acoes.push({ nome: a.name, entrada: a.input })
   }
   return acoes
 }
 
-function julgar(tool_name, tool_input, cwd) {
-  if (typeof tool_name !== 'string') return barra('chamada sem nome de ferramenta')
+function julgar(tool_name, tool_input, cwd, estrito) {
+  if (typeof tool_name !== 'string') return barra('formato', 'chamada sem nome de ferramenta')
   const partes = tool_name.split('__')
   const servidor = partes[1]
   const sufixo = partes.slice(2).join('__')
   // nome de servidor e de ferramenta conhecida nao levam __: partir pelo ultimo deixaria
   // mcp__playwright__webmcp_demo__get_secret virar leitura de outro servidor
   if (partes[0] !== 'mcp' || partes.length < 3 || !servidor || !sufixo || sufixo.includes('__'))
-    return barra('ferramenta fora do formato mcp__<servidor>__<ferramenta>')
+    return barra('formato', 'ferramenta fora do formato mcp__<servidor>__<ferramenta>')
   if (tool_input !== undefined && (tool_input === null || typeof tool_input !== 'object' || Array.isArray(tool_input)))
-    return barra(LEITURA_FALHOU)
+    return barra('erro-interno', LEITURA_FALHOU)
   const ehNavegador = servidor === CHROME_IA || sufixo.startsWith('browser_') || sufixo.startsWith('webmcp_')
   if (ehNavegador) {
     if (sufixo === 'browser_batch') {
-      const acoes = acoesDoBatch(servidor, tool_input)
-      if (!acoes) return barra('lote de ações do navegador num formato que a trava não lê')
+      const acoes = acoesDoBatch(servidor, tool_input, estrito)
+      if (!acoes) return barra('lote-ilegivel', 'lote de ações do navegador num formato que a trava não lê')
       for (const acao of acoes) {
-        const d = julgar(`mcp__${servidor}__${acao.nome}`, acao.entrada, cwd)
+        const d = julgar(`mcp__${servidor}__${acao.nome}`, acao.entrada, cwd, estrito)
         if (d.decisao !== 'passa') return d
       }
       return passa()
     }
-    if (BARRA_NAVEGADOR.test(sufixo)) return barra('ferramenta do navegador que lê o login da página ou roda código nela')
-    if (!liberadasDo(servidor).includes(sufixo)) return barra('ferramenta do navegador que a trava não conhece')
+    if (!estrito) {
+      return (UPLOAD.has(sufixo) && sobeSenha(cwd, sufixo, tool_input)) || passa()
+    }
+    if (BARRA_NAVEGADOR.test(sufixo)) return barra('navegador-login-codigo', 'ferramenta do navegador que lê o login da página ou roda código nela')
+    if (!liberadasDo(servidor).includes(sufixo)) return barra('navegador-desconhecida', 'ferramenta do navegador que a trava não conhece')
     if (tool_input && 'filename' in tool_input && !dentroDaSaida(cwd, tool_input.filename))
-      return barra('arquivo do navegador fora de dados/navegador-saida/ (print de app vai nas pastas de print do app)')
-    if (UPLOAD.has(sufixo) && !uploadLimpo(cwd, sufixo, tool_input)) return barra('upload de arquivo fora do projeto ou de segredo')
+      return barra('filename-fora-saida', 'arquivo do navegador fora de dados/navegador-saida/ (print de app vai nas pastas de print do app)')
+    if (UPLOAD.has(sufixo) && !uploadLimpo(cwd, sufixo, tool_input)) return barra('upload', 'upload de arquivo fora do projeto ou de segredo')
     return passa()
   }
+  if (!estrito) return passa()
   // o prefixo <servidor>_ cai so quando e o nome do proprio servidor (mcp__bling__bling_listar);
   // prefixo qualquer cairia e faria mcp__x__delete_list virar leitura
   const verbo = sufixo.startsWith(servidor + '_') ? sufixo.slice(servidor.length + 1) : sufixo
-  return VERBO_LEITURA.test(verbo) ? passa() : pede('ação de conta fora do navegador: confirme antes')
+  return VERBO_LEITURA.test(verbo) ? passa() : pede('acao-de-conta', 'ação de conta fora do navegador: confirme antes')
 }
 
 // Contrato da 5.28: o porteiro MCP da bancada importa esta funcao e repassa o permission_mode dele.
-export function avaliarMcp({ tool_name, tool_input, cwd, permission_mode } = {}) {
+// 5.49 (bloco B): e passa { estrito: true }; sem ele valem as regras soltas do aluno.
+export function avaliarMcp({ tool_name, tool_input, cwd, permission_mode } = {}, { estrito = false } = {}) {
   let d
   try {
-    d = julgar(tool_name, tool_input, typeof cwd === 'string' && cwd ? cwd : process.cwd())
+    d = julgar(tool_name, tool_input, typeof cwd === 'string' && cwd ? cwd : process.cwd(), estrito === true)
   } catch {
-    return barra(LEITURA_FALHOU)
+    return barra('erro-interno', LEITURA_FALHOU)
   }
   if (d.decisao === 'pede' && MODOS_ASK_CALADO.includes(permission_mode))
-    return barra('neste modo a confirmação não aparece: rode fora dele')
+    return barra('modo-sem-pergunta', 'neste modo a confirmação não aparece: rode fora dele')
   return d
 }
 
-// O porteiro do perfil (5.30, D19 e D20). A lib do Chrome dedicado so carrega pro servidor navegador:
-// ferramenta de outro servidor nao paga a rede. A origem local e a do claude mcp add do passo 3 do
-// Degrau 5 (C1 da 5.30); com --mcp-config ela vem dynamic e a configuracao lida nao e a que roda.
-const LIB_NAVEGADOR = new URL('../skills/conectar/scripts/lib/navegador.mjs', import.meta.url).href
-const ATUALIZAR = 'rode o `/atualizar-sabinos`'
-const FECHAR_E_ABRIR = 'feche e abra o Claude Code antes de usar'
-// o texto de religar vem da lib (c.religar), o mesmo do log do abrir-chrome
-const RECADO_DO_PERFIL = {
-  'porta-fechada': () => 'o Chrome dedicado não está aberto: rode `node .claude/skills/conectar/scripts/abrir-chrome.mjs` e tente de novo',
-  'outro-na-porta': c => `na porta ${c.porta} responde um Chrome que não é o deste projeto: rode o \`abrir-chrome.mjs\`; se ele disser que a porta mudou, ${c.religar}`,
-  'porta-mudou': c => `o \`navegador\` foi ligado na porta ${c.porta}, mas o Chrome deste projeto agora usa outra: ${c.religar}`,
-  'sem-anotacao': () => `o \`navegador\` não estava ligado quando o Claude Code abriu (ou a anotação se perdeu): ${FECHAR_E_ABRIR}`,
-  'religado': c => `o \`navegador\` foi ligado de novo depois que o Claude Code abriu, e o que está rodando segue na porta ${c.porta}: ${FECHAR_E_ABRIR}`,
-  'sem-config': () => `não deu pra saber em que porta o \`navegador\` foi ligado: ligue de novo pelo passo 3 do Degrau 5; se continuar, ${ATUALIZAR}`,
-  'sem-lib': () => `a conferência do Chrome deste projeto não abriu: ${ATUALIZAR}`,
-}
-RECADO_DO_PERFIL['sem-sentinela'] = RECADO_DO_PERFIL['outro-na-porta']
-
-async function conferirPeloKit({ raiz, janela, sessao }) {
-  let lib
-  try { lib = await import(LIB_NAVEGADOR) } catch { return { estado: 'sem-lib' } }
-  if (typeof lib.conferirServidor !== 'function' || typeof lib.RELIGAR !== 'string') return { estado: 'sem-lib' }
-  return { ...(await lib.conferirServidor({ raiz, janela, sessao })), religar: lib.RELIGAR }
-}
-
-// SessionStart: anota e nada mais. O stdout desse evento vira contexto da IA, entao nada sai nele.
-async function anotarPeloKit({ raiz, janela, sessao, origem }) {
-  try {
-    const lib = await import(LIB_NAVEGADOR)
-    lib.anotarSessao({ raiz, janela, sessao, origem })
-  } catch {}
-}
-
-export async function avaliarMcpComPerfil(entrada = {}, { conferir = conferirPeloKit } = {}) {
-  const d = avaliarMcp(entrada)
-  if (d.decisao !== 'passa' || entrada.tool_name.split('__')[1] !== 'navegador') return d
-  const origem = entrada.mcp_server?.source
-  if (origem === undefined) return barra('o Claude Code não disse de onde veio o `navegador`: atualize o Claude Code')
-  if (origem !== 'local') return barra('o `navegador` deste projeto não veio do passo 3 do Degrau 5: ligue de novo por ele')
-  let c
-  try {
-    c = await conferir({
-      raiz: typeof entrada.cwd === 'string' && entrada.cwd ? entrada.cwd : process.cwd(),
-      janela: entrada.janela, sessao: entrada.session_id,
-    })
-  } catch {
-    return barra('a trava não conseguiu conferir o Chrome deste projeto')
-  }
-  if (c?.estado === 'conferido') return d
-  const recado = RECADO_DO_PERFIL[c?.estado]
-  return barra(recado ? recado({ religar: ATUALIZAR, ...c }) : 'a trava não conseguiu conferir o Chrome deste projeto')
-}
+// 5.49 (bloco B): mensagem com o nome da trava e da regra, que a IA repete ao usuario
+const recadoDeBarra = r => `Barrada pela trava barrar-mcp, regra ${r.regra}: ${r.motivo}. ` +
+  'Diga ao usuário o nome da trava e da regra e decida o próximo passo; não refaça esta ação por outro caminho.\n'
 
 // rodada 5.20 (decisao 9, N37): o import.meta.url vem com o atalho resolvido e o argv[1] do jeito que
 // veio; com o projeto aberto por juncao ou link, a comparacao crua dava falso e a trava nao rodava
@@ -258,38 +246,24 @@ if (chamadoDireto()) {
   let bruto = ''
   process.stdin.setEncoding('utf8')
   process.stdin.on('data', pedaco => { bruto += pedaco })
-  process.stdin.on('end', async () => {
+  process.stdin.on('end', () => {
     let r
     try {
       const entrada = JSON.parse(bruto)
+      // 5.49 (bloco B): o hook so julga PreToolUse. O settings antigo ainda chama no SessionStart ate o
+      // passo settings do /atualizar-sabinos tirar o bloco; ali sai 0 calado
+      if (entrada.hook_event_name && entrada.hook_event_name !== 'PreToolUse') { process.exitCode = 0; return }
       // o cwd do Bash pode ter andado; o servidor MCP resolve o caminho pela raiz do projeto
-      const raiz = process.env.CLAUDE_PROJECT_DIR || entrada.cwd
-      if (entrada.hook_event_name === 'SessionStart') {
-        await anotarPeloKit({ raiz, janela: process.env.CLAUDE_PID, sessao: entrada.session_id, origem: entrada.source })
-        process.exitCode = 0
-        return
-      }
-      r = await avaliarMcpComPerfil({
-        tool_name: entrada.tool_name, tool_input: entrada.tool_input, mcp_server: entrada.mcp_server,
-        cwd: raiz, permission_mode: entrada.permission_mode,
-        janela: process.env.CLAUDE_PID, session_id: entrada.session_id,
+      r = avaliarMcp({
+        tool_name: entrada.tool_name, tool_input: entrada.tool_input,
+        cwd: process.env.CLAUDE_PROJECT_DIR || entrada.cwd, permission_mode: entrada.permission_mode,
       })
     } catch {
-      r = barra(LEITURA_FALHOU)
+      r = barra('erro-interno', LEITURA_FALHOU)
     }
+    // 5.49 (bloco B): sem o estrito nada pede, entao o ask saiu do hook; o que nao passa barra
     if (r.decisao === 'passa') { process.exitCode = 0; return }
-    if (r.decisao === 'pede') {
-      process.stdout.write(JSON.stringify({
-        hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: r.motivo },
-      }))
-      process.exitCode = 0
-      return
-    }
-    process.stderr.write(
-      `Uma ferramenta de fora foi barrada antes de rodar: ${r.motivo}.\n` +
-      `Pare aqui: explique pro usuario o que voce estava tentando fazer e peca a ele\n` +
-      `pra decidir o proximo passo, em vez de tentar de outro jeito pra fazer a mesma coisa.\n`,
-    )
+    process.stderr.write(recadoDeBarra(r))
     process.exitCode = 2
   })
 }

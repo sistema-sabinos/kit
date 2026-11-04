@@ -7,7 +7,7 @@ import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { hashArquivo, montarPlano, aplicarPlano, desfazer, registrarMudanca, mesclarSettings, resumo } from './atualizar-projeto.mjs'
+import { hashArquivo, montarPlano, aplicarPlano, desfazer, registrarMudanca, mesclarSettings, resumo, TIRADAS_DO_KIT, compararMae } from './atualizar-projeto.mjs'
 
 // fileURLToPath, e nao URL.pathname: no Windows o pathname vem com barra sobrando.
 const MOTOR = fileURLToPath(new URL('./atualizar-projeto.mjs', import.meta.url))
@@ -464,30 +464,30 @@ test('componente video depende do assistir-video (o olho final do editar-video u
 })
 
 // Rodada 5.28: o settings.json e misto (metade do kit, metade da pessoa). O deny e a trava do MCP
-// entram por juncao, sem tirar nada da pessoa: o ask antigo do .env fica e e inerte, porque o deny vale antes.
+// entram por juncao, sem tirar nada da pessoa. 5.49 (bloco B, 2026-11-03): o kit tirou o deny
+// e o SessionStart do barrar-mcp, e so isso sai (TIRADAS_DO_KIT)
 const SETTINGS_DO_KIT = JSON.parse(readFileSync(fileURLToPath(new URL('../_modelo/.claude/settings.json', import.meta.url)), 'utf8'))
 const ehBlocoMcp = b => (b.hooks || []).some(h => typeof h.command === 'string' && h.command.includes('barrar-mcp.mjs'))
+// 5.49 (bloco B): o ask da pessoa era o Read(./.env) antigo, que agora sai; vira um ask dela de verdade
 const SETTINGS_DA_PESSOA = {
-  permissions: { allow: ['Bash(npm test)'], ask: ['Read(./.env)'], deny: ['Read(./meu/**)'] },
+  permissions: { allow: ['Bash(npm test)'], ask: ['Bash(git push)'], deny: ['Read(./meu/**)'] },
   hooks: {
     PreToolUse: [{ matcher: 'Write', hooks: [{ type: 'command', command: 'node meu-hook.mjs' }] }],
     Stop: [{ hooks: [{ type: 'command', command: 'node outro.mjs' }] }],
   },
 }
 
-test('mesclarSettings junta deny e a trava do mcp sem tirar nada da pessoa e e idempotente', () => {
-  const { settings, faltava } = mesclarSettings(structuredClone(SETTINGS_DA_PESSOA), SETTINGS_DO_KIT)
-  assert.deepEqual(settings.permissions.allow, ['Bash(npm test)'])
-  assert.deepEqual(settings.permissions.ask, ['Read(./.env)'])
-  assert.deepEqual(settings.permissions.deny, ['Read(./meu/**)', ...SETTINGS_DO_KIT.permissions.deny], 'a da pessoa primeiro, depois a do kit')
-  for (const regra of ['mcp__playwright__browser_run_code_unsafe', 'mcp__navegador__browser_run_code_unsafe'])
-    assert.ok(settings.permissions.deny.includes(regra), regra)
+test('mesclarSettings junta a trava do mcp sem tirar nada da pessoa e e idempotente', () => {
+  assert.equal(SETTINGS_DO_KIT.permissions, undefined, 'canario: o kit tirou o permissions (5.49)')
+  const { settings, faltava, tirou } = mesclarSettings(structuredClone(SETTINGS_DA_PESSOA), SETTINGS_DO_KIT)
+  assert.deepEqual(settings.permissions, SETTINGS_DA_PESSOA.permissions, 'allow, ask e deny da pessoa ficam')
   assert.ok(settings.hooks.PreToolUse.some(b => b.matcher === 'Write'), 'o hook da pessoa fica')
   assert.equal(settings.hooks.PreToolUse.filter(ehBlocoMcp).length, 1)
   assert.deepEqual(settings.hooks.PreToolUse.find(ehBlocoMcp), SETTINGS_DO_KIT.hooks.PreToolUse.find(ehBlocoMcp))
   assert.deepEqual(settings.hooks.Stop, SETTINGS_DA_PESSOA.hooks.Stop, 'o Stop sem auto-sync fica como a pessoa deixou')
-  // a trava do mcp e a anotacao do navegador (5.31)
-  assert.equal(faltava.length, SETTINGS_DO_KIT.permissions.deny.length + 2)
+  // 5.49 (bloco B): so a trava do mcp falta; o deny e a anotacao do navegador sairam do kit
+  assert.deepEqual(faltava, ['trava do MCP (barrar-mcp)'])
+  assert.deepEqual(tirou, [])
   const segunda = mesclarSettings(structuredClone(settings), SETTINGS_DO_KIT)
   assert.deepEqual(segunda.settings, settings, 'a segunda passada nao muda nada')
   assert.deepEqual(segunda.faltava, [])
@@ -500,7 +500,6 @@ test('mesclarSettings junta deny e a trava do mcp sem tirar nada da pessoa e e i
   assert.equal(trocado.faltava.length, 1)
   // hook da pessoa no mesmo bloco da chamada antiga da trava fica, com o matcher dela (Codex comum)
   const misturado = structuredClone(SETTINGS_DA_PESSOA)
-  misturado.permissions.deny = [...SETTINGS_DO_KIT.permissions.deny]
   misturado.hooks.PreToolUse.push({ matcher: 'mcp__x__.*', hooks: [{ type: 'command', command: 'node barrar-mcp.mjs' }, { type: 'command', command: 'node auditoria.mjs' }] })
   misturado.hooks.PreToolUse.push({ matcher: 'Bash', hooks: [{ type: 'command', command: 'node regra.mjs --nome barrar-mcp' }] })
   const junto = mesclarSettings(misturado, SETTINGS_DO_KIT).settings
@@ -525,35 +524,55 @@ test('mesclarSettings guarda hook da pessoa que passa barrar-mcp.mjs como argume
   assert.equal(settings.hooks.PreToolUse.filter(b => b.matcher === 'mcp__.*').length, 1)
 })
 
-// 5.31: sem o SessionStart do barrar-mcp todo projeto atualizado barraria o navegador pra sempre
-test('mesclarSettings junta o SessionStart da anotacao do navegador sem tirar hook da pessoa', () => {
-  const blocoKit = SETTINGS_DO_KIT.hooks.SessionStart.find(ehBlocoMcp)
-  assert.ok(blocoKit, 'canario: o settings do kit tem o SessionStart do barrar-mcp')
-  const pessoa = structuredClone(SETTINGS_DA_PESSOA)
-  pessoa.hooks.SessionStart = [
+// 5.49 (bloco B, 2026-11-03): o settings do projeto da 5.39, com o deny, o ask velho e o
+// SessionStart do barrar-mcp que o kit tirou, e o que a pessoa pos por conta
+const SETTINGS_DA_539 = {
+  permissions: {
+    allow: ['Bash(npm test)'],
+    ask: ['Read(./.env)', 'Read(./.env.*)', 'Bash(git push)'],
+    deny: [...TIRADAS_DO_KIT.deny, 'Read(./meu/**)'],
+  },
+  hooks: {
+    PreToolUse: [SETTINGS_DO_KIT.hooks.PreToolUse.find(ehBlocoMcp)],
+    SessionStart: [
+      { matcher: 'startup', hooks: [{ type: 'command', command: 'node boas-vindas.mjs' }] },
+      { hooks: [{ type: 'command', command: 'node "${CLAUDE_PROJECT_DIR}/.claude/hooks/barrar-mcp.mjs"' }, { type: 'command', command: 'node lembrete.mjs' }] },
+      { hooks: [{ type: 'command', command: 'node .claude/hooks/barrar-mcp.mjs' }] },
+    ],
+  },
+}
+
+test('mesclarSettings tira o que o kit tirou e deixa o que e da pessoa', () => {
+  assert.ok(TIRADAS_DO_KIT.deny.length >= 16 && TIRADAS_DO_KIT.ask.length === 2, 'canario: a lista das tiradas nao veio vazia')
+  const { settings, faltava, tirou } = mesclarSettings(structuredClone(SETTINGS_DA_539), SETTINGS_DO_KIT)
+  assert.deepEqual(faltava, [])
+  assert.deepEqual(settings.permissions, { allow: ['Bash(npm test)'], ask: ['Bash(git push)'], deny: ['Read(./meu/**)'] })
+  assert.deepEqual(settings.hooks.SessionStart, [
     { matcher: 'startup', hooks: [{ type: 'command', command: 'node boas-vindas.mjs' }] },
-    // chamada antiga da trava no mesmo bloco de outro hook da pessoa: sai so ela
-    { hooks: [{ type: 'command', command: 'node .claude/hooks/barrar-mcp.mjs' }, { type: 'command', command: 'node lembrete.mjs' }] },
-  ]
-  const { settings, faltava } = mesclarSettings(pessoa, SETTINGS_DO_KIT)
-  assert.ok(faltava.includes('anotação do navegador (barrar-mcp)'), faltava.join(', '))
-  const inicio = settings.hooks.SessionStart
-  assert.ok(inicio.some(b => b.matcher === 'startup' && b.hooks[0].command === 'node boas-vindas.mjs'), 'o hook da pessoa fica')
-  assert.ok(inicio.some(b => b.hooks.length === 1 && b.hooks[0].command === 'node lembrete.mjs'), 'o lembrete da pessoa fica')
-  assert.equal(inicio.filter(ehBlocoMcp).length, 1)
-  assert.deepEqual(inicio.find(ehBlocoMcp), blocoKit)
+    { hooks: [{ type: 'command', command: 'node lembrete.mjs' }] },
+  ], 'o hook da pessoa fica, inclusive o que dividia o bloco com a trava')
+  assert.equal(tirou.length, TIRADAS_DO_KIT.deny.length + 2 + 1, tirou.join(', '))
+  assert.ok(tirou.includes('ask Read(./.env.*)') && tirou.includes('anotação do navegador (barrar-mcp)'), tirou.join(', '))
   const segunda = mesclarSettings(structuredClone(settings), SETTINGS_DO_KIT)
-  assert.ok(!segunda.faltava.includes('anotação do navegador (barrar-mcp)'), 'a segunda passada nao junta de novo')
-  assert.deepEqual(segunda.settings.hooks.SessionStart, inicio)
+  assert.deepEqual([segunda.settings, segunda.faltava, segunda.tirou], [settings, [], []], 'a segunda passada nao muda nada')
+  // so as tiradas: o permissions e o SessionStart somem inteiros
+  const soDoKit = mesclarSettings({ permissions: { deny: [...TIRADAS_DO_KIT.deny] }, hooks: { SessionStart: [SETTINGS_DA_539.hooks.SessionStart[2]] } }, SETTINGS_DO_KIT).settings
+  assert.equal(soDoKit.permissions, undefined)
+  assert.equal(soDoKit.hooks.SessionStart, undefined)
+  // regra que o kit voltar a pedir nao sai
+  const pede = mesclarSettings(structuredClone(SETTINGS_DA_539), { ...SETTINGS_DO_KIT, permissions: { deny: ['Read(./.env)'] } })
+  assert.ok(pede.settings.permissions.deny.includes('Read(./.env)'))
 })
 
-test('plano avisa settings.json sem as travas do kit', () => comPasta(raiz => {
+test('plano avisa settings.json sem as travas do kit e com o que o kit tirou', () => comPasta(raiz => {
   const kit = montarKit(raiz, { [INICIAR]: 'novo\n', '.claude/settings.json': JSON.stringify(SETTINGS_DO_KIT) })
   const projeto = montarProjeto(raiz, { [INICIAR]: 'novo\n', '.claude/settings.json': JSON.stringify(SETTINGS_DA_PESSOA) })
-  const n = SETTINGS_DO_KIT.permissions.deny.length + 2
-  assert.ok(resumo(montarPlano({ kit, projeto })).split('\n').includes(`settings.json: faltam ${n} regra(s) ou trava(s) do kit; rodar o passo settings`))
+  assert.ok(resumo(montarPlano({ kit, projeto })).split('\n').includes('settings.json: faltam 1 regra(s) ou trava(s) do kit; rodar o passo settings'))
   writeFileSync(join(projeto, '.claude/settings.json'), JSON.stringify(SETTINGS_DO_KIT))
-  assert.ok(!/settings\.json: faltam/.test(resumo(montarPlano({ kit, projeto }))), 'com tudo junto, o aviso some')
+  assert.ok(!/settings\.json: (faltam|sobram)/.test(resumo(montarPlano({ kit, projeto }))), 'com tudo junto, o aviso some')
+  writeFileSync(join(projeto, '.claude/settings.json'), JSON.stringify(SETTINGS_DA_539))
+  const n = TIRADAS_DO_KIT.deny.length + 3
+  assert.ok(resumo(montarPlano({ kit, projeto })).split('\n').includes(`settings.json: sobram ${n} regra(s) ou trava(s) que o kit tirou; rodar o passo settings`))
 }))
 
 test('CLI settings mostra antes e depois, so grava com --gravar, e recusa gravar sem o barrar-mcp.mjs no projeto', () => comPasta(raiz => {
@@ -577,3 +596,105 @@ test('CLI settings mostra antes e depois, so grava com --gravar, e recusa gravar
   assert.deepEqual(JSON.parse(gravado), mesclarSettings(structuredClone(SETTINGS_DA_PESSOA), SETTINGS_DO_KIT).settings)
   assert.match(gravado, /^\{\n {2}"permissions"/)
 }))
+
+// 5.49 (bloco B, 2026-11-03): recusa que segura a IA comeca com o nome da trava e da regra
+const FIM_DA_RECUSA = 'Diga ao usuário o nome da trava e da regra e decida o próximo passo; não refaça esta ação por outro caminho.'
+// a recusa sai no stderr numa linha so, depois do que o comando ja tinha mostrado
+const recusou = (r, regra) => r.codigo === 1 && r.saida.split('\n').some(l => l.startsWith(`Barrada pela trava atualizar-projeto, regra ${regra}: `) && l.endsWith(FIM_DA_RECUSA))
+
+test('linha de comando: as recusas saem no formato da trava, e erro de uso segue com erro:', () => comPasta(raiz => {
+  const { kit, projeto } = cenario(raiz)
+  const fora = rodar(['plano', join(raiz, 'kit'), '--kit', kit])
+  assert.ok(recusou(fora, 'fora-de-projeto'), fora.saida)
+  rodar(['plano', projeto, '--kit', kit])
+  writeFileSync(join(projeto, INICIAR), 'mexi depois do plano\n')
+  const velho = rodar(['aplicar', projeto])
+  assert.ok(recusou(velho, 'plano-velho'), velho.saida)
+  rodar(['plano', projeto, '--kit', kit])
+  const aprovar = rodar(['aplicar', projeto, '--tambem', '_contexto/empresa.md'])
+  assert.ok(recusou(aprovar, 'aprovar-fora-do-plano'), aprovar.saida)
+  escrever(kit, { '_modelo/.claude/settings.json': JSON.stringify(SETTINGS_DO_KIT) })
+  escrever(projeto, { '.claude/settings.json': JSON.stringify(SETTINGS_DA_PESSOA) })
+  const sem = rodar(['settings', projeto, '--kit', kit, '--gravar'])
+  assert.ok(recusou(sem, 'settings-sem-trava'), sem.saida)
+  const uso = rodar(['plano', projeto, '--tambme', 'x'])
+  assert.ok(uso.codigo === 1 && uso.saida.startsWith('erro: opcao desconhecida'), 'canario: erro de uso fica como era')
+}))
+
+// pasta-mae e kit novo de mentira: as duas com o minimo que o mae confere
+function comMae(fn) {
+  return comPasta(raiz => {
+    const base = { '_modelo/AGENTS.md': 'agents\n', '.claude/skills/setup/SKILL.md': 'setup\n', 'README.md': 'leia\n' }
+    const mae = join(raiz, 'mae')
+    const kitNovo = join(raiz, 'kit-novo')
+    // 5.49 (revisao do bloco B, 2026-11-03): entram o y.md do kit que a pessoa editou (caminho com
+    // impressao, conteudo desconhecido), a tabela de impressoes velha, a skill e o template da pessoa, o
+    // lixo gerado e o arquivo do kit que saiu; a tabela "mae" cobre o docs/guia.md
+    escrever(mae, { ...base, VERSAO: '5.39\n',
+      '_modelo/.claude/skills/a/SKILL.md': 'velho\n', '_modelo/.claude/skills/b/SKILL.md': 'mexi\n',
+      '_modelo/x.md': 'velho' + CRLF, '_modelo/y.md': 'eu mexi\n', '_modelo/velho.md': 'saiu\n',
+      '_modelo/templates/meu.md': 'meu\n', '_modelo/s/__pycache__/a.cpython-312.pyc': 'lixo\n',
+      'docs/guia.md': 'guia antigo\n', 'docs/outro.md': 'eu\n', '.claude/skills/velha/SKILL.md': 'velha\n',
+      '.claude/skills/minha-skill/SKILL.md': 'minha\n', '_ferramentas/impressoes.json': '{"versao":"5.39"}\n',
+      'Projeto-01/_contexto/empresa.md': 'minha\n', '.env': 'X=1\n' })
+    const impressao = txt => hashArquivo(Buffer.from(txt))
+    escrever(kitNovo, { ...base, VERSAO: '5.41\n',
+      '_modelo/.claude/skills/a/SKILL.md': 'novo a\n', '_modelo/.claude/skills/b/SKILL.md': 'novo b\n',
+      '_modelo/x.md': 'novo x\n', '_modelo/y.md': 'novo y\n', 'docs/guia.md': 'guia novo\n', 'docs/outro.md': 'outro\n',
+      '_ferramentas/novo.mjs': 'x\n',
+      '_ferramentas/impressoes.json': JSON.stringify({ versao: '5.41', arquivos: {
+        // o mexi so e conhecido noutro caminho: a impressao vale por caminho
+        '.claude/skills/a/SKILL.md': { [impressao('velho\n')]: '5.39' },
+        '.claude/skills/c/SKILL.md': { [impressao('mexi\n')]: '5.20' },
+        'x.md': { [impressao('velho\n')]: '5.30' },
+        'y.md': { [impressao('y do kit\n')]: '5.30' },
+        'velho.md': { [impressao('saiu\n')]: '5.30' },
+      }, mae: {
+        'docs/guia.md': { [impressao('guia antigo\n')]: '5.39' },
+        '.claude/skills/velha/SKILL.md': { [impressao('velha\n')]: '5.20' },
+      } }) })
+    return fn({ raiz, mae, kitNovo })
+  })
+}
+
+test('mae: separa novo, mudou sem mexer, editado e o que some, e igual nao aparece', () => comMae(({ mae, kitNovo }) => {
+  const g = compararMae({ kitNovo, mae })
+  assert.deepEqual(g, {
+    novo: ['_ferramentas/novo.mjs'],
+    // o x.md da pasta-mae esta em CRLF: conta como o mesmo conteudo; a tabela de impressoes e gerada
+    'mudou-sem-mexer': ['VERSAO', '_ferramentas/impressoes.json', '_modelo/.claude/skills/a/SKILL.md', '_modelo/x.md', 'docs/guia.md'],
+    // sem impressao vale editado, a regra segura; o y.md tem impressao, mas de outro conteudo
+    editado: ['_modelo/.claude/skills/b/SKILL.md', '_modelo/y.md', 'docs/outro.md'],
+    // so o que o kit ja entregou; a skill, o template e o lixo da pessoa ficam fora
+    sumiu: ['.claude/skills/velha/SKILL.md', '_modelo/velho.md'],
+  })
+  const todos = Object.values(g).flat()
+  assert.ok(!todos.some(r => r.startsWith('Projeto-01/') || r === '.env' || r === 'README.md'), 'projeto, .env e o igual ficam fora')
+  assert.ok(!todos.some(r => r.includes('minha-skill') || r.includes('templates/meu') || r.endsWith('.pyc')), 'o que e da pessoa nao vira "saiu do kit"')
+}))
+
+test('linha de comando mae: lista os quatro grupos e recusa pasta que nao e kit', () => comMae(({ raiz, mae, kitNovo }) => {
+  const r = rodar(['mae', kitNovo, '--mae', mae])
+  assert.equal(r.codigo, 0, r.saida)
+  assert.ok(r.saida.startsWith('Pasta-mae na versao 5.39, kit novo na 5.41.'), r.saida)
+  for (const linha of ['Novo (entra no sim so): 1', 'Mudou e ninguem mexeu (entra no sim so): 5', 'Editado na pasta-mae (pergunta um por um): 3',
+    'Some, saiu do kit (pergunta um por um): 2', '  - docs/outro.md', '  - .claude/skills/velha/SKILL.md'])
+    assert.ok(r.saida.split('\n').includes(linha), `sem a linha ${linha}: ${r.saida}`)
+  const naoKit = rodar(['mae', join(raiz, 'nada'), '--mae', mae])
+  assert.ok(recusou(naoKit, 'fora-do-kit'), naoKit.saida)
+}))
+
+// 5.49 (revisao do bloco B, 2026-11-03): entrada antiga do mudancas.md que mandava por de volta o que a
+// TIRADAS_DO_KIT tira, ou que confere o hook de antes, deixava o /atualizar-sabinos num vai e volta.
+// Fora a travas-soltas, nenhum "Te afeta se", "Como aplicar" ou "Como testar" cita o que saiu.
+test('mudancas.md: nenhuma entrada religa o que o kit tirou na 5.49', () => {
+  const md = readFileSync(fileURLToPath(new URL('./mudancas.md', import.meta.url)), 'utf8').split(CRLF).join('\n')
+  const proibidos = [...new Set([...TIRADAS_DO_KIT.deny, ...TIRADAS_DO_KIT.ask, 'avaliarMcpComPerfil', 'anotarSessao', 'SessionStart', 'code_unsafe'])]
+  const entradas = md.split(/\n(?=## )/).slice(1).map(b => [b.match(/^## (\S+)/)[1],
+    b.split('\n').filter(l => /^\*\*(Te afeta se|Como aplicar|Como testar):\*\*/.test(l)).join('\n')])
+  // canario: o leitor acha as entradas e os campos
+  assert.ok(entradas.length > 50 && entradas.find(([id]) => id === 'aviso-backup-falhou')?.[1].includes('.backup-falhou'), 'o leitor nao achou as entradas')
+  const religam = entradas.filter(([id, campos]) => id !== 'travas-soltas' && proibidos.some(p => campos.includes(p)))
+    .map(([id, campos]) => `${id}: ${proibidos.filter(p => campos.includes(p)).join(' | ')}`)
+  assert.deepEqual(religam, [])
+})

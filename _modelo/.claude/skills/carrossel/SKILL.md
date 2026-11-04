@@ -320,6 +320,7 @@ Se o usuário já tiver chave de algum serviço pago de imagem (OpenAI, Stabilit
    ```bash
    node .claude/skills/conectar/scripts/lib/liberar-gasto-cli.mjs --usd <total em dólar> --autorizado --contexto "<slug>, carrossel"
    ```
+   Se o total passa do teto por vez (o `limite_gasto_usd` do `_contexto/mercado-livre.md`, ou US$ 4 sem esse arquivo ou sem o campo), o "pode ir" do passo 2 já citou o valor: junte `--acima-do-teto <o total do passo 2>` nesta mesma chamada, sem perguntar de novo. O orçamento do mês não aceita esse jeito.
    Código 3: nada é gerado, e a pessoa ouve o motivo do campo `parou`, com as palavras dele. Código 0: gerar.
 5. **Registrar o gasto** em `dados/custos.jsonl`, uma linha por rodada, no contrato `{em, servico, usd, contexto}`, com a `reserva` que a liberação devolveu (sem `reserva` na resposta, sem o `--reserva`). O registrador do pacote faz isso:
    ```bash

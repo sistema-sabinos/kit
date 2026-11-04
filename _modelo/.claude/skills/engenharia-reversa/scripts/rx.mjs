@@ -13,7 +13,7 @@ import { join, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
 import { conectar } from '../../mercado-livre/scripts/lib/chrome.mjs'
-import { sessaoCaiu, AVISO } from '../../conectar/scripts/lib/navegador.mjs'
+import { sessaoDaPagina, AVISO } from '../../conectar/scripts/lib/navegador.mjs'
 import { tokenMl } from '../../mercado-livre/scripts/lib/tokens.mjs'
 import { mlGet } from '../../mercado-livre/scripts/lib/ml-api.mjs'
 import { lerEnv } from '../../mercado-livre/scripts/lib/env.mjs'
@@ -32,13 +32,20 @@ import { descobrirModelo, estimar, precoDoDia, verFotos } from './lib/ver.mjs'
 export function argumentos(argv) {
   const a = lerArgs(argv)
   const termo = typeof a.termo === 'string' ? a.termo.trim() : ''
-  if (!termo) throw new Error('uso: --termo "<o que o comprador digita na busca>" [--so-tradicional] [--ver [--sim]]')
+  if (!termo) throw new Error('uso: --termo "<o que o comprador digita na busca>" [--so-tradicional] [--ver [--sim [--acima-do-teto <valor do pode ir>]]]')
   // chave pura: "--sim nao" viraria sim e gastaria
   for (const chave of ['sim', 'ver', 'so-tradicional']) if (a[chave] !== undefined && a[chave] !== true) throw new Error(`--${chave} nao leva valor: escreva so --${chave}`)
   if (a.sim && !a.ver) throw new Error('--sim so vale junto com --ver')
+  // 5.49 (bloco C, 2026-11-03): o valor do pode ir acima do teto por lote (limite_gasto_usd)
+  let acimaDoTeto
+  if (a['acima-do-teto'] !== undefined) {
+    acimaDoTeto = Number(String(a['acima-do-teto']).replace(',', '.'))
+    if (!Number.isFinite(acimaDoTeto) || acimaDoTeto <= 0) throw new Error(`--acima-do-teto precisa do valor em dolar que a pessoa ouviu no pode ir, e veio "${a['acima-do-teto']}"`)
+    if (!a.sim) throw new Error('--acima-do-teto so vale junto com --ver --sim')
+  }
   const soTradicional = Boolean(a['so-tradicional'])
   // a rodada tradicional grava em pasta e relatorio proprios, senao apaga a outra do mesmo dia
-  return { termo, slug: slugDe(termo) + (soTradicional ? '-tradicional' : ''), soTradicional, ver: Boolean(a.ver), sim: Boolean(a.sim) }
+  return { termo, slug: slugDe(termo) + (soTradicional ? '-tradicional' : ''), soTradicional, ver: Boolean(a.ver), sim: Boolean(a.sim), ...(acimaDoTeto !== undefined ? { acimaDoTeto } : {}) }
 }
 
 export const caminhos = (slug, data, raiz = RAIZ) => ({
@@ -148,7 +155,7 @@ function gravarSaidas(c, coleta, fichas) {
 // a trava e o teto (a estimativa com folga, porque o consumo de tokens varia em volta da media medida).
 // Teto do gasto real: o mesmo teto mostrado a pessoa e reservado no orcamento (a trava ja conferiu que
 // ele cabe no orcamento do mes ou no limite_gasto_usd por lote).
-export async function passoVer({ porAnuncio, chave, hoje, sim, descobrir = descobrirModelo, ver = verFotos, log = () => {},
+export async function passoVer({ porAnuncio, chave, hoje, sim, acimaDoTeto, descobrir = descobrirModelo, ver = verFotos, log = () => {},
   liberar = (pedido) => liberarGasto(pedido, { contexto: 'engenharia-reversa' }), fechar = fecharReserva }) {
   const fotos = porAnuncio.reduce((n, x) => n + x.fotos.length, 0)
   const modelo = await descobrir(chave)
@@ -156,7 +163,7 @@ export async function passoVer({ porAnuncio, chave, hoje, sim, descobrir = desco
   if (est.recusado) return { codigo: 3, saida: { parou: est.recusado, modelo, fotos } }
   const teto = Math.ceil(est.usd * FOLGA_TETO * 100) / 100
   const resumo = { modelo, fotos, estimativa_usd: est.usd, teto_usd: teto, minutos: est.minutos, preco_conferido_em: est.preco.conferido_em, promocional_ate: est.preco.promocional_ate }
-  const lib = liberar({ estimativaUsd: teto, autorizado: sim })
+  const lib = liberar({ estimativaUsd: teto, autorizado: sim, ...(acimaDoTeto !== undefined ? { acimaDoTetoUsd: acimaDoTeto } : {}) })
   if (lib.aviso) resumo.aviso = lib.aviso
   if (lib.codigo !== 0) return { codigo: 3, saida: { parou: lib.parou, ...resumo } }
   const reserva = lib.reserva || null
@@ -219,7 +226,7 @@ if (ehCli) {
       const abrir = async url => {
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 })
         await page.waitForTimeout(2500)
-        const caiu = sessaoCaiu({ url: page.url(), host: 'mercadolivre.com.br' })
+        const caiu = await sessaoDaPagina(page, 'mercadolivre.com.br')
         if (caiu) throw Object.assign(new Error(AVISO[caiu]), { sessao: caiu })
       }
       medidor = await abrirMedidor()
@@ -247,7 +254,7 @@ if (ehCli) {
       const c = caminhos(a.slug, coleta.data)
       const chave = lerEnv().GEMINI_API_KEY
       if (!chave) throw Object.assign(new Error('falta GEMINI_API_KEY no .env (o /conectar ensina a pegar)'), { codigo: 2 })
-      const r = await passoVer({ porAnuncio: fotosEmDisco(coleta), chave, hoje, sim: a.sim, log: m => console.error(m) })
+      const r = await passoVer({ porAnuncio: fotosEmDisco(coleta), chave, hoje, sim: a.sim, acimaDoTeto: a.acimaDoTeto, log: m => console.error(m) })
       if (r.codigo === 3) console.log(JSON.stringify(r.saida))
       else if (r.codigo === 1) {
         // o que foi pago fica em disco, pra ninguem pagar de novo sem saber

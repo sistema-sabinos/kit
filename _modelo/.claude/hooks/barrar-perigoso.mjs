@@ -19,6 +19,13 @@
 // A pasta-mae (SabinOS-Sistema/.claude/settings.json) nao liga esta trava; so o projeto.
 // Barra comando destrutivo antes de ele rodar, pelo hook PreToolUse do Claude Code. Desde a
 // 5.40, um caso so pergunta em vez de barrar: o `rm -r` na ferramenta PowerShell (ver a entrada).
+// 5.49 (bloco A, 2026-11-03): barram so o git que joga trabalho fora (bloco 7), o disco
+// (bloco 10), o -EncodedCommand (bloco 9) e o erro dentro da trava. Apagar pasta pergunta nas tres
+// ferramentas, e a pasta temporaria apaga calada (bloco 5, perguntaDeApagar). Sairam o
+// baixar-e-executar (bloco 8), o chmod 777 e o texto entre aspas lido como comando (bloco 9), o git
+// que a trava nao le (bloco 6, fica so no estrito da bancada) e a leitura de segredo (bloco 11).
+// 5.49 (D-embrulho e D-apelido, 2026-11-03): o trecho entre aspas de quem executa comando (bash -c, cmd
+// /c, powershell -Command, Invoke-Expression, eval) e o comando do apelido do git com ! voltam a ser lidos.
 // Le o JSON do hook na entrada padrao, olha tool_input.command, e sai com codigo 2
 // pra bloquear, escrevendo o motivo no stderr (o assistente le esse texto e explica).
 // Conferido na doc oficial (code.claude.com/docs/en/hooks, 2026-09-21): exit 2 bloqueia,
@@ -36,9 +43,9 @@
 // roda shell). A doc nao mostra o tool_input do Monitor no hook; o campo vem do schema dela.
 // rodada 5.20 (N6, N10): o git le o cwd que o Claude Code manda na entrada (campo cwd), pra
 // saber se o alvo do checkout e do restore e uma pasta
-import { realpathSync, statSync } from 'node:fs'
-import { homedir } from 'node:os'
-import { resolve } from 'node:path'
+import { lstatSync, readdirSync, realpathSync, statSync } from 'node:fs'
+import { homedir, tmpdir } from 'node:os'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 // correcao 5 (terceira revisao): as duas correcoes anteriores tentaram listar quem E
@@ -53,6 +60,11 @@ import { fileURLToPath } from 'node:url'
 // mesmo, recursivo. O preco e testar como comando um texto que era so citacao de um
 // comando desconhecido (falso positivo ocasional); numa trava de seguranca, errar pra
 // esse lado e melhor que deixar passar comando perigoso disfarcado (falso negativo).
+// 5.49 (bloco 9, 2026-11-03): o ehPerigoso nao desce mais nos suspeitos (`bash -c "git reset
+// --hard"` passa), nem a perguntaDeApagar (`bash -c "rm -rf x"` passa); desce so o ehGitPerigoso no
+// estrito da bancada. 5.49 (D-embrulho, 2026-11-03): a logica de antes desta correcao volta, so que
+// pela lista de quem executa (embrulhados): `bash -c "git reset --hard"` barra e `bash -c "rm -rf x"`
+// pergunta; o texto de qualquer outro programa segue sem ser lido.
 // token "seguro" pros padroes de varios argumentos abaixo (nome de arquivo, -Path, etc):
 // qualquer coisa que nao seja separador de shell (espaco, ; & |), parenteses, redirect
 // (< >), substituicao de comando (backtick, $) ou fim de linha. Sem essa exclusao, um
@@ -152,16 +164,14 @@ function leitorDeEscritores(comando) {
 //    real mais adiante, e o comando perigoso caindo picotado entre o texto que sobra
 //    fora do par (onde falta uma das duas flags) e o texto suspeito extraido de dentro
 //    dele (onde falta a outra): `rm -r pasta's_backup -f && echo it's feito`.
-// 3. Baixar-e-executar fora das tres formas que a trava conhece (pipe pro sh,
-//    `sh -c "$(curl ...)"` e `bash <(curl ...)`, rodada 5.14): `eval "$(curl x)"`,
-//    `. <(curl x)` e baixar pra um arquivo e rodar depois (`curl -o a.sh x && sh a.sh`).
-//    E o contrario: `<(curl ...)` logo depois de um texto que termina em "sh" (tipo
-//    `diff <(curl x/a.sh) <(curl y)`) barra sem precisar.
+// 3. Baixar-e-executar passa inteiro desde a 5.49 (bloco 8, 2026-11-03: o instalador
+//    oficial de uv, bun e do Claude Code e assim): `curl x | sh`, `sh -c "$(curl ...)"`,
+//    `bash <(curl ...)`, `irm x | iex` e `iex (irm x)`.
 // 4. Trava de disco (rodada 5.17). Passam: `cp ubuntu.iso /dev/sdb` (o cp so cita),
 //    `fdisk /dev/sda` e `parted /dev/sda mklabel gpt` (interativos ou com verbo depois),
 //    `nvme format /dev/nvme0n1`, `hdparm --security-erase`, `dd of=$DISCO` (o limite 1),
-//    `echo "format D:" | cmd` e `rg --pre format` (o `git -c alias.f=!format f D:` barra desde
-//    a 5.28, pelo limite 7). E o
+//    `echo "format D:" | cmd` e `rg --pre format` (o `git -c alias.f='!format D:' f` barra de novo
+//    desde a 5.49, D-apelido: o comando do apelido com ! e lido). E o
 //    contrario, barram sem precisar: `notepad mkfs.txt`, `wipefs /dev/sdb` sem -a (so
 //    lista) e mencao solta como `echo usar wipefs depois >> licoes.md`.
 // 5. Copias de sombra do Windows (rodada 5.18, doc conferida em 2026-10-19 em
@@ -169,7 +179,8 @@ function leitorDeEscritores(comando) {
 //    `vssadmin delete shadows` barra. Passam `vssadmin resize shadowstorage` (a doc avisa
 //    "Resizing the storage association may cause shadow copies to disappear"), `wmic
 //    shadowcopy delete` e o Delete() do Win32_ShadowCopy pelo PowerShell.
-// 6. Apagar por outro programa (rodada 5.20, N9) e uma classe aberta: barram as formas
+// 6. Apagar por outro programa (rodada 5.20, N9) e uma classe aberta (desde a 5.49 pergunta em vez
+//    de barrar, bloco 5; as formas abaixo sem alvo lido perguntam "uma pasta"): barram as formas
 //    comuns (find -delete e -exec rm, xargs rm, node -e com rmSync/rmdirSync recursivo ou
 //    unlinkSync, python -c com rmtree/os.remove/os.rmdir/os.unlink, rimraf e del-cli pelo
 //    npx, [IO.Directory]::Delete com $true, [IO.File]::Delete, .Delete($true), .Delete() no
@@ -183,7 +194,9 @@ function leitorDeEscritores(comando) {
 //    ForEach barra, seja qual for o objeto (`$api | % { $_.Delete(id) }`).
 // 7. Git (rodada 5.20, N6 e N10). `git checkout arquivo` sem `--` fica livre (nao da pra
 //    saber sem o git se a palavra e branch ou arquivo; pasta, ponto, curinga, `:/` e a lista
-//    que sai de $(...) ou do xargs barram). Desde a 5.28, nos verbos que a trava julga, barram
+//    que sai de $(...) ou do xargs barram). Desde a 5.49 (bloco 6, 2026-11-03) o que segue
+//    ate o fim deste item (o naoLe) saiu do kit, e desde a 5.49 (D-bancada-git) tambem do estrito da
+//    bancada, onde sobra so o apelido por -c ou --config-env. Desde a 5.28, nos verbos que a trava julga, barram
 //    a palavra com variavel, substituicao, crase ou chaves, o git depois do xargs e o apelido
 //    por -c ou --config-env; pelo xargs com -I, -i ou --replace, a troca no verbo. A barra invertida se
 //    le do jeito do bash e do PowerShell. Nao decidem o redirecionamento (`2>$null`), o
@@ -197,11 +210,12 @@ function leitorDeEscritores(comando) {
 //    solta no meio dos argumentos de outro git abre a leitura de um git novo (`git reset git
 //    --hard` passa), e o cd so muda a pasta do git que vem depois dele no mesmo nivel (o cd de
 //    fora de um ( ) nao chega no git de dentro).
-// 8. Leitura de segredo (rodada 5.28) e lombada. Barra o codigo inline do node e do python, o
-//    sqlite3, o Get-Content, o type e a copia com `.env`, perfil, sessao salva ou HAR, e o
-//    download com cookie. Passam o script que le o arquivo sozinho, o codigo mandado pela entrada
-//    (`py - <<EOF`), o grep, o mv, o tar e o caminho montado por Join-Path.
-function classificarTrechosEntreAspas(comando) {
+// 8. Leitura de segredo (rodada 5.28) saiu na 5.49 (bloco 11, 2026-11-03): `cat .env`,
+//    `Get-Content .env` e o codigo inline lendo segredo passam; o backup segue segurando a senha.
+// 5.49 (Codex comum, 2026-11-04): literal liga a marca LITERAL no trecho entre aspas simples com $ ou %
+// (so a leitura do alvo de apagar pede), porque no bash e no PowerShell a variavel entre aspas simples
+// nao expande, e no cmd a aspa simples e parte do nome: '$TMPDIR/x' e uma pasta com esse nome
+function classificarTrechosEntreAspas(comando, { literal = false } = {}) {
   const RE_ASPAS = /"([^"]*)"|'([^']*)'/g
   const suspeitos = []
   let limpo = ''
@@ -248,7 +262,8 @@ function classificarTrechosEntreAspas(comando) {
     // o #, o < e o > do comeco sao texto (`git clean -e "#keep"`), entao levam a marca ASPA (5.28)
     if (conteudo) {
       const t = (m[1] !== undefined ? conteudo.split('`').join('$') : conteudo).replace(/\s/g, NUL).replace(/[(){}`;&|]/g, '_')
-      marcado.push(/^[#<>]/.test(t) ? ASPA + t : t)
+      const marca = literal && m[2] !== undefined && /[$%]/.test(t) ? LITERAL : ''
+      marcado.push(marca + (/^[#<>]/.test(t) ? ASPA + t : t))
     } else if (sequencia) sequencia.fim = RE_ASPAS.lastIndex
     else if (!/\S/.test(comando[m.index - 1] ?? ' ')) { sequencia = { posicao: marcado.length, fim: RE_ASPAS.lastIndex }; marcado.push(VAZIO) }
   }
@@ -261,6 +276,7 @@ function classificarTrechosEntreAspas(comando) {
 const NUL = String.fromCharCode(0)
 const VAZIO = String.fromCharCode(2)
 const ASPA = String.fromCharCode(3)
+const LITERAL = String.fromCharCode(4)
 
 // usado so pelo rmPerigoso (ver comentario dele) pra dividir a linha em comandos; a
 // limpeza principal de aspas de todo o resto do arquivo e a classificarTrechosEntreAspas
@@ -323,7 +339,8 @@ function posicoes(texto, re) {
   return achadas
 }
 // rodada 5.18 (chat 4, F1b): a opcao tambem pode vir pronta, { posicoes: [...] } em ordem
-// crescente, pra opcao que uma regex sozinha so acha relendo o texto (ver processoComDownload)
+// crescente, pra opcao que uma regex sozinha so acha relendo o texto (ver chavesS; o processoComDownload
+// saiu na 5.49)
 function opcaoDepoisDaPalavra(texto, rePalavra, reOpcao, reFim = /\n/g) {
   const listas = (Array.isArray(reOpcao) ? reOpcao : [reOpcao]).map(re => re.posicoes || posicoes(texto, re))
   const ks = listas.map(() => 0)
@@ -410,7 +427,12 @@ const MOTIVO_CLEAN = 'apaga arquivo e pasta fora do controle de versao, sem conf
 const MOTIVO_STASH = 'apaga pra sempre o trabalho guardado no stash'
 const MAX_PASTAS_CONFERIDAS = 1000
 
+// 5.49 (Codex comum, revisao interna, 2026-11-04): o caminho do cmd.exe pela variavel (`& $env:ComSpec /c "..."`,
+// `%ComSpec%`, `$COMSPEC` do Git Bash) e o proprio cmd. 5.49 (regressao contra a v5.40, 2026-11-04): com
+// chaves tambem (`${env:ComSpec}`, `${COMSPEC}`)
+const RE_COMSPEC = /^(?:[$]env:comspec|%comspec%|[$]comspec|[$][{]env:comspec[}]|[$][{]comspec[}])$/i
 function nomeDoPrograma(palavra) {
+  if (RE_COMSPEC.test(palavra)) return 'cmd'
   return palavra.replace(/^.*[\\\/]/, '').replace(/\.(?:exe|cmd)$/i, '').toLowerCase()
 }
 
@@ -542,44 +564,14 @@ function mudarPasta(conta, dir, alvo) {
 // shell (variavel, $'..', $(...), crase, chaves, a lista do xargs, apelido por -c) barra: o criterio
 // "barra o que nao entende" da D1 da 5.27 da bancada. A barra invertida o bash tira e o PowerShell
 // guarda (caminho do Windows), entao a palavra com ela e lida dos dois jeitos
+// 5.49 (D-bancada-git, 2026-11-03): no estrito da bancada sobra so o apelido por -c ou --config-env;
+// sairam o naoLe (variavel, substituicao, crase, chaves), o xargs e a troca do -I, com o
+// commitAntesDoTraco e o argumentosLidos, que so ele usava
 const JULGADOS = new Set(['push', 'reset', 'clean', 'checkout', 'restore', 'switch', 'stash'])
-const MOTIVO_NAO_LE = 'esta escrito de um jeito que a trava nao le com certeza (variavel, substituicao, chaves, xargs ou apelido) e pode jogar trabalho fora'
+const MOTIVO_NAO_LE = 'usa um apelido do git, que a trava nao le com certeza, e pode jogar trabalho fora'
 const BARRA = String.fromCharCode(92)
-// as chaves coladas em @ ou ^ sao do git (reflog, upstream e peel: HEAD@{1}, @{-1}, v1^{commit}), nao do shell
-function naoLe(a) { return a.includes('$') || a.split('@' + SUB).join('').split('^' + SUB).join('').includes(SUB) }
 function semBarra(a) { return a.replace(/\\([\s\S])/g, '$1') }
-// no checkout com -- depois, a primeira palavra solta antes dele e o commit (`git checkout $(git
-// rev-parse HEAD~1) -- a.txt`): o valor dela so muda de onde vem o arquivo listado
-function commitAntesDoTraco(resto) {
-  const j = resto.findIndex((a, k) => !a.startsWith('-') && !['-b', '-B', '--orphan'].includes(resto[k - 1]))
-  return j >= 0 && resto.indexOf('--') > j ? j : -1
-}
 const ehGit = p => nomeDoPrograma(p) === 'git' || (p.includes(BARRA) && nomeDoPrograma(semBarra(p)) === 'git')
-// o que decide para no comentario (`# sobe (backup)`) e deixa de fora o redirecionamento (`2>$null`,
-// `> $LOG`): nenhum dos dois chega no git
-const RE_REDIRECIONA = /^[\d*]?(?:>>?|<)/
-const RE_SO_REDIRECIONA = /^[\d*]?(?:>>?|<)$/
-function argumentosLidos(resto) {
-  const lidos = []
-  for (let j = 0; j < resto.length; j++) {
-    const a = resto[j]
-    if (a.startsWith('#')) break
-    if (RE_REDIRECIONA.test(a)) { if (RE_SO_REDIRECIONA.test(a)) j++; continue }
-    lidos.push(a)
-  }
-  return lidos
-}
-// xargs com -I, -i ou --replace pode trocar o proprio verbo do git (`xargs -I{} git {} --hard`): o
-// deFora guarda as trocas do pedaco, de todo xargs dele ({} vira SUB no marcado). Barra o verbo que e
-// uma troca, e com {} tambem o verbo que nao e nome simples de comando do git (`git "{}"` vira `__`)
-function trocaDoXargs(palavras, i) {
-  const a = palavras[i]
-  if (a === '-I') return palavras[i + 1] || null
-  if (a.startsWith('-I') || a.startsWith('-i')) return a.slice(2) || SUB
-  if (a === '--replace') return SUB
-  if (a.startsWith('--replace=')) return a.slice(10) || SUB
-  return null
-}
 // o git que vem como texto de outro programa (`grep -rn git $DIR`, `git log --grep git`, `xargs grep
 // -l git`) fica so com as regras de antes da 5.28. O programa do pedaco e a primeira palavra, ou a
 // primeira depois do xargs e das opcoes dele
@@ -593,7 +585,10 @@ function programaDoPedaco(palavras) {
   return k
 }
 
-function lerGit(args, dir, conta, deFora, citado) {
+// 5.49 (bloco 6, 2026-11-03): todo MOTIVO_NAO_LE so volta com estrito (o porteiro da
+// bancada); sem ele, o git com variavel segue pelas regras de antes da 5.28 (o --hard, o -f e o
+// resto do bloco 7 continuam lidos). 5.49 (D-bancada-git, 2026-11-03): no estrito, so o apelido
+function lerGit(args, dir, conta, deFora, citado, estrito) {
   let i = 0
   let semForca = false
   while (i < args.length && args[i].startsWith('-')) {
@@ -601,28 +596,17 @@ function lerGit(args, dir, conta, deFora, citado) {
     const nome = op.split('=')[0]
     let valor
     if (GIT_COM_VALOR.has(op)) { valor = args[i + 1]; i += 2 } else { valor = op.slice(nome.length + 1); i++ }
-    if (valor === undefined) return deFora && !citado ? MOTIVO_NAO_LE : null
+    if (valor === undefined) return null
     if (op === '-C' || nome === '--work-tree') dir = mudarPasta(conta, dir, valor)
     // valor vazio e zero tambem sao falso pro git (revisao final do Codex, 5.20); o --config-env
     // tira o valor de uma variavel que a trava nao le, entao conta como sem forca
     if (op === '-c' && /^clean\.requireforce=(?:false|no|off|0*)$/i.test(valor)) semForca = true
     if (nome === '--config-env' && /^clean\.requireforce=/i.test(valor)) semForca = true
-    if (!citado && (op === '-c' || nome === '--config-env') && (/^alias\./i.test(valor) || naoLe(valor))) return MOTIVO_NAO_LE
+    if (estrito && !citado && (op === '-c' || nome === '--config-env') && /^alias\./i.test(valor)) return MOTIVO_NAO_LE
   }
   const verbo = args[i]
   const resto = args.slice(i + 1)
-  const troca = deFora instanceof Set && verbo !== undefined && (deFora.has(verbo) || (deFora.has(SUB) && !/^[a-z][a-z0-9-]*$/.test(verbo)))
-  if (!citado && (troca || (verbo === undefined ? deFora : verbo.includes('$')))) return MOTIVO_NAO_LE
   if (!JULGADOS.has(verbo)) return null
-  if (!citado) {
-    // pelo xargs, o checkout e o restore que hoje barram guardam o motivo de hoje; o resto barra por nao ler
-    if (deFora) return (['checkout', 'restore'].includes(verbo) && gitDescartePerigoso(verbo, resto, dir, conta, deFora)) || MOTIVO_NAO_LE
-    const lidos = argumentosLidos(resto)
-    const livre = verbo === 'checkout' ? commitAntesDoTraco(lidos) : -1
-    // no stash decide a primeira palavra solta, fora o valor do -m (`git stash -m "wip $X"`)
-    const decide = verbo === 'stash' ? [lidos.find((a, k) => !a.startsWith('-') && !['-m', '--message'].includes(lidos[k - 1])) ?? ''] : lidos.filter((a, j) => j !== livre)
-    if (decide.some(naoLe)) return MOTIVO_NAO_LE
-  }
   if (verbo === 'push') return gitPushPerigoso(resto)
   if (verbo === 'reset') return resto.some(a => longa(a, '--hard')) ? MOTIVO_SEM_SALVAR : null
   if (verbo === 'clean') return gitCleanPerigoso(resto, semForca)
@@ -666,7 +650,7 @@ function comandosDoTexto(texto) {
 // o cd de um comando anterior da mesma linha muda a pasta do git seguinte (`cd sub && git
 // checkout pasta`); o /d do cd do cmd e opcao
 const CDS = new Set(['cd', 'chdir', 'pushd', 'set-location', 'sl'])
-function gitPerigoso(texto, cwd) {
+function gitPerigoso(texto, cwd, estrito = false) {
   let dir = cwd
   const conta = { n: 0, mudancas: 0 }
   for (const seg of comandosDoTexto(texto)) {
@@ -682,34 +666,22 @@ function gitPerigoso(texto, cwd) {
     const programa = programaDoPedaco(palavras)
     while (i < palavras.length) {
       const nome = nomeDoPrograma(palavras[i])
-      if (nome === 'xargs') deFora = deFora || true
-      else if (deFora) {
-        const t = trocaDoXargs(palavras, i)
-        if (t) { if (deFora === true) deFora = new Set(); deFora.add(t) }
-      }
+      if (nome === 'xargs') deFora = true
       if (!ehGit(palavras[i])) { i++; continue }
       // o g\it so abre leitura no lugar do programa; no meio dos argumentos ele fica como na v5.24
       let fim = i + 1
       while (fim < palavras.length && nomeDoPrograma(palavras[fim]) !== 'git') fim++
       const args = palavras.slice(i + 1, fim)
       const citado = programa < i && CITAM.has(nomeDoPrograma(palavras[programa]))
-      const motivo = lerGit(args, dir, conta, deFora, citado) ||
-        (args.some(a => a.includes(BARRA)) ? lerGit(args.map(semBarra), dir, conta, deFora, citado) : null)
+      const motivo = lerGit(args, dir, conta, deFora, citado, estrito) ||
+        (args.some(a => a.includes(BARRA)) ? lerGit(args.map(semBarra), dir, conta, deFora, citado, estrito) : null)
       if (motivo) return motivo
       i = fim
     }
   }
   return null
 }
-// rodada 5.18 (chat 4, F1b): curl e wget com pipe pro shell eram [^\n]* depois da palavra,
-// o mesmo quadrado do git push
-const RE_PIPE_SHELL = /\|\s*(?:sudo\s+)?(?:ba)?sh\b/gi
-function curlPipePerigoso(comando) {
-  return opcaoDepoisDaPalavra(comando, /\bcurl\b/gi, RE_PIPE_SHELL)
-}
-function wgetPipePerigoso(comando) {
-  return opcaoDepoisDaPalavra(comando, /\bwget\b/gi, RE_PIPE_SHELL)
-}
+// 5.49 (bloco 8, 2026-11-03): sairam o curlPipePerigoso e o wgetPipePerigoso
 
 // correcao 7: Remove-Item e os apelidos oficiais dele que nao sao "rm" (ver comentario
 // da regra abaixo). So exige a ideia de recursivo (nunca -Force, doc na regra abaixo).
@@ -725,7 +697,7 @@ function removeItemPerigoso(comando) {
 // que so existe no PowerShell barra pelo mesmo caminho do Remove-Item: hifen com -re ate -recurse
 // (o rm do bash recusa o -e) ou traco (U+2013 a U+2015) com -r ate -recurse (no bash vira nome de
 // arquivo). O `rm -r pasta` de uma letra segue livre: no bash e seguro (correcao 1), e na
-// ferramenta PowerShell pergunta ao aluno desde a 5.40 (perguntaDoPowershell). O `git rm` com essas opcoes barra a toa (o git
+// ferramenta PowerShell pergunta ao aluno desde a 5.40 (perguntaDeApagar desde a 5.49). O `git rm` com essas opcoes barra a toa (o git
 // recusa as duas). A opcao termina em espaco, fim ou pontuacao de comando: com o \b, `rm -re.txt`
 // e `rm -- -recurse-backup.txt` (arquivo com hifen no nome) barravam a toa (Codex final da 5.39)
 const RE_RM_COMANDO = nomeDeComando('rm')
@@ -755,39 +727,55 @@ function nomeDoApagadorSemAspas(comando) {
 // e seguro), mas na ferramenta PowerShell e Remove-Item -Recurse e apaga a pasta sem perguntar. La
 // o hook pergunta ao aluno (ver a entrada, no fim). Le o marcado palavra por palavra, como o git:
 // o rm tem de ser o programa do comando (`git rm -r x` nao pergunta) e o alvo entre aspas sai
-// inteiro. Desce em cada trecho entre aspas de quem executa (`Invoke-Expression "rm -r x"`), como o
-// ehPerigoso. Devolve um alvo por rm recursivo achado (null quando nao da pra ler) ou null
+// inteiro. Descia em cada trecho entre aspas de quem executa (`Invoke-Expression "rm -r x"`) ate a
+// 5.49 (bloco 9).
+// Desde a 5.49 essa leitura e a perguntaDeApagar (perto do fim), pras tres ferramentas
 const RE_OPCAO_R_PS = new RegExp(String.raw`^${TRACO}r(?:e(?:c(?:u(?:r(?:s(?:e)?)?)?)?)?)?(?::\S*)?$`, 'i')
 const RE_COMECA_OPCAO = new RegExp('^' + TRACO)
 // comum do chat 1 da 5.40: a atribuicao na frente roda o rm igual (`$x = rm -r pasta`, `$null=rm ...`),
-// e sai pelo RE_ATRIBUICAO da leitura de segredo; e o valor de opcao nao e o alvo (`rm -r -ErrorAction SilentlyContinue pasta`): chave do Remove-Item
+// e sai pelo RE_ATRIBUICAO; e o valor de opcao nao e o alvo (`rm -r -ErrorAction SilentlyContinue pasta`): chave do Remove-Item
 // (learn.microsoft.com/powershell/module/microsoft.powershell.management/remove-item) e comum dos
 // cmdlets nao pede valor; -Path, -LiteralPath e os apelidos dele dao o alvo; o resto come a palavra
 // seguinte. O nome pode vir abreviado, e o valor colado com dois pontos (`-Path:dados`)
 const CHAVES_RM = ['recurse', 'force', 'whatif', 'confirm', 'verbose', 'debug']
 const DAO_O_ALVO = ['path', 'literalpath', 'pspath', 'lp']
-// final do Codex: o caminho pode ser uma lista com virgula (`rm -r a, b`, `rm -r a ,b`), que segue
-// pelas palavras seguintes enquanto a virgula liga uma na outra
-function listaDesde(args, j, primeiro) {
-  let texto = primeiro
-  while (j + 1 < args.length && (texto.endsWith(',') || args[j + 1].startsWith(','))) texto += args[++j]
-  return texto
-}
-function alvoDoRm(args) {
+// as que pedem valor: as do Remove-Item e as comuns dos cmdlets, com os apelidos oficiais (about_CommonParameters)
+const COM_VALOR_RM = ['filter', 'include', 'exclude', 'credential', 'stream', 'erroraction', 'warningaction', 'informationaction',
+  'errorvariable', 'warningvariable', 'informationvariable', 'outvariable', 'outbuffer', 'pipelinevariable', 'progressaction']
+const APELIDOS_COM_VALOR = ['ea', 'wa', 'infa', 'ev', 'wv', 'iv', 'ov', 'ob', 'pv', 'proga']
+// o lado esquerdo e qualquer coisa que comeca com $ ou [ ate o primeiro = (`${x}`, `$x.y`, `$x[0]`,
+// `$x, $y`, `[List[string]]$x`, `??=`). Sem = no meio, o [^=]* para no primeiro =: linear
+const RE_ATRIBUICAO = /^\s*(?:[$[][^=]*=\s*)+/
+// 5.49 (bloco 5, 2026-11-03): os alvos de todas as palavras soltas, nao so a primeira
+// (`rm -rf a b`). A opcao do bash (`-rf`, `--force`) nao pede valor; final do Codex da 5.40: o caminho
+// pode ser uma lista com virgula (`rm -r a, b`, `rm -r a ,b`), que liga uma palavra na outra
+const RE_LETRAS_DO_RM = /^-[fivdIrR]+$/
+function alvosDosArgs(args) {
+  const soltos = []
   for (let j = 0; j < args.length; j++) {
     const a = args[j]
-    if (a === '--') return args[j + 1] === undefined ? undefined : listaDesde(args, j + 1, args[j + 1])
-    if (!RE_COMECA_OPCAO.test(a)) return listaDesde(args, j, a)
+    if (a === '--') { for (const s of args.slice(j + 1)) soltos.push(s); break }
+    if (a.startsWith('--')) continue
+    if (!RE_COMECA_OPCAO.test(a)) { soltos.push(a); continue }
     const [nome, ...resto] = a.slice(1).toLowerCase().split(':')
-    const colado = a.slice(a.indexOf(':') + 1)
     if (nome && DAO_O_ALVO.some(n => n.startsWith(nome))) {
-      if (resto.length) return listaDesde(args, j, colado)
-      return args[j + 1] === undefined ? undefined : listaDesde(args, j + 1, args[j + 1])
+      if (resto.length) soltos.push(a.slice(a.indexOf(':') + 1))
+      else if (j + 1 < args.length) soltos.push(args[++j])
+      continue
     }
-    if (resto.length || (nome && CHAVES_RM.some(n => n.startsWith(nome)))) continue
-    j++
+    if (resto.length || RE_LETRAS_DO_RM.test(a) || (nome && CHAVES_RM.some(n => n.startsWith(nome)))) continue
+    // 5.49 (bloco 5, revisao interna): so a opcao que pede valor come a palavra seguinte; a que a trava
+    // nao conhece (o -x do rm do Mac, o -G do rimraf) pode ser seguida do alvo, entao vira null e pergunta
+    if (APELIDOS_COM_VALOR.includes(nome) || (nome && COM_VALOR_RM.some(n => n.startsWith(nome)))) j++
+    else soltos.push(null)
   }
-  return undefined
+  const lista = []
+  for (const s of soltos) {
+    const ultimo = lista[lista.length - 1]
+    if (s !== null && typeof ultimo === 'string' && (ultimo.endsWith(',') || s.startsWith(','))) lista[lista.length - 1] += s
+    else lista.push(s)
+  }
+  return lista.flatMap(s => s === null ? [null] : s.split(',').filter(p => p))
 }
 // segunda volta da comum: o operador ponto e o return na frente rodam o rm igual (o & ja separa
 // comando), e a crase no fim da linha continua o comando na linha de baixo (`rm `+quebra+`-r pasta`).
@@ -813,45 +801,6 @@ function semComentarioDeBloco(texto) {
   }
   return saida
 }
-export function perguntaDoPowershell(comando) {
-  if (typeof comando !== 'string' || comando.length === 0) return null
-  const { suspeitos, marcado } = classificarTrechosEntreAspas(semComentarioDeBloco(comando.replace(/`\r?\n/g, '  ')))
-  const alvos = []
-  for (const seg of comandosDoTexto(marcado)) {
-    const todas = seg.replace(RE_ATRIBUICAO, '').match(/\S+/g)
-    let k = 0
-    while (todas && k < todas.length - 1 && ANTES_DO_PROGRAMA.has(todas[k].toLowerCase())) k++
-    if (!todas || nomeDoPrograma(todas[k]) !== 'rm') continue
-    const args = todas.slice(k + 1)
-    if (!args.some(p => RE_OPCAO_R_PS.test(p))) continue
-    const lista = alvoDoRm(args)
-    const pedacos = lista === undefined ? [undefined] : lista.split(',').filter(p => p)
-    for (const alvo of pedacos.length ? pedacos : [undefined]) {
-      const legivel = alvo && alvo !== VAZIO && !alvo.includes(SUB) && !alvo.includes('$')
-      alvos.push(legivel ? alvo.split(NUL).join(' ').split(ASPA).join('') : null)
-    }
-  }
-  for (const suspeito of new Set(suspeitos)) alvos.push(...(perguntaDoPowershell(suspeito) || []))
-  return alvos.length ? alvos : null
-}
-
-// o sim do aluno libera o comando inteiro, entao a pergunta nomeia cada alvo e fecha com o comando
-// (achado 2 da comum no plano da 5.40); comando comprido sai cortado, com o aviso
-const MAX_COMANDO_NA_PERGUNTA = 300
-const MAX_NOMES_NA_PERGUNTA = 10
-export function textoDaPergunta(alvos, comando) {
-  const nomes = alvos.slice(0, MAX_NOMES_NA_PERGUNTA).map(a => a ?? 'outra pasta')
-  if (alvos.length > MAX_NOMES_NA_PERGUNTA) nomes.push(`mais ${alvos.length - MAX_NOMES_NA_PERGUNTA} pastas`)
-  const quais = alvos.length === 1
-    ? (alvos[0] === null ? 'uma pasta inteira' : `a pasta ${alvos[0]} inteira`)
-    : `as pastas ${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]} inteiras`
-  const linha = comando.replace(/\s+/g, ' ').trim()
-  const mostrado = linha.length > MAX_COMANDO_NA_PERGUNTA
-    ? linha.slice(0, MAX_COMANDO_NA_PERGUNTA) + ' ... (comando cortado: pede pra IA mostrar ele inteiro antes de responder)'
-    : linha
-  return `A IA quer apagar ${quais}, com tudo que tem dentro, sem volta. Pode? Comando: ${mostrado}`
-}
-
 // correcao 7: "erase" e sinonimo de "del" no cmd e aceita a mesma sintaxe (/s), doc da
 // Microsoft confirma os dois como apelido do mesmo Remove-Item; cobrir um so e deixar
 // o gemeo de fora era o buraco que esta rodada veio fechar
@@ -864,7 +813,7 @@ function delPerigoso(comando) {
 // administration/windows-commands/robocopy): /PURGE "Deletes destination files and
 // directories that no longer exist in the source" e /MIR e o /E com o /PURGE. Barra sempre,
 // ate com o /L (so lista), como o -WhatIf desde a 5.18
-// le o desaspado (lista PERIGOS_NO_DESASPADO): a chave pode vir entre aspas ("/MIR"), e o
+// le o desaspado (lista APAGAR_NO_DESASPADO desde a 5.49): a chave pode vir entre aspas ("/MIR"), e o
 // robocopy aceita o traco no lugar da barra (-MIR)
 function robocopyPerigoso(comando) {
   return opcaoDepoisDaPalavra(comando, /(?<![\w\-.])robocopy(?:\.exe)?(?![\w\-.\/])/gi, /\s[\/-](?:mir|purge)(?!\w)/gi, FIM_DO_COMANDO)
@@ -872,7 +821,7 @@ function robocopyPerigoso(comando) {
 
 // rodada 5.20 (N9): apagar por outro programa, as formas comuns (limite 6 no cabecalho).
 // find e xargs no limpo; o codigo do node -e e do python -c mora entre aspas, entao esses
-// dois leem o desaspado (lista PERIGOS_NO_DESASPADO). O codigo pode ter ;, | e quebra de
+// dois leem o desaspado (lista APAGAR_NO_DESASPADO desde a 5.49). O codigo pode ter ;, | e quebra de
 // linha, entao o node e o python leem o comando ate o fim
 const NUNCA = /(?!)/g
 const RE_FIND = /(?<![\w\-.])find(?![\w\-.])/gi
@@ -940,214 +889,8 @@ function clearContentPerigoso(comando) {
     opcaoDepoisDaPalavra(comando, RE_CLEAR_CONTENT, /[*?]/g, FIM_DO_COMANDO) ||
     opcaoDepoisDaPalavra(comando, RE_CLEAR_CONTENT, RE_OPCAO_RECURSE, FIM_DO_COMANDO)
 }
-const MOTIVO_OUTRO_PROGRAMA = 'apaga pasta ou arquivo por outro programa, sem confirmacao'
-// rodada 5.28 (1b, ata das decisoes tecnicas da 5.28): leitura de segredo por um caminho que a regra de
-// permissao nao ve. O deny de Read do settings pega cat, head, tail, sed e tee (doc conferida em
-// 2026-10-23 em code.claude.com/docs/en/permissions); o codigo inline do node e do python, o sqlite3, a
-// copia, o Get-Content e o download com cookie passam por fora. Lombada, nunca garantia: o `node
-// script.mjs` que le o .env sozinho segue livre, e precisa (os scripts do kit leem a chave assim).
-// Le o marcado: o codigo entre aspas e uma palavra so, e o texto de quem so escreve ja saiu
-const FONTE_SEGREDO = String.raw`(?<![\w.\-])\.env(?!\.(?:example|sample|template)(?![\w\-]))(?:\.[\w.\-]+)?(?![\w\-])|chrome-perfil|chrome-profile|Google[\\\/]Chrome[\\\/]|Microsoft[\\\/]Edge[\\\/]|dados[\\\/]sessao|[\\\/]Cookies(?![\w\-])|\.har(?![\w\-])|storage-?state|\.auth[\\\/]|(?<![^\\\/\s"'(])(?=[^\\\/\s"'(]*totp)[^\\\/\s"'(]*\.json(?![\w\-])`
-// interna no fechamento: a semente de 2FA (*totp*.json), como no barrar-mcp e no chave.mjs. O nome so
-// comeca no inicio da palavra (ou depois de aspa e parentese, volta 2: ReadAllText("ml-totp.json")) e o
-// totp e conferido num lookahead; aspa e parentese ficam fora do nome: cada palavra e lida uma vez, linear
-const RE_SEGREDO = new RegExp(FONTE_SEGREDO, 'i')
-const RE_SEGREDO_G = new RegExp(FONTE_SEGREDO, 'gi')
-const RE_SQLITE = /(?<![\w\-.])sqlite3(?:\.exe)?(?![\w\-.])/gi
-const RE_BAIXA = /(?<![\w\-.])(?:curl|wget|iwr|irm|Invoke-WebRequest|Invoke-RestMethod)(?:\.exe)?(?![\w\-.])/gi
-const RE_CABECALHO_COOKIE = /\bCookie\s*[:=]/gi
-const RE_CURL = /(?<![\w\-.])curl(?:\.exe)?(?![\w\-.])/gi
-const RE_CURL_COOKIE = /\s(?:-b|--cookie)(?=[\s=]|$)|\s-b(?=\S)/g
-const COPIAM = new Set(['cp', 'copy', 'copy-item', 'cpi'])
-// o destino da copia e o valor do -t, do --target-directory ou do -Destination (`cp -t /tmp .env`,
-// `Copy-Item -Destination x -Path .env`); sem eles, e o ultimo argumento
-// o -t do cp e minusculo: o -T maiusculo nao leva valor (`cp -T .env out`)
-const RE_DESTINO = /^(?:-[a-zA-Z]*t|--target-directory|-[Dd][Ee][Ss][Tt]\w*)$/
-const RE_DESTINO_COLADO = /^(?:--target-directory=|-dest\w*:)/i
-function origensDaCopia(args) {
-  const j = args.findIndex(a => RE_DESTINO.test(a))
-  if (j >= 0) return [...args.slice(0, j), ...args.slice(j + 2)]
-  if (args.some(a => RE_DESTINO_COLADO.test(a))) return args.filter(a => !RE_DESTINO_COLADO.test(a))
-  return args.slice(0, -1)
-}
-// fechamento da 5.28: na ferramenta PowerShell o cat e o Get-Content, e o deny de Read nao pega cat,
-// Get-Content nem Select-String ali (medido em 2026-10-27, isca com deny local); no Bash o deny ja pega o cat
-const LEEM = new Set(['get-content', 'gc', 'type', 'cat', 'more', 'format-hex', 'fhx', 'import-csv', 'ipcsv'])
-// interna no fechamento: o programa pode vir depois de uma atribuicao (`$x = Get-Content .env`,
-// `[string]$x = gc .env`) ou do cmd /c (`cmd /c type .env`), e o .NET le direto ([IO.File]::ReadAllText)
-// volta 2: o lado esquerdo e qualquer coisa que comeca com $ ou [ ate o primeiro = (`${x}`, `$x.y`, `$x[0]`,
-// `$x, $y`, `[List[string]]$x`, `??=`). Sem = no meio, o [^=]* para no primeiro =: linear
-const RE_ATRIBUICAO = /^\s*(?:[$[][^=]*=\s*)+/
-// o Exists so pergunta se o arquivo existe (volta 2: falso positivo do lado seguro)
-const RE_IO_FILE = /\[(?:System\.)?IO\.File\]::(?!Exists(?![\w]))/gi
-// curinga que casaria o .env (`.e*`, `.en?`, `.e?v`, e na volta 2 `*env`, `?env`, `.[e]nv`), conferido
-// contra ".env". O curinga sem nenhuma letra do nome (`*`, `*.*`) fica livre: ali o .env e so mais um
-function curingaDoEnv(palavra) {
-  const nome = palavra.replace(/^.*[\\\/]/, '').toLowerCase()
-  return /[*?[]/.test(nome) && /[env]/.test(nome) && casaCuringa(nome, '.env')
-}
-// pode[j]: o curinga lido ate aqui casa as j primeiras letras do nome. O [abc] casa uma letra do grupo;
-// o [ sem ] depois e letra. O ] seguinte de cada posicao sai de uma passada de tras pra frente: linear
-function casaCuringa(curinga, nome) {
-  const fecha = Array(curinga.length).fill(-1)
-  for (let i = curinga.length - 1, f = -1; i >= 0; i--) { fecha[i] = f; if (curinga[i] === ']') f = i }
-  let pode = [true, ...Array(nome.length).fill(false)]
-  for (let i = 0; i < curinga.length; i++) {
-    const c = curinga[i]
-    let casa = l => c === '?' || c === l
-    if (c === '[' && fecha[i] > i + 1) { const grupo = curinga.slice(i + 1, fecha[i]); casa = l => grupo.includes(l); i = fecha[i] }
-    if (c === '*') { for (let j = 1; j <= nome.length; j++) pode[j] = pode[j] || pode[j - 1] }
-    else pode = pode.map((_, j) => j > 0 && pode[j - 1] && casa(nome[j - 1]))
-    if (!pode.includes(true)) return false
-  }
-  return pode[nome.length]
-}
-const alvoDeSegredo = args => RE_SEGREDO.test(args.join(' ')) || args.some(curingaDoEnv)
-// comum do Codex no fechamento: o Select-String e escritor de texto, e o caminho entre aspas sumia do
-// marcado. A busca (Select-String, sls, findstr) le o comando cru, com as aspas: o primeiro argumento
-// solto, o -Pattern e o /C: do findstr sao o texto procurado e ficam livres; o resto e o valor do -Path
-// (e do /G: e /F: do findstr) sao arquivo. Uma passada so no comando: linear
-const BUSCAM = new Set(['select-string', 'sls', 'findstr'])
-// cada pedaco guarda em citadas o indice das palavras que comecam entre aspas: texto, nunca programa
-function pedacosComAspas(comando) {
-  const novo = () => Object.assign([], { citadas: new Set() })
-  const pedacos = [novo()]
-  let palavra = null, aspa = null, citada = false
-  const fecha = () => {
-    const p = pedacos[pedacos.length - 1]
-    if (palavra !== null) { if (citada) p.citadas.add(p.length); p.push(palavra) }
-    palavra = null; citada = false
-  }
-  for (const c of comando) {
-    if (aspa) { if (c === aspa) aspa = null; else palavra += c; continue }
-    if (c === '"' || c === "'") { aspa = c; if (palavra === null) citada = true; palavra ??= ''; continue }
-    if (/[;&|({\r\n]/.test(c)) { fecha(); pedacos.push(novo()); continue }
-    if (/\s/.test(c)) { fecha(); continue }
-    palavra = (palavra ?? '') + c
-  }
-  fecha()
-  return pedacos
-}
-function buscaEmSegredo(comando) {
-  for (const p of pedacosComAspas(comando)) {
-    // a busca depois de atribuicao (`$x = sls ...`, `[string[]]$l +=`) e do & ou do . tambem e lida (final do Codex)
-    // volta 2 (comum): a atribuicao colada (`$x=sls`) e o `${x}` (o { divide o pedaco, sobra `x}`) tambem
-    let inicio = 0
-    if (/^[$[]|\}$/.test(p[0] ?? '')) {
-      const j = p.findIndex((x, i) => !p.citadas.has(i) && x.includes('='))
-      if (j >= 0) {
-        const resto = p[j].slice(p[j].lastIndexOf('=') + 1)
-        if (resto) { p[j] = resto; inicio = j } else inicio = j + 1
-      }
-    }
-    while (p[inicio] === '&' || p[inicio] === '.') inicio++
-    const k = p.findIndex((x, i) => i >= inicio && nomeDoPrograma(x) !== 'sudo')
-    if (k < 0 || p.citadas.has(k) || !BUSCAM.has(nomeDoPrograma(p[k]))) continue
-    const findstr = nomeDoPrograma(p[k]) === 'findstr'
-    // o padrao por opcao (-Pattern, /C:, /G:) pode vir depois do caminho: os soltos so se decidem
-    // no fim do pedaco (volta 2 da comum)
-    let padraoPorOpcao = false
-    const soltos = []
-    for (let i = k + 1; i < p.length; i++) {
-      const a = p[i]
-      if (findstr && a.startsWith('/')) {
-        if (/^\/[cg]:/i.test(a)) padraoPorOpcao = true
-        if (/^\/[gf]:/i.test(a) && RE_SEGREDO.test(a.slice(3))) return true
-        continue
-      }
-      if (!findstr && /^-[a-z]/i.test(a)) {
-        const doisPontos = a.indexOf(':')
-        const opcao = (doisPontos < 0 ? a.slice(1) : a.slice(1, doisPontos)).toLowerCase()
-        const colado = doisPontos < 0 ? null : a.slice(doisPontos + 1)
-        if (opcao.length >= 4 && 'pattern'.startsWith(opcao)) { padraoPorOpcao = true; if (colado === null) i++ }
-        else if (opcao === 'path' || opcao === 'pspath' || opcao === 'lp' || (opcao.length >= 2 && 'literalpath'.startsWith(opcao))) {
-          const valor = colado ?? p[++i]
-          if (valor && RE_SEGREDO.test(valor)) return true
-        }
-        continue
-      }
-      soltos.push(a)
-    }
-    if (soltos.slice(padraoPorOpcao ? 0 : 1).some(a => RE_SEGREDO.test(a))) return true
-  }
-  return false
-}
-// o codigo inline so conta com a opcao de codigo entre as opcoes do proprio interpretador, antes da
-// primeira palavra solta (o -sexagesimal de um ffprobe la adiante nao e do node). Cada varredura para
-// na primeira palavra solta, que inclui o proximo node: linear
-const RE_PALAVRA_Y = /\s+(\S+)/y
-const RE_NODE_CODIGO = /^(?:-[a-zA-Z]*[ep][a-zA-Z]*|--eval|--print)(?:=|$)/
-const RE_PYTHON_CODIGO = /^-[a-zA-Z]*c/
-// opcao que leva valor na palavra seguinte (`node -r fs -e ...`, `python -W ignore -c ...`): o valor
-// e pulado, senao ele encerrava a busca antes do codigo
-const RE_NODE_COM_VALOR = /^(?:-r|--require|--import|--loader|--experimental-loader|-C|--conditions|--input-type|--title)$/
-const RE_PYTHON_COM_VALOR = /^-[WX]$/
-function codigoInline(comando, reInterpretador, reCodigo, reComValor) {
-  // o interpretador que ja ficou dentro das opcoes de um anterior (`node --title node -e`) nao e lido de
-  // novo: cada palavra entra numa varredura so, linear
-  let lido = 0
-  for (const m of comando.matchAll(reInterpretador)) {
-    if (m.index < lido) continue
-    RE_PALAVRA_Y.lastIndex = m.index + m[0].length
-    for (let p = RE_PALAVRA_Y.exec(comando); p && p[1].startsWith('-'); p = RE_PALAVRA_Y.exec(comando)) {
-      lido = RE_PALAVRA_Y.lastIndex
-      if (!reCodigo.test(p[1])) {
-        if (reComValor.test(p[1])) { if (!RE_PALAVRA_Y.exec(comando)) break; lido = RE_PALAVRA_Y.lastIndex }
-        continue
-      }
-      // o codigo e a palavra seguinte (no marcado, o trecho entre aspas e uma palavra so) ou vem colado
-      const codigo = RE_PALAVRA_Y.exec(comando)
-      if (RE_SEGREDO.test(p[1]) || (codigo && RE_SEGREDO.test(codigo[1]))) return true
-      break
-    }
-  }
-  return false
-}
-function leituraDeSegredo(comando, cru) {
-  if (RE_SEGREDO.test(cru) && buscaEmSegredo(cru)) return true
-  const segredo = RE_SEGREDO.test(comando)
-  if (segredo) {
-    if (codigoInline(comando, RE_NODE, RE_NODE_CODIGO, RE_NODE_COM_VALOR)) return true
-    if (codigoInline(comando, RE_PYTHON, RE_PYTHON_CODIGO, RE_PYTHON_COM_VALOR)) return true
-    if (opcaoDepoisDaPalavra(comando, RE_SQLITE, RE_SEGREDO_G, FIM_DO_COMANDO)) return true
-    if (opcaoDepoisDaPalavra(comando, RE_IO_FILE, RE_SEGREDO_G, FIM_DO_COMANDO)) return true
-  }
-  if (segredo || /[*?[]/.test(comando)) {
-    // o { divide o pedaco, e o `${x} = gc .env` vira `$x} = ...`, que ainda comeca com $
-    for (const { seg } of pedacosDeComando(comando.replace(/\$\{/g, '$$'))) {
-      const p = seg.replace(RE_ATRIBUICAO, '').match(/\S+/g) || []
-      let k = p.findIndex(x => nomeDoPrograma(x) !== 'sudo')
-      if (k < 0) continue
-      // volta 2: o cmd aceita chave antes do /c (`cmd /d /c`, `cmd /d/c`) e o programa colado (`cmd /ctype`);
-      // o operador ponto roda o comando como o & (`. gc .env`). Cada palavra e lida uma vez: linear
-      if (nomeDoPrograma(p[k]) === 'cmd') {
-        for (k++; k < p.length && p[k].startsWith('/'); k++) {
-          const c = /\/[ck]/i.exec(p[k])
-          if (!c) continue
-          const colado = p[k].slice(c.index + 2)
-          if (colado) p[k] = colado; else k++
-          break
-        }
-      }
-      if (p[k] === '.') k++
-      const nome = nomeDoPrograma(p[k] ?? '')
-      // o caminho pode ter espaco (User Data): le os argumentos juntos; na copia, o ultimo e o destino
-      if (LEEM.has(nome) && alvoDeSegredo(p.slice(k + 1))) return true
-      if (COPIAM.has(nome) && alvoDeSegredo(origensDaCopia(p.slice(k + 1)))) return true
-    }
-  }
-  return opcaoDepoisDaPalavra(comando, RE_BAIXA, RE_CABECALHO_COOKIE, FIM_DO_COMANDO) ||
-    opcaoDepoisDaPalavra(comando, RE_CURL, RE_CURL_COOKIE, FIM_DO_COMANDO)
-}
-const MOTIVO_SEGREDO = 'le ou copia segredo do projeto (.env, perfil do navegador, sessao salva ou cookie) por um caminho que a protecao de leitura nao ve'
-// regras que leem o desaspado (o que importa pode estar entre aspas); o texto de quem so
-// escreve (echo "...") ja saiu dele
-const PERIGOS_NO_DESASPADO = [
-  { teste: robocopyPerigoso, motivo: 'apaga do destino, pra sempre, tudo que nao existe na origem' },
-  { teste: nodeApaga, motivo: MOTIVO_OUTRO_PROGRAMA },
-  { teste: pythonApaga, motivo: MOTIVO_OUTRO_PROGRAMA },
-  { teste: clearContentPerigoso, motivo: 'apaga o conteudo de varios arquivos de uma vez' },
-]
+// 5.49 (bloco 11, 2026-11-03): saiu a leituraDeSegredo (cat, Get-Content, codigo inline,
+// sqlite3, copia e download com cookie de .env, perfil, sessao, HAR e 2FA) e o que so ela usava
 
 // correcao 7: a regra do pipe nao pode depender de um nome literal do lado esquerdo
 // (Get-ChildItem tem apelidos gci/dir/ls, e podia vir qualquer outro comando gerando a
@@ -1390,33 +1133,30 @@ function lerArgumentosDoFormat(seg, i) {
 // deles o resto e do comando ou do script, nao do PowerShell.
 const RE_POWERSHELL = /\b(?:powershell|pwsh)(?:\.exe)?\b([^\n|;&]*)/gi
 const RE_OPCAO = /^[-/\p{Pd}]([a-z]+)(?::\S*)?$/iu
+// 5.49 (bloco 9, 2026-11-03): sem a descida nas aspas, o powershell de dentro chega no mesmo
+// trecho do de fora (`powershell -c "pwsh -e x"` vira `powershell -c pwsh -e x` no desaspado): cada
+// powershell ou pwsh do trecho volta a ler as opcoes dele. Cada palavra e lida uma vez: linear
+const RE_NOME_POWERSHELL = /\b(?:powershell|pwsh)(?:\.exe)?$/i
 function encodedPerigoso(comando) {
   for (const m of comando.matchAll(RE_POWERSHELL)) {
+    let lendo = true
     for (const token of m[1].split(/\s+/)) {
+      if (RE_NOME_POWERSHELL.test(token)) { lendo = true; continue }
+      if (!lendo) continue
       const opcao = RE_OPCAO.exec(token)
       if (!opcao) continue
       const nome = opcao[1].toLowerCase()
       if (nome === 'ec' || 'encodedcommand'.startsWith(nome)) return true
-      if ('command'.startsWith(nome) || 'file'.startsWith(nome)) break
+      if ('command'.startsWith(nome) || 'file'.startsWith(nome)) lendo = false
     }
   }
   return false
 }
 
-// rodada 5.2: baixar-e-executar do Windows. No PowerShell 5.1, curl e wget sao apelidos
-// do Invoke-WebRequest (doc da Microsoft, invoke-webrequest?view=powershell-5.1), entao
-// `curl x | iex` roda o que baixou; no 7 sobra so o iwr. Ficam de fora, sabidos:
-// `& ([scriptblock]::Create((irm x)))`, `irm x | powershell -` e comando montado em
-// variavel (limite 1 acima).
-// rodada 5.18 (chat 4, F1b): as duas regras eram [^\n;&]* e [^\n|;&]* depois da palavra, o
-// mesmo quadrado do git push. Na primeira, o primeiro "|" depois do download (antes de
-// quebra de linha, ; ou &) e o que vale: um "|" mais adiante no mesmo trecho acharia o mesmo
-// fim (quebra de linha, ; ou &&), entao nao acha iex que o primeiro nao ache.
-// proximaDesde guarda a ultima resposta e so busca de novo quando a posicao passa dela, por
-// isso as posicoes pedidas tem de crescer
-// o matchAll copia o lastIndex da regex, entao a do proximaDesde (que mexe nele) e sempre nova
-const RE_DOWNLOAD_PS = /\b(?:irm|iwr|curl|wget|Invoke-RestMethod|Invoke-WebRequest)\b/gi
-const RE_IEX = /\b(?:iex|Invoke-Expression)\b/gi
+// 5.49 (bloco 8, 2026-11-03): sairam o downloadProIex, o iexDoDownload e o subshellPerigoso
+// (com a linha do Homebrew liberada, que deixou de precisar). Fica o proximaDesde, do Start-Process:
+// ele guarda a ultima resposta e so busca de novo quando a posicao passa dela, por isso as posicoes
+// pedidas tem de crescer
 function proximaDesde(texto, re) {
   let achada = -1
   return desde => {
@@ -1428,103 +1168,54 @@ function proximaDesde(texto, re) {
     return achada
   }
 }
-function downloadProIex(comando) {
-  const fimDoTrecho = proximaDesde(comando, /[\n;&]/g)
-  const pipe = proximaDesde(comando, /\|/g)
-  const fimDepoisDoPipe = proximaDesde(comando, /[\n;]|&&/g)
-  const iex = proximaDesde(comando, new RegExp(RE_IEX.source, 'gi'))
-  for (const m of comando.matchAll(RE_DOWNLOAD_PS)) {
-    const fim = m.index + m[0].length
-    const p = pipe(fim)
-    if (p < fimDoTrecho(fim) && iex(p + 1) < fimDepoisDoPipe(p + 1)) return true
-  }
-  return false
-}
-function iexDoDownload(comando) {
-  return opcaoDepoisDaPalavra(comando, RE_IEX,
-    /\b(?:DownloadString|DownloadData|irm|iwr|curl|wget|Invoke-RestMethod|Invoke-WebRequest)\b/gi, /[\n|;&]/g)
-}
 const PERIGOS_POWERSHELL = [
-  // o iex pode estar em qualquer ponto depois do pipe: com o modulo na frente
-  // (Microsoft.PowerShell.Utility\Invoke-Expression), dentro de % { iex $_ } ou com &
-  // (achado do Codex no Bloco A); & sozinho e o operador de chamada, && encerra
-  { teste: downloadProIex, motivo: 'roda um script baixado da internet sem ninguem ler' },
-  { teste: iexDoDownload, motivo: 'roda um script baixado da internet sem ninguem ler' },
-  { teste: encodedPerigoso, motivo: 'roda um comando escondido em codigo que ninguem consegue ler' },
-]
-
-// rodada 5.14: baixar-e-executar sem pipe. `sh -c "$(curl ...)"` (linha oficial do
-// Homebrew e do oh-my-zsh) e `bash <(curl ...)` rodam o script direto do download e
-// passavam, porque as regras do curl so olham o pipe. Le o desaspado, porque o curl mora
-// dentro das aspas. A linha oficial do Homebrew, endereco exato, fica liberada: a
-// /configurar-video manda rodar ela com o sim da pessoa (conferir.mjs, BREW).
-const BREW_OFICIAL = '$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)'
-// o shell so conta em posicao de comando (o .sh de um endereco nao e shell), a opcao pode
-// vir junta (-lc) e o curl pode vir por caminho (/usr/bin/curl): achados da revisao do grupo F
-// Revisao final: o c vale em qualquer ponto da opcao (-cx), e o shell so conta no comeco de um
-// comando (depois de ; | & ( ou de sudo/env/exec...), nunca como argumento (shellcheck -s bash)
-// rodada 5.18 (decisao 8): o caminho antes do shell e [^\s;|&(]* em vez de \S*, porque o \S*
-// engolia todo "&" seguinte e voltava letra por letra a cada "&", e 25 mil "&" levavam
-// segundos; o separador ja encerra o nome do programa no shell. Achado da revisao: o trecho
-// [^\n|;&]* depois do shell relia o comando inteiro a cada "(", entao o shell e o -c (ou o
-// <() viram regexes separadas, juntadas pelo opcaoDepoisDaPalavra, que para no separador
-const RE_SH_INICIO = /(?:^|[;|&(])\s*(?:(?:sudo|env|exec|command|nohup|time)\s+)*(?:[^\s;|&(]*\/)?(?:ba|z|da|k)?sh(?=\s)/gi
-const RE_SH_OU_SOURCE_INICIO = /(?:^|[;|&(])\s*(?:(?:sudo|env|exec|command|nohup|time)\s+)*(?:(?:[^\s;|&(]*\/)?(?:ba|z|da|k)?sh|source)(?=\s)/gi
-// rodada 5.18 (chat 4, F1b): o c do -c vai num lookahead antes do bloco de letras, como no rm
-// (o [a-z]*c[a-z]* voltava letra por letra numa opcao comprida). E o <( deixou de ser
-// <\(\s*(?:\S*\/)?(?:curl|wget)\b: o \S* relia o resto da palavra a cada <( e "<(<(<(..."
-// custava o quadrado. Agora vale o <( com o download logo depois dos espacos ou depois de uma
-// barra na mesma palavra, que e o que o \S*\/ aceitava
-const RE_SH_C_DOWNLOAD = /\s-(?=[a-z]*c)[a-z]+\s+(?:\$\(|`)\s*(?:\S*\/)?(?:curl|wget)\b/gi
-const RE_DOWNLOAD_DIRETO = /(?:curl|wget)\b/iy
-function processoComDownload(texto) {
-  const achadas = []
-  const fimDaPalavra = proximaDesde(texto, /\s/g)
-  const barraDownload = proximaDesde(texto, /\/(?:curl|wget)\b/gi)
-  for (const m of texto.matchAll(/<\(\s*/g)) {
-    const inicio = m.index + m[0].length
-    RE_DOWNLOAD_DIRETO.lastIndex = inicio
-    if (RE_DOWNLOAD_DIRETO.test(texto) || barraDownload(inicio) < fimDaPalavra(inicio)) achadas.push(m.index)
-  }
-  return achadas
-}
-function subshellPerigoso(comando) {
-  const semBrew = comando.split(BREW_OFICIAL).join('')
-  return opcaoDepoisDaPalavra(semBrew, RE_SH_INICIO, RE_SH_C_DOWNLOAD, /[\n|;&]/g) ||
-    opcaoDepoisDaPalavra(semBrew, RE_SH_OU_SOURCE_INICIO, { posicoes: processoComDownload(semBrew) }, /[\n|;&]/g)
-}
-const PERIGOS_SUBSHELL = [
-  { teste: subshellPerigoso, motivo: 'roda um script baixado da internet sem ninguem ler' },
+  { teste: encodedPerigoso, regra: 'comando-escondido', motivo: 'roda um comando escondido em codigo que ninguem consegue ler' },
 ]
 // rodada 5.17: as regras de disco leem o limpo (na lista PERIGOS) e o desaspado: format "D:"
 // e o format.com do System32 chamado pelo caminho entre aspas tinham a letra ou o programa
 // dentro das aspas
+// 5.49 (bloco A, 2026-11-03): cada entrada ganhou a regra, o nome curto que a mensagem diz
 const PERIGOS_DISCO = [
-  { teste: formatPerigoso, motivo: 'apaga tudo do disco pra sempre' },
-  { teste: discoPerigoso, motivo: 'apaga tudo do disco pra sempre' },
-  { teste: discoUnixPerigoso, motivo: 'apaga tudo do disco pra sempre' },
-  { teste: sombraPerigosa, motivo: 'apaga as copias de seguranca do Windows (versoes anteriores e pontos de restauracao) pra sempre' },
+  { teste: formatPerigoso, regra: 'disco', motivo: 'apaga tudo do disco pra sempre' },
+  { teste: discoPerigoso, regra: 'disco', motivo: 'apaga tudo do disco pra sempre' },
+  { teste: discoUnixPerigoso, regra: 'disco', motivo: 'apaga tudo do disco pra sempre' },
+  { teste: sombraPerigosa, regra: 'disco', motivo: 'apaga as copias de seguranca do Windows (versoes anteriores e pontos de restauracao) pra sempre' },
 ]
 
+// as regras de git (push forcado ou apagando branch, reset --hard, checkout e restore na
+// pasta inteira, checkout -f, switch --discard-changes, clean, stash clear e drop) moram no
+// gitPerigoso, que le o marcado (ver ehPerigoso), com a regra git-joga-fora. --force-with-lease
+// e a variante segura (nao sobrescreve o que outra pessoa subiu) e segue livre: barrar ela
+// empurraria o aluno avancado a desligar a trava inteira. O git clean barra com -f (ou --force)
+// junto de -d, -x ou -X, e o -n (--dry-run) so simula. Um arquivo so (git checkout --
+// arquivo.txt, git restore arquivo.txt) continua liberado.
+// 5.49 (2026-11-03): sairam daqui as regras de apagar (bloco 5, foram pra APAGAR, que
+// pergunta), o curl e o wget com pipe pro shell (bloco 8) e o chmod 777 (bloco 9)
 const PERIGOS = [
-  { teste: rmPerigoso, motivo: 'apaga uma pasta inteira de uma vez' },
+  ...PERIGOS_DISCO,
+  ...PERIGOS_POWERSHELL,
+]
+const MOTIVOS_GIT = [MOTIVO_HISTORICO, MOTIVO_APAGA_REMOTO, MOTIVO_SEM_SALVAR, MOTIVO_PASTA, MOTIVO_CLEAN, MOTIVO_STASH, MOTIVO_NAO_LE]
+// 5.49 (bloco 4, 2026-11-03): saiu o "quebre o comando em partes menores", que mandava refazer
+// por outro caminho logo antes do fim da mensagem, que manda nao refazer
+const MOTIVO_ERRO_INTERNO = 'a trava nao conseguiu ler este comando (erro dentro dela)'
+// o ehPerigoso devolve so o motivo (quem importa ja usa assim); a regra sai do motivo
+const REGRA_DO_MOTIVO = new Map([...MOTIVOS_GIT.map(m => [m, 'git-joga-fora']), ...PERIGOS.map(p => [p.motivo, p.regra]),
+  [MOTIVO_ERRO_INTERNO, 'erro-interno']])
+
+function testarPadroes(comando, lista = PERIGOS) {
+  for (const p of lista) if (p.teste(comando)) return p.motivo
+  return null
+}
+
+// 5.49 (bloco 5, 2026-11-03): as regras de apagar, que o ehPerigoso deixou de ler. Quem le e
+// a perguntaDeApagar (perto do fim): as de APAGAR_COM_ALVO tem o alvo lido palavra por palavra
+// (alvosDoPedaco), e as outras perguntam "uma pasta" (o alvo vem do pipe, de outro programa ou do codigo)
+const REGRA_APAGAR = 'apagar-pasta'
+const APAGAR_COM_ALVO = [
+  { teste: rmPerigoso, regra: REGRA_APAGAR },
   // rm com opcao que so o PowerShell tem: ver rmDoPowershellPerigoso
-  { teste: rmDoPowershellPerigoso, motivo: 'apaga uma pasta inteira de uma vez, sem pedir confirmacao (a Microsoft confirma: so confirma quando NAO usa -Recurse)' },
-  // as regras de git (push forcado ou apagando branch, reset --hard, checkout e restore na
-  // pasta inteira, checkout -f, switch --discard-changes, clean, stash clear e drop) moram no
-  // gitPerigoso, que le o marcado (ver ehPerigoso). --force-with-lease e a variante segura
-  // (nao sobrescreve o que outra pessoa subiu) e segue livre: barrar ela empurraria o aluno
-  // avancado a desligar a trava inteira. O git clean barra com -f (ou --force) junto de -d,
-  // -x ou -X, e o -n (--dry-run) so simula. Um arquivo so (git checkout -- arquivo.txt, git
-  // restore arquivo.txt) continua liberado
-  // "sudo" no meio do pipe (curl ... | sudo bash) e o jeito mais comum de instalar
-  // script de terceiro com privilegio elevado, e tem que continuar batendo. Flag i desde
-  // a 5.2: `CURL x | SH` passava (o PowerShell nao liga pra maiuscula). Ver curlPipePerigoso
-  { teste: curlPipePerigoso, motivo: 'roda um script baixado da internet sem ninguem ler' },
-  { teste: wgetPipePerigoso, motivo: 'roda um script baixado da internet sem ninguem ler' },
-  // modo de 4 digitos (0777 a 7777: setuid/setgid/sticky, sozinhos ou combinados, + 777)
-  // e tao aberto quanto o 777 puro; o lookbehind evita casar o final de um numero maior
-  { re: /\bchmod\s+(?:-[a-zA-Z]+\s+)*(?<!\d)[0-7]?777\b/, motivo: 'libera o arquivo pra qualquer um do computador' },
+  { teste: rmDoPowershellPerigoso, regra: REGRA_APAGAR },
   // correcao 6 (quarta revisao): a doc oficial da Microsoft confirma os dois fatos que
   // sustentam esta regra. 1) -Force NAO tem nada a ver com pular confirmacao de pasta:
   // "Forces the cmdlet to remove items that can't otherwise be changed, such as hidden
@@ -1537,7 +1228,13 @@ const PERIGOS = [
   // Remove-Item: All platforms: del, erase, rd, ri; Windows: rm, rmdir"), exceto "rm",
   // que fica na regra dele mesmo logo acima (ver comentario la). Case-insensitive porque
   // PowerShell nao diferencia maiuscula de minuscula em nada disso.
-  { teste: removeItemPerigoso, motivo: 'apaga uma pasta inteira de uma vez, sem pedir confirmacao (a Microsoft confirma: so confirma quando NAO usa -Recurse)' },
+  { teste: removeItemPerigoso, regra: REGRA_APAGAR },
+  { teste: rdPerigoso, regra: REGRA_APAGAR },
+  // del e erase com /s: ver delPerigoso
+  { teste: delPerigoso, regra: REGRA_APAGAR },
+  { teste: apagadorDePacote, regra: REGRA_APAGAR },
+]
+const APAGAR_SEM_ALVO = [
   // correcao 7 (quinta revisao): a regra anterior exigia "Get-ChildItem" literal antes
   // do pipe, mas gci/dir/ls sao apelidos oficiais dela (doc: "PowerShell includes the
   // following aliases for Get-ChildItem: All platforms: dir, gci; Windows: ls") e
@@ -1546,25 +1243,19 @@ const PERIGOS = [
   // ou um ForEach-Object (apelidos oficiais "%" e "foreach", doc: "PowerShell includes
   // the following aliases for ForEach-Object: All Platforms: %, foreach") cujo bloco
   // chama Remove-Item pra cada item, tipo `Get-ChildItem -Recurse | %{ Remove-Item $_ }`
-  { teste: removeItemPipePerigoso, motivo: 'apaga varios arquivos de uma vez, um por um, sem confirmar nenhum' },
-  { teste: rdPerigoso, motivo: 'apaga uma pasta inteira de uma vez' },
-  // del e erase com /s: ver delPerigoso
-  { teste: delPerigoso, motivo: 'apaga arquivo de varias pastas de uma vez' },
-  { teste: findPerigoso, motivo: MOTIVO_OUTRO_PROGRAMA },
-  { teste: xargsApaga, motivo: MOTIVO_OUTRO_PROGRAMA },
-  { teste: apagadorDePacote, motivo: MOTIVO_OUTRO_PROGRAMA },
-  { teste: dotnetApaga, motivo: MOTIVO_OUTRO_PROGRAMA },
-  ...PERIGOS_DISCO,
-  ...PERIGOS_POWERSHELL,
+  { teste: removeItemPipePerigoso, regra: REGRA_APAGAR },
+  { teste: findPerigoso, regra: REGRA_APAGAR },
+  { teste: xargsApaga, regra: REGRA_APAGAR },
+  { teste: dotnetApaga, regra: REGRA_APAGAR },
 ]
-
-function testarPadroes(comando, lista = PERIGOS) {
-  for (const p of lista) {
-    const bateu = p.teste ? p.teste(comando) : p.re.test(comando)
-    if (bateu) return p.motivo
-  }
-  return null
-}
+// regras que leem o desaspado (o que importa pode estar entre aspas); o texto de quem so
+// escreve (echo "...") ja saiu dele
+const APAGAR_NO_DESASPADO = [
+  { teste: robocopyPerigoso, regra: REGRA_APAGAR },
+  { teste: nodeApaga, regra: REGRA_APAGAR },
+  { teste: pythonApaga, regra: REGRA_APAGAR },
+  { teste: clearContentPerigoso, regra: REGRA_APAGAR },
+]
 
 // rodada 5.20 (N2): Start-Process com -ArgumentList em lista ('/c','rd','/s' ou /c,rd,/s,
 // com ou sem @( )) chegava picotado: o limpo perde o que esta entre aspas, cada suspeito tem
@@ -1574,6 +1265,7 @@ function testarPadroes(comando, lista = PERIGOS) {
 // desaspado, nao o comando cru, pra o texto de quem so escreve (echo "...") seguir livre.
 // O trecho e sempre mais curto que o comando (perde ao menos o nome), entao a recursao termina
 const RE_START_PROCESS = /(?<![\w\-.])(?:Start-Process|saps|start)(?![\w\-.])/gi
+const RE_OPCAO_DO_START = /(?<![\w\-.])-(?:ArgumentList|Args|FilePath|Wait|NoNewWindow|PassThru|(?:Verb|WindowStyle)\s+\S+)(?![\w\-.])/gi
 // A lista pode vir quebrada em linhas (virgula no fim da linha, ou dentro do @( )): a quebra
 // depois da virgula e a de dentro do parentese nao encerram o comando
 function argumentosRemontados(desaspado) {
@@ -1585,58 +1277,903 @@ function argumentosRemontados(desaspado) {
     const comeco = m.index + m[0].length
     const ate = Math.min(fim(comeco), k + 1 < inicios.length ? inicios[k + 1].index : texto.length)
     const trecho = texto.slice(comeco, ate)
-    // lista com virgula ou dentro de @( ), que no PowerShell pode ter um item por linha sem virgula
-    if (/[,(]/.test(trecho)) remontados.push(trecho.replace(/@\(|[,()]/g, ' '))
+    // lista com virgula ou dentro de @( ), que no PowerShell pode ter um item por linha sem virgula.
+    // 5.49 (regressao contra a v5.40, 2026-11-04): a lista de uma string so (`Start-Process cmd.exe
+    // -ArgumentList "/c git reset --hard"`) tambem volta, sem os nomes das opcoes do Start-Process, porque
+    // o trecho entre aspas deixou de ser lido como comando e ela passava calada. 5.49 (Codex comum, terceira,
+    // 2026-11-04): so quando o programa executa comando (cmd, shell, git, lancador): pro notepad o texto e
+    // nome de arquivo (`Start-Process notepad -ArgumentList "git reset --hard"` barrava a toa)
+    if (/[,(]/.test(trecho)) { remontados.push(trecho.replace(/@\(|[,()]/g, ' ')); return }
+    const resto = trecho.replace(RE_OPCAO_DO_START, ' ')
+    const programa = nomeDoPrograma((resto.match(/[^\s]+/) || [''])[0])
+    if (ehExecutor(programa) || LANCADORES.has(programa) || LANCADORES_DO_EMBRULHO.has(programa) || PREFIXOS_DO_SHELL.has(programa)) remontados.push(resto)
   })
   return remontados
+}
+
+// 5.49 (D-embrulho, 2026-11-03): o trecho entre aspas volta a ser lido como comando so quando o
+// programa que o recebe executa comando: bash, sh, zsh e dash com -c (com opcao antes: --login -c,
+// -lc), cmd com /c ou /k, powershell e pwsh com -Command, -c ou outra abreviacao, Invoke-Expression,
+// iex e eval. Texto citado por outro programa (gh issue --body, git commit -m, echo, node x.mjs "...")
+// segue sem ser lido. 5.49 (D-apelido, 2026-11-03): o apelido do git que roda outro programa
+// (-c alias.x='!comando') tem o comando lido do mesmo jeito; o git roda esse comando na raiz do
+// repositorio, entao o alvo relativo de dentro dele a trava nao le. Cada palavra e lida uma vez
+const SEPARADORES_DO_SHELL = new Set([';', '&', '|', '\n', '(', ')', '{', '}', '`'])
+// divide em comandos simples, cada um com as palavras sem as aspas; aspas=true na palavra que e um
+// trecho entre aspas inteiro. A aspa sem par e texto, como no classificarTrechosEntreAspas.
+// 5.49 (D-embrulho, 2026-11-03, revisao interna): dentro das aspas duplas, a barra invertida antes de
+// aspa dupla, barra invertida, crase ou cifrao escapa (`bash -c "rm -rf \"minha pasta\""`), como no bash;
+// a aspa escapada fora das aspas e texto
+const ESCAPA_NAS_DUPLAS = new Set(['"', BARRA, '`', '$'])
+function fimDasAspas(texto, i) {
+  const c = texto[i]
+  for (let j = i + 1; j < texto.length; j++) {
+    if (c === '"' && texto[j] === BARRA && ESCAPA_NAS_DUPLAS.has(texto[j + 1])) { j++; continue }
+    if (texto[j] === c) return j
+  }
+  return -1
+}
+// 5.49 (Codex comum, aspas emendadas, 2026-11-04): o pedaco entre aspas emendado em outro (`bash -c 'rm -rf
+// '"pasta"`, `bash -c rm' -rf pasta'`) e uma palavra so, como no bash, e segue palavra entre aspas: antes a
+// emenda zerava o tipo e o embrulho nao era lido. O tipo da emendada e '"' so quando todo pedaco o shell de
+// fora expande (aspas duplas sem o $ escapado, ou solto sem barra invertida), senao "'", pra aspa simples
+// literal na temporaria seguir perguntando. O ps guarda a palavra como o PowerShell a parte (medido no pwsh
+// 7.6 e no powershell.exe 5.1 em 2026-11-04): a palavra que comeca em aspas acaba na aspa que fecha, e o
+// pedaco colado depois comeca outra (`'a '"b"` sao duas); a que comeca solta segue emendando (`a' b'` e uma)
+// 5.49 (Codex comum, aspas emendadas, revisao interna, 2026-11-04): barra=true le a palavra como o bash
+// (medido no Git Bash em 2026-11-04): a barra invertida fora das aspas escapa o caractere seguinte, que entra
+// como literal (`'git reset '\''--hard'\''`, `git\ reset\ --hard` sao uma palavra so), a barra antes da quebra
+// de linha some, o $'...' (ANSI-C) tira o $ e troca os escapes, e o $"..." e aspa dupla. No PowerShell nada
+// disso vale (`$'x'` chega como `$x`, `a\ b` sao duas palavras com a barra), entao e uma leitura a mais (ver embrulhados)
+const ESCAPES_ANSI = { a: 7, b: 8, e: 27, E: 27, f: 12, n: 10, r: 13, t: 9, v: 11 }
+const RE_ESCAPE_ANSI = new RegExp(BARRA + BARRA + '(x[0-9a-fA-F]{1,2}|u[0-9a-fA-F]{1,4}|U[0-9a-fA-F]{1,8}|[0-7]{1,3}|c[^]|[^])', 'g')
+const ansiC = s => s.replace(RE_ESCAPE_ANSI, (todo, e) => {
+  if (e in ESCAPES_ANSI) return String.fromCharCode(ESCAPES_ANSI[e])
+  if (/^[0-7]/.test(e)) return String.fromCharCode(parseInt(e, 8) & 255)
+  if (e.length > 1 && e[0] !== 'c') { const n = parseInt(e.slice(1), 16); return n <= 0x10ffff ? String.fromCodePoint(n) : '' }
+  if (e.length > 1) return String.fromCharCode(e.charCodeAt(1) & 31)
+  return ("'" + '"?' + BARRA).includes(e) ? e : todo
+})
+function fimDoAnsi(texto, i) {
+  for (let j = i + 1; j < texto.length; j++) {
+    if (texto[j] === BARRA) j++
+    else if (texto[j] === "'") return j
+  }
+  return -1
+}
+function comandosSimples(texto, barra = false) {
+  const comandos = [[]]
+  let palavra = null
+  const fecha = () => { if (palavra) comandos[comandos.length - 1].push(palavra); palavra = null }
+  const junta = (t, aspas) => {
+    const expande = aspas === '"' || (!aspas && t !== BARRA)
+    if (!palavra) { palavra = { t, aspas, expande, ps: [{ t, aspas, expande }], fechou: !!aspas }; return }
+    palavra.t += t
+    palavra.expande = palavra.expande && expande
+    if (aspas || palavra.aspas) palavra.aspas = palavra.expande ? '"' : "'"
+    const ultimo = palavra.ps[palavra.ps.length - 1]
+    if (palavra.fechou) { palavra.ps.push({ t, aspas, expande }); palavra.fechou = !!aspas; return }
+    ultimo.t += t
+    ultimo.expande = ultimo.expande && expande
+    if (aspas) ultimo.aspas = ultimo.aspas || aspas
+  }
+  for (let i = 0; i < texto.length; i++) {
+    const c = texto[i]
+    if (barra && c === BARRA && i + 1 < texto.length) {
+      if (texto[i + 1] !== '\n') junta(texto[i + 1], "'")
+      i++
+      continue
+    }
+    if (barra && c === '$' && texto[i + 1] === "'") {
+      const fim = fimDoAnsi(texto, i + 1)
+      if (fim >= 0) { junta(ansiC(texto.slice(i + 2, fim)), "'"); i = fim; continue }
+    }
+    if (barra && c === '$' && texto[i + 1] === '"' && fimDasAspas(texto, i + 1) >= 0) continue
+    const escapada = !barra && i > 0 && texto[i - 1] === BARRA && !(i > 1 && texto[i - 2] === BARRA)
+    const par = (c === '"' || c === "'") && !escapada ? fimDasAspas(texto, i) : -1
+    if (par >= 0) {
+      let conteudo = texto.slice(i + 1, par)
+      if (c === '"') conteudo = conteudo.replace(new RegExp(BARRA + BARRA + '([' + BARRA + BARRA + '"`$])', 'g'), '$1')
+      // aspas guarda qual aspa (ver lerApagar); a dupla com o $ escapado dentro vira 'escapada', porque
+      // nela o shell de fora deixou alguma variavel sem trocar
+      junta(conteudo, c === '"' && texto.slice(i + 1, par).includes(BARRA + '$') ? 'escapada' : c)
+      i = par
+    } else if (SEPARADORES_DO_SHELL.has(c)) { fecha(); comandos.push([]) }
+    else if (/\s/.test(c)) fecha()
+    else junta(c, false)
+  }
+  fecha()
+  return comandos
+}
+const OPCAO_DO_SHELL_COM_VALOR = new Set(['-o', '+o', '-O', '+O', '--rcfile', '--init-file'])
+// cada leitor de opcao diz 'executa' (o trecho entre aspas de depois e comando), 'para' (o resto e
+// de um script), 'valor' (a palavra seguinte e o valor da opcao) ou 'pasta' (o valor e a pasta onde
+// o comando roda); undefined segue lendo. umSo: so a primeira palavra depois das opcoes e o comando.
+// shell: o shell que le o trecho, pra conta da temporaria (ver foraDoShell).
+// 5.49 (D-embrulho, 2026-11-03, revisao interna): o powershell.exe (nao o pwsh, cujo padrao e o -File) roda
+// como comando o primeiro trecho entre aspas solto (`powershell -NoProfile "..."`), e os dois aceitam o
+// traco duplo (`pwsh --command "..."`)
+const opcaoDoPowershell = posicional => (a, aspas) => {
+  const o = RE_OPCAO.exec(a.startsWith('--') ? a.slice(1) : a)
+  if (!o) return posicional && aspas ? 'comando' : undefined
+  const n = o[1].toLowerCase()
+  if ('command'.startsWith(n)) return 'executa'
+  if ('file'.startsWith(n)) return 'para'
+  return n === 'wd' || (n.length >= 2 && 'workingdirectory'.startsWith(n)) ? 'pasta' : undefined
+}
+// 5.49 (D-embrulho, 2026-11-03, quarta leva): quem recebe o comando inteiro e o entrega a um shell sem
+// shell na frente. su, runuser, script e flock rodam o valor do -c (ou --command=) num shell; o ssh
+// junta o resto da linha depois do host e roda no shell da outra maquina; o watch junta o resto da
+// linha e roda num sh -c. Leitura das opcoes no jeito do getopt: a letra que pede valor come o resto
+// da palavra ou a palavra seguinte. Devolve ['colado', valor] quando o comando vem colado na opcao
+// (-cVALOR, --command=VALOR); o 'executa' de quem tem valorDoC le so a palavra seguinte. O posicional decide o que a palavra sem traco e (st guarda o estado de um so programa); o
+// login (su -, -l, --login) troca a pasta, e o alvo relativo de dentro vira "uma pasta"
+// 5.49 (D-embrulho, 2026-11-03, quarta leva, revisao interna): o getopt_long aceita o comeco unico da
+// opcao longa (`su --comm`, `watch --inter 5`), e o comeco conta a partir de `--x`. O duplo diz o que
+// vem depois do `--`: 'para' (o resto e de outro programa), 'posicional' (ssh e watch: a palavra com
+// traco tambem e host ou comando) ou 'shell' (su e runuser: o que vem depois do usuario vai pro
+// shell, e o `-c` dele roda a palavra seguinte, `su root -- -c "..."`)
+const opcaoGetopt = ({ comando = '', valor = '', longasComando = [], longasValor = [], login = '', duplo = 'para', posicional }) =>
+  (a, aspas, ctx, st) => {
+    if (st.fim === 'posicional') return posicional(st)
+    if (st.fim === 'shell') return posicional(st) || (/^-[A-Za-z]+$/.test(a) && a.includes('c') ? 'executa' : undefined)
+    if (a === '--') { if (duplo === 'para') return 'para'; st.fim = duplo; return undefined }
+    if (a.startsWith('--')) {
+      const [nome, ...resto] = a.split('=')
+      const casa = l => nome.length >= 3 && l.startsWith(nome)
+      if (login && casa('--login')) ctx.outraPasta = true
+      if (longasComando.some(casa)) return resto.length ? ['colado', resto.join('=')] : 'executa'
+      if (longasValor.some(casa) && !resto.length) { st.longas = (st.longas || '') + longasValor.find(casa); return 'valor' }
+      return undefined
+    }
+    if (a === '-') { if (login) ctx.outraPasta = true; return undefined }
+    if (/^-[A-Za-z0-9]/.test(a)) {
+      const { letras, pedeValor } = letrasCurtas(a, comando + valor)
+      st.letras = (st.letras || '') + letras
+      if (login && [...letras].some(l => login.includes(l))) ctx.outraPasta = true
+      if (comando.includes(letras[letras.length - 1])) return pedeValor ? 'executa' : ['colado', a.slice(letras.length + 1)]
+      return pedeValor ? 'valor' : undefined
+    }
+    return posicional(st)
+  }
+const SU = { comando: 'c', valor: 'sgGw', longasComando: ['--command', '--session-command'], login: 'l', duplo: 'shell',
+  longasValor: ['--shell', '--group', '--supp-group', '--whitelist-environment'], posicional: () => undefined }
+const EXECUTORES = [
+  { nomes: ['bash', 'sh', 'zsh', 'dash'], umSo: true, shell: 'Bash', opcao: a => /^-[a-zA-Z]+$/.test(a) && a.includes('c') ? 'executa'
+    : OPCAO_DO_SHELL_COM_VALOR.has(a) ? 'valor' : /^[-+]/.test(a) ? undefined : 'para' },
+  { nomes: ['su'], valorDoC: true, shell: 'Bash', opcao: opcaoGetopt(SU) },
+  // o runuser com -u roda o programa direto, sem shell: a palavra sem traco depois dele e o programa
+  { nomes: ['runuser'], valorDoC: true, shell: 'Bash', opcao: opcaoGetopt({ ...SU, valor: SU.valor + 'u',
+    longasValor: [...SU.longasValor, '--user'], posicional: st => /u/.test(st.letras || '') || /--user/.test(st.longas || '') ? 'para' : undefined }) },
+  { nomes: ['script'], valorDoC: true, shell: 'Bash', opcao: opcaoGetopt({ comando: 'c', valor: 'EIOBTmo', longasComando: ['--command'],
+    longasValor: ['--echo', '--log-in', '--log-out', '--log-io', '--log-timing', '--logging-format', '--output-limit'], posicional: () => undefined }) },
+  // flock <arquivo> -c "..." roda num shell; flock <arquivo> programa roda o programa direto
+  { nomes: ['flock'], valorDoC: true, shell: 'Bash', opcao: opcaoGetopt({ comando: 'c', valor: 'wE', longasComando: ['--command'],
+    longasValor: ['--timeout', '--wait', '--conflict-exit-code'], posicional: st => st.arquivo ? 'para' : (st.arquivo = true, undefined) }) },
+  { nomes: ['ssh'], junta: true, remoto: true, shell: 'Bash', opcao: opcaoGetopt({ valor: 'BbcDEeFIiJLlmOoPpQRSWw', duplo: 'posicional',
+    posicional: st => st.host ? 'comando' : (st.host = true, undefined) }) },
+  { nomes: ['watch'], junta: true, shell: 'Bash', opcao: opcaoGetopt({ valor: 'nqs', duplo: 'posicional',
+    longasValor: ['--interval', '--equexit', '--shotsdir'], posicional: () => 'comando' }) },
+  // 5.49 (Codex comum, aspas emendadas, revisao interna, 2026-11-04): no Git Bash o `cmd //c` e o `cmd /c` (o MSYS
+  // troca a barra dobrada do comeco por uma, medido em 2026-11-04); vindo do PowerShell o cmd recebe o //c e
+  // abre o prompt sem rodar nada, entao o //c so vale quando o comando veio do bash (ctx.bash)
+  { nomes: ['cmd'], shell: 'cmd', opcao: (a, aspas, ctx) => (ctx.bash ? /^\/\/?[ckr]$/i : /^\/[ckr]$/i).test(a) ? 'executa' : a.startsWith('/') ? undefined : 'para' },
+  { nomes: ['powershell'], shell: 'PowerShell', opcao: opcaoDoPowershell(true) },
+  { nomes: ['pwsh'], shell: 'PowerShell', opcao: opcaoDoPowershell(false) },
+  { nomes: ['invoke-expression', 'iex'], shell: 'PowerShell' },
+  { nomes: ['eval'], shell: 'Bash' },
+]
+// 5.49 (Codex comum, 2026-11-04): o cmd.exe le as chaves dele sem espaco entre elas nem antes do
+// comando (`cmd /d/c "..."`, `cmd /c"..."`, `cmd /cgit reset --hard`, `cmd/c`), em qualquer caixa, com o
+// /r como sinonimo do /c e com /a, /u, /q, /d, /s, /x, /y, /e:on, /v:on, /f:off e /t:fg antes (a v5.39
+// barrava as formas grudadas pela descida em toda aspa). Devolve o comando com cada chave do cmd
+// separada ate a /c, /k ou /r, ou o proprio comando quando nada esta grudado, entao a segunda volta
+// devolve o mesmo texto. Entra como leitura a mais, depois da do comando como veio (T55). Logo depois
+// do /c o comando de dentro comeca, e o cmd de la (`cmd/ccmd/c...`) se le na mesma volta, pelo tempo linear.
+// Revisao interna da comum: o nome entre aspas tambem conta (`"cmd" /c"..."`, o caminho do cmd.exe entre aspas
+// com `/d/c "..."`); o =, a virgula e o @ logo depois do /c o cmd pula (`cmd /c=git`, `cmd /d/c@git`, `cmd /c @git`);
+// e o cmd grudado so se le na posicao de programa (comeco, depois de separador, de aspa que abre, de quem
+// lanca programa ou do /c de outro cmd) ou com o comando de dentro entre aspas (`sudo -u x cmd /d/c "..."`),
+// porque `rm -rf cmd/cache` e `rm -rf $TMPDIR/cmd/cache` sao pasta. 5.49 (Codex comum, 2026-11-04): o caminho
+// entre aspas aceita espaco (`& "<disco>/Program Files/../Windows/System32/cmd.exe" /c"..."`): cada aspa que abre
+// le so ate a proxima, e a entrada gigante segue linear
+const RE_NOME_DO_CMD = /(?<=^|[\s;&|()"'`])(?:"(?:[^"]*[\\\/])?cmd(?:\.exe)?"|'(?:[^']*[\\\/])?cmd(?:\.exe)?'|(?:[^\s;&|()"'`]*[\\\/])?cmd(?:\.exe)?)(?=[\s\/])/gi
+// o cmd que comeca o comando de dentro, tambem entre aspas e depois de espaco (`"cmd" /c"cmd" /c...`): sem
+// ele aqui, cada volta da leitura a mais separava um so e a entrada gigante ficava quadratica. Sem aspas,
+// so o nome, sem caminho na frente: o caminho comeria o resto (`cmd/ccmd/c...`) a cada volta
+const RE_CMD_LOGO_DEPOIS = /\s*(?:"(?:[^"]*[\\\/])?cmd(?:\.exe)?"|'(?:[^']*[\\\/])?cmd(?:\.exe)?'|cmd(?:\.exe)?)(?=[\s\/])/iy
+// a barra dobrada e a do Git Bash (`cmd //cgit reset --hard` roda, medido em 2026-11-04; ver EXECUTORES)
+const RE_CHAVE_DO_CMD = /^\/\/?([a-z])(?::[a-z0-9]*)?/i
+const RE_CHAVES_ATE_O_C = /(?:^|cmd(?:\.exe)?)(?:\/[a-z](?::[a-z0-9]*)?)*\/[ckr]$/i
+const lancaPrograma = p => {
+  const n = nomeDoPrograma(p)
+  return p === '&' || ANTES_DO_PROGRAMA.has(p.toLowerCase()) || LANCADORES.has(n) || PREFIXOS_DO_SHELL.has(n) ||
+    LANCADORES_DO_EMBRULHO.has(n) || n === 'start' || n === 'call' || RE_CHAVES_ATE_O_C.test(p)
+}
+function naPosicaoDePrograma(texto, i) {
+  let k = i
+  while (k > 0 && /\s/.test(texto[k - 1])) { if (texto[k - 1] === '\n') return true; k-- }
+  if (k === 0) return true
+  const c = texto[k - 1]
+  if (';&|({'.includes(c)) return true
+  // a aspa colada no nome so conta depois do /c de outro cmd (`cmd /c"cmd/c..."`): o trecho de quem
+  // executa (`bash -c "cmd/c..."`) a leitura do embrulho le de novo, com o cmd no comeco, e a aspa de
+  // argumento (`Remove-Item "cmd/cache"`) ou a que fecha (`"$TMPDIR"/cmd/cache`) e de pasta
+  if (k === i && (c === '"' || c === "'" || c === '`')) return RE_CHAVES_ATE_O_C.test(texto.slice(Math.max(0, k - 40), k - 1))
+  let w = k
+  while (w > 0 && !/[\s;&|(]/.test(texto[w - 1])) w--
+  return lancaPrograma(texto.slice(w, k))
+}
+// 5.49 (Codex comum, terceira, 2026-11-04): a variavel do cmd.exe com as chaves grudadas (`& $env:ComSpec
+// /d/c "..."`, `& ${env:ComSpec} /c"..."`) e o proprio cmd, que roda essa forma (a v5.40 barrava); o nome fica
+// mais curto, entao a recursao termina
+const RE_COMSPEC_NO_TEXTO = /[$][{](?:env:)?comspec[}]|[$](?:env:)?comspec(?![A-Za-z0-9_:])|%comspec%/gi
+function cmdComChavesSeparadas(texto) {
+  texto = texto.replace(RE_COMSPEC_NO_TEXTO, 'cmd')
+  if (!/cmd/i.test(texto)) return texto
+  let saida = ''
+  let desde = 0
+  let pos = 0
+  let logoDepois = false
+  for (;;) {
+    let m = null
+    if (logoDepois) { RE_CMD_LOGO_DEPOIS.lastIndex = pos; m = RE_CMD_LOGO_DEPOIS.exec(texto) }
+    const programa = !!m
+    if (!m) { RE_NOME_DO_CMD.lastIndex = pos; m = RE_NOME_DO_CMD.exec(texto) }
+    logoDepois = false
+    if (!m) break
+    const fimDoNome = m.index + m[0].length
+    pos = fimDoNome
+    let grudado = texto[fimDoNome] === '/'
+    const chaves = []
+    let j = fimDoNome
+    let achou = false
+    for (;;) {
+      let k = j
+      while (k < texto.length && /\s/.test(texto[k])) k++
+      const c = RE_CHAVE_DO_CMD.exec(texto.slice(k, k + 16))
+      if (!c) break
+      chaves.push(c[0])
+      j = k + c[0].length
+      if (j < texto.length && !/\s/.test(texto[j])) grudado = true
+      if (/[ckr]/i.test(c[1])) { achou = true; break }
+    }
+    if (!achou) continue
+    let d = j
+    while (d < texto.length && /[\s=,@]/.test(texto[d])) d++
+    if (/[=,@]/.test(texto.slice(j, d))) { grudado = true; j = d }
+    if (!grudado) continue
+    if (!programa && !naPosicaoDePrograma(texto, m.index) && !/["']/.test(texto[d] || '')) continue
+    saida += texto.slice(desde, fimDoNome) + ' ' + chaves.join(' ') + ' '
+    desde = j
+    pos = j
+    logoDepois = true
+  }
+  return saida + texto.slice(desde)
+}
+// Revisao interna da comum (2026-11-04): a barra invertida antes da aspa que fecha (`cmd /c "rd /s /q C:\"`)
+// e caractere no PowerShell e no cmd, e a leitura de quem executa tomava a aspa por escapada, como no
+// bash, e perdia o comando de dentro (a v5.39 e a v5.40 barram). Leitura a mais com um espaco entre a
+// barra e a aspa, que entao nao escapa; no bash o comando nem roda (a aspa fica aberta), entao so a barra
+// do git e a pergunta fora do bash a leem
+const RE_BARRA_NA_ASPA = /(?<=[^\s\\])\\(["'])(?=[\s;&|)]|$)/g
+const semBarraNaAspa = texto => texto.includes('\\') ? texto.replace(RE_BARRA_NA_ASPA, '\\ $1') : texto
+const leiturasAMais = (comando, comBarra = true) =>
+  [...new Set([cmdComChavesSeparadas(comando), ...(comBarra ? [semBarraNaAspa(comando)] : [])])].filter(t => t !== comando)
+const RE_APELIDO_QUE_RODA = /^alias\.[^=]*=!([\s\S]*)$/i
+// 5.49 (D-embrulho, 2026-11-03, revisao interna): quem lanca outro programa na frente do executor
+// (`timeout 60 bash -c`, `nice -n 5 bash -c`, `xargs -0 bash -c`, `wsl -d Ubuntu bash -c`). Depois dele
+// pula a opcao, o valor dela e o numero, ate achar o nome de um executor ou do git
+const LANCADORES_DO_EMBRULHO = new Set(['timeout', 'nice', 'xargs', 'wsl', 'ionice', 'stdbuf'])
+const ehExecutor = nome => nome === 'git' || EXECUTORES.some(e => e.nomes.includes(nome))
+// 5.49 (D-embrulho, 2026-11-03, frente A): o lancador fora da lista (`chrt 5 bash -c`, `taskset -c 0`, `setsid`,
+// `su -c`, `gdb --args`, `firejail`...) deixava o embrulho sem leitura. Sem lista fechada: depois do
+// primeiro programa que nao executa comando, a primeira palavra que e o nome de um executor com
+// opcao (bash, sh, zsh, dash, cmd, powershell, pwsh) ou do git volta a ser lida como comando, e a
+// leitura das opcoes dele decide se o trecho entre aspas roda (`echo bash "x"` passa, `echo bash -c
+// "rm -rf x"` pergunta). O nome entre aspas conta, como no comeco do comando (`chrt 5 "bash" -c`); o
+// trecho entre aspas que nao e so o nome segue texto. O eval e o iex ficam so no comeco: sao do
+// proprio shell, e nenhum programa de fora os lanca
+// 5.49 (D-embrulho, 2026-11-03, frente A, revisao interna): o nome achado no meio pode ser so o valor
+// de uma opcao (o usuario em `sudo -u git bash -c`, o conteiner em `docker run --name sh img bash -c`) ou
+// um executor que roda script (`chrt 5 sh run.sh bash -c`). Por isso o git achado no meio e o executor
+// que nao executou seguem procurando depois de onde a leitura deles parou (ctx.noMeio); o git do
+// comeco do comando le so o git (`git commit -m bash -c "..."` segue calado)
+const ehExecutorLancavel = nome => nome === 'git' || EXECUTORES.some(e => e.opcao && e.nomes.includes(nome))
+function proximoExecutor(palavras, k, ctx) {
+  for (let j = k + 1; j < palavras.length; j++) if (ehExecutorLancavel(nomeDoPrograma(palavras[j].t))) { ctx.noMeio = true; return j }
+  return -1
+}
+// powershell: o comando veio do PowerShell (ou de shell que a trava nao sabe), e a palavra emendada tambem
+// se le partida como ele a parte (ver comandosSimples)
+// bash: o comando veio do bash (ou de shell que a trava nao sabe), e a palavra tambem se le como o bash a le
+// (ver comandosSimples), numa segunda volta so quando o comando tem barra invertida, $' ou $"; no Bash e no
+// Monitor (powershell falso) so essa volta vale
+function embrulhados(comando, powershell = true, bash = true) {
+  const saida = []
+  // 5.49 (regressao contra a v5.40, 2026-11-04): a chave e separador no comandosSimples, entao o cmd pela
+  // variavel com chaves (`& ${env:ComSpec} /c "..."`, `${COMSPEC}`) perde as chaves antes de ser lido
+  comando = comando.replace(/[$][{]((?:env:)?comspec)[}]/gi, '$$$1')
+  const comoBash = bash && (comando.includes(BARRA) || /\$['"]/.test(comando))
+  const leituras = []
+  if (powershell || !comoBash) leituras.push([comandosSimples(comando), powershell])
+  if (comoBash) leituras.push([comandosSimples(comando, true), false])
+  for (const [comandos, partida] of leituras) {
+    for (const palavras of comandos) {
+      // o cmd /c, o powershell -c e o iex que comecam sem aspas voltam aqui com o k no comando de dentro;
+      // o k so cresce, entao cada palavra e lida uma vez
+      const ctx = { outraPasta: false, ultimaAspas: palavras.findLastIndex(p => p.aspas), powershell: partida, bash }
+      for (let k = 0; k >= 0 && k < palavras.length;) k = lerEmbrulho(palavras, k, saida, ctx)
+    }
+  }
+  return saida
+}
+// le o comando simples desde a palavra k; devolve onde o comando de dentro comeca, ou -1
+function lerEmbrulho(palavras, k, saida, ctx) {
+  const inicio = k
+  const noMeio = ctx.noMeio
+  ctx.noMeio = false
+  let lancado = false
+  while (k < palavras.length - 1 && !palavras[k].aspas && !ehExecutor(nomeDoPrograma(palavras[k].t))) {
+    const t = palavras[k].t
+    if (LANCADORES_DO_EMBRULHO.has(nomeDoPrograma(t))) lancado = true
+    else if (!pulaAntesDoApagador(t, k - inicio) && !(lancado && (/^\d[\d.]*[smhd]?$/.test(t) || palavras[k - 1].t.startsWith('-')))) break
+    k++
+  }
+  if (!palavras[k]) return -1
+  // o git depois de sudo, env, timeout ou outro programa pulado acima tambem esta no meio (`sudo -u git bash -c`)
+  const noMeioOuLancado = noMeio || k > inicio
+  const nome = nomeDoPrograma(palavras[k].t)
+  if (nome === 'git') {
+    let j = k + 1
+    for (; j < palavras.length && palavras[j].t.startsWith('-'); j += GIT_COM_VALOR.has(palavras[j].t) ? 2 : 1) {
+      const m = palavras[j].t === '-c' && palavras[j + 1] ? RE_APELIDO_QUE_RODA.exec(palavras[j + 1].t) : null
+      if (m && m[1]) saida.push({ texto: m[1], outraPasta: true, shell: 'Bash', remoto: !!ctx.remoto })
+    }
+    let ate = j - 1
+    // 5.49 (D-apelido, 2026-11-03, revisao interna): o apelido que roda outro programa gravado pelo
+    // `git config [--global] alias.x '!comando'` (e chamado depois, no mesmo comando ou noutro)
+    if (palavras[j] && palavras[j].t === 'config') {
+      for (j++; j < palavras.length - 1; j++) {
+        if (!/^alias\.\S+$/i.test(palavras[j].t)) continue
+        const valor = palavras[j + 1].t
+        if (valor.startsWith('!') && valor.length > 1) saida.push({ texto: valor.slice(1), outraPasta: true, shell: 'Bash', remoto: !!ctx.remoto })
+        break
+      }
+      ate = j
+    }
+    return noMeioOuLancado ? proximoExecutor(palavras, ate, ctx) : -1
+  }
+  const ex = EXECUTORES.find(e => e.nomes.includes(nome))
+  if (!ex) return proximoExecutor(palavras, k, ctx)
+  let executa = !ex.opcao
+  let primeira = true
+  const st = {}
+  // duplas: o trecho veio de aspas duplas, que o shell de fora ja expandiu (ver lerApagar)
+  const empurra = (texto, duplas = false) => saida.push({ texto, outraPasta: ctx.outraPasta, shell: ex.shell, remoto: !!ctx.remoto, duplas })
+  // 5.49 (Codex comum, aspas emendadas, 2026-11-04): vinda do PowerShell, a palavra emendada chega partida
+  // (ver comandosSimples): quem roda uma palavra so (bash -c, su -c) roda o primeiro pedaco, e o resto vira
+  // o $0; o cmd /c e o powershell -c juntam os pedacos com espaco (`pwsh -c 'git reset'"--hard"` roda o
+  // git). O iex recusa o pedaco a mais e nao roda nada
+  const empurraPartida = (p, umSo) => {
+    if (!ctx.powershell || p.ps.length < 2) return
+    const lidos = umSo ? p.ps.slice(0, 1) : p.ps
+    const texto = lidos.map(q => q.t).join(' ')
+    if (texto) empurra(texto, lidos.every(q => q.expande))
+  }
+  let j = k + 1
+  for (; j < palavras.length; j++) {
+    const p = palavras[j]
+    if (executa) {
+      // 5.49 (D-embrulho, 2026-11-03, quarta leva): no ssh o que vem daqui roda na outra maquina, e
+      // tudo lido depois no mesmo comando simples (`ssh host bash -c "..."`) leva a marca remoto
+      if (ex.remoto) ctx.remoto = true
+      // o ssh e o watch juntam o resto da linha com espaco e o shell de la rele o texto, entao o
+      // trecho entre aspas perde as aspas (`ssh host ls ";" "git reset --hard"` roda o git). 5.49
+      // (D-embrulho, 2026-11-03, quarta leva, revisao interna): o texto junto e lido quando o resto
+      // tem trecho entre aspas; sem aspas no comeco, a leitura de fora tambem segue no resto (`ssh host
+      // bash -c "..."`). So o primeiro ssh ou watch do comando simples junta: o texto junto ja leva os
+      // de depois, e as aspas somem a cada volta, o que segura o tempo linear
+      if (ex.junta) {
+        // vindo do PowerShell, cada pedaco da palavra emendada chega como palavra (ver comandosSimples)
+        const junto = () => {
+          const resto = palavras.slice(j)
+          const texto = resto.map(q => q.t).join(' ')
+          empurra(texto)
+          const partido = ctx.powershell ? resto.flatMap(q => q.ps.map(x => x.t)).join(' ') : texto
+          if (partido !== texto) empurra(partido)
+        }
+        if (p.aspas) { junto(); break }
+        if (!ctx.juntou && j <= ctx.ultimaAspas) { ctx.juntou = true; junto() }
+        return j
+      }
+      if (ex.umSo && !p.aspas && /^[-+]/.test(p.t)) continue
+      // revisao interna das aspas emendadas (2026-11-04): no Git Bash o MSYS troca o /c por C:/, que o cmd pula, e o
+      // //c de depois e o que roda (`cmd /c //c "..."` roda, medido em 2026-11-04)
+      if (ex.shell === 'cmd' && ctx.bash && primeira && !p.aspas && /^\/\/[a-z]/i.test(p.t)) continue
+      // 5.49 (D-embrulho, 2026-11-03, revisao interna): no cmd /c, no powershell -c e no iex que
+      // comecam sem aspas, o comando de dentro e o resto da linha, que a leitura de fora ja ve; o
+      // trecho entre aspas dele e de quem o recebe (`cmd /c git commit -m "rm -rf dist"` segue calado),
+      // e so o executor de dentro (`cmd /c bash -c "..."`) volta a ser lido
+      if (!ex.umSo && primeira && !p.aspas) return j
+      primeira = false
+      if (p.aspas && p.t) empurra(p.t, p.aspas === '"')
+      if (!ex.nomes.includes('iex')) empurraPartida(p, ex.umSo)
+      if (ex.umSo) break
+      continue
+    }
+    const d = ex.opcao(p.t, p.aspas, ctx, st)
+    // valorDoC: o -c e opcao com valor no getopt, que segue lendo as opcoes depois dele, e o ultimo -c
+    // vale; cada valor entre aspas e lido. O valor sem aspas volta a ser lido como comeco de comando,
+    // como no cmd /c (`su -c bash -c "..."`, `script -q -c cmd /c "..."`)
+    if (Array.isArray(d)) { if (d[1]) empurra(d[1]) }
+    else if (d === 'executa' && ex.valorDoC) {
+      if (palavras[j + 1] && !palavras[j + 1].aspas) return j + 1
+      if (palavras[j + 1] && palavras[j + 1].t) { empurra(palavras[j + 1].t, palavras[j + 1].aspas === '"'); empurraPartida(palavras[j + 1], true) }
+      j++
+    }
+    else if (d === 'executa') executa = true
+    else if (d === 'comando') { executa = true; j-- }
+    else if (d === 'para') break
+    else if (d === 'valor') j++
+    else if (d === 'pasta') { ctx.outraPasta = true; j++ }
+  }
+  return executa ? -1 : proximoExecutor(palavras, j - 1, ctx)
 }
 
 export function ehPerigoso(comando, opcoes = {}) {
   if (typeof comando !== 'string' || comando.length === 0) return null
   const cwd = typeof opcoes.cwd === 'string' && opcoes.cwd ? opcoes.cwd : process.cwd()
-  const { limpo, suspeitos, desaspado, marcado } = classificarTrechosEntreAspas(comando)
+  const { limpo, desaspado, marcado } = classificarTrechosEntreAspas(comando)
   // menor 1: a limpeza de aspas vale pra todos os padroes, nao so pro rm, senao
   // escrever licao sobre qualquer outro comando perigoso continua barrado
-  // (ex.: `echo "nunca rode chmod 777" >> licoes.md`).
+  // (ex.: `echo "nunca rode format D:" >> licoes.md`).
   // o PowerShell continua o comando na linha de baixo depois de "(" ou de crase no fim
   // da linha, entao as regras dele leem o comando com as linhas juntadas
   // (achado do Codex no Bloco A: `iex (` numa linha e `irm x)` na outra passava)
   const emUmaLinha = desaspado.replace(/`?\r?\n\s*/g, ' ')
   // e tambem linha a linha: juntar tudo deixava um `-Command` da primeira linha encerrar a
   // leitura das opcoes e esconder o `powershell "-e"` da segunda (achado do Codex na final)
-  const motivo = testarPadroes(limpo) || gitPerigoso(marcado, cwd) || testarPadroes(desaspado, PERIGOS_POWERSHELL) || testarPadroes(emUmaLinha, PERIGOS_POWERSHELL) || testarPadroes(desaspado, PERIGOS_SUBSHELL) || testarPadroes(desaspado, PERIGOS_DISCO) || testarPadroes(desaspado, PERIGOS_NO_DESASPADO) || (leituraDeSegredo(marcado, comando) ? MOTIVO_SEGREDO : null)
+  const motivo = testarPadroes(limpo) || gitPerigoso(marcado, cwd) || testarPadroes(desaspado, PERIGOS_POWERSHELL) || testarPadroes(emUmaLinha, PERIGOS_POWERSHELL) || testarPadroes(desaspado, PERIGOS_DISCO)
   if (motivo) return motivo
-  // correcao 5: todo trecho entre aspas que NAO veio de um escritor de texto conhecido
-  // e comando de verdade em potencial, e testa nele mesmo, recursivo (o texto extraido
-  // e sempre mais curto que o original, entao a recursao termina). O suspeito repetido e
-  // lido uma vez so (rodada 5.20: o Start-Process remontado soma um suspeito por chamada)
-  for (const suspeito of new Set([...suspeitos, ...argumentosRemontados(desaspado)])) {
-    const motivoSuspeito = ehPerigoso(suspeito, { cwd })
-    if (motivoSuspeito) return motivoSuspeito
+  // 5.49 (bloco 9, 2026-11-03): o trecho entre aspas deixou de ser lido como comando (correcao 5);
+  // fica o Start-Process remontado (rodada 5.20, N2), cujo disco segue barrando. 5.49 (D-embrulho e
+  // D-apelido, 2026-11-03): volta o trecho de quem executa comando e o comando do apelido do git (ver
+  // embrulhados). O trecho e sempre mais curto que o comando, entao a recursao termina. O nome do
+  // apagador sem aspas (5.43) foi pra perguntaDeApagar, junto com as regras de apagar. 5.49 (Codex comum,
+  // 2026-11-04): o comando com as chaves do cmd separadas, que e mais comprido, mas a volta dele devolve o
+  // mesmo texto e nao entra de novo; e a da barra dobrada antes da aspa (ver semBarraNaAspa), idem
+  for (const trecho of new Set([...embrulhados(comando).map(e => e.texto), ...argumentosRemontados(desaspado), ...leiturasAMais(comando)])) {
+    const motivoTrecho = ehPerigoso(trecho, { cwd })
+    if (motivoTrecho) return motivoTrecho
   }
-  // 5.43: o nome do apagador sem aspas e uma leitura a mais, depois da do comando como veio (segunda
-  // volta da final: trocar o comando no lugar escondia o `$(git 'reset' --hard)` do caminho). O texto
-  // trocado e mais curto (perde as aspas), entao a recursao termina
-  const semAspas = nomeDoApagadorSemAspas(comando)
-  if (semAspas !== comando) return ehPerigoso(semAspas, { cwd })
   return null
 }
 
 // rodada 5.23 (1b): so a leitura de git, com a mesma leitura do ehPerigoso (marcado, cwd, -C e
-// trecho entre aspas de quem executa, recursivo). O ehPerigoso devolve o primeiro motivo que
-// achar, e o do rm vem antes: `rm -rf x; git reset --hard` voltava com o motivo do rm, e quem so
-// quer saber do git ficava sem ele
+// Start-Process remontado). O ehPerigoso devolve o primeiro motivo que achar, e quem so quer saber
+// do git ficava sem ele.
+// 5.49 (bloco 6 e bloco 9, 2026-11-03): { estrito: true } liga de volta o apelido do git por -c ou
+// --config-env e a descida em todo trecho entre aspas que nao e de quem so escreve, como na v5.39. So a
+// bancada passa (porteiro-destrutivo.mjs). 5.49 (D-bancada-git, 2026-11-03): o naoLe saiu do estrito
+// (o git com variavel, $(...), crase, chaves ou xargs segue as regras do kit). 5.49 (D-embrulho,
+// 2026-11-03): sem o estrito, desce no trecho de quem executa comando, como o ehPerigoso
 export function ehGitPerigoso(comando, opcoes = {}) {
   if (typeof comando !== 'string' || comando.length === 0) return null
   const cwd = typeof opcoes.cwd === 'string' && opcoes.cwd ? opcoes.cwd : process.cwd()
+  const estrito = opcoes.estrito === true
   const { suspeitos, desaspado, marcado } = classificarTrechosEntreAspas(comando)
-  const motivo = gitPerigoso(marcado, cwd)
+  const motivo = gitPerigoso(marcado, cwd, estrito)
   if (motivo) return motivo
-  for (const suspeito of new Set([...suspeitos, ...argumentosRemontados(desaspado)])) {
-    const motivoSuspeito = ehGitPerigoso(suspeito, { cwd })
-    if (motivoSuspeito) return motivoSuspeito
+  // 5.49 (D-apelido, 2026-11-03, revisao interna): o estrito le tambem o embrulho, pro comando do
+  // `git config alias.x '!git reset --hard'`, que o suspeito com o ! na frente nao le
+  const trechos = [...(estrito ? suspeitos : []), ...embrulhados(comando).map(e => e.texto), ...argumentosRemontados(desaspado), ...leiturasAMais(comando)]
+  for (const trecho of new Set(trechos)) {
+    const motivoTrecho = ehGitPerigoso(trecho, { cwd, estrito })
+    if (motivoTrecho) return motivoTrecho
   }
   return null
+}
+
+// 5.49 (bloco 5, 2026-11-03): apagar pasta pergunta em vez de barrar, nas tres ferramentas
+// (Bash, PowerShell e Monitor), e a pasta temporaria apaga calada. Generaliza a perguntaDoPowershell
+// da 5.40: as regras de apagar de antes (APAGAR_COM_ALVO, APAGAR_SEM_ALVO e APAGAR_NO_DESASPADO)
+// decidem se o comando apaga, como barravam ate a v5.39, e o leitor palavra por palavra acha o alvo.
+// Devolve a lista dos alvos (null no que a trava nao le) ou null: comando que nao apaga, ou com
+// todo alvo legivel dentro da temporaria.
+// O programa pode vir depois de atribuicao, do operador ponto, do & de chamada, do return e do throw
+// (5.40), de sudo, env, nohup, time ou command, de VAR=valor e de quem lanca pacote (npx rimraf)
+const PREFIXOS_DO_SHELL = new Set(['command', 'nohup', 'time'])
+function pulaAntesDoApagador(p, k) {
+  return ANTES_DO_PROGRAMA.has(p.toLowerCase()) || p === '&' || LANCADORES.has(nomeDoPrograma(p)) ||
+    PREFIXOS_DO_SHELL.has(nomeDoPrograma(p)) || /^\w+=/.test(p) || (k > 0 && p.startsWith('-'))
+}
+// o cmd le a chave colada no nome e no alvo (rodada 5.20, N7): `rd/s/q pasta`, `rd c/s/q`
+const APAGADORES_PS = new Set(['remove-item', 'ri', 'del', 'erase', 'rd', 'rmdir'])
+const APAGADORES_CMD = new Set(['del', 'erase', 'rd', 'rmdir'])
+const RE_CHAVE_S = /\/s(?!\w)/i
+const RE_COLADO_NO_CMD = /^(rd|rmdir|del|erase)(\/.*)$/i
+// as chaves do proprio cmd, uma ou varias juntas, com a barra dobrada do Git Bash
+const RE_CHAVES_DO_CMD = /^(?:\/\/?(?:[cksqdaur]|[tefv]:\w+))+$/i
+const RE_CHAVE_QUE_RODA = /\/[ckr](?![:\w])/i
+// o rm recursivo do bash (-r, -R, --recursive, agrupado como -rf) ou do PowerShell (-r ate -recurse)
+const rmRecursivo = a => RE_OPCAO_R_PS.test(a) || a === '--recursive' || (RE_LETRAS_DO_RM.test(a) && /r/i.test(a))
+// alvos de um pedaco do marcado, ou null quando o programa dele nao e um apagador lido aqui
+function alvosDoPedaco(seg) {
+  // o espaco depois da marca SUB e do comandosDoTexto: `$(pwd)/x` e uma palavra so
+  const palavras = (seg.split(SUB + ' ').join(SUB).replace(RE_ATRIBUICAO, '').match(/\S+/g) || []).map(p => p.split('^').join(''))
+  let k = 0
+  // 5.49 (autonomia, 2026-11-04): o cmd com /c, /k ou /r sem aspas roda o resto da linha, e o alvo do rd e
+  // do del se le dali (`cmd /c rd /s /q dist`, `cmd //c` do Git Bash, chaves antes, como /d /q, ou juntas).
+  // Em laco, sem recursao: `cmd /c cmd /c ...` gigante segue linear
+  for (;;) {
+    const ini = k
+    while (k < palavras.length - 1 && pulaAntesDoApagador(palavras[k], k - ini)) k++
+    if (!palavras[k]) return null
+    if (nomeDoPrograma(palavras[k]) !== 'cmd') break
+    let j = k + 1
+    while (j < palavras.length && RE_CHAVES_DO_CMD.test(palavras[j]) && !RE_CHAVE_QUE_RODA.test(palavras[j])) j++
+    if (j + 1 >= palavras.length || !RE_CHAVES_DO_CMD.test(palavras[j])) break
+    k = j + 1
+  }
+  const colado = RE_COLADO_NO_CMD.exec(palavras[k])
+  const nome = colado ? colado[1].toLowerCase() : nomeDoPrograma(palavras[k]).replace(/@[^@\/]*$/, '')
+  const args = palavras.slice(k + 1)
+  if (nome === 'rm') return args.some(rmRecursivo) ? alvosDosArgs(args) : null
+  if (nome === 'rimraf' || nome === 'del-cli') return alvosDosArgs(args)
+  if (!APAGADORES_PS.has(nome)) return null
+  if (args.some(a => RE_OPCAO_R_PS.test(a))) return alvosDosArgs(args)
+  if (!APAGADORES_CMD.has(nome) || !((colado && RE_CHAVE_S.test(colado[2])) || args.some(a => RE_CHAVE_S.test(a)))) return null
+  // no cmd a chave sai, e a palavra com a chave colada ninguem le com certeza (vira null)
+  return args.filter(a => !a.startsWith('/')).map(a => RE_CHAVE_S.test(a) ? null : a)
+}
+// alvo entre aspas sai inteiro; aspas vazias e o que vem de $(...), ( ) ou { } a trava nao le. Depois
+// de um cd no mesmo comando, o alvo relativo e de outra pasta, que a trava nao acompanha
+const alvoLegivel = (a, mudouPasta) => {
+  if (!a || a === VAZIO || a.includes(SUB)) return null
+  const t = a.split(NUL).join(' ').split(ASPA).join('')
+  return mudouPasta && !/^(?:[a-zA-Z]:|[\\\/~$%])/.test(t) ? null : t
+}
+// o pedaco do limpo e o do marcado andam juntos: o separador fora das aspas e o mesmo nos dois, e o de
+// dentro das aspas o limpo tira e o marcado troca por _. A regra de antes le o limpo (o nome entre aspas
+// fora da posicao de comando, `ls "rm" -Recurse`, segue livre) e o leitor de alvo le o marcado
+// 5.49 (bloco 5, revisao interna): o Push-Location (nome de verdade do pushd), o popd e o Pop-Location
+// tambem trocam a pasta, e o `builtin cd` e o `command cd` sao o cd (o `pwsh -WorkingDirectory x -c
+// "..."` leva o apagar entre aspas, lido de novo desde a 5.49, D-embrulho, com o alvo relativo como
+// "uma pasta")
+const CDS_DO_APAGAR = new Set([...CDS, 'push-location', 'popd', 'pop-location'])
+const RE_PREFIXO_DO_CD = /^\s*(?:(?:builtin|command)\s+)+/i
+// 5.49 (D-embrulho, 2026-11-03, revisao interna): o alvo lido dentro do embrulho tambem passa pelo
+// shell de dentro: a forma da temporaria que esse shell nao le (`powershell -c '... $TMPDIR/x'`, onde o
+// $TMPDIR e vazio) vira alvo que a trava nao le. A conta do shell de fora segue no caminhoDoAlvo
+const SHELLS_QUE_LEEM = { PowerShell: ['PowerShell', 'cmd'], Bash: ['Bash', 'cmd'], cmd: ['cmd'] }
+// 5.49 (autonomia, 2026-11-04): o /tmp do Git Bash tambem (`powershell -c "Remove-Item -Recurse /tmp/x"`)
+const foraDoShell = (a, shell) => !!shell && typeof a === 'string' &&
+  (VARIAVEIS_DA_TEMPORARIA.some(f => f.re.test(a) && !SHELLS_QUE_LEEM[shell].includes(f.shell)) ||
+    (tmpDoBash(a) && !SHELLS_QUE_LEEM[shell].includes('Bash')))
+// 5.49 (Codex comum, 2026-11-04, revisao interna): literal falso no trecho que veio de aspas duplas pra
+// quem executa (`bash -c "rm -rf '$TMPDIR/x'"`): o shell de fora ja trocou a variavel pelo valor antes do
+// de dentro ver as aspas simples. No cmd de dentro ou de fora a aspa simples segue parte do nome
+// powershell: o comando veio do PowerShell (ou de shell que a trava nao sabe), ver embrulhados
+function lerApagar(comando, alvos, mudouPasta = false, shell = null, literal = true, powershell = true, bash = true) {
+  const cru = classificarTrechosEntreAspas(comando)
+  const lido = classificarTrechosEntreAspas(semComentarioDeBloco(comando.replace(/`\r?\n/g, '  ')), { literal })
+  const pedacos = comandosDoTexto(lido.marcado)
+  const pedacosDoLimpo = comandosDoTexto(lido.limpo)
+  const juntos = pedacos.length === pedacosDoLimpo.length
+  let achou = false
+  pedacos.forEach((seg, i) => {
+    const primeira = (seg.replace(RE_PREFIXO_DO_CD, '').match(/\S+/) || [''])[0]
+    if (CDS_DO_APAGAR.has(nomeDoPrograma(primeira))) { mudouPasta = true; return }
+    const doPedaco = alvosDoPedaco(seg)
+    // o pedaco que a regra de antes barra e o leitor nao entende (`nice rm -rf x`) pergunta "uma pasta"
+    // um por um: o push(...lista) com centenas de milhares de alvos estourava a pilha do Node, erro que
+    // desde a 5.49 barra com a regra erro-interno (revisao interna)
+    if (doPedaco) {
+      if (!doPedaco.length) alvos.push(null)
+      for (const a of doPedaco) { const t = alvoLegivel(a, mudouPasta); alvos.push(foraDoShell(t, shell) ? null : t) }
+    }
+    else if (juntos && APAGAR_COM_ALVO.some(p => p.teste(pedacosDoLimpo[i]))) alvos.push(null)
+    else return
+    achou = true
+  })
+  if (!achou && APAGAR_COM_ALVO.some(p => p.teste(cru.limpo))) alvos.push(null)
+  if (APAGAR_SEM_ALVO.some(p => p.teste(cru.limpo)) || APAGAR_NO_DESASPADO.some(p => p.teste(cru.desaspado))) alvos.push(null)
+  // desce no Start-Process remontado, como o ehPerigoso; o trecho e sempre mais curto, entao a recursao
+  // termina. 5.49 (bloco 9, 2026-11-03, revisao interna): o trecho entre aspas deixou de ser lido
+  // como comando aqui tambem (`gh issue create --body "rode rm -rf x"` perguntava a toa). 5.49
+  // (D-embrulho e D-apelido, 2026-11-03): volta o de quem executa comando (`bash -c "rm -rf pasta"`
+  // pergunta), e o alvo de dentro passa pela mesma conta da temporaria; com -WorkingDirectory do
+  // powershell ou no apelido do git, o alvo relativo e de outra pasta, que a trava nao le
+  // 5.49 (D-embrulho, 2026-11-03, quarta leva): o alvo do que roda na outra maquina (ssh) conta como
+  // fora da temporaria daqui: a pergunta sai com o alvo que a trava nao le pra cada alvo de dentro
+  const lidos = new Set()
+  for (const e of embrulhados(comando, powershell, bash)) {
+    const fora = mudouPasta || e.outraPasta
+    const chave = fora + ' ' + e.shell + ' ' + e.remoto + ' ' + e.texto
+    if (lidos.has(chave)) continue
+    lidos.add(chave)
+    const destino = e.remoto ? [] : alvos
+    lerApagar(e.texto, destino, fora, e.shell, !(e.duplas && e.shell !== 'cmd' && shell !== 'cmd'), e.shell === 'PowerShell', e.shell === 'Bash')
+    if (e.remoto) for (let n = 0; n < destino.length; n++) alvos.push(null)
+  }
+  for (const trecho of new Set(argumentosRemontados(cru.desaspado))) lerApagar(trecho, alvos, mudouPasta, shell, literal, powershell, bash)
+  // 5.49 (Codex comum, 2026-11-04): as chaves do cmd separadas, como no ehPerigoso. A barra dobrada so
+  // a perguntaDeApagar le, e so fora do bash
+  for (const trecho of leiturasAMais(comando, false)) lerApagar(trecho, alvos, mudouPasta, shell, literal, powershell, bash)
+}
+// 5.49 (autonomia, 2026-11-04): o corpo do heredoc com o delimitador entre aspas (o shell nao troca nada
+// nele) que o cat ou o tee grava em arquivo e texto, como o do echo: gravar no licoes.md uma linha que
+// cita rm -rf nao pergunta. O cabecalho e o que vem depois do delimitador seguem lidos. O corpo segue lido
+// como comando quando o delimitador nao tem aspas, quando o cat nao manda pra arquivo, com pipe, crase,
+// $( ), substituicao de processo ou outro comando antes do << na linha, com mais de um << e sem o fim
+// 5.49 (Codex comum, 2026-11-04): o delimitador e a palavra inteira depois do << (ou <<-), sem as aspas
+// (`<<'EOF'x` termina na linha EOFx); qualquer pedaco entre aspas tira a expansao do corpo, entao so a
+// palavra com aspas abre heredoc de texto. O <<< (here-string) nunca e heredoc: a linha de baixo roda. A
+// barra, o $ e a crase na palavra, a aspa sem par e a palavra vazia a trava nao le: o corpo segue lido.
+// Revisao interna: o CR do meio da palavra e caractere comum pro bash (`<<'EOF'<CR>x` termina na linha
+// EOF<CR>x); so o CR do fim da linha sai, como na linha do fim
+const FIM_DO_DELIMITADOR = ' ' + String.fromCharCode(9) + ';&|()<>'
+function delimitadorDeTexto(cabecalho) {
+  const i = cabecalho.indexOf('<<')
+  if (i < 0 || cabecalho.includes('<<<')) return null
+  const fimDaLinha = cabecalho.endsWith(String.fromCharCode(13)) ? cabecalho.length - 1 : cabecalho.length
+  let k = i + 2
+  const tab = cabecalho[k] === '-'
+  if (tab) k++
+  while (cabecalho[k] === ' ' || cabecalho[k] === String.fromCharCode(9)) k++
+  let palavra = ''
+  let aspas = false
+  for (; k < fimDaLinha && !FIM_DO_DELIMITADOR.includes(cabecalho[k]); k++) {
+    const c = cabecalho[k]
+    if (c === "'" || c === '"') {
+      const f = cabecalho.indexOf(c, k + 1)
+      if (f < 0 || f >= fimDaLinha) return null
+      const dentro = cabecalho.slice(k + 1, f)
+      if (dentro.includes(BARRA_DO_HEREDOC) || (c === '"' && /[$`]/.test(dentro))) return null
+      palavra += dentro
+      aspas = true
+      k = f
+    } else if (c === BARRA_DO_HEREDOC || c === '$' || c === '`') return null
+    else palavra += c
+  }
+  return aspas && palavra ? { index: i, fim: k, tab, palavra } : null
+}
+function semCorpoDeHeredocDeTexto(texto) {
+  if (!texto.includes('<<')) return texto
+  const linhas = texto.split(LF_DO_HEREDOC)
+  // onde cada linha aparece (como veio e sem os tabs do comeco, pro <<-), pra achar o fim do corpo sem
+  // varrer de novo a cada cabecalho: a entrada gigante segue linear
+  const exatas = new Map(), semTab = new Map()
+  const guarda = (mapa, chave, j) => { const e = mapa.get(chave); if (e) e.l.push(j); else mapa.set(chave, { l: [j], p: 0 }) }
+  linhas.forEach((l, j) => { const t = l.replace(/\r$/, ''); guarda(exatas, t, j); guarda(semTab, t.replace(/^\t+/, ''), j) })
+  const proxima = (mapa, chave, depois) => {
+    const e = mapa.get(chave)
+    if (!e) return -1
+    while (e.p < e.l.length && e.l[e.p] <= depois) e.p++
+    return e.p < e.l.length ? e.l[e.p] : -1
+  }
+  // 5.49 (autonomia, revisao interna, 2026-11-04): o << so abre heredoc fora de aspas e de comentario,
+  // lidos desde o comeco do comando (`cat > a # <<'EOF'`, `cat "x <<'EOF'"` e o `echo "` aberto na linha
+  // de cima nao abrem nada, e o bash roda as linhas de baixo). A primeira linha com << que nao vira
+  // heredoc de texto para a leitura: dali pra baixo o corpo segue lido como comando
+  const estado = { e: '', antes: LF_DO_HEREDOC }
+  for (let i = 0; i < linhas.length; i++) {
+    const cabecalho = linhas[i]
+    if (!cabecalho.includes('<<')) { estadoDoShell(cabecalho + LF_DO_HEREDOC, estado); continue }
+    const d = delimitadorDeTexto(cabecalho)
+    if (!d || cabecalho.split('<<').length !== 2 || /[|`]|\$\(|[<>]\(/.test(cabecalho)) break
+    const antes = cabecalho.slice(0, d.index)
+    const programa = (antes.match(/^\s*(\S+)/) || [])[1]
+    if (/[;&]/.test(antes) || !['cat', 'tee'].includes(programa)) break
+    const semDelimitador = cabecalho.slice(0, d.index) + cabecalho.slice(d.fim)
+    if (programa === 'cat' && !/>>?\s*[^\s&>]/.test(semDelimitador)) break
+    // a barra colada no << o tira de heredoc (`cat > a\<<'EOF'`)
+    if (antes.endsWith(BARRA_DO_HEREDOC) || estadoDoShell(antes, estado).e !== '' || estadoDoShell(cabecalho.slice(d.index) + LF_DO_HEREDOC, estado).e !== '') break
+    const fim = proxima(d.tab ? semTab : exatas, d.palavra, i)
+    if (fim < 0) break
+    for (let j = i + 1; j < fim; j++) linhas[j] = ''
+    i = fim
+  }
+  return linhas.join(LF_DO_HEREDOC)
+}
+const LF_DO_HEREDOC = String.fromCharCode(10)
+// o estado do bash depois do trecho: fora (''), aspas simples, duplas, $'...', crase ou comentario. A
+// barra pula o caractere seguinte (menos nas aspas simples), e o # so comenta no comeco de palavra
+const BARRA_DO_HEREDOC = String.fromCharCode(92)
+const FIM_DE_PALAVRA = ' ' + String.fromCharCode(9) + LF_DO_HEREDOC + ';&|()<>'
+function estadoDoShell(trecho, estado) {
+  for (let k = 0; k < trecho.length; k++) {
+    const c = trecho[k]
+    const antes = estado.antes
+    estado.antes = c
+    if (estado.e === 'comentario') { if (c === LF_DO_HEREDOC) estado.e = ''; continue }
+    if (estado.e === "'") { if (c === "'") estado.e = ''; continue }
+    if (c === BARRA_DO_HEREDOC) { k++; estado.antes = 'x'; continue }
+    if (estado.e === '"' || estado.e === '`') { if (c === estado.e) estado.e = ''; continue }
+    if (estado.e === "$'") { if (c === "'") estado.e = ''; continue }
+    if (c === "'" || c === '"' || c === '`') estado.e = c
+    else if (c === '$' && trecho[k + 1] === "'") { estado.e = "$'"; k++ }
+    else if (c === '#' && FIM_DE_PALAVRA.includes(antes)) estado.e = 'comentario'
+  }
+  return estado
+}
+export function perguntaDeApagar(comando, opcoes = {}) {
+  if (typeof comando !== 'string' || comando.length === 0) return null
+  const cwd = typeof opcoes.cwd === 'string' && opcoes.cwd ? opcoes.cwd : process.cwd()
+  const env = opcoes.env && typeof opcoes.env === 'object' ? opcoes.env : process.env
+  // 5.49 (Codex comum, aspas emendadas, 2026-11-04): no Bash e no Monitor a palavra emendada nao se le partida
+  const doPowershell = opcoes.ferramenta !== 'Bash' && opcoes.ferramenta !== 'Monitor'
+  // revisao interna: na ferramenta PowerShell a palavra nao se le como o bash (barra, $'...', cmd //c)
+  const doBash = opcoes.ferramenta !== 'PowerShell'
+  // 5.49 (autonomia, 2026-11-04): heredoc so existe fora do PowerShell
+  const texto = semChavesNoTmpdir(doBash ? semCorpoDeHeredocDeTexto(comando) : comando)
+  const achados = []
+  lerApagar(texto, achados, false, null, true, doPowershell, doBash)
+  // 5.43: o nome do apagador sem aspas e uma leitura a mais, depois da do comando como veio (segunda
+  // volta da final: trocar o comando no lugar escondia o `$(git 'reset' --hard)` do caminho)
+  const semAspas = nomeDoApagadorSemAspas(texto)
+  if (semAspas !== texto) lerApagar(semAspas, achados, false, null, true, doPowershell, doBash)
+  // revisao interna da comum (2026-11-04): fora do bash a barra antes da aspa e caractere (ver semBarraNaAspa)
+  const semBarra = opcoes.ferramenta === 'Bash' || opcoes.ferramenta === 'Monitor' ? texto : semBarraNaAspa(texto)
+  if (semBarra !== texto) lerApagar(semBarra, achados, false, null, true, doPowershell, doBash)
+  if (!achados.length) return null
+  const leitura = leituraDasVariaveis(texto, env, opcoes.ferramenta)
+  const alvos = [...new Set(achados)].map(a => ({ a, caminho: a === null ? null : caminhoDoAlvo(a, cwd, leitura) }))
+  const bases = basesTemporarias()
+  if (alvos.every(x => x.caminho !== null && dentroDaTemporaria(x.caminho, bases))) return null
+  return alvos.map(x => x.caminho === null ? null : x.a)
+}
+
+// a variavel da temporaria no comeco do alvo vira o valor do ambiente do hook, e so entao o .. se
+// resolve ($env:TEMP/../Documentos pergunta). Outra variavel, ou a temporaria sem valor, a trava nao le.
+// 5.49 (bloco 5, revisao interna): cada forma vale so no shell dela. Na ferramenta PowerShell o $TMPDIR
+// e variavel do proprio PowerShell (vazia: o alvo vira a raiz do disco), e no bash o $env:TEMP e o $env
+// vazio. O %TEMP% e do cmd, que roda de dentro das duas. O nome do bash diferencia caixa ($tmpdir e
+// outra variavel); o do PowerShell e o do cmd nao, no Windows. E o comando que mexe na variavel antes de
+// apagar (`$env:TEMP = 'E:/'`, `export TMPDIR=~`, `TMPDIR=x;`, `Set-Item env:TEMP`) tira a confianca nela:
+// o nome dela fora da forma de ler, ou a forma de ler seguida de =, e a trava nao le o alvo
+const VARIAVEIS_DA_TEMPORARIA = [
+  { re: /^\$env:(TEMP|TMP)(?=[\\\/]|$)/i, shell: 'PowerShell', semCaixa: true },
+  { re: /^%(TEMP|TMP)%(?=[\\\/]|$)/i, shell: 'cmd', semCaixa: true },
+  { re: /^\$(TMPDIR)(?=[\\\/]|$)/, shell: 'Bash', semCaixa: false },
+]
+const RE_LER_VARIAVEL = /\$env:(?:TEMP|TMP)(?!\w)|%(?:TEMP|TMP)%|\$TMPDIR(?!\w)/gi
+const RE_LER_E_ATRIBUIR = /(?:\$env:(?:TEMP|TMP)|\$TMPDIR)\s*[-+*\/?]?=(?!=)/i
+const RE_NOME_DA_VARIAVEL = /(?<![A-Za-z0-9_])(?:TEMP|TMP|TMPDIR)(?![A-Za-z0-9_])/gi
+// o ${TMPDIR} e o $TMPDIR do shell; o marcado partiria as chaves
+const semChavesNoTmpdir = comando => comando.replace(/\$\{TMPDIR\}/g, () => '$TMPDIR')
+function leituraDasVariaveis(texto, env, ferramenta) {
+  const mexidas = new Set((texto.replace(RE_LER_VARIAVEL, ' ').match(RE_NOME_DA_VARIAVEL) || []).map(n => n.toUpperCase()))
+  const atribui = RE_LER_E_ATRIBUIR.test(texto)
+  const shells = ferramenta === 'PowerShell' ? ['PowerShell', 'cmd'] : ferramenta === 'Bash' || ferramenta === 'Monitor' ? ['Bash', 'cmd'] : ['PowerShell', 'cmd', 'Bash']
+  return { env, shells, confia: nome => !atribui && !mexidas.has(nome.toUpperCase()) }
+}
+function valorDoAmbiente(env, nome, semCaixa) {
+  if (typeof env[nome] === 'string') return env[nome]
+  if (!semCaixa || process.platform !== 'win32') return undefined
+  const chave = Object.keys(env).find(k => k.toUpperCase() === nome.toUpperCase())
+  return chave === undefined ? undefined : env[chave]
+}
+// 5.49 (Codex comum, 2026-11-04): o alvo com trecho literal (aspas simples com $ ou %, marca LITERAL na
+// frente) nao casa nenhuma forma da temporaria e cai no $ ou no % de baixo: pergunta "uma pasta"
+function caminhoDoAlvo(alvo, cwd, leitura) {
+  let a = alvo
+  // 5.49 (autonomia, 2026-11-04): o /tmp do Git Bash e a temporaria do usuario (ver tmpDoBash)
+  if (tmpDoBash(a) && leitura.shells.includes('Bash')) a = tmpdir() + a.slice('/tmp'.length)
+  for (const forma of VARIAVEIS_DA_TEMPORARIA) {
+    const v = forma.re.exec(a)
+    if (!v) continue
+    if (!leitura.shells.includes(forma.shell) || !leitura.confia(v[1])) return null
+    let valor = valorDoAmbiente(leitura.env, v[1], forma.semCaixa)
+    // 5.49 (autonomia, 2026-11-04): sem TMPDIR no ambiente do hook, no Windows, o /etc/profile do Git Bash
+    // poe nele o TMP do Windows (quando o TMPDIR nao e pasta), a mesma temporaria que o os.tmpdir() le
+    if (!valor && forma.shell === 'Bash' && process.platform === 'win32') valor = tmpdir()
+    if (typeof valor !== 'string' || !valor) return null
+    // 5.49 (Codex final, 2026-11-04): no Bash e no cmd a variavel sem aspas se parte no espaco do valor
+    // (`rm -rf $TMPDIR/x` com a temporaria em `.../pasta com espaco` apaga `com` e `espaco/x` na pasta de
+    // trabalho); a trava nao sabe se o alvo veio entre aspas, entao o valor com espaco nao conta como
+    // temporaria nesses dois e pergunta. No PowerShell a variavel nao se parte
+    if (forma.shell !== 'PowerShell' && /\s/.test(valor)) return null
+    a = valor + a.slice(v[0].length)
+    break
+  }
+  a = expandir(a)
+  if (a.includes('$') || a.includes('`') || /%[^%\s]*%/.test(a)) return null
+  // 5.49 (bloco 5, revisao interna): o caminho com o provedor do PowerShell (`FileSystem::` e o drive) e o
+  // da pasta que ele aponta; outro provedor, ou drive de nome com mais de uma letra (`proj:\x`, do
+  // New-PSDrive), a trava nao le: pro node eles seriam relativos e cairiam dentro do cwd
+  a = a.replace(/^(?:Microsoft\.PowerShell\.Core\\)?FileSystem::/i, '')
+  if (/^[^\\\/:]{2,}:/.test(a)) return null
+  // o caminho do Git Bash (/c/Users/...) e o caminho com letra de drive do Windows
+  if (process.platform === 'win32') a = a.replace(/^\/([a-zA-Z])(?=\/|$)/, '$1:')
+  return resolve(cwd, a)
+}
+// temporaria = dentro do os.tmpdir() ou do /tmp, pelo caminho real dos dois lados (atalho, juncao e,
+// no Windows, o nome curto 8.3 resolvidos); no Windows sem diferenca de caixa. O /tmp so conta fora
+// do Windows: la o node le /tmp como a pasta tmp da raiz do disco, nao a temporaria do Git Bash.
+// 5.49 (autonomia, 2026-11-04): no Windows o /tmp do Git Bash (o mount usertemp, a temporaria do usuario,
+// a mesma do os.tmpdir()) vira o os.tmpdir() no caminhoDoAlvo, so no shell que le assim (Bash e Monitor);
+// no PowerShell e no cmd o /tmp segue a pasta tmp da raiz do disco
+const tmpDoBash = a => process.platform === 'win32' && typeof a === 'string' && /^\/tmp(?=[\\\/]|$)/.test(a)
+function basesTemporarias() {
+  const bases = []
+  for (const b of [tmpdir(), ...(process.platform === 'win32' ? [] : ['/tmp'])]) {
+    try { bases.push(realpathSync.native(b)) } catch { /* sem a pasta, ela nao conta */ }
+  }
+  return bases
+}
+// o alvo que ainda nao existe usa o caminho real da pasta mais funda que existe
+function caminhoReal(caminho) {
+  const resto = []
+  for (let atual = caminho; ;) {
+    try { return join(realpathSync.native(atual), ...resto) } catch { /* sobe uma pasta */ }
+    const pai = dirname(atual)
+    if (pai === atual) return caminho
+    resto.unshift(basename(atual))
+    atual = pai
+  }
+}
+const semCaixa = p => process.platform === 'win32' ? p.toLowerCase() : p
+function dentroDaTemporaria(caminho, bases) {
+  const real = semCaixa(caminhoReal(caminho))
+  return bases.some(b => {
+    const rel = relative(semCaixa(b), real)
+    return rel !== '' && rel.split(sep)[0] !== '..' && !isAbsolute(rel)
+  })
+}
+
+// o sim do aluno libera o comando inteiro, entao a pergunta nomeia cada alvo, diz quantos arquivos
+// tem cada pasta e fecha com o comando (achado 2 da comum no plano da 5.40); comando comprido sai
+// cortado, com o aviso. A contagem tem teto, e erro nela nao derruba a pergunta
+const MAX_COMANDO_NA_PERGUNTA = 300
+const MAX_NOMES_NA_PERGUNTA = 10
+const MAX_ARQUIVOS_CONTADOS = 1000
+function contarArquivos(pasta) {
+  let n = 0
+  const pilha = [pasta]
+  while (pilha.length) {
+    const dir = pilha.pop()
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (e.isDirectory()) pilha.push(join(dir, e.name))
+      else if (++n > MAX_ARQUIVOS_CONTADOS) return n
+    }
+  }
+  return n
+}
+// 5.49 (autonomia, 2026-11-04): o alvo que a trava nao le (find -delete, pipe pro Remove-Item, node -e,
+// python -c) saia como "uma pasta inteira", que assustava sem ser verdade; agora diz o que se sabe
+const ALVO_DESCONHECIDO = 'arquivos que o comando escolhe, a trava nao sabe quais'
+function descreverAlvo(alvo, cwd, leitura) {
+  if (alvo === null) return ALVO_DESCONHECIDO
+  // 5.49 (autonomia, revisao interna, 2026-11-04): o curinga (`rm -rf *`, `del /s /q *.*`) saia como
+  // "a pasta * (que nao existe)", que parecia inofensivo; agora diz que apaga tudo o que casa com ele
+  if (/[*?]/.test(alvo)) return `tudo o que casa com ${alvo} (curinga, a trava nao conta quantos arquivos)`
+  try {
+    const caminho = caminhoDoAlvo(alvo, cwd, leitura)
+    if (caminho !== null) {
+      const info = lstatSync(caminho, { throwIfNoEntry: false })
+      if (!info) return `a pasta ${alvo} (que nao existe)`
+      if (!info.isDirectory()) return `o arquivo ${alvo}`
+      const n = contarArquivos(caminho)
+      const quantos = n > MAX_ARQUIVOS_CONTADOS ? `mais de ${MAX_ARQUIVOS_CONTADOS} arquivos` : n === 1 ? '1 arquivo' : `${n} arquivos`
+      return `a pasta ${alvo} inteira (${quantos})`
+    }
+  } catch { /* sem a contagem, o nome sai do mesmo jeito */ }
+  return `a pasta ${alvo} inteira`
+}
+export function textoDaPergunta(alvos, comando, opcoes = {}) {
+  const cwd = typeof opcoes.cwd === 'string' && opcoes.cwd ? opcoes.cwd : process.cwd()
+  const env = opcoes.env && typeof opcoes.env === 'object' ? opcoes.env : process.env
+  const leitura = leituraDasVariaveis(semChavesNoTmpdir(comando), env, opcoes.ferramenta)
+  const nomes = alvos.slice(0, MAX_NOMES_NA_PERGUNTA).map(a => descreverAlvo(a, cwd, leitura))
+  if (alvos.length > MAX_NOMES_NA_PERGUNTA) nomes.push(`mais ${alvos.length - MAX_NOMES_NA_PERGUNTA} pastas`)
+  const quais = nomes.length === 1 ? nomes[0] : `${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]}`
+  const linha = comando.replace(/\s+/g, ' ').trim()
+  const mostrado = linha.length > MAX_COMANDO_NA_PERGUNTA
+    ? linha.slice(0, MAX_COMANDO_NA_PERGUNTA) + ' ... (comando cortado: pede pra IA mostrar ele inteiro antes de responder)'
+    : linha
+  return `Pergunta da trava barrar-perigoso, regra ${REGRA_APAGAR}: A IA quer apagar ${quais}, sem volta. Pode? Comando: ${mostrado}`
 }
 
 // rodada 5.20 (decisao 9, N37): o Node entrega o import.meta.url com o atalho resolvido e o
@@ -1664,34 +2201,43 @@ if (chamadoDireto()) {
     // rodada 5.20 (revisao interna): erro na leitura do comando saia 1, e o Claude Code deixa
     // rodar o que o hook nao barrou com 2. A trava leu a entrada e nao conseguiu julgar o
     // comando, entao barra: o recado diz que foi a trava que falhou
+    const cwd = entrada && entrada.cwd
     let motivo
-    try { motivo = ehPerigoso(comando, { cwd: entrada && entrada.cwd }) } catch {
-      motivo = 'a trava nao conseguiu ler este comando (erro dentro dela); quebre o comando em partes menores'
-    }
+    try { motivo = ehPerigoso(comando, { cwd }) } catch { motivo = MOTIVO_ERRO_INTERNO }
     if (!motivo) {
-      // rodada 5.40: barrar ganha de perguntar (o ehPerigoso vem antes). So na ferramenta PowerShell,
-      // o rm recursivo pergunta pelo permissionDecision "ask" (doc conferida em 2026-11-01,
-      // code.claude.com/docs/en/hooks, "PreToolUse decision control": saida 0 com o JSON no stdout,
-      // e o motivo aparece pra pessoa na caixa de confirmacao). Medido no Claude Code 2.1.312: o
-      // tool_name chega como "PowerShell", e no `claude -p` a pergunta vira recusa, inclusive com
-      // as perguntas desligadas. Sem process.exit aqui: ele podia cortar o stdout no meio
-      let alvos = null
-      if (entrada && entrada.tool_name === 'PowerShell') {
-        try { alvos = perguntaDoPowershell(comando) } catch { alvos = [null] }
-      }
-      if (alvos) {
+      // rodada 5.40: barrar ganha de perguntar (o ehPerigoso vem antes). Apagar pasta pergunta pelo
+      // permissionDecision "ask" (doc conferida em 2026-11-01, code.claude.com/docs/en/hooks,
+      // "PreToolUse decision control": saida 0 com o JSON no stdout, e o motivo aparece pra pessoa na
+      // caixa de confirmacao). Medido no Claude Code 2.1.312: no `claude -p` a pergunta vira recusa,
+      // inclusive com as perguntas desligadas. Sem process.exit aqui: ele podia cortar o stdout no meio.
+      // 5.49 (bloco 5, 2026-11-03): a pergunta vale nas tres ferramentas, nao so na PowerShell, e
+      // a ferramenta diz qual shell le a variavel da temporaria. Erro dentro dela barra com a regra
+      // erro-interno, como no ehPerigoso (bloco 4, revisao interna: antes virava a pergunta)
+      const ferramenta = entrada && entrada.tool_name
+      let razao = null
+      try {
+        const alvos = perguntaDeApagar(comando, { cwd, ferramenta })
+        if (alvos) razao = textoDaPergunta(alvos, comando, { cwd, ferramenta })
+      } catch { motivo = MOTIVO_ERRO_INTERNO }
+      if (razao) {
         process.stdout.write(JSON.stringify({ hookSpecificOutput: {
-          hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: textoDaPergunta(alvos, comando),
+          hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: razao,
         } }))
         return
       }
-      process.exit(0)
+      if (!motivo) process.exit(0)
     }
-    process.stderr.write(
-      `Um comando foi barrado antes de rodar, porque ${motivo}.\n` +
-      `Pare aqui: explique pro usuario o que voce estava tentando fazer e peca a ele\n` +
-      `pra decidir o proximo passo, em vez de tentar de outro jeito pra fazer a mesma coisa.\n`
-    )
+    // 5.49 (bloco 4, 2026-11-03): saiu o "Pare aqui". A mensagem diz a trava e a regra, a IA
+    // repete os dois pro usuario e decide o proximo passo sozinha, sem refazer a acao por outro caminho
+    const regra = REGRA_DO_MOTIVO.get(motivo) || 'erro-interno'
+    // 5.49 (autonomia, 2026-11-04, bloco 4: "a IA recebe o aviso e decide sozinha"): no erro-interno a trava
+    // so nao conseguiu ler o comando, entao o recado autoriza reescrever mais simples ou seguir por
+    // ferramenta equivalente, avisando; as outras regras seguem sem refazer por outro caminho
+    const fim = regra === 'erro-interno'
+      ? 'Diga ao usuario o nome da trava e da regra. A trava so nao conseguiu ler o comando: pode reescrever ele ' +
+        'mais simples ou seguir por uma ferramenta equivalente, e avise o usuario do que fez.'
+      : 'Diga ao usuario o nome da trava e da regra e decida o proximo passo; nao refaca esta acao por outro caminho.'
+    process.stderr.write(`Barrada pela trava barrar-perigoso, regra ${regra}: ${motivo}. ${fim}\n`)
     process.exit(2)
   })
 }

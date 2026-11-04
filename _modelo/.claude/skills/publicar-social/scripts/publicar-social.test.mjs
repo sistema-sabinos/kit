@@ -2,9 +2,18 @@
 // e cada gravacao do publicacao.md fica guardada pra conferir o registro passo a passo.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { argumentos, publicar, conferirFila } from './publicar-social.mjs'
+import { argumentos, publicar, conferirFila, SEM_CONFIRMAR } from './publicar-social.mjs'
 import { linhasValidas, gravarPublicacao } from './plano.mjs'
 import { ErroIncerto } from '../../midia-social/scripts/lib/agendador-buffer.mjs'
+import { readFileSync } from 'node:fs'
+
+// 5.49 (bloco C, 2026-11-03): sem --confirmar, a parada sai no formato das travas do kit
+test('sem --confirmar: a parada abre com a trava publicar-social, regra confirmar, e o main imprime ela', () => {
+  assert.match(SEM_CONFIRMAR, /^Barrada pela trava publicar-social, regra confirmar: /)
+  assert.ok(SEM_CONFIRMAR.endsWith('Diga ao usuario o nome da trava e da regra e decida o proximo passo; nao refaca esta acao por outro caminho.'))
+  const fonte = readFileSync(new URL('./publicar-social.mjs', import.meta.url), 'utf8')
+  assert.ok(fonte.includes('if (!a.confirmar) { console.log(`\\n${SEM_CONFIRMAR}`); return }'), 'o main sem --confirmar imprime a parada')
+})
 
 const QUANDO = '2026-10-10 11:30'
 const DUE = '2026-10-10T14:30:00.000Z'

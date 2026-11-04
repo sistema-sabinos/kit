@@ -5,7 +5,7 @@
 // assunto do lugar no centro, porque o que sobrar nas bordas e cortado.
 // Uso:
 //   node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau codex --cenas <cenas.json> [--uso video]
-//   node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau gemini --cenas <cenas.json> --preco-usd 0.05 --contexto "designer <slug>" [--autorizado] [--uso video] [--video <slug>]
+//   node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau gemini --cenas <cenas.json> --preco-usd 0.05 --contexto "designer <slug>" [--autorizado] [--acima-do-teto <valor do pode ir>] [--uso video] [--video <slug>]
 // cenas.json: [{ "out": "anuncios/<slug>/cenarios/cozinha.png", "descricao": "..." }]
 // --preco-usd e o preco por imagem conferido na pagina oficial do Gemini NO DIA.
 // --video <slug>: o video em que o cenario entra, anotado na linha de custo pra media do orcamento do mes.
@@ -240,7 +240,9 @@ export async function main(argv = process.argv.slice(2), { raiz = RAIZ, ler = le
     if (precoUsd === undefined) { console.error('falta --preco-usd: confira o preco por imagem do Gemini na pagina oficial hoje e passe aqui'); process.exitCode = 2; return }
     const contexto = a.contexto || 'gerar-imagens'
     const estimativa = Math.round(cenas.length * precoUsd * 10000) / 10000
-    const lib = liberarGasto({ estimativaUsd: estimativa, autorizado: a.autorizado === true }, { raiz, contexto })
+    // 5.49 (bloco C, 2026-11-03): --acima-do-teto <valor do pode ir> passa o gasto acima do teto por lote
+    const acimaDoTetoUsd = a['acima-do-teto'] === undefined ? undefined : Number(String(a['acima-do-teto']).replace(',', '.'))
+    const lib = liberarGasto({ estimativaUsd: estimativa, autorizado: a.autorizado === true, acimaDoTetoUsd }, { raiz, contexto })
     if (lib.aviso) console.error(`[aviso] ${lib.aviso}`)
     if (lib.codigo !== 0) { console.log(JSON.stringify({ parou: lib.parou, estimativa_usd: estimativa, imagens: cenas.length })); process.exitCode = 3; return }
     let r = null

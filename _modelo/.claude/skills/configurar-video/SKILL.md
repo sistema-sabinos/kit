@@ -15,8 +15,8 @@ description: >
 # /configurar-video: deixando o computador pronto pra fazer vídeo
 
 Esta skill instala as ferramentas do vídeo uma vez só e prova que funcionam. Depois dela,
-as outras skills de vídeo rodam sem pedir nada. Cada download só acontece depois do "sim"
-do aluno, com o tamanho e o comando na frente dele.
+as outras skills de vídeo rodam sem pedir nada. Tudo aqui é de graça: cada download avisa
+o tamanho e o comando e segue, sem esperar resposta. Só para se faltar espaço no disco.
 
 Todos os comandos rodam da pasta do projeto (onde fica a pasta `.claude`).
 
@@ -71,7 +71,7 @@ Rode o conferir de novo antes de seguir.
 
 Use sempre o campo `instalar` que o `conferir.mjs` imprime: ele já vem com o caminho certo da pasta do vídeo. O `sincronizar-motor.mjs` roda sempre (ver o item motor). Os outros itens só se estiverem com `ok: false`. Na ordem **brew (só no Mac), node, python, python-libs, ffmpeg, motor, whisper,
 deep-filter**: diga em uma frase o que é, mostre o tamanho (`mb`) e o comando
-(`instalar`), peça o sim e só então rode.
+(`instalar`) e rode em seguida, sem esperar resposta.
 
 - **brew** (só no Mac): o Homebrew, o instalador de programas do Mac, que os outros
   itens usam. O comando é o oficial do site brew.sh. Avise antes: ele pede a senha do
@@ -102,7 +102,7 @@ deep-filter**: diga em uma frase o que é, mostre o tamanho (`mb`) e o comando
 - **motor**: duas partes, e a primeira roda **sempre**, mesmo com o motor aparecendo como ok (o conferir só vê se a biblioteca existe, e nunca checa se o motor está na versão do SabinOS atual; o script é barato e só copia o que mudou). Primeiro `node .claude/skills/configurar-video/scripts/sincronizar-motor.mjs`
   copia o motor de edição pra `_video/motor`. Se ele disser que precisa instalar as
   bibliotecas, rode `node .claude/skills/configurar-video/scripts/instalar-motor.mjs`
-  (depois do sim; leva uns minutos e pesa uns 750 MB). Ele roda o `npm ci` dentro de
+  (leva uns minutos e pesa uns 750 MB). Ele roda o `npm ci` dentro de
   `_video/motor` e só marca como instalado se terminar sem erro. Se a internet cair no
   meio, rode o mesmo comando de novo.
 - **whisper**: o comando do campo `instalar`, do jeito que vem (já traz o `--modelo` que o
@@ -118,8 +118,8 @@ versão completa, com suporte a legenda: `brew install ffmpeg-full && brew link 
 
 ### 4. Chave do Gemini
 
-Rode `node .claude/skills/conectar/scripts/chave.mjs tem GEMINI_API_KEY` (a IA não abre o `.env`;
-o script responde só `tem` ou `falta`). Com `falta`, explique em duas frases o que fica
+Rode `node .claude/skills/conectar/scripts/chave.mjs tem GEMINI_API_KEY` (o valor nunca aparece no
+chat: o script responde só `tem` ou `falta`). Com `falta`, explique em duas frases o que fica
 travado sem ela: a conferência de vídeo por IA (o "olho final"), a geração de imagem e a
 voz gerada. Dá pra editar vídeo sem ela. Ofereça rodar o `/conectar` pra pôr a chave.
 Qualquer uso pago da chave só acontece com preço e autorização avisados na hora.
@@ -204,7 +204,8 @@ mostrados pelo `conferir.mjs`, começando pelo próprio Homebrew se ele faltar.
 
 ## Regras
 
-- Nada baixa sem o sim do aluno naquele momento, com tamanho e comando mostrados antes.
+- Instalar o que é de graça avisa o tamanho e o comando antes e segue. Só para se faltar
+  espaço no disco: aí diz quanto falta e espera o aluno liberar.
 - Nunca rodar `npm install` dentro da pasta do SabinOS. As bibliotecas do motor entram só
   pelo `instalar-motor.mjs`, dentro de `_video/motor`.
 - Pasta com espaço no nome resolve no passo 2, antes de instalar qualquer coisa.

@@ -99,8 +99,9 @@ tela de login), sem palavra que também aparece em menu ou botão, como "entrar"
 
 O kit não vem com o Playwright dentro do projeto. Instalar baixa o pacote e um navegador
 inteiro, que é pesado, só dentro de `app/codigo/` (a pasta `node_modules/` que nasce ali
-fica fora do backup pelo `.gitignore`). É de graça, mas ocupa disco: mostrar isso ao
-usuário e esperar o "pode ir" dele antes de rodar, de dentro de `app/codigo/`:
+fica fora do backup pelo `.gitignore`). É de graça, mas ocupa disco: avisar isso ao
+usuário numa linha e rodar em seguida, de dentro de `app/codigo/`. Só parar se faltar espaço
+no disco, dizendo quanto falta:
 
 ```bash
 npm install -D @playwright/test @axe-core/playwright

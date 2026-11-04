@@ -93,10 +93,12 @@ as imagens finais em `anuncios/<slug>/imagens/NN-papel.jpg`, na ordem do mapa.
      que faltaram no `zero-ia` e avisar no recibo.
    - Codex, saída 1 sem `cota_estourada`: tentar de novo uma vez. Falhou de
      novo: fazer essas cenas no `zero-ia` e dizer isso.
-   - Saída 3 falando de `limite_gasto_usd`: o lote passou do teto. Dividir em
-     lotes menores, dentro do que a pessoa autorizou, ou combinar com ela subir
-     o `limite_gasto_usd` em `_contexto/mercado-livre.md` (sem esse arquivo, vale
-     o teto padrão do kit). Esse teto por vez só vale enquanto o orçamento do mês
+   - Saída 3 falando de `limite_gasto_usd`: o lote passou do teto. Mostrar o
+     valor do lote à pessoa, pedir o "pode ir" citando esse valor e rodar de novo
+     com `--acima-do-teto <o valor citado> --autorizado` (o valor citado igual ou
+     maior que a estimativa). Ou dividir em lotes menores, ou combinar com ela
+     subir o `limite_gasto_usd` em `_contexto/mercado-livre.md` (sem esse arquivo,
+     vale o teto padrão do kit). Esse teto por vez só vale enquanto o orçamento do mês
      não foi definido.
    - Saída 3 falando do orçamento do mês: o gasto não cabe no que sobrou do mês
      (`_contexto/orcamento.md`), ou o mês acabou. Repassar a mensagem como veio,

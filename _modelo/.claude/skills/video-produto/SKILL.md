@@ -30,7 +30,7 @@ segundos serve uma dessas etapas.
 1. Rode `node .claude/skills/configurar-video/scripts/conferir.mjs`. Ele diz o
    que falta instalar (ffmpeg e companhia). Faltando algo, mande a pessoa pro
    `/configurar-video` e pare aqui.
-2. A chave do Gemini fica no `.env` do projeto, e a IA não abre esse arquivo:
+2. A chave do Gemini fica no `.env` do projeto, e o valor nunca aparece no chat:
    rode `node .claude/skills/conectar/scripts/chave.mjs tem GEMINI_API_KEY`. Com
    `falta`, mande a pessoa pro `/conectar`, que ensina a pegar.
 3. A conta do Gemini costuma ser pré-paga: se o crédito zerar, imagem, vídeo e
@@ -136,7 +136,10 @@ pessoa ler.
 
 Todas as regras do ML estão em `referencias/regras-clips-ml.md`. O gate de
 conteúdo roda sozinho e reprova o que fura essas regras: reprovou, conserte o
-roteiro e mantenha o gate como está.
+roteiro e mantenha o gate como está. Palavra comum que pode ser condição de
+venda (troca, entrega, valor, custo, "fica em") só avisa: leia a frase e, se
+falar de preço, entrega ou troca, tire antes de mostrar à pessoa. Com número
+logo depois ("custa 49", "entrega em 2 dias") ela reprova, porque aí é preço ou prazo.
 
 ### Gate 1: o texto e o dinheiro
 
@@ -198,7 +201,10 @@ chamada paga for rodar (clipe, voz ou música). Com o orçamento do mês definid
 cabe no que sobrou do mês, com a média e o motivo na mensagem: repasse como veio.
 Sem orçamento, vale o teto por vez: passando do
 `limite_gasto_usd` (configurado em `_contexto/mercado-livre.md`, padrão US$ 4),
-ele também para. Sem esse arquivo (projeto novo, sem a `/mercado-livre` rodada), o script avisa que usa o padrão de US$ 4 e que a configuração vem da `/mercado-livre`. A estimativa soma os clipes que faltam, a música se faltar e uma
+ele também para. Aí mostre o valor da rodada à pessoa, peça o "pode ir" citando
+esse valor e rode de novo com `--acima-do-teto=<o valor citado> --autorizado`: o
+valor citado precisa ser igual ou maior que a estimativa. O orçamento do mês
+segue duro, sem esse jeito. Sem esse arquivo (projeto novo, sem a `/mercado-livre` rodada), o script avisa que usa o padrão de US$ 4 e que a configuração vem da `/mercado-livre`. A estimativa soma os clipes que faltam, a música se faltar e uma
 folga de US$ 0,01 por bloco com algo faltando (a voz custa frações de centavo).
 
 O que ele faz sozinho:
@@ -288,7 +294,7 @@ por você (Claude); o script não guarda esse número.
 | 0 | deu certo | seguir pro próximo passo |
 | 1 | reprovou ou falhou (roteiro reprovado nos gates, clipe faltando, montagem ou gate de voz falhou) | ler o recado, consertar e rodar de novo. Clipes pagos ficam salvos |
 | 2 | uso errado (flag que não existe, preço faltando ou inválido) ou foto do roteiro ausente ou diferente da aprovada | corrigir o comando. Nada foi gasto. Se for a foto, o conserto é no `roteiro.json`: escrever a imagem certa em `foto`, mostrar pra pessoa e carimbar de novo (gate 1) |
-| 3 | parou antes de gastar (roteiro sem carimbo de aprovação ou alterado depois dele, sem `--autorizado`, acima do teto) ou, na fase 3 com `--dry-run`, montou sem o gate de voz | mostrar o roteiro e carimbar com `--aprovar` depois do sim, ou pedir o "pode ir" e rodar com `--autorizado`, ou subir o teto, ou rodar a fase 3 sem `--dry-run` |
+| 3 | parou antes de gastar (roteiro sem carimbo de aprovação ou alterado depois dele, sem `--autorizado`, acima do teto) ou, na fase 3 com `--dry-run`, montou sem o gate de voz | mostrar o roteiro e carimbar com `--aprovar` depois do sim, ou pedir o "pode ir" e rodar com `--autorizado`, ou, acima do teto, pedir o "pode ir" citando o valor e rodar com `--acima-do-teto=<valor>`, ou rodar a fase 3 sem `--dry-run` |
 
 Flag que o script não conhece aborta com código 2 e o recado diz quais existem.
 

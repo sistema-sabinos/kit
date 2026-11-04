@@ -165,12 +165,14 @@ conteúdo sem instalar, de um destes jeitos:
   na web ou pelo link cru `raw.githubusercontent.com/<dono>/<repo>/main/...`);
 - ou baixar o repositório numa pasta temporária, fora do projeto e fora de
   `.claude/`, e ler de lá: `git clone --depth 1 https://github.com/<dono>/<repo> <pasta temporária>`.
+  A pasta temporária é a do sistema: `$env:TEMP/<nome>` no PowerShell
+  (Windows) ou `$TMPDIR/<nome>` no Mac. O `/tmp` no Windows não conta como
+  temporária, e apagar lá faz a trava perguntar.
 
 Depois, aplicar a política do topo desta skill: ler o conteúdo, aproveitar só
 o que serve e gerar uma skill própria adaptada ao negócio do usuário, dentro
-do projeto dele. A pasta temporária fica no computador, fora do projeto; não
-apagar daqui, porque apagar pasta inteira é decisão da pessoa. Se ela quiser, apaga à
-mão depois, e dizer onde está.
+do projeto dele. A pasta temporária fica no computador, fora do projeto: apagar
+ela no fim, que pasta temporária apaga livre.
 
 ## Categorias comuns de busca
 

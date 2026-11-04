@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 5.40 (2026-11-03)
+Versão 5.41 (2026-11-04)
 
 Um sistema de trabalho com IA pro seu negócio, rodando dentro do VS Code com o Claude Code.
 
@@ -11,10 +11,10 @@ A ideia é simples: em vez de conversar com uma IA que esquece tudo a cada conve
 **1. Assine o Claude** em [claude.com](https://claude.com/). A conta entra no passo 4, já no VS Code.
 
 **2. Garanta o Git:**
-- **Windows:** baixe em [git-scm.com/downloads](https://git-scm.com/downloads) e siga as opções padrão (Avançar até o fim). Se pular, o Claude confere na primeira conversa e instala com o seu ok.
+- **Windows:** baixe em [git-scm.com/downloads](https://git-scm.com/downloads) e siga as opções padrão (Avançar até o fim). Se pular, o Claude confere na primeira conversa, avisa e instala.
 - **Mac:** não precisa fazer nada agora. Na primeira conversa, o Claude abre uma janela da Apple pra instalar: você clica em **Instalar** e depois em **Concordo**.
 
-**3. Instale o Node.js** em [nodejs.org](https://nodejs.org/) (botão verde, versão LTS, opções padrão). É o motor das ferramentas internas do kit, como a de assistir vídeo; sem ele essas partes travam na primeira vez que você for usar. Se pular, o Claude confere na primeira conversa e instala com o seu ok.
+**3. Instale o Node.js** em [nodejs.org](https://nodejs.org/) (botão verde, versão LTS, opções padrão). É o motor das ferramentas internas do kit, como a de assistir vídeo; sem ele essas partes travam na primeira vez que você for usar. Se pular, o Claude confere na primeira conversa, avisa e instala.
 
 **4. Instale o VS Code**, em [code.visualstudio.com](https://code.visualstudio.com/). Depois, no VS Code, abra a aba de extensões (ícone de blocos na lateral), busque "Claude Code", instale e faça login.
 
@@ -71,7 +71,7 @@ O kit também funciona com o Codex (CLI da OpenAI, login pela sua conta ChatGPT)
 
 ## Uma regra de ouro
 
-Chave de API vai sempre num arquivo chamado `.env` na raiz da pasta certa. Ele já vem protegido e nunca sobe pro GitHub. Nunca cole chave dentro de outro arquivo ou na conversa. Senha de site não se guarda, salvo na conta em que você ligar o relogin automático: o login você faz na tela.
+Chave de API vai sempre num arquivo chamado `.env` na raiz da pasta certa. Ele já vem protegido e nunca sobe pro GitHub. Nunca cole chave dentro de outro arquivo ou na conversa. Senha de site também vai no `.env`: a IA lê de lá pra entrar no site por você e nunca mostra a senha na conversa. Captcha e código por SMS você resolve na tela.
 
 ---
 

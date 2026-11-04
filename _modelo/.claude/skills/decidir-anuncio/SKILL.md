@@ -68,7 +68,7 @@ comissão da categoria (Clássico; a do Premium é maior e sai da mesma API), me
 envio, menos `imposto_pct` sobre o preço, menos o custo. A comissão exata sai
 da API que a `precificacao.md` cita, por
 `node .claude/skills/mercado-livre/scripts/consultar-ml.mjs "/sites/MLB/listing_prices?price=<preço>&category_id=<cat>&listing_type_id=<tipo>"`
-(renova o token sozinho; a IA nunca abre o `.env`); sem autorização, a
+(renova o token sozinho, e o token nunca aparece no chat); sem autorização, a
 pessoa lê a comissão na Central de Vendedores, e a data entra no plano. Nunca
 comissão de memória.
 

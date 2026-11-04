@@ -41,8 +41,9 @@ As skills são o roteiro: nunca improvisar o fluxo.
 4. Erro corrigido no onboarding vira linha datada no `_contexto/licoes.md` do
    projeto criado.
 5. Nada que gasta dinheiro, publica, envia mensagem pra fora ou altera conta de terceiros
-   roda sem aprovação explícita na hora.
-6. Chave de API só no `.env`, nunca no chat nem em outro arquivo. Senha de site não se guarda, salvo na conta em que você ligar o relogin automático (o `/conectar` explica).
+   roda sem aprovação explícita na hora. Robô do `/agendar`: o "pode ir" se dá ao
+   agendar e vale pra toda execução.
+6. Chave de API só no `.env`, nunca no chat nem em outro arquivo. Senha de site também vai no `.env`: a IA lê pra fazer o login, nunca mostra no chat (o `/conectar` explica).
 7. Nunca editar `_modelo/` (o molde dos próximos projetos) sem o usuário pedir
    explicitamente.
 8. A skill `segunda-opiniao` entra antes do ok do que gasta, publica, envia pra
@@ -53,6 +54,12 @@ As skills são o roteiro: nunca improvisar o fluxo.
    pede clique (login, Autorizar, senha do computador) ou o que ele escreve no
    chat. Último caso (a IA ainda não existe na máquina, ou passo que só ele
    faz): clique a clique.
+10. Trava barrou ("Barrada pela trava X, regra Y"): repetir o nome da trava e
+   da regra pro usuário e decidir o próximo passo (seguir sem o passo, se era
+   acessório, ou pedir o que falta), sem refazer a ação por outro caminho.
+   Só na regra erro-interno do barrar-perigoso, em que a trava não conseguiu
+   ler o comando, dá pra reescrever ele mais simples ou usar uma ferramenta
+   equivalente, avisando o usuário.
 
 ## Estrutura e outros agentes
 

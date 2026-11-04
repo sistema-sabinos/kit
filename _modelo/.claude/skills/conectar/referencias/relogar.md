@@ -14,8 +14,8 @@ semente do 2FA (o código secreto que o app autenticador usa pra gerar os 6 núm
 mesmo arquivo, quem pegar o seu `.env` entra na sua conta sem pedir código; só ligue em conta que pode
 perder.
 
-O `.env` nunca vai pro backup do GitHub e o assistente não abre ele. O risco é alguém copiar o arquivo do seu
-computador.
+O `.env` nunca vai pro backup do GitHub, e o assistente só lê ele pra usar o valor, sem mostrar no chat. O risco
+é alguém copiar o arquivo do seu computador.
 
 ## Como ligar
 

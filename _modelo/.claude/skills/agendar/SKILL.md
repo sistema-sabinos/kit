@@ -2,11 +2,13 @@
 name: agendar
 description: >
   Monta um robô que roda sozinho no horário marcado, confere algo do negócio e
-  avisa só quando tem problema (no Telegram ou, sem ele, num recado no projeto).
+  avisa só quando tem problema (no Telegram ou, sem ele, num recado no projeto),
+  e também gasta, publica ou responde cliente quando a tarefa pedir.
   Use quando o usuário chamar /agendar,
   disser "todo dia às 8h confere...", "roda isso sozinho", "me avisa no celular
-  quando...", "quais robôs eu tenho" ou "tira o robô X". O robô só lê e avisa:
-  gastar, publicar ou responder cliente fica de fora.
+  quando...", "quais robôs eu tenho" ou "tira o robô X". Na hora de agendar,
+  mostra o que o robô executa e quanto gasta por rodada e por mês; o "pode ir"
+  dali vale pra toda execução.
 ---
 
 # /agendar, o robô que trabalha sozinho
@@ -23,19 +25,23 @@ aberta. No Windows, computador desligado ou dormindo na hora marcada: roda
 assim que ligar, uma vez só. No Mac, isso só vale se ele estava dormindo;
 desligado na hora, a rodada daquele dia se perde.
 
-## Regra que não muda: robô lê e avisa
+## Regra que não muda: o "pode ir" se dá na hora de agendar
 
-O robô confere, compara, calcula e avisa. Ele nunca gasta dinheiro, publica,
-muda preço, responde cliente nem mexe em conta de terceiro, mesmo que o usuário
-peça. Se o pedido tiver uma parte que age, dizer em uma frase: "Essa parte eu
-não coloco no robô: o que gasta ou publica precisa do seu 'pode ir' na hora, e
-o robô roda com você longe. Ele pode te avisar pra você decidir." E montar só a
-parte de leitura.
+O robô confere, compara, calcula e avisa, e também pode gastar, publicar, mudar
+preço, responder cliente ou mexer em conta, quando a tarefa pedir. O gate humano
+fica num ponto só, antes de agendar: mostrar em poucas linhas o que o robô
+executa em cada rodada (o que lê, o que gasta, o que publica ou responde, e
+onde) e quanto ele gasta por rodada e por mês, em dólar e em real, e esperar o
+"pode ir". Esse "pode ir" vale pra toda execução do robô: ele roda com você
+longe, e cada rodada já está coberta pelo sim que você deu ali. Mudou o que ele
+faz ou quanto gasta: mostrar de novo e esperar um "pode ir" novo antes de
+agendar a receita nova. O gasto do robô passa pela trava do gasto do projeto, e
+o orçamento do mês, quando existe, segue parando o robô que passar dele.
 
 ## Primeira vez: o bot do Telegram
 
 Rodar `node .claude/skills/conectar/scripts/chave.mjs tem TELEGRAM_TOKEN TELEGRAM_CHAT_ID`; com
-os dois `tem`, pular esta seção. A IA nunca abre o `.env`: o script responde só `tem` ou `falta`.
+os dois `tem`, pular esta seção. O valor nunca aparece no chat: o script responde só `tem` ou `falta`.
 
 Sem Telegram por enquanto (a pessoa não quer ou não pode agora): seguir pra
 "Montar um robô" assim mesmo. O aviso que não sai pelo Telegram vira um recado em
@@ -108,7 +114,14 @@ export default {
 
 Regras da receita:
 
-- Só leitura. Nenhuma chamada que cria, muda ou apaga.
+- Faz só o que foi mostrado no "pode ir" do agendamento. Chamada que cria, muda,
+  apaga, publica ou responde cliente entra só se estava no que foi mostrado.
+- Gasto passa pela trava do gasto (`liberarGasto` de
+  `.claude/skills/conectar/scripts/lib/orcamento.mjs`) com a estimativa da
+  rodada, `autorizado: true` e `acimaDoTetoUsd` igual ao valor por rodada
+  mostrado no agendamento, que o "pode ir" de lá cobre. Rodada que estima mais
+  que esse valor, ou que não cabe no orçamento do mês, para: o robô não gasta e
+  avisa com o recado da trava.
 - Chamada de rede sempre por `ctx.fetch`, que tem prazo, nunca pelo `fetch` puro.
 - Se usa a API do Mercado Livre ou do Bling, importar o que a skill
   `mercado-livre` já tem em `.claude/skills/mercado-livre/scripts/lib/`, nunca
@@ -116,8 +129,9 @@ Regras da receita:
 - `motivo` e cada aviso em frase de gente, com a ação do usuário quando houver.
 - `dia` do semanal: `dom`, `seg`, `ter`, `qua`, `qui`, `sex` ou `sab`.
 
-Mostrar a receita explicada em três linhas (o que confere, quando avisa, quando
-roda) e esperar o "pode ir".
+Mostrar a receita explicada em poucas linhas (o que confere, o que executa,
+quando avisa, quando roda e quanto gasta por rodada e por mês) e esperar o "pode
+ir". É esse "pode ir" que vale pra toda execução do robô.
 
 ### 3. Testar na frente do usuário
 

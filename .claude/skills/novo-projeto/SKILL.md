@@ -548,13 +548,13 @@ perguntar outro nome antes de seguir.
   está no `_modelo/AGENTS.md`.
 - `.claude/hooks/barrar-perigoso.mjs`, só o script (nunca o `.claude/hooks/barrar-perigoso.test.mjs`,
   que é teste de desenvolvimento e não serve de nada no projeto do aluno). É a trava de
-  segurança que barra comando destrutivo (apagar pasta, reescrever histórico do GitHub,
-  rodar script baixado da internet) antes de ele rodar. Vai sempre, em todo projeto,
+  segurança dos comandos; o que ela segura está na regra 12 do `.claude/detalhe-regras.md`,
+  e só aquela lista vale. Vai sempre, em todo projeto,
   mesmo quando a pessoa recusou o auto-sync: o `settings.json` copiado já chama ela pelo
   bloco `PreToolUse`, e sem o arquivo o projeto nasce apontando pra um script que não existe.
 - `.claude/hooks/barrar-mcp.mjs`, só o script (nunca o `.test.mjs`). É a trava das
-  ferramentas de fora (navegador, email, redes): barra o que lê login ou roda código no
-  navegador e pergunta antes de mandar, apagar ou publicar em conta. Vai sempre, como a
+  ferramentas de fora (navegador, email, redes); o que ela segura também está na regra 12
+  do `.claude/detalhe-regras.md`. Vai sempre, como a
   outra trava: o `settings.json` copiado já chama ela.
 - `.claude/hooks/auto-sync.mjs`, só o script (nunca o `auto-sync.test.mjs`). É o
   backup automático que o bloco `Stop` do `settings.json` chama. Vai sempre, como a

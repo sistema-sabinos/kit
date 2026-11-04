@@ -31,7 +31,10 @@
    nova entra com o próximo número depois da última que o projeto tem; as regras
    que já existem não mudam de número.
 7. `settings.json` se junta, nunca se substitui: acrescentar o que falta e manter
-   tudo que a pessoa já tem. Conferir que continua JSON válido depois.
+   tudo que a pessoa já tem. Fora disso, só sai o que o próprio kit tirou: o
+   comando `settings` do motor tira sozinho as regras da lista `TIRADAS_DO_KIT`,
+   letra por letra, e nenhuma entrada põe essas regras de volta. Conferir que
+   continua JSON válido depois.
 
 ## aviso-backup-falhou
 
@@ -59,7 +62,7 @@
 
 ## trava-no-settings
 
-**O que é:** liga a trava que barra comando destrutivo (apagar pasta inteira, reescrever histórico do Git, rodar script baixado direto).
+**O que é:** liga a trava de comando destrutivo. Ela barra o Git que joga trabalho fora (`push --force`, `reset --hard`, `git clean`), o comando que apaga o disco e o comando escondido em código (`-EncodedCommand`). Antes de apagar pasta fora da pasta temporária, ela pergunta, mostrando o que vai sumir.
 **Por quê:** um comando digitado errado apaga semanas de trabalho, e a trava para isso antes de rodar.
 **Te afeta se:** o arquivo `.claude/hooks/barrar-perigoso.mjs` existe no projeto e o `.claude/settings.json` não cita `barrar-perigoso`.
 **Como aplicar:** acrescentar no `settings.json`, dentro de `hooks`, o bloco `PreToolUse` igual ao do `_modelo/.claude/settings.json` do kit (matcher `Bash|PowerShell|Monitor`), sem mexer no resto.
@@ -67,19 +70,19 @@
 
 ## regra-trava
 
-**O que é:** regra que diz o que fazer quando a trava barrar um comando: parar e explicar, nunca procurar outro caminho.
+**O que é:** regra que diz o que fazer quando uma trava barrar: dizer o nome da trava e da regra e decidir o próximo passo, sem procurar outro caminho pra mesma ação. Só na regra erro-interno do `barrar-perigoso`, em que a trava não conseguiu ler o comando, dá pra reescrever ele mais simples ou usar uma ferramenta equivalente, avisando.
 **Por quê:** sem ela, o assistente tende a contornar a trava e fazer a mesma coisa por outra rota.
-**Te afeta se:** a entrada `trava-no-settings` está aplicada (ou o `settings.json` já cita `barrar-perigoso`) e o `AGENTS.md` não tem uma regra com o título `Trava de comando destrutivo.` em negrito (com ou sem número na frente, como `**10. Trava de comando destrutivo.**`).
-**Como aplicar:** copiar a regra "Trava de comando destrutivo" do `_modelo/AGENTS.md` do kit pro fim de "Regras de operação", com o próximo número.
-**Como testar:** o título `Trava de comando destrutivo.` aparece uma vez, em negrito, no `AGENTS.md`.
+**Te afeta se:** a entrada `trava-no-settings` está aplicada (ou o `settings.json` já cita `barrar-perigoso`) e o `AGENTS.md` não tem uma regra com o título `Travas.` nem `Trava de comando destrutivo.` em negrito (com ou sem número na frente, como `**10. Travas.**`).
+**Como aplicar:** copiar a regra "Travas" do `_modelo/AGENTS.md` do kit pro fim de "Regras de operação", com o próximo número.
+**Como testar:** o título `Travas.` aparece uma vez, em negrito, no `AGENTS.md`.
 
 ## chave-protegida
 
 **O que é:** o assistente passa a pedir licença antes de ler o arquivo de chaves (`.env`) e nunca lê a pasta `secrets/`.
 **Por quê:** chave lida entra na conversa, e conversa pode ir parar em print, em log ou em outro lugar.
-**Te afeta se:** o `.claude/settings.json` não tem `Read(./.env)` nem em `permissions.ask` nem em `permissions.deny`.
-**Como aplicar:** acrescentar em `permissions.ask` os itens `Read(./.env)` e `Read(./.env.*)`, e em `permissions.deny` o item `Read(./secrets/**)`, criando `permissions` se não existir e sem tirar nada que já esteja lá.
-**Como testar:** JSON válido e os três itens presentes.
+**Te afeta se:** nunca. Aposentada na 5.49: a `travas-soltas` tirou a licença antes de ler o `.env` e o bloqueio de leitura da pasta `secrets/`, que esta entrada punha.
+**Como aplicar:** nada.
+**Como testar:** nada.
 
 ## backup-com-aviso
 
@@ -353,10 +356,10 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## pasta-secrets-protegida
 
-**O que é:** as pastas `.secrets/` (onde algumas skills de fora guardam chave) e `secrets/` passam a ficar fora do backup, e o sistema fica proibido de ler o que tem dentro delas, como já era com a `secrets/`.
+**O que é:** as pastas `.secrets/` (onde algumas skills de fora guardam chave) e `secrets/` passam a ficar fora do backup.
 **Por quê:** o `.gitignore` não conhecia nenhuma das duas, e o `!*.json` liberava o arquivo de chave, então uma chave gravada em `.secrets/` ou `secrets/` subia pro GitHub no backup automático seguinte, sem aviso.
-**Te afeta se:** `git check-ignore -q .secrets/x.json` ou `git check-ignore -q secrets/x.json` falha no projeto, ou o `deny` do `.claude/settings.json` não tem `Read(./.secrets/**)`.
-**Como aplicar:** no `.gitignore` do projeto, acrescentar as linhas `.secrets/` e `secrets/` logo abaixo de `!.env.example` (sem ela, no fim da lista de bloqueio). No `.claude/settings.json`, acrescentar `"Read(./.secrets/**)"` ao `deny`, juntando ao que já está lá e sem tirar o `Read(./secrets/**)` (mostrar o antes e o depois do `deny`). Depois rodar `git ls-files -ci --exclude-standard`, que lista tudo o que está no backup e agora fica de fora, em qualquer pasta (uma `.secrets/` dentro de skill também): se listar algum arquivo dentro de `.secrets/` ou `secrets/`, as linhas novas sozinhas não bastam, porque o backup automático continua levando o que já está no backup. Com o sim da pessoa, tirar com `git rm --cached <caminho>` só esses arquivos, um por um como a lista mostrou (o arquivo continua no disco; o resto da lista fica como está) e avisar que a chave ficou no histórico do GitHub e precisa ser trocada no serviço (gerar uma nova, guardar no `.env`, apagar a velha), como na `gitignore-fechado`. Skill da pessoa que grava em `.secrets/` passa a ser barrada na hora de ler a chave: oferecer mover a chave pro `.env` e ajustar a skill pra ler de lá.
+**Te afeta se:** `git check-ignore -q .secrets/x.json` ou `git check-ignore -q secrets/x.json` falha no projeto.
+**Como aplicar:** no `.gitignore` do projeto, acrescentar as linhas `.secrets/` e `secrets/` logo abaixo de `!.env.example` (sem ela, no fim da lista de bloqueio). Depois rodar `git ls-files -ci --exclude-standard`, que lista tudo o que está no backup e agora fica de fora, em qualquer pasta (uma `.secrets/` dentro de skill também): se listar algum arquivo dentro de `.secrets/` ou `secrets/`, as linhas novas sozinhas não bastam, porque o backup automático continua levando o que já está no backup. Com o sim da pessoa, tirar com `git rm --cached <caminho>` só esses arquivos, um por um como a lista mostrou (o arquivo continua no disco; o resto da lista fica como está) e avisar que a chave ficou no histórico do GitHub e precisa ser trocada no serviço (gerar uma nova, guardar no `.env`, apagar a velha), como na `gitignore-fechado`.
 **Como testar:** `git check-ignore .secrets/x.json secrets/x.json` imprime os dois caminhos e `git ls-files -ci --exclude-standard` não lista nenhum arquivo dentro de `.secrets/` ou `secrets/`.
 
 ## estilo-do-anuncio
@@ -622,7 +625,7 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Por quê:** o Monitor roda comando de terminal como o Bash e o PowerShell, mas a trava só era chamada pras duas. Um comando que apaga pasta, mandado pelo Monitor, passava sem a trava olhar.
 **Te afeta se:** o `.claude/settings.json` do projeto cita `barrar-perigoso` e o `matcher` desse bloco não tem `Monitor`.
 **Como aplicar:** no bloco `PreToolUse` do `.claude/settings.json` que chama o `barrar-perigoso.mjs`, acrescentar `|Monitor` no fim do `matcher` (fica `Bash|PowerShell|Monitor`), sem mexer no resto. Mostrar o antes e o depois.
-**Como testar:** o `settings.json` é JSON válido (`node -e "JSON.parse(require('fs').readFileSync('.claude/settings.json','utf8'))"`), o `matcher` do bloco mostra `Monitor`, e `echo '{"tool_name":"Monitor","tool_input":{"command":"rm -rf pasta-de-teste"}}' | node .claude/hooks/barrar-perigoso.mjs` sai com código 2 (a trava barra o comando do Monitor). Avisar que a trava vale a partir da próxima conversa.
+**Como testar:** o `settings.json` é JSON válido (`node -e "JSON.parse(require('fs').readFileSync('.claude/settings.json','utf8'))"`), o `matcher` do bloco mostra `Monitor`, e `echo '{"tool_name":"Monitor","tool_input":{"command":"git reset --hard"}}' | node .claude/hooks/barrar-perigoso.mjs` sai com código 2 (a trava barra o comando do Monitor). Avisar que a trava vale a partir da próxima conversa.
 
 ## agents-mentor-conferencia
 
@@ -684,33 +687,33 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 **O que é:** a trava de comando destrutivo passa a barrar o git que joga trabalho fora escrito com variável, substituição (`$(...)`), crase, chaves, xargs, barra invertida ou apelido por `-c`. Passa a barrar também o uso legítimo com variável nos verbos que ela julga, como `git push origin $(git branch --show-current)` e `git checkout "$BR"`.
 **Por quê:** a versão publicada deixava passar nove jeitos de escrever o git que joga trabalho fora, como `git reset $(echo --hard)` e `echo --hard | xargs git reset`.
-**Te afeta se:** o `.claude/hooks/barrar-perigoso.mjs` do projeto deixa passar `git reset $(echo --hard)`.
-**Como aplicar:** nada no projeto; a trava nova chega pelo motor do `/atualizar-sabinos`.
-**Como testar:** `echo '{"tool_name":"Bash","tool_input":{"command":"git reset $(echo --hard)"}}' | node .claude/hooks/barrar-perigoso.mjs` sai com código 2 (com a trava antiga, sai 0), e o mesmo com `git status` no lugar sai 0.
+**Te afeta se:** nunca. Aposentada na 5.49: a trava deixou de barrar o git escrito com variável ou substituição, que esta entrada testava. O `--force`, o `--hard` e o `-f` escritos por inteiro seguem barrando.
+**Como aplicar:** nada.
+**Como testar:** nada.
 
 ## trava-leitura-de-segredo
 
 **O que é:** a trava de comando destrutivo passa a barrar ler ou copiar `.env`, perfil do navegador, sessão salva e cookie por código inline (`node -e`, `python -c`), `sqlite3`, cópia (`cp`, `Copy-Item`), `Get-Content`/`type` e download com cookie. É uma lombada: o script do kit segue lendo o `.env` sozinho, como sempre.
 **Por quê:** a regra de permissão que protege o `.env` não vê esses caminhos.
-**Te afeta se:** o `.claude/hooks/barrar-perigoso.mjs` do projeto deixa passar `cp .env /tmp/x`.
-**Como aplicar:** nada no projeto; a trava nova chega pelo motor do `/atualizar-sabinos`.
-**Como testar:** `echo '{"tool_name":"Bash","tool_input":{"command":"cp .env /tmp/x"}}' | node .claude/hooks/barrar-perigoso.mjs` sai com código 2 (com a trava antiga, sai 0), e o mesmo com `grep -c CHAVE .env` no lugar sai 0.
+**Te afeta se:** nunca. Aposentada na 5.49: a trava deixou de barrar a leitura de segredo pelo terminal, que esta entrada punha. O backup segue segurando a senha.
+**Como aplicar:** nada.
+**Como testar:** nada.
 
 ## trava-no-navegador
 
-**O que é:** uma trava nova olha toda ferramenta de fora (navegador, email, redes) antes de ela rodar. No navegador, barra o que lê o login da página ou roda código dentro dela; fora dele, pergunta antes de mandar, apagar ou publicar em conta.
-**Por quê:** a trava de comando só olha o terminal. Uma ferramenta do navegador conseguia ler o cookie da sua conta ou rodar código na página sem nada no caminho.
+**O que é:** uma trava nova olha toda ferramenta de fora (navegador, email, redes) antes de ela rodar. Desde a 5.49 (entrada `travas-soltas`) ela barra só subir arquivo de senha pelo navegador, o lote do navegador que ela não consegue ler e a chamada que ela não entende.
+**Por quê:** a trava de comando só olha o terminal, e nada segurava uma ferramenta do navegador subindo o seu `.env` pra uma página.
 **Te afeta se:** o `.claude/settings.json` do projeto não cita `barrar-mcp`.
 **Como aplicar:** conferir que o `.claude/hooks/barrar-mcp.mjs` existe no projeto (ele chega pelo componente `trava`, no `aplicar`; sem ele, parar e rodar o `aplicar` antes). Rodar `node "<kit>/_ferramentas/atualizar-projeto.mjs" settings .`, mostrar a saída (o antes e o depois) e, com o sim, rodar de novo com `--gravar`.
-**Como testar:** o `settings.json` é JSON válido, e `node -e "process.stdout.write(JSON.stringify({tool_name:'mcp__x__browser_run_'+'code_unsafe'}))" | node .claude/hooks/barrar-mcp.mjs` sai com código 2. Avisar que a trava vale a partir da próxima conversa.
+**Como testar:** o `settings.json` é JSON válido, e `node -e "process.stdout.write(JSON.stringify({tool_name:'mcp__playwright__browser_file_upload',tool_input:{paths:['.env']}}))" | node .claude/hooks/barrar-mcp.mjs` sai com código 2. Avisar que a trava vale a partir da próxima conversa.
 
 ## env-em-deny
 
 **O que é:** o assistente deixa de conseguir ler o arquivo de chaves (`.env`, e também o `.env.local` do app) e os arquivos de login do navegador. Antes ele só pedia licença pra ler o `.env`.
 **Por quê:** a licença aparecia no meio do trabalho e era fácil dizer sim sem ler, e chave lida entra na conversa. Quem grava a chave no `.env` é você ou o script do kit, e a regra não alcança script.
-**Te afeta se:** o `.claude/settings.json` não tem `Read(./.env)` em `permissions.deny`.
-**Como aplicar:** igual à `trava-no-navegador`: conferir o `.claude/hooks/barrar-mcp.mjs` no projeto, rodar `node "<kit>/_ferramentas/atualizar-projeto.mjs" settings .`, mostrar a saída e, com o sim, rodar com `--gravar`. O `ask` antigo do `.env` pode ficar, porque o `deny` vale antes.
-**Como testar:** JSON válido, `Read(./.env)` aparece em `permissions.deny`, e o teste da `trava-no-navegador` sai com código 2.
+**Te afeta se:** nunca. Aposentada na 5.49: a `travas-soltas` tirou o bloqueio de leitura que esta entrada punha.
+**Como aplicar:** nada.
+**Como testar:** nada.
 
 ## segredo-de-sessao-fora-do-backup
 
@@ -738,11 +741,11 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## semente-2fa-e-leitura-de-mcp
 
-**O que é:** a semente de 2FA salva em arquivo (qualquer `*totp*.json`) fica fora do backup e o assistente não lê. A trava do navegador e das contas deixa passar sem perguntar a ferramenta de leitura com verbo em português (`listar`, `buscar`, `consultar`, `ler`, `obter`, `ver`, `saldo`), como as do servidor do Bling do kit. O detector de chave do backup para de segurar JSON de catálogo com produto chamado Cookie.
-**Por quê:** a semente gera o código de 2FA da conta, e subir pro GitHub entrega o segundo fator. O servidor do Bling é só leitura e pedia confirmação a cada chamada.
-**Te afeta se:** o `.gitignore` do projeto não tem `*totp*.json`, ou o `.claude/settings.json` não tem `Read(**/*totp*.json)` em `permissions.deny`.
-**Como aplicar:** no `.gitignore` (arquivo misto), acrescentar logo depois da linha `secrets/` as 2 linhas do `_modelo/.gitignore` do kit que começam em "# semente de 2FA" (o comentário e a regra). Rodar `node "<kit>/_ferramentas/atualizar-projeto.mjs" settings .`, mostrar a saída e, com o sim, rodar com `--gravar`. Se `git ls-files -ci --exclude-standard` listar algum `*totp*.json`, rodar `git rm --cached` nele, dizendo antes que tira do git sem apagar do disco e que a semente que já subiu precisa ser trocada na conta. O hook e a faxina chegam pelo atualizador.
-**Como testar:** `git check-ignore dados/totp.json` imprime o caminho, e `Read(**/*totp*.json)` aparece em `permissions.deny`.
+**O que é:** a semente de 2FA salva em arquivo (qualquer `*totp*.json`) fica fora do backup. O detector de chave do backup para de segurar JSON de catálogo com produto chamado Cookie.
+**Por quê:** a semente gera o código de 2FA da conta, e subir pro GitHub entrega o segundo fator.
+**Te afeta se:** o `.gitignore` do projeto não tem `*totp*.json`.
+**Como aplicar:** no `.gitignore` (arquivo misto), acrescentar logo depois da linha `secrets/` as 2 linhas do `_modelo/.gitignore` do kit que começam em "# semente de 2FA" (o comentário e a regra). Se `git ls-files -ci --exclude-standard` listar algum `*totp*.json`, rodar `git rm --cached` nele, dizendo antes que tira do git sem apagar do disco e que a semente que já subiu precisa ser trocada na conta. A faxina chega pelo atualizador.
+**Como testar:** `git check-ignore dados/totp.json` imprime o caminho.
 
 ## lib-de-navegador
 
@@ -780,17 +783,17 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 **O que é:** o robô agora confere, a cada uso do navegador, que o Chrome na porta é o deste projeto; se não for, ele para e diz o que rodar (abrir o Chrome dedicado com o `abrir-chrome.mjs`, ou ligar o `navegador` de novo pelo passo 3 do Degrau 5 do `/conectar` quando a porta mudou).
 **Por quê:** dois projetos podem cair na mesma porta, e com o Chrome de um fechado o `navegador` dele entrava calado no Chrome logado do outro.
-**Te afeta se:** o projeto tem `.claude/hooks/barrar-mcp.mjs` sem o texto `avaliarMcpComPerfil`.
-**Como aplicar:** nada no projeto; o motor traz.
-**Como testar:** `grep -l avaliarMcpComPerfil .claude/hooks/barrar-mcp.mjs` imprime o caminho, e com o Chrome dedicado fechado uma ferramenta do `navegador` para com o recado de rodar o `abrir-chrome.mjs`.
+**Te afeta se:** nunca. Aposentada na 5.49: a `travas-soltas` tirou essa conferência a cada uso do `navegador`.
+**Como aplicar:** nada.
+**Como testar:** nada.
 
 ## anotacao-do-navegador
 
 **O que é:** quando o navegador da IA é ligado de novo, o robô pede pra fechar e abrir o Claude Code antes de usar, porque o navegador que já está rodando continua na porta antiga.
 **Por quê:** ligar o `navegador` de novo no meio da conversa troca a configuração, mas não o navegador que já roda; antes, o robô conferia a porta nova e deixava a chamada ir pro Chrome da porta velha.
-**Te afeta se:** o projeto tem `.claude/hooks/barrar-mcp.mjs` sem o texto `anotarSessao`, ou o `.claude/settings.json` não tem o bloco `SessionStart` que chama o `barrar-mcp.mjs`.
-**Como aplicar:** nada no projeto; o motor traz o hook e junta o bloco `SessionStart` no `settings.json`, sem tirar hook da pessoa. Avisar que vale a partir da próxima vez que o Claude Code abrir.
-**Como testar:** `grep -l anotarSessao .claude/hooks/barrar-mcp.mjs` imprime o caminho, e o `.claude/settings.json` tem em `hooks.SessionStart` um comando com `barrar-mcp.mjs`.
+**Te afeta se:** nunca. Aposentada na 5.49: a `travas-soltas` tirou a anotação da porta na abertura do Claude Code, e o comando `settings` dela tira o bloco que chamava a trava ali.
+**Como aplicar:** nada.
+**Como testar:** nada.
 
 ## chrome-dedicado-sem-janela
 
@@ -831,3 +834,51 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto tem `.claude/skills/configurar-video/` e não tem `_contexto/orcamento.md`.
 **Como aplicar:** contar à pessoa que nada muda sozinho: sem orçamento, o `limite_gasto_usd` continua valendo como teto por vez, igual antes. Se ela quiser o orçamento do mês, rodar o passo "Orçamento do mês" do `/configurar-video`, que cria o arquivo. Com orçamento definido, o `limite_gasto_usd` deixa de valer pro gasto com IA (continua no arquivo, sem efeito) e quem limita é o orçamento.
 **Como testar:** sem orçamento, `node .claude/skills/configurar-video/scripts/orcamento.mjs --saldo` responde `"tipo":"lote"`; com orçamento, responde `"tipo":"mes"` com o orçamento que a pessoa escolheu.
+
+## travas-soltas
+
+**O que é:** as travas do kit ficam mais leves. Sai do `.claude/settings.json` a lista que proibia o assistente de ler o `.env`, as pastas de chave, a sessão do navegador, a semente de 2FA e o perfil do Chrome do dia a dia, sai a licença antes de ler o `.env` e sai o bloco que chamava a trava das ferramentas de fora toda vez que o Claude Code abria. Essa trava (`barrar-mcp`) passa a barrar só subir arquivo de senha ou de sessão logada pelo navegador, o lote do navegador num formato que ela não lê e a chamada que ela não entende: código na página, ferramenta nova do navegador, print fora da pasta de saída, ação em conta e o Chrome de outro projeto na porta deixam de parar. A trava de comando (`barrar-perigoso`) segue barrando o Git que joga trabalho fora, o comando que apaga o disco e o comando escondido em código; apagar pasta fora da pasta temporária passa a perguntar antes, mostrando o que vai sumir, e baixar e rodar script da internet ou ler o `.env` pelo terminal deixam de parar. Ela também lê o comando que vai dentro de outro programa que roda comando (como `bash -c "..."`, `powershell -Command "..."` ou `eval`) e o que roda o apelido do Git que começa com `!`: se o de dentro é perigoso, barra igual. Texto só citado, como a mensagem de um commit, segue sem leitura. Toda trava que barra diz o nome dela e da regra, e o assistente repete esse nome pra você.
+**Por quê:** as travas paravam o trabalho em coisa que você mesmo pediu. Ficam as que seguram o que não tem volta.
+**Te afeta se:** `node "<kit>/_ferramentas/atualizar-projeto.mjs" settings .` imprime uma linha que começa com `Sai (o kit tirou)`.
+**Como aplicar:** conferir que o `.claude/hooks/barrar-mcp.mjs` do projeto já veio na versão nova (ele chega pelo componente `trava`, no `aplicar`; sem ele, parar e rodar o `aplicar` antes). Rodar `node "<kit>/_ferramentas/atualizar-projeto.mjs" settings .` e mostrar a saída: o antes, o depois e a linha `Sai (o kit tirou)`, que lista só regra que o kit pôs um dia, igual letra por letra. Regra que a pessoa escreveu fica. Com o sim, rodar de novo com `--gravar`. Avisar que vale a partir da próxima conversa.
+**Como testar:** o `settings.json` é JSON válido, o comando `settings` rodado de novo sem `--gravar` não imprime a linha `Sai (o kit tirou)`, e `node -e "process.stdout.write(JSON.stringify({tool_name:'mcp__playwright__browser_file_upload',tool_input:{paths:['.env']}}))" | node .claude/hooks/barrar-mcp.mjs` sai com código 2 e uma mensagem que começa com `Barrada pela trava barrar-mcp, regra upload-de-senha`, e `echo '{"tool_name":"Bash","tool_input":{"command":"git reset --hard"}}' | node .claude/hooks/barrar-perigoso.mjs` sai com código 2 e uma mensagem que começa com `Barrada pela trava barrar-perigoso, regra git-joga-fora`.
+
+## regra-travas
+
+**O que é:** a regra da trava muda de nome e de jeito. Quando uma trava barrar, a IA diz o nome da trava e da regra ("Barrada pela trava X, regra Y") e decide sozinha o próximo passo, sem refazer a mesma ação por outro caminho. Só na regra erro-interno do `barrar-perigoso`, em que a trava não conseguiu ler o comando, ela pode reescrever ele mais simples ou usar uma ferramenta equivalente, e avisa você.
+**Por quê:** a regra antiga mandava parar a cada barrada, e o trabalho travava à toa. O nome da trava diz pra você o que aconteceu.
+**Te afeta se:** o `AGENTS.md` do projeto tem uma regra com o título `Trava de comando destrutivo.` em negrito (com ou sem número na frente) ou o texto "Barrou: parar e explicar".
+**Como aplicar:** achar a regra pelo título **Trava de comando destrutivo.** e trocar o título e a frase pela regra **Travas.** do `_modelo/AGENTS.md` do kit, mantendo o número que ela tem no projeto. Mostrar o antes e o depois e gravar com o sim.
+**Como testar:** `grep -c "Trava de comando destrutivo" AGENTS.md` dá 0, e o título `Travas.` aparece uma vez, em negrito, no `AGENTS.md`.
+
+## regra-robo-agendado
+
+**O que é:** a regra do gate humano ganha o robô do `/agendar`: o "pode ir" se dá na hora de agendar e vale pra toda execução dele.
+**Por quê:** o robô roda sozinho, sem ninguém pra dizer "pode ir" a cada vez. Na hora de agendar, você vê o que ele faz e quanto gasta por rodada e por mês.
+**Te afeta se:** a regra com o título **Gate humano.** do `AGENTS.md` do projeto não cita o `/agendar`.
+**Como aplicar:** achar a regra pelo título **Gate humano.** e acrescentar no fim a frase do `_modelo/AGENTS.md` do kit que começa com "Robô do `/agendar`", sem tirar o que a pessoa escreveu. Mostrar o antes e o depois.
+**Como testar:** a regra **Gate humano.** cita o `/agendar` uma vez.
+
+## regra-senha-no-env
+
+**O que é:** a senha de site passa a ir no `.env`, e a IA lê ela pra fazer o login no site, sem mostrar o valor no chat.
+**Por quê:** com a senha no `.env`, a IA entra sozinha quando a sessão cai, e o captcha continua com você.
+**Te afeta se:** a regra com o título **Chave no `.env`.** do `AGENTS.md` do projeto tem o texto "senha de site: ver `/conectar`" ou "Senha de site não se guarda".
+**Como aplicar:** achar a regra pelo título **Chave no `.env`.** e trocar a frase dela por "Chave de API só no `.env`, nunca no chat; senha de site também: a IA lê pra usar, nunca mostra (`/conectar`).", sem mudar o número. Mostrar a troca e gravar com o sim.
+**Como testar:** a regra **Chave no `.env`.** contém "a IA lê pra usar, nunca mostra", e `grep -c "senha de site: ver" AGENTS.md` dá 0.
+
+## infra-senha-no-env
+
+**O que é:** o aviso do topo do `_contexto/infra.md` passa a dizer que a senha de site também vai no `.env`, e que a IA lê de lá pra fazer o login, sem mostrar no chat.
+**Por quê:** o aviso antigo dizia que senha de site não se guarda, e isso brigava com a regra **Chave no `.env`.** nova.
+**Te afeta se:** o `_contexto/infra.md` do projeto tem o texto "Senha de site não se guarda".
+**Como aplicar:** no `_contexto/infra.md` (arquivo da pessoa), trocar só a frase "Senha de site não se guarda, salvo na conta em que você ligar o relogin automático." por "Senha de site também vai no `.env`, nunca aqui: a IA lê de lá pra fazer o login e nunca mostra no chat.", sem mexer no resto do que a pessoa escreveu. Mostrar a troca e gravar com o sim.
+**Como testar:** `grep -c "Senha de site não se guarda" _contexto/infra.md` dá 0, e o `infra.md` tem "Senha de site também vai no `.env`".
+
+## pode-ir-acima-do-teto
+
+**O que é:** quando um gasto com IA paga passa do seu limite por vez (o `limite_gasto_usd`, ou US$ 4 sem ele), o sistema deixa de só parar: mostra o valor, pede o "pode ir" citando esse valor e, com o seu sim, segue. Vale pra imagem por IA, vídeo do produto, olho final do `/editar-video`, `/carrossel`, `/midia-social` e engenharia reversa. Vale também pro robô do `/agendar`: o "pode ir" que você dá na hora de agendar, com o valor por rodada na tela, libera cada rodada até esse valor, mesmo acima do limite por vez. Se o valor subir depois do sim, ele para: na conversa pergunta de novo, e o robô não gasta e te avisa. O orçamento do mês segue firme: o que não cabe no que sobrou do mês continua parando.
+**Por quê:** antes, passar do limite por vez obrigava a dividir o trabalho em pedaços ou mexer no arquivo de configuração, mesmo com você querendo gastar aquele valor.
+**Te afeta se:** o `.claude/skills/conectar/scripts/lib/orcamento.mjs` do projeto não tem o texto `acimaDoTetoUsd`, ou a cópia dele que o motor guardou nesta atualização (`.sabinos/antes-<versão nova>-*/arquivos/.claude/skills/conectar/scripts/lib/orcamento.mjs`) não tem esse texto. O motor troca o arquivo no Passo 4, antes desta lista, então é a cópia guardada que mostra que a mudança é nova pra pessoa.
+**Como aplicar:** quando o `orcamento.mjs` novo chegou pelo motor, nada no projeto: contar à pessoa em uma frase que o limite por vez continua no mesmo lugar, e que acima dele o sistema agora pergunta com o valor, em vez de parar. Se ela ficou com a versão dela do `orcamento.mjs` no Passo 3 ("fica a sua"), a mudança não chegou: contar que acima do limite continua parando e perguntar se ela quer a nova; com o sim, rodar o Passo 4 de novo com esse caminho no `--tambem`.
+**Como testar:** `grep -l acimaDoTetoUsd .claude/skills/conectar/scripts/lib/orcamento.mjs` imprime o caminho. Se a pessoa ficou com a versão dela, não imprime, e ela ouviu que acima do limite continua parando.

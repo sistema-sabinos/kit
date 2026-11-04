@@ -208,6 +208,9 @@ test('podeGastar barra roteiro sem aprovacao e libera o aprovado', () => {
   const sem = podeGastar(roteiroValido())
   assert.equal(sem.ok, false)
   assert.match(sem.motivo, /aprovadoEm/)
+  // 5.49 (bloco C, 2026-11-03): a parada no formato das travas do kit
+  assert.match(sem.motivo, /^Barrada pela trava carimbo-do-roteiro, regra sem-aprovacao: /)
+  assert.ok(sem.motivo.includes('Diga ao usuario o nome da trava e da regra e decida o proximo passo; nao refaca esta acao por outro caminho.'))
   assert.equal(podeGastar(carimbado(roteiroValido())).ok, true)
 })
 
@@ -225,6 +228,7 @@ test('podeGastar recusa roteiro que mudou depois do carimbo de aprovacao', () =>
   const r = podeGastar(trocado)
   assert.equal(r.ok, false)
   assert.match(r.motivo, /mudou depois da aprovacao/i)
+  assert.match(r.motivo, /^Barrada pela trava carimbo-do-roteiro, regra roteiro-mudou: /)
   assert.match(r.motivo, /--aprovar/)
 })
 
@@ -548,6 +552,27 @@ test('fase 2 com estimativa acima de limite_gasto_usd sai 3 dizendo que passa do
   const j = JSON.parse(r.stdout.trim().split('\n').pop())
   assert.match(j.parou, /passa do limite/)
   assert.ok(j.estimativa_usd > 1)
+})
+
+// 5.49 (bloco C, 2026-11-03): acima do teto por lote, o --acima-do-teto com o valor do pode ir passa a trava
+test('fase 2 acima do teto: --acima-do-teto menor que a estimativa para, igual ou maior passa a trava', async () => {
+  preparar(carimbado(roteiroValido()), { comMusica: false })
+  const nada = async () => { throw new Error('nao devia chamar nada pago') }
+  const menor = await chamar([`--mlb=${MLB}`, '--fase=2', ...PRECOS_AUTORIZADO, '--acima-do-teto=1'], {
+    carregarConfiguracao: () => ({ limite_gasto_usd: 1 }),
+    gerarClipe: nada, narrar: nada, transcrever: nada, gerarMusica: nada,
+  })
+  assert.equal(menor.status, 3, menor.stderr)
+  assert.match(JSON.parse(menor.stdout.trim().split('\n').pop()).parou, /^Barrada pela trava gasto, regra teto-do-lote: o --acima-do-teto \(1\) e menor/)
+  fs.writeFileSync(path.join(pasta, 'referencia.jpg'), 'foto de mentira')
+  let chamou = false
+  const pago = async () => { chamou = true; throw new Error('chamada paga de mentira') }
+  const passa = await chamar([`--mlb=${MLB}`, '--fase=2', ...PRECOS_AUTORIZADO, '--acima-do-teto=5'], {
+    carregarConfiguracao: () => ({ limite_gasto_usd: 1 }),
+    gerarClipe: pago, narrar: pago, transcrever: pago, gerarMusica: pago,
+  })
+  assert.ok(chamou, 'canario: com o valor do pode ir a rodada passou da trava e chegou na chamada paga')
+  assert.doesNotMatch(passa.stdout, /teto-do-lote/)
 })
 
 test('sem configuracao no projeto o teto cai no padrao da skill de Mercado Livre', async () => {

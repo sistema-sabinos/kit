@@ -17,7 +17,8 @@ Limite conhecido: dois elementos da MESMA camada encostados nao sao medidos (a c
   7. olho final (Gemini, PAGO): so roda com --roteiro, --preco-usd e --autorizado juntos, e so se 1 a 6 passaram.
      Assiste o video inteiro contra o roteiro e julga o que script nao julga. Sem preco ou sem autorizacao, avisa e
      pula. Antes de chamar, passa pela trava do gasto (liberar-gasto-cli.mjs do conectar: orcamento do mes ou teto
-     por lote); sem liberacao, avisa e pula. O custo vai pro dados/custos.jsonl, uma linha, pelo
+     por lote); sem liberacao, avisa e pula. Acima do teto por lote, so passa com --acima-do-teto <o valor que a
+     pessoa ouviu no pode ir>, igual ou maior que o --preco-usd (5.49, bloco C, 2026-11-03). O custo vai pro dados/custos.jsonl, uma linha, pelo
      registrar-custo-cli.mjs, com a reserva da liberacao, o --video e os segundos do final.
 
 Teste do portao pago: `--so-olho-final` pula render e gates e roda so o passo 7 (os caminhos do render viram opcionais).
@@ -25,7 +26,7 @@ Teste do portao pago: `--so-olho-final` pula render e gates e roda so o passo 7 
 Uso: fiscal.py <Composicao> <final.mp4> <bruto.mp4> <pasta-saida> --remotion <remotion-cli.js> --public-dir <public da peca>
              --props-base <props.json> [--props-verificar <props.json>] [--transcrever <transcrever.mjs> [--modelo small|medium]]
              [--midia <_video>/midia]
-             [--roteiro <roteiro.md> --preco-usd <US$ do olho final, preco do dia> --autorizado
+             [--roteiro <roteiro.md> --preco-usd <US$ do olho final, preco do dia> --autorizado [--acima-do-teto <US$>]
               --ver-video <ver-video.mjs> --registrar-custo <registrar-custo-cli.mjs> [--video <slug>]]
 
 Quem chama e o orquestrador do kit, que escolhe o Python da maquina e passa os caminhos; nenhum caminho de ferramenta
@@ -62,6 +63,8 @@ ap.add_argument("--midia", default=None, help="<_video>/midia: com biblioteca/sf
 ap.add_argument("--modelo", default="small", choices=["small", "medium"], help="modelo do whisper que o --transcrever usa (o do maquina.json); padrao small")
 ap.add_argument("--roteiro", default=None); ap.add_argument("--preco-usd", type=float, default=None)
 ap.add_argument("--autorizado", action="store_true")
+# 5.49 (bloco C, 2026-11-03): vai como veio pro liberar-gasto-cli, que confere se e numero e se cobre o preco
+ap.add_argument("--acima-do-teto", default=None, help="sem orcamento do mes, o valor em dolar que a pessoa ouviu no pode ir pro olho final acima do limite_gasto_usd")
 ap.add_argument("--ver-video", default=None)
 ap.add_argument("--raiz-custo", default=None, help="raiz do projeto onde o registrar-custo grava dados/custos.jsonl (padrao: a do kit)")
 ap.add_argument("--so-olho-final", action="store_true", help="so o olho final (teste do portao pago): sem render e sem gates")
@@ -154,7 +157,8 @@ def liberar_gasto():
     if not cli or not cli.exists():
         return {"codigo": 3, "parou": f"nao achei a trava de gasto ({cli})"}
     cmd = ["node", str(cli), "--usd", str(ARGS.preco_usd), "--autorizado", "--pid", str(os.getpid()),
-           "--contexto", f"olho final do fiscal: {FINAL.name}"] + (["--raiz", ARGS.raiz_custo] if ARGS.raiz_custo else [])
+           "--contexto", f"olho final do fiscal: {FINAL.name}"] + (["--raiz", ARGS.raiz_custo] if ARGS.raiz_custo else []) \
+        + (["--acima-do-teto", ARGS.acima_do_teto] if ARGS.acima_do_teto is not None else [])
     r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     try:
         return json.loads((r.stdout or "").strip().splitlines()[-1])

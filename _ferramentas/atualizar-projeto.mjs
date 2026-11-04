@@ -9,6 +9,7 @@
 //   node atualizar-projeto.mjs registrar <projeto> <id-da-mudanca> aplicada|recusada
 //   node atualizar-projeto.mjs desfazer <projeto> [--backup <antes-...>]
 //   node atualizar-projeto.mjs settings <projeto> [--kit <kit>] [--gravar]
+//   node atualizar-projeto.mjs mae <kit-novo> [--mae <pasta>]
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, copyFileSync, rmSync, rmdirSync, renameSync, realpathSync } from 'node:fs'
 import { join, dirname, resolve, relative, sep } from 'node:path'
 import { createHash } from 'node:crypto'
@@ -62,38 +63,73 @@ function compararVersao(a, b) {
 }
 
 // Rodada 5.28: o settings.json e misto. O deny e a trava do MCP do kit entram por juncao, sem tirar
-// nada da pessoa: o ask antigo do .env fica e e inerte, porque o deny vale antes do ask. O bloco da
+// nada da pessoa; desde a 5.49 sai so o que o kit tirou (TIRADAS_DO_KIT). O bloco da
 // trava do MCP do kit entra se nao houver um igual; a chamada antiga da trava sai do bloco dela, e o
-// resto do bloco (outro hook da pessoa) fica (Codex comum, achado 3). Devolve o que faltava.
+// resto do bloco (outro hook da pessoa) fica (Codex comum, achado 3). Devolve o que faltava e o que tirou.
 // pelo nome do script: comando da pessoa que so cita a palavra fica (Codex comum, volta 2)
 // e so o script que o node roda, com ou sem pasta e aspas; o nome como argumento de outro fica (final do Codex)
 // opcao do node antes do script (`node --no-warnings ...`) segue sendo a trava (volta 2 da comum)
 const RE_HOOK_MCP = /^\s*node(?:\.exe)?(?:\s+--?[\w-]+(?:=\S*)?)*\s+(?:"(?:[^"]*[\\/])?barrar-mcp\.mjs"|(?:\S*[\\/])?barrar-mcp\.mjs)\s*$/i
 const ehHookMcp = h => typeof h?.command === 'string' && RE_HOOK_MCP.test(h.command)
 const citaMcp = b => (b?.hooks || []).some(ehHookMcp)
+const semHookMcp = lista => lista
+  .map(b => (citaMcp(b) ? { ...b, hooks: b.hooks.filter(h => !ehHookMcp(h)) } : b))
+  .filter(b => !Array.isArray(b.hooks) || b.hooks.length > 0)
+
+// 5.49 (bloco B, 2026-11-03, blocos 1, 2 e 11): o que o kit ja pos no settings e tirou. O deny de
+// leitura do .env, das pastas de chave e de sessao e do perfil do Chrome (as formas ./ do _modelo, as **/
+// da pasta-mae e o Read(./.env.*) de antes da 5.28), o deny do run_code_unsafe, o ask velho do .env e o
+// SessionStart do barrar-mcp (a anotacao do navegador). Sai so a regra igual, letra por letra; o resto da
+// pessoa fica. Regra que o kit voltar a pedir nao sai.
+export const TIRADAS_DO_KIT = {
+  deny: [
+    'Read(./.env)', 'Read(**/.env)', 'Read(**/.env.local)', 'Read(**/.env.*.local)', 'Read(./.env.*)',
+    'Read(./secrets/**)', 'Read(./.secrets/**)', 'Read(./dados/sessao/**)', 'Read(./dados/chrome-perfil/**)',
+    'Read(**/secrets/**)', 'Read(**/.secrets/**)', 'Read(**/dados/sessao/**)', 'Read(**/dados/chrome-perfil/**)',
+    'Read(**/.auth/**)', 'Read(**/*.har)', 'Read(**/storage-state*.json)', 'Read(**/*totp*.json)',
+    'Read(~/AppData/Local/Google/Chrome/User Data/**)', 'Read(~/Library/Application Support/Google/Chrome/**)',
+    'mcp__playwright__browser_run_code_unsafe', 'mcp__navegador__browser_run_code_unsafe',
+  ],
+  ask: ['Read(./.env)', 'Read(./.env.*)'],
+  SessionStart: 'anotação do navegador (barrar-mcp)',
+}
+
 export function mesclarSettings(daPessoa, doKit) {
   const settings = structuredClone(daPessoa ?? {})
   const faltava = []
-  const atual = settings.permissions?.deny
-  const deny = Array.isArray(atual) ? atual : (atual == null ? [] : [atual])
-  for (const regra of doKit?.permissions?.deny ?? []) if (!deny.includes(regra)) { deny.push(regra); faltava.push(regra) }
-  if (deny.length) settings.permissions = { ...(settings.permissions ?? {}), deny }
-  // 5.31: o SessionStart do barrar-mcp anota a porta do navegador pelo mesmo criterio; sem ele, todo
-  // projeto atualizado barraria o navegador pra sempre
-  const blocos = { PreToolUse: 'trava do MCP (barrar-mcp)', SessionStart: 'anotação do navegador (barrar-mcp)' }
-  for (const [evento, nome] of Object.entries(blocos)) {
-    const blocoKit = (doKit?.hooks?.[evento] ?? []).find(citaMcp)
-    if (!blocoKit) continue
-    settings.hooks ??= {}
-    const daLista = settings.hooks[evento] ?? []
-    if (daLista.some(b => JSON.stringify(b) === JSON.stringify(blocoKit))) continue
-    settings.hooks[evento] = daLista
-      .map(b => (citaMcp(b) ? { ...b, hooks: b.hooks.filter(h => !ehHookMcp(h)) } : b))
-      .filter(b => !Array.isArray(b.hooks) || b.hooks.length > 0)
-      .concat(structuredClone(blocoKit))
-    faltava.push(nome)
+  const tirou = []
+  const lista = chave => {
+    const atual = settings.permissions?.[chave]
+    return Array.isArray(atual) ? atual : (atual == null ? [] : [atual])
   }
-  return { settings, faltava }
+  const doKitDeny = doKit?.permissions?.deny ?? []
+  const deny = lista('deny')
+  for (const regra of doKitDeny) if (!deny.includes(regra)) { deny.push(regra); faltava.push(regra) }
+  for (const [chave, atual] of [['deny', deny], ['ask', lista('ask')]]) {
+    const fica = atual.filter(r => !TIRADAS_DO_KIT[chave].includes(r) || (doKit?.permissions?.[chave] ?? []).includes(r))
+    tirou.push(...atual.filter(r => !fica.includes(r)).map(r => `${chave} ${r}`))
+    if (fica.length) settings.permissions = { ...(settings.permissions ?? {}), [chave]: fica }
+    else if (settings.permissions) delete settings.permissions[chave]
+  }
+  if (settings.permissions && !Object.keys(settings.permissions).length) delete settings.permissions
+  const blocoKit = (doKit?.hooks?.PreToolUse ?? []).find(citaMcp)
+  if (blocoKit) {
+    settings.hooks ??= {}
+    const daLista = settings.hooks.PreToolUse ?? []
+    if (!daLista.some(b => JSON.stringify(b) === JSON.stringify(blocoKit))) {
+      settings.hooks.PreToolUse = semHookMcp(daLista).concat(structuredClone(blocoKit))
+      faltava.push('trava do MCP (barrar-mcp)')
+    }
+  }
+  // a chamada do barrar-mcp sai do bloco SessionStart; o resto do bloco (outro hook da pessoa) fica
+  const inicio = settings.hooks?.SessionStart
+  if (Array.isArray(inicio) && inicio.some(citaMcp) && !(doKit?.hooks?.SessionStart ?? []).some(citaMcp)) {
+    const fica = semHookMcp(inicio)
+    if (fica.length) settings.hooks.SessionStart = fica
+    else delete settings.hooks.SessionStart
+    tirou.push(TIRADAS_DO_KIT.SessionStart)
+  }
+  return { settings, faltava, tirou }
 }
 
 export function montarPlano({ kit, projeto, escolhidos = [] }) {
@@ -165,12 +201,17 @@ export function montarPlano({ kit, projeto, escolhidos = [] }) {
   const settingsKit = join(modelo, '.claude', 'settings.json')
   const settingsProjeto = join(projeto, '.claude', 'settings.json')
   let settingsFalta = null
+  let settingsSobra = null
   if (existsSync(settingsKit) && existsSync(settingsProjeto)) {
-    try { settingsFalta = mesclarSettings(lerJson(settingsProjeto), lerJson(settingsKit)).faltava.length } catch { settingsFalta = -1 }
+    try {
+      const m = mesclarSettings(lerJson(settingsProjeto), lerJson(settingsKit))
+      settingsFalta = m.faltava.length
+      settingsSobra = m.tirou.length
+    } catch { settingsFalta = -1 }
   }
   return {
     versaoKit, versaoProjeto, versaoEstimada: !recibo, escolhidos, componentes, puxadoPor, itens,
-    mistos: regras.mistos.filter(m => existsSync(join(projeto, m))), settingsFalta,
+    mistos: regras.mistos.filter(m => existsSync(join(projeto, m))), settingsFalta, settingsSobra,
   }
 }
 
@@ -196,6 +237,7 @@ export function resumo(plano) {
   for (const [dep, quem] of Object.entries(plano.puxadoPor)) l.push(`Entra junto por dependencia: ${dep} (exigido por ${quem})`)
   if (plano.mistos.length) l.push(`Arquivos mistos, pra conversa: ${plano.mistos.join(', ')}`)
   if (plano.settingsFalta > 0) l.push(`settings.json: faltam ${plano.settingsFalta} regra(s) ou trava(s) do kit; rodar o passo settings`)
+  if (plano.settingsSobra > 0) l.push(`settings.json: sobram ${plano.settingsSobra} regra(s) ou trava(s) que o kit tirou; rodar o passo settings`)
   if (plano.settingsFalta === -1) l.push('settings.json ilegivel: conferir o JSON antes do passo settings')
   return l.join('\n')
 }
@@ -238,11 +280,18 @@ function carimboDe(agora) {
   return `${agora.getFullYear()}${z(agora.getMonth() + 1)}${z(agora.getDate())}-${z(agora.getHours())}${z(agora.getMinutes())}${z(agora.getSeconds())}`
 }
 
+// 5.49 (bloco B, 2026-11-03): recusa que segura a IA sai com o nome da trava e da regra, sem o
+// "erro:" na frente
+function recusa(regra, motivo) {
+  return Object.assign(new Error(`Barrada pela trava atualizar-projeto, regra ${regra}: ${motivo}. ` +
+    'Diga ao usuário o nome da trava e da regra e decida o próximo passo; não refaça esta ação por outro caminho.'), { trava: true })
+}
+
 export function aplicarPlano({ kit, projeto, plano, tambem = [], registro = false, agora = new Date() }) {
   const porCaminho = new Map(plano.itens.map(i => [i.caminho, i]))
   for (const c of tambem) {
     const i = porCaminho.get(c)
-    if (!i || !['perguntar', 'sugerir-remover'].includes(i.acao)) throw new Error(`fora do plano pra aprovar: ${c}`)
+    if (!i || !['perguntar', 'sugerir-remover'].includes(i.acao)) throw recusa('aprovar-fora-do-plano', `fora do plano pra aprovar: ${c}`)
   }
   const copiar = plano.itens.filter(i => ['adicionar', 'trocar'].includes(i.acao) || (i.acao === 'perguntar' && tambem.includes(i.caminho)))
   const remover = plano.itens.filter(i => i.acao === 'sugerir-remover' && tambem.includes(i.caminho))
@@ -338,9 +387,52 @@ export function registrarMudanca({ projeto, id, estado, agora = new Date() }) {
   writeFileSync(p, JSON.stringify(r, null, 2) + '\n')
 }
 
+// 5.49 (bloco B, 2026-11-03, bloco 13): o /atualizar-kit separa as areas "do kit" da pasta-mae
+// (a lista do SKILL dele) pelas impressoes do kit novo. Igual nao entra. Mudou-sem-mexer: o conteudo da
+// pasta-mae e um que o kit ja entregou. Sem impressao, a regra segura e editado.
+// Revisao do bloco B: a tabela "mae" (caminho da pasta-mae, mesma forma) cobre o resto.
+export const AREAS_DA_MAE = ['_modelo/', '.claude/skills/', '_ferramentas/', 'docs/', 'VERSAO', 'README.md', 'COMECE-AQUI.md', 'AGENTS.md', 'CLAUDE.md']
+// 5.49 (bloco 13, 2026-11-03): quem entra na tabela "mae". O gerar-impressoes grava e o Gate 10
+// confere por esta mesma conta. Fica fora o _modelo que a tabela "arquivos" ja cobre e a propria
+// impressoes.json, que muda a cada vez que se gera.
+export function vaiNaTabelaMae(rel, regras) {
+  if (rel === '_ferramentas/impressoes.json') return false
+  if (rel.startsWith('_modelo/') && !ignorado(rel.slice('_modelo/'.length), regras)) return false
+  return AREAS_DA_MAE.some(a => (a.endsWith('/') ? rel.startsWith(a) : rel === a))
+}
+export function compararMae({ kitNovo, mae }) {
+  const impressoes = lerJson(join(kitNovo, '_ferramentas', 'impressoes.json'), { arquivos: {} })
+  const impressaoDe = rel => impressoes.mae?.[rel] ?? (rel.startsWith('_modelo/') ? impressoes.arquivos?.[rel.slice('_modelo/'.length)] : undefined)
+  const daArea = base => new Set(AREAS_DA_MAE.flatMap(a => (a.endsWith('/') ? listar(join(base, a)).map(r => a + r) : (existsSync(join(base, a)) ? [a] : []))))
+  const novos = daArea(kitNovo)
+  const atuais = daArea(mae)
+  const grupos = { novo: [], 'mudou-sem-mexer': [], editado: [], sumiu: [] }
+  for (const rel of [...novos].sort()) {
+    if (!atuais.has(rel)) { grupos.novo.push(rel); continue }
+    const h = hashArquivo(readFileSync(join(mae, rel)))
+    if (h === hashArquivo(readFileSync(join(kitNovo, rel)))) continue
+    // o VERSAO muda em toda versao e so guarda o numero dela: com so o numero, ninguem mexeu
+    const versao = rel === 'VERSAO' && /^\d+(\.\d+)+$/.test(readFileSync(join(mae, rel), 'utf8').trim())
+    // a tabela de impressoes e gerada pelo kit e muda em toda versao: ninguem edita (revisao do bloco B)
+    const gerada = rel === '_ferramentas/impressoes.json'
+    grupos[impressaoDe(rel)?.[h] || versao || gerada ? 'mudou-sem-mexer' : 'editado'].push(rel)
+  }
+  // so some o que o kit ja entregou um dia (tem impressao no caminho); o resto e da pessoa e fica fora
+  // da lista, porque "saiu do kit; apago?" seria falso (revisao do bloco B)
+  grupos.sumiu = [...atuais].filter(rel => !novos.has(rel) && impressaoDe(rel)).sort()
+  return grupos
+}
+
+const TITULOS_DA_MAE = {
+  novo: 'Novo (entra no sim so)',
+  'mudou-sem-mexer': 'Mudou e ninguem mexeu (entra no sim so)',
+  editado: 'Editado na pasta-mae (pergunta um por um)',
+  sumiu: 'Some, saiu do kit (pergunta um por um)',
+}
+
 // So as opcoes que o motor conhece, sempre com valor. Opcao digitada errada (--tambme)
 // para com erro: em silencio ela engolia o valor e nada era aprovado.
-const OPCOES = ['kit', 'componentes', 'tambem', 'backup']
+const OPCOES = ['kit', 'componentes', 'tambem', 'backup', 'mae']
 const BANDEIRAS = ['registro', 'gravar']
 function lerArgs(argv) {
   const o = { _: [] }
@@ -358,9 +450,25 @@ function lerArgs(argv) {
 function principal(argv) {
   const a = lerArgs(argv)
   const [cmd, alvo] = a._
-  if (!cmd || !alvo) throw new Error('uso: plano|aplicar|conferir|registrar|desfazer|settings <projeto> ...')
+  if (!cmd || !alvo) throw new Error('uso: plano|aplicar|conferir|registrar|desfazer|settings <projeto> ... ou mae <kit-novo> [--mae <pasta>]')
+  if (cmd === 'mae') {
+    const kitNovo = resolve(alvo)
+    const mae = resolve(a.mae ?? join(dirname(fileURLToPath(import.meta.url)), '..'))
+    for (const k of [kitNovo, mae])
+      if (!existsSync(join(k, '_modelo', 'AGENTS.md')) || !existsSync(join(k, '.claude', 'skills', 'setup', 'SKILL.md')))
+        throw recusa('fora-do-kit', `nao parece um kit SabinOS (sem _modelo/AGENTS.md e .claude/skills/setup/SKILL.md): ${k}`)
+    const versao = k => (existsSync(join(k, 'VERSAO')) ? readFileSync(join(k, 'VERSAO'), 'utf8').trim() : 'desconhecida')
+    const grupos = compararMae({ kitNovo, mae })
+    const l = [`Pasta-mae na versao ${versao(mae)}, kit novo na ${versao(kitNovo)}.`]
+    for (const [g, titulo] of Object.entries(TITULOS_DA_MAE)) {
+      l.push('', `${titulo}: ${grupos[g].length}`)
+      for (const rel of grupos[g]) l.push(`  - ${rel}`)
+    }
+    console.log(l.join('\n'))
+    return
+  }
   const projeto = resolve(alvo)
-  if (!existsSync(join(projeto, '_contexto'))) throw new Error(`nao parece projeto SabinOS (sem _contexto/): ${projeto}`)
+  if (!existsSync(join(projeto, '_contexto'))) throw recusa('fora-de-projeto', `nao parece projeto SabinOS (sem _contexto/): ${projeto}`)
   const kit = resolve(a.kit ?? join(dirname(fileURLToPath(import.meta.url)), '..'))
   const arqPlano = join(projeto, '.sabinos', 'plano.json')
 
@@ -374,7 +482,7 @@ function principal(argv) {
     if (!existsSync(arqPlano)) throw new Error('rode "plano" antes de "aplicar"')
     const plano = lerJson(arqPlano)
     const atual = montarPlano({ kit: plano.kit, projeto, escolhidos: plano.escolhidos })
-    if (JSON.stringify(atual.itens) !== JSON.stringify(plano.itens)) throw new Error('o projeto mudou depois do plano; rode "plano" de novo')
+    if (JSON.stringify(atual.itens) !== JSON.stringify(plano.itens)) throw recusa('plano-velho', 'o projeto mudou depois do plano; rode "plano" de novo')
     const r = aplicarPlano({ kit: plano.kit, projeto, plano, tambem: a.tambem ? a.tambem.split(',') : [], registro: a.registro === true })
     // o motor fica no projeto pra o desfazer funcionar mesmo depois que o kit baixado sumir
     copyFileSync(fileURLToPath(import.meta.url), join(projeto, '.sabinos', 'atualizar-projeto.mjs'))
@@ -409,14 +517,19 @@ function principal(argv) {
     const arqProjeto = join(projeto, '.claude', 'settings.json')
     if (!existsSync(arqProjeto)) throw new Error('o projeto nao tem .claude/settings.json: copiar o do _modelo do kit, como no /setup')
     const daPessoa = lerJson(arqProjeto)
-    const { settings, faltava } = mesclarSettings(daPessoa, lerJson(join(kit, '_modelo', '.claude', 'settings.json')))
-    const listas = s => JSON.stringify({ deny: s.permissions?.deny ?? [], travaDoMcp: (s.hooks?.PreToolUse ?? []).some(citaMcp) })
+    const { settings, faltava, tirou } = mesclarSettings(daPessoa, lerJson(join(kit, '_modelo', '.claude', 'settings.json')))
+    const listas = s => JSON.stringify({
+      deny: s.permissions?.deny ?? [], ask: s.permissions?.ask ?? [],
+      travaDoMcp: (s.hooks?.PreToolUse ?? []).some(citaMcp), anotacaoDoNavegador: (s.hooks?.SessionStart ?? []).some(citaMcp),
+    })
     console.log(`antes: ${listas(daPessoa)}`)
     console.log(`depois: ${listas(settings)}`)
-    console.log(faltava.length ? `Falta: ${faltava.join(', ')}` : 'Nada a juntar: o settings.json ja tem as travas do kit.')
+    if (faltava.length) console.log(`Falta: ${faltava.join(', ')}`)
+    if (tirou.length) console.log(`Sai (o kit tirou): ${tirou.join(', ')}`)
+    if (!faltava.length && !tirou.length) console.log('Nada a juntar nem a tirar: o settings.json ja esta como o kit.')
     if (a.gravar) {
       // com onFailure block, chamar a trava sem o arquivo barraria toda ferramenta de fora
-      if (!existsSync(join(projeto, '.claude', 'hooks', 'barrar-mcp.mjs'))) throw new Error('falta o .claude/hooks/barrar-mcp.mjs no projeto: rodar o aplicar antes')
+      if (!existsSync(join(projeto, '.claude', 'hooks', 'barrar-mcp.mjs'))) throw recusa('settings-sem-trava', 'falta o .claude/hooks/barrar-mcp.mjs no projeto: rodar o aplicar antes')
       const texto = JSON.stringify(settings, null, 2) + '\n'
       JSON.parse(texto)
       writeFileSync(arqProjeto, texto)
@@ -433,7 +546,7 @@ function chamadoDireto() {
 
 if (chamadoDireto()) {
   try { principal(process.argv.slice(2)) } catch (e) {
-    console.error(`erro: ${e.message}`)
+    console.error(e.trava ? e.message : `erro: ${e.message}`)
     process.exit(1)
   }
 }

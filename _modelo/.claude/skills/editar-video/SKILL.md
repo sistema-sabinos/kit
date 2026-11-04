@@ -162,7 +162,9 @@ ffmpeg -y -f lavfi -i "gradients=s=1080x1920:c0=0x1b2a49:c1=0x4a6fa5:x0=540:y0=0
   - gemini, com o preço do dia já na primeira chamada e o `--autorizado` só
     depois do sim: `node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau gemini --cenas producao/<slug>/cenarios/cenas.json --preco-usd <preço do dia> --contexto "cenario <slug>" --autorizado --uso video --video <slug>`
     Saída 3 com `parou` é o limite de gasto (orçamento do mês ou teto por vez): repasse
-    a mensagem como veio, sem gerar.
+    a mensagem como veio, sem gerar. Se parou no teto por vez (regra `teto-do-lote`),
+    mostre o valor das imagens, peça o "pode ir" citando esse valor e, com o sim,
+    rode de novo com `--acima-do-teto <o valor citado>` junto do `--autorizado`.
 
   Abra as três (leitura de imagem), mostre ao aluno e pergunte qual.
 - Copie a escolhida para `producao/<slug>/public/cenario.png`.
@@ -466,10 +468,18 @@ nas camadas:
    `limite_gasto_usd` do bloco
    `mercado-livre` em `_contexto/mercado-livre.md` (sem o campo, o teto é US$ 4).
    Não coube: o relatório diz
-   "olho final pulado" com o motivo, e você repassa e pergunta se ele quer subir o
-   limite ou seguir sem o olho final.
+   "olho final pulado" com o motivo, e você repassa. Se parou no teto por vez (regra
+   `teto-do-lote`) e o valor mudou desde a pergunta, mostre o novo e peça o "pode ir"
+   citando ele ("O olho final passa do seu limite por vez: custa US$ X. Posso ir com
+   US$ X?"); com o sim, rode o fiscal de novo com `--acima-do-teto <o valor citado>`
+   junto dos itens do passo 3.
+   O orçamento do mês não aceita esse jeito: se o que sobrou não cobre, pergunte se
+   ele quer subir o orçamento ou seguir sem o olho final.
 3. Só com o sim, rode o fiscal de novo com mais estes itens:
    `--roteiro producao/<slug>/roteiro.md --preco-usd <valor em dólar do olho final> --autorizado --video <slug> --ver-video .claude/skills/assistir-video/ver-video.mjs --registrar-custo .claude/skills/configurar-video/scripts/lib/registrar-custo-cli.mjs --liberar-gasto .claude/skills/conectar/scripts/lib/liberar-gasto-cli.mjs`
+   Se o valor passa do teto por vez (o `limite_gasto_usd`, ou US$ 4 sem o campo), o
+   sim do passo 2 já citou ele: junte `--acima-do-teto <o valor do passo 2>` nesta
+   mesma chamada, sem perguntar de novo, que o fiscal leva uns 5 minutos.
 4. O custo vira uma linha em `dados/custos.jsonl`, sozinho. Se o relatório disser
    que o `ver-video` falhou, pode ter havido cobrança: diga ao aluno para
    conferir no painel do Gemini.

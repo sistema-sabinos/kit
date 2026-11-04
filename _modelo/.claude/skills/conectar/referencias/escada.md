@@ -68,9 +68,13 @@ conta uma vez.
 - **Com você na frente, outro jeito:** o Claude in Chrome (a extensão do Claude)
   instalado no Chrome dedicado, ligado só na hora com `/chrome`. Precisa de plano pago do
   Claude, e nunca se marca a opção "Enabled by default".
-- **Trava:** login, código por SMS e captcha são seus; se a sessão cair, o robô para e
-  te avisa, salvo na conta em que você ligar o relogin automático
-  (`.claude/skills/conectar/referencias/relogar.md`). O código de verificação que o
+- **Trava:** captcha e código por SMS são seus: o robô te avisa e você resolve essa
+  etapa na janela, sem ele contornar. Senha do site que você pôs no `.env` o robô lê
+  de lá e preenche o login, sem mostrar no chat. Sem senha no `.env`, se a página pedir
+  login de verdade (o formulário de entrada na tela), o robô para e te avisa, salvo na
+  conta em que você ligar o relogin automático
+  (`.claude/skills/conectar/referencias/relogar.md`). Robô que roda sozinho pode abrir
+  o Chrome logado quando a tarefa pedir. O código de verificação que o
   site manda pro seu email o robô lê pelo conector do Gmail, quando ele está ligado:
   só na conversa, só o email do próprio site, chegado depois que a tela pediu o código
   e há no máximo 10 minutos; digita só na página do site e não grava em arquivo. Fora

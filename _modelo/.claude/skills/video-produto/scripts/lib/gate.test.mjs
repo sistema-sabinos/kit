@@ -15,8 +15,9 @@ const roteiroBase = {
   ],
 };
 
+// 5.49 (bloco C, 2026-11-03): o resultado ganhou a lista de avisos (palavra comum)
 test('roteiro limpo passa', () => {
-  assert.deepEqual(validarRoteiro(roteiroBase), { ok: true, erros: [] });
+  assert.deepEqual(validarRoteiro(roteiroBase), { ok: true, erros: [], avisos: [] });
 });
 
 test('reprova menção a preço ou promoção', () => {
@@ -478,32 +479,74 @@ test('round 4: parcelamento em qualquer forma barra ("12x", "12 x", "em N vezes"
   }
 });
 
-test('round 4: construções de preço barram ("custa", "custo", "valor", "fica em/por", "a partir de", "de X por Y")', () => {
-  const testes = [
-    'custa quarenta reais',
-    'o custo vale muito a pena',
-    'o valor cabe no bolso',
-    'fica em conta pra qualquer um',
-    'fica por menos que isso',
-    'a partir de hoje já pode usar',
-    'de 80 por 49,90',
-  ];
-  for (const fala of testes) {
+// 5.49 (bloco C, 2026-11-03): "custa", "custo", "valor", "fica em/por" e "a partir de" sem
+// preco junto deixam de reprovar e viram aviso; com preco junto ("quarenta reais", "49,90") seguem
+// reprovando pelo preco.
+test('round 4: construções de preço com preço barram ("custa quarenta reais", "de X por Y")', () => {
+  for (const fala of ['custa quarenta reais', 'de 80 por 49,90']) {
     assert.equal(comFala(fala).ok, false, `não barrou "${fala}"`);
   }
 });
 
-test('round 4: logística e pós-venda barram (frete, entrega, prazo, brinde, garantia, troca, devolução, validade)', () => {
-  const testes = [
-    'entrega rápida pra todo Brasil',
-    'chega no prazo combinado',
-    'vem com brinde surpresa',
-    'aceita troca sem problema',
-    'devolução garantida se não gostar',
-  ];
-  for (const fala of testes) {
+test('5.49: palavra comum avisa e não reprova ("custo", "valor", "fica em/por", "a partir de")', () => {
+  for (const fala of ['o custo vale muito a pena', 'o valor cabe no bolso', 'fica em conta pra qualquer um', 'fica por menos que isso', 'a partir de hoje já pode usar']) {
+    const r = comFala(fala);
+    assert.equal(r.ok, true, `reprovou "${fala}": ${r.erros.join(' | ')}`);
+    assert.equal(r.avisos.length, 1, `não avisou "${fala}"`);
+  }
+});
+
+// 5.49 (bloco C, 2026-11-03): entrega, prazo, troca e devolução viram aviso; brinde, frete,
+// garantia e validade seguem reprovando (condição de venda).
+test('round 4: logística e pós-venda de condição de venda barram (frete, brinde, garantia, validade)', () => {
+  for (const fala of ['vem com brinde surpresa', 'tem garantia de fábrica', 'frete grátis pra todo Brasil', 'validade longa']) {
     assert.equal(comFala(fala).ok, false, `não barrou "${fala}"`);
   }
+});
+
+test('5.49: "entrega rápida" avisa e "R$ 49" reprova', () => {
+  const entrega = comFala('entrega rápida pra quem cozinha todo dia');
+  assert.equal(entrega.ok, true, entrega.erros.join(' | '));
+  assert.match(entrega.avisos[0], /"entrega"/);
+  for (const fala of ['chega no prazo combinado', 'aceita troca sem problema', 'devolução sem complicação']) {
+    const r = comFala(fala);
+    assert.equal(r.ok, true, `reprovou "${fala}": ${r.erros.join(' | ')}`);
+    assert.equal(r.avisos.length, 1, `não avisou "${fala}"`);
+  }
+  const preco = comFala('leva por R$ 49 hoje');
+  assert.equal(preco.ok, false);
+  assert.ok(preco.erros.some((e) => e.startsWith('termo comercial ou variável')), preco.erros.join(' | '));
+});
+
+// 5.49 (bloco C, revisão 2026-11-03): a palavra comum com número logo depois é preço ou prazo e
+// segue reprovando; a revisão achou "custa 49" passando como aviso
+test('5.49: palavra comum com número reprova ("custa 49", "entrega em 2 dias")', () => {
+  const falas = ['custa 49', 'sai por 79', 'a partir de 29 no site', 'fica em 39 hoje', 'o valor é 59', 'valor de 59',
+    'custa só 50 conto', 'sai por quarenta e nove', 'custa cem', 'entrega em 2 dias', 'troca em 30 dias', 'devolucao em 7 dias',
+    'entrega em dois dias úteis'];
+  assert.ok(falas.length > 0);
+  for (const fala of falas) {
+    const r = comFala(fala);
+    assert.equal(r.ok, false, `não barrou "${fala}"`);
+    assert.ok(r.erros.some((e) => e.startsWith('termo comercial ou variável')), `${fala}: ${r.erros.join(' | ')}`);
+  }
+  // canário do lado que passa: sem número, a mesma palavra só avisa
+  for (const fala of ['a tampa fica em cima', 'fica em um lugar seco']) {
+    const r = comFala(fala);
+    assert.equal(r.ok, true, `reprovou "${fala}": ${r.erros.join(' | ')}`);
+    assert.equal(r.avisos.length, 1, `não avisou "${fala}"`);
+  }
+});
+
+test('5.49: duas palavras comuns no roteiro viram dois avisos', () => {
+  const roteiro = structuredClone(roteiroBase);
+  roteiro.blocos[0].fala = 'a tampa fica em cima';
+  roteiro.blocos[1].fala = 'aceita troca sem problema';
+  const r = validarRoteiro(roteiro);
+  assert.equal(r.ok, true, r.erros.join(' | '));
+  assert.equal(r.avisos.length, 2, r.avisos.join(' | '));
+  assert.ok(r.avisos.some((a) => a.includes('"fica em"')));
+  assert.ok(r.avisos.some((a) => a.includes('"troca"')));
 });
 
 test('round 4: durabilidade contada em tempo barra ("dura N anos", "N meses de uso")', () => {
@@ -745,7 +788,7 @@ test('aceita 7 blocos com etapa repetida, desde que ande pra frente', () => {
   const r = validarRoteiro(comEtapas([
     'atencao', 'interesse', 'interesse', 'desejo', 'desejo', 'desejo', 'acao',
   ]));
-  assert.deepEqual(r, { ok: true, erros: [] });
+  assert.deepEqual(r, { ok: true, erros: [], avisos: [] });
 });
 
 test('aceita 5 e 6 blocos', () => {

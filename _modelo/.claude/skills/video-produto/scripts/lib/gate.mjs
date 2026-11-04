@@ -37,15 +37,8 @@ const termoComercialPecas = [
   /em\s+\d+\s+vezes/,
   /sem\s+juros/,
   /divide\s+no\s+cart[ãa]o/,
-  // construções de preço
-  /sai\s+por/,
-  /fica\s+em/,
-  /fica\s+por/,
-  /custa/,
-  /custo/,
-  /valor/,
+  // construções de preço (as de palavra comum, "fica em", "custa", "valor", foram pro aviso abaixo)
   /por\s+apenas/,
-  /a\s+partir\s+de/,
   /de\s+\d+\s+por\s+\d+/,
   // "preço/preços" com lookaround dos dois lados pra não casar dentro de "precoce"/"apreço"
   /(?<![a-zà-ÿ])pre[çc]os?(?![a-zà-ÿ])/,
@@ -81,22 +74,47 @@ const termoComercialPecas = [
   // "últimas unidades"
   /[úu]ltim[ao]s?\s+(?:chances?|dias?|horas?|momentos?|unidades?|pe[çc]as?)/,
   /por\s+pouco\s+tempo/,
-  // logística e pós-venda
+  // logística e pós-venda (entrega, prazo, troca e devolução foram pro aviso abaixo)
   /frete/,
-  /entrega/,
-  /prazo/,
   /brinde/,
   /gr[áa]tis/,
   /gratuito/,
   /garantia/,
-  /troca/,
-  /devolu[çc][ãa]o/,
   /validade/,
   // durabilidade contada em tempo ("dura 3 anos", "6 meses de uso"), variável, não dá pra provar
   // e muda depois
   /dura\s+(?:mais\s+de\s+)?\d+\s+(?:anos?|meses)/,
   /\d+\s+meses\s+de\s+uso/,
+  // 5.49 (bloco C, 2026-11-03): a palavra comum com número logo depois é preço ou prazo de venda
+  // ("custa 49", "sai por quarenta e nove", "entrega em 2 dias") e segue reprovando. A palavra
+  // sozinha vai pro aviso abaixo. "um/uma" fica de fora do numeral: "fica em um lugar" é comum
+  new RegExp(/(?:sai\s+por|fica\s+(?:em|por)|custa|custo\s+de|valor\s+(?:de|[ée])|a\s+partir\s+de)\s+(?:s[óo]\s+|apenas\s+)?/.source + numeroPeca().source),
+  new RegExp(/(?:entrega|prazo|troca|devolu[çc][ãa]o)[^.\n]{0,20}?/.source + numeroPeca().source + /[\wà-ÿ]*\s*(?:dias?|horas?|semanas?|meses)/.source),
 ];
+
+// numeral que vem colado na palavra comum: dígito ou número por extenso (sem "um/uma")
+function numeroPeca() {
+  return /(?:\d|(?<![a-zà-ÿ])(?:dois|duas|tr[êe]s|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|quatorze|catorze|quinze|dezesseis|dezessete|dezoito|dezenove|vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa|cem|cento|duzentos|trezentos|quatrocentos|quinhentos|seiscentos|setecentos|oitocentos|novecentos|mil)(?![a-zà-ÿ]))/;
+}
+
+// 5.49 (bloco C, 2026-11-03): palavra comum que também aparece fora de venda ("a tampa fica
+// em cima", "entrega rápida pra quem cozinha", "troca de cor") deixa de reprovar e vira aviso: a
+// pessoa confere no gate 1 se a frase fala de preço ou condição de venda. Preço e condição de venda
+// (R$, parcela, desconto, frete grátis, número de preço) seguem no grupo de cima, reprovando.
+const palavraComumPecas = [
+  /sai\s+por/,
+  /fica\s+em/,
+  /fica\s+por/,
+  /custa/,
+  /custo/,
+  /valor/,
+  /a\s+partir\s+de/,
+  /entrega/,
+  /prazo/,
+  /troca/,
+  /devolu[çc][ãa]o/,
+];
+const PALAVRA_COMUM = new RegExp(palavraComumPecas.map((r) => r.source).join('|'), 'i');
 
 // menor de idade: cobertura generosa (diminutivo, sinônimo, parentesco), o item mais sensível da
 // lista do ML. "de N anos" fica sem lookbehind de exclusão: antes tinha que poupar "garantia de 2
@@ -288,6 +306,12 @@ export function validarRoteiro(roteiro) {
     }
   }
 
+  // 5.49 (bloco C): palavra comum avisa, sem reprovar. Uma linha por palavra distinta: com uma
+  // só, a segunda palavra do roteiro passava sem ninguém olhar
+  const avisos = [];
+  const comuns = [...new Set([...textoTodo.matchAll(new RegExp(PALAVRA_COMUM.source, 'gi'))].map((m) => m[0].toLowerCase()))];
+  for (const comum of comuns) avisos.push(`palavra que pode ser condição de venda: o roteiro diz "${comum}". Confira no gate 1 se a frase fala de preço, entrega ou troca; se falar, tire (o vídeo é permanente e a condição muda)`);
+
   // validação de tag de áudio [qualquer coisa] em fala ou cena
   // flag 's' faz '.' pegar quebra de linha também ([sighs\ndeeply] é capturado)
   const reTag = /\[.+?\]/s;
@@ -326,7 +350,7 @@ export function validarRoteiro(roteiro) {
     }
   }
 
-  return { ok: erros.length === 0, erros };
+  return { ok: erros.length === 0, erros, avisos };
 }
 
 export function validarTecnico(probe, tamanhoBytes) {

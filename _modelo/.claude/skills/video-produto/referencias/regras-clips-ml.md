@@ -67,6 +67,8 @@ Além do que o ML proíbe, **o vídeo não menciona preço, promoção, desconto
 
 **Efeito colateral bom:** com essa regra, o gate não precisa distinguir "garantia de 2 anos" (que seria legítimo) de "sobrinho de 8 anos" (proibido). Os dois são proibidos, um pela regra do ML e outro pela da casa. Falso positivo deixa de custar caro, então o gate pode ser rígido e simples, que é o que dá pra testar de verdade.
 
+**Palavra comum avisa, sem reprovar (2026-11-03):** troca, entrega, prazo, devolução, valor, custo, custa, "fica em", "fica por", "sai por" e "a partir de" aparecem muito fora de venda ("a tampa fica em cima", "entrega o traço fino", "troca de cor"). O gate não reprova o roteiro por elas: avisa, e você confere no gate 1 se a frase fala de preço, entrega ou troca. Se falar, tira. Com número logo depois, a mesma palavra reprova, porque aí é preço ou prazo: "custa 49", "sai por quarenta e nove", "entrega em 2 dias". Preço e condição de venda seguem reprovando: R$, valor em reais ou com centavos, número de preço, parcela, porcentagem, desconto, promoção, cupom, frete, brinde, grátis, garantia e validade. Contato, menor de idade, Mercado Livre, sorteio, endereço, concorrente e o formato técnico (duração, 9:16, tamanho) também seguem reprovando.
+
 ## A regra de publicidade da categoria, e o que ela pede na prática
 
 A linha oficial é genérica:

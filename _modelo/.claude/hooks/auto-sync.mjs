@@ -199,12 +199,16 @@ function avisarSegurados(dir, origem, dia, segurados) {
     return `_memoria/recados/${existente}`
   }
   const nome = existente || `${dia}${fim}`
+  // 5.49 (bloco C, 2026-11-03): o recado abre no formato das travas do kit, com a regra que segurou
+  const regras = [...new Set(segurados.map(s => (s.motivo.startsWith('passa de ') ? 'arquivo-grande' : 'cara-de-chave')))].sort()
   const texto = [
     `de: ${origem}`,
     `quando: ${nome.slice(0, 10)}`,
     'precisa de ação: sim',
     '',
-    'Estes arquivos ficaram fora do backup no GitHub (o resto subiu normal):',
+    `Barrada pela trava auto-sync, regra ${regras.join(' e ')}: estes arquivos ficaram fora do backup no GitHub (o resto subiu normal).`,
+    'Diga ao usuário o nome da trava e da regra e decida o próximo passo; não refaça esta ação por outro caminho.',
+    '',
     ...segurados.map(s => `- ${s.rel}: ${s.motivo}`),
     '',
     'Cara de chave: tirar a chave do arquivo e guardar no `.env`, deixando no texto só o nome dela. Se esse arquivo já tinha subido antes com a chave, trocar a chave no serviço: apagar o arquivo não apaga o histórico do GitHub.',

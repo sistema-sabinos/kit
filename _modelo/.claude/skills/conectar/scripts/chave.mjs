@@ -1,5 +1,6 @@
-// Confere chave do .env sem mostrar o valor. O .env fica em deny pra IA (5.28): a pessoa cola a
-// chave pelo editor e a IA roda isto pra saber se colou certo. Nenhum valor sai, nem pedaco dele,
+// Confere chave do .env sem mostrar o valor. 5.49 (autonomia, 2026-11-04): o deny do .env saiu (bloco 11);
+// a IA pode ler o .env pra usar, e o valor nunca vai pro chat (regra 15). Quem quer saber se a chave
+// esta la, ou se colou certo, roda isto em vez de abrir o arquivo. Nenhum valor sai, nem pedaco dele,
 // nem o texto da linha do --em. Nao importa a lib/env.mjs do mercado-livre, que e pacote.
 // Uso:
 //   node .claude/skills/conectar/scripts/chave.mjs tem NOME [NOME...] [--arquivo <caminho>]

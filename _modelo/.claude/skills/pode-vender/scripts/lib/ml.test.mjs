@@ -2,6 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { urlDaBusca, medirPresenca, presencaNoML } from './ml.mjs'
+import { SINAL_LOGIN } from '../../../conectar/scripts/lib/navegador.mjs'
 
 const card = (titulo, rotulo = '', link = '') => ({ titulo, rotulo, link: link || `https://produto.exemplo/${encodeURIComponent(titulo)}` })
 
@@ -53,14 +54,15 @@ test('marca com acento casa com titulo sem acento', () => {
   assert.equal(medirPresenca(bruto, 'Ypê').veredito, 'PRESENTE')
 })
 
-function paginaFalsa({ url = 'https://lista.mercadolivre.com.br/acme', bruto }) {
+// pedeLogin: a pagina mostra o formulario de entrada (o sinal que o paginaPedeLogin le)
+function paginaFalsa({ url = 'https://lista.mercadolivre.com.br/acme', bruto, pedeLogin = false }) {
   const visitas = []
   return {
     visitas,
     goto: async u => { visitas.push(u) },
     waitForTimeout: async () => {},
     url: () => url,
-    evaluate: async () => bruto,
+    evaluate: async (f, arg) => (arg === SINAL_LOGIN ? pedeLogin : bruto),
   }
 }
 
@@ -72,9 +74,12 @@ test('presencaNoML abre a busca da marca e mede', async () => {
   assert.equal(r.veredito, 'PRESENTE')
 })
 
+// 5.49 (bloco C, 2026-11-03): o pedido de login se le na pagina, nao no endereco.
 test('presencaNoML para quando o Mercado Livre pede login', async () => {
-  const page = paginaFalsa({ url: 'https://www.mercadolivre.com.br/login?x=1', bruto: { itens: [] } })
+  const page = paginaFalsa({ url: 'https://www.mercadolivre.com.br/login?x=1', bruto: { itens: [] }, pedeLogin: true })
   await assert.rejects(presencaNoML(page, 'Acme', [], { esperarMs: 0 }), /pediu login/)
+  const soEndereco = paginaFalsa({ url: 'https://www.mercadolivre.com.br/login?x=1', bruto: { qtd: '1 resultado', itens: [card('Outra coisa')] } })
+  assert.equal((await presencaNoML(soEndereco, 'Acme', [], { esperarMs: 0 })).veredito, 'AUSENTE', 'login so no endereco nao para')
 })
 
 test('presencaNoML le de novo quando a pagina navegou no meio da leitura', async () => {

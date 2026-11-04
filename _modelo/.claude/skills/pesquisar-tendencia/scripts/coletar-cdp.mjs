@@ -20,7 +20,7 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
 import { conectar } from '../../mercado-livre/scripts/lib/chrome.mjs'
-import { sessaoCaiu, AVISO } from '../../conectar/scripts/lib/navegador.mjs'
+import { sessaoDaPagina, AVISO } from '../../conectar/scripts/lib/navegador.mjs'
 import { tokenMl } from '../../mercado-livre/scripts/lib/tokens.mjs'
 import { mlGet } from '../../mercado-livre/scripts/lib/ml-api.mjs'
 import { gravarJson, dataLocal } from '../../mercado-livre/scripts/lib/pipeline.mjs'
@@ -148,7 +148,7 @@ export async function coletarBusca(page, termo, { maxItens = 120, maxPaginas = 2
     await espera(2500)
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight * 0.7))
     await espera(1200)
-    const caiu = sessaoCaiu({ url: page.url(), host: 'mercadolivre.com.br' })
+    const caiu = await sessaoDaPagina(page, 'mercadolivre.com.br')
     if (caiu) return { total: 0, itens: [], url, erro: AVISO[caiu] }
     let daPagina = await page.evaluate(extrairCards)
     // a primeira busca depois de abrir o Chrome pode passar da espera fixa (prova com login de 2026-10-31)

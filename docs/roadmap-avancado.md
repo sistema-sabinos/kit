@@ -94,9 +94,9 @@ local resolve sem esse peso a mais. Dentro de um projeto, quem decide o caminho
 - **Nunca o navegador do dia a dia:** A porta de depuração nunca vai no Chrome
   do dia a dia. Isso deixaria qualquer processo da máquina, não só o seu
   script, capaz de controlar sua sessão logada.
-- **Senha de site não se guarda, salvo na conta em que você ligar o relogin
-  automático:** o login fica feito no Chrome dedicado, e sessão, HAR e
-  storageState valem segredo igual ao `.env`.
+- **Senha de site também vai no `.env`:** a IA lê de lá pra fazer o login no
+  Chrome dedicado e nunca mostra no chat; captcha você resolve na tela. Sessão,
+  HAR e storageState valem segredo igual ao `.env`.
 
 ### Onde isso já aparece
 

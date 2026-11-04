@@ -155,15 +155,14 @@ Um item por vez, ou tudo de uma vez se a pessoa disser "aplica tudo":
   A decisão antiga que ela substitui entra na lista de arquivar da próxima
   faxina; não precisa de outro sim agora.
 - Segredo: mostrar arquivo e linha (nunca o valor), explicar que o lugar da chave
-  de API é o `.env`, que nunca sobe pro GitHub, e que senha de site não se guarda,
-  salvo na conta em que a pessoa ligar o relogin automático: fora dela, a senha se
-  apaga do arquivo, com o sim. Pra chave, com o sim, a pessoa abre o `.env`
-  no editor e cola numa linha `NOME=valor`; a IA roda
+  de API é o `.env`, que nunca sobe pro GitHub, e que senha de site também vai no
+  `.env`: a IA lê de lá pra fazer o login e nunca mostra no chat. Com o sim, a
+  pessoa abre o `.env` no editor e cola a chave ou a senha numa linha `NOME=valor`; a IA roda
   `node .claude/skills/conectar/scripts/chave.mjs bate NOME --em <arquivo>:<linha>`
-  e só com `bate` tira a chave do arquivo (a IA nunca grava o `.env`). CPF de cliente sai do
+  e só com `bate` tira o valor do arquivo (a IA nunca grava o `.env`). CPF de cliente sai do
   sistema ou vai pra um arquivo que a pessoa decidir. Se o arquivo já subiu pro
-  GitHub, avisar que tirar daqui não apaga o histórico: a chave tem que ser
-  trocada no serviço.
+  GitHub, avisar que tirar daqui não apaga o histórico: a chave ou a senha tem que
+  ser trocada no serviço ou no site.
 - Órfão: perguntar se entra na Estrutura de pastas (uma linha no `AGENTS.md`)
   ou vai pro `_contexto/arquivo/`. Pasta de robô, de site ou de sistema nunca
   vai pro arquivo sem a pessoa confirmar que não usa mais. Arquivo citado por

@@ -12,9 +12,9 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import {
   FAIXA, SENTINELA, AVISO, perfilDedicado, portaDoProjeto, candidatosDeChrome, acharChrome, argumentosDoChrome,
-  guidDaPorta, portaLivre, esperarPorta, pidDoChrome, conferirPerfil, abrirChrome, conectar, sessaoCaiu,
+  guidDaPorta, portaLivre, esperarPorta, pidDoChrome, conferirPerfil, abrirChrome, conectar, sessaoCaiu, paginaPedeLogin, sessaoDaPagina, SINAL_LOGIN, estadoDaUrl,
   relogar, receitaValida, abaDoSite, tentouHaPouco, marcarTentativa, desmarcarTentativa, JANELA_RELOGIN_MS,
-  travarRelogin, expressaoClique, conferirServidor, anotarSessao, pastaDaAnotacao, RELIGAR,
+  travarRelogin, expressaoClique, RELIGAR,
   SAIDA, apontarDownload, desminimizar, fecharChrome, opcoesDeAbrir, processoVivo, FOLGA_SEM_PID_MS,
   FECHAR_CHROME, avisosDeAbrir, saidaNoProjeto, baixarNaSaida, TRAVA_DOWNLOAD,
 } from './navegador.mjs'
@@ -213,322 +213,6 @@ test('conferirPerfil: porta morta com sentinela velha da porta-fechada', async (
     gravar(d, { porta, guid: 'velho' })
     assert.deepEqual(await conferirPerfil({ porta, perfil: d }), { estado: 'porta-fechada', guid: null })
   } finally { rmSync(d, { recursive: true, force: true }) }
-})
-
-// conferirServidor (5.30): .claude.json de mentira na forma do C1 (chave com barra normal e a caixa
-// do disco, args do claude mcp add navegador do Degrau 5); nenhum teste le o de verdade
-const argsDoC1 = porta => ['@playwright/mcp@0.0.83', '--cdp-endpoint', `http://127.0.0.1:${porta}`, '--output-dir', 'dados/navegador-saida', '--no-webmcp']
-const chaveDoC1 = raiz => raiz.split(String.fromCharCode(92)).join('/')
-// um arquivo por chamada: casos montados juntos nao se sobrescrevem (Codex comum, volta 1)
-let configs = 0
-function config(dir, projetos) {
-  const f = join(dir, `config-${++configs}.json`)
-  writeFileSync(f, typeof projetos === 'string' ? projetos : JSON.stringify({ projects: projetos }))
-  return f
-}
-const navegadorEm = args => ({ mcpServers: { navegador: { type: 'stdio', command: 'npx', args, env: {} } } })
-// projeto de mentira com a raiz, a pasta da configuracao, o perfil e a pasta da anotacao (5.31), que
-// fica no mkdtemp e nunca no temporario de verdade. conferir abre a janela J1 com o navegador na
-// porta do arquivo e confere a mesma janela.
-function projetoDoServidor() {
-  const base = temp()
-  const raiz = join(base, 'Proj')
-  mkdirSync(raiz)
-  const pasta = join(base, 'anotacao')
-  const anotar = (cfg, extra = {}) => anotarSessao({ raiz, janela: 'J1', sessao: 'S1', origem: 'startup', config: cfg, pasta, ...extra })
-  const conferirSo = (cfg, extra = {}) => conferirServidor({ raiz, janela: 'J1', sessao: 'S1', config: cfg, pasta, ...extra })
-  const conferir = (cfg, extra = {}) => { anotar(cfg); return conferirSo(cfg, extra) }
-  return { base, raiz, pasta, perfil: perfilDedicado(raiz), anotar, conferirSo, conferir, limpar: () => rmSync(base, { recursive: true, force: true }) }
-}
-const doProjeto = (p, porta) => config(p.base, { [chaveDoC1(p.raiz)]: navegadorEm(argsDoC1(porta)) })
-// a pasta da raiz (uma so por projeto, na pasta do teste) e as anotacoes dela, um arquivo por janela,
-// pela chave que a lib usa
-const pastaDaRaizNoTeste = p => { const [d] = readdirSync(p.pasta); return join(p.pasta, d) }
-const anotacoes = p => {
-  const dir = pastaDaRaizNoTeste(p)
-  return Object.fromEntries(readdirSync(dir).filter(n => n.endsWith('.json')).map(n => {
-    const a = JSON.parse(readFileSync(join(dir, n), 'utf8'))
-    return [a.janela ? `janela:${a.janela}` : `sessao:${a.sessao}`, a]
-  }))
-}
-
-test('conferirServidor: Chrome deste projeto na porta do servidor da conferido, so com a porta', async () => {
-  const p = projetoDoServidor()
-  const s = await servidorDoGuid('g-1')
-  try {
-    gravar(p.perfil, { porta: s.porta, guid: 'g-1' })
-    assert.deepEqual(await p.conferir(doProjeto(p, s.porta)), { estado: 'conferido', porta: s.porta })
-  } finally { await s.fechar(); p.limpar() }
-})
-
-test('conferirServidor: outro Chrome na porta do servidor da outro-na-porta', async () => {
-  const p = projetoDoServidor()
-  const s = await servidorDoGuid('de-outro-projeto')
-  try {
-    gravar(p.perfil, { porta: s.porta, guid: 'g-velho' })
-    assert.deepEqual(await p.conferir(doProjeto(p, s.porta)), { estado: 'outro-na-porta', porta: s.porta })
-  } finally { await s.fechar(); p.limpar() }
-})
-
-test('conferirServidor: sem sentinela da sem-sentinela, e a pasta-mae (sem dados/chrome-perfil) nao passa', async () => {
-  const p = projetoDoServidor()
-  const s = await servidorDoGuid('g-2')
-  try {
-    assert.ok(!existsSync(p.perfil), 'canario: a raiz nao tem perfil, como a pasta-mae')
-    assert.deepEqual(await p.conferir(doProjeto(p, s.porta)), { estado: 'sem-sentinela', porta: s.porta })
-  } finally { await s.fechar(); p.limpar() }
-})
-
-test('conferirServidor: ninguem na porta do servidor da porta-fechada', async () => {
-  const p = projetoDoServidor()
-  try {
-    const porta = await portaMorta()
-    gravar(p.perfil, { porta, guid: 'g-velho' })
-    assert.deepEqual(await p.conferir(doProjeto(p, porta)), { estado: 'porta-fechada', porta })
-  } finally { p.limpar() }
-})
-
-test('conferirServidor: servidor numa porta e sentinela noutra da porta-mudou, mesmo com o Chrome deste projeto vivo', async () => {
-  const p = projetoDoServidor()
-  const deste = await servidorDoGuid('g-deste')
-  const outro = await servidorDoGuid('g-outro')
-  try {
-    // o Chrome deste projeto pulou de porta; na porta antiga, onde o navegador foi ligado, responde outro
-    gravar(p.perfil, { porta: deste.porta, guid: 'g-deste' })
-    assert.deepEqual(await p.conferir(doProjeto(p, outro.porta)), { estado: 'porta-mudou', porta: outro.porta })
-  } finally { await deste.fechar(); await outro.fechar(); p.limpar() }
-})
-
-test('conferirServidor: configuracao que nao se le ou sem a forma do C1 da sem-config', async () => {
-  const p = projetoDoServidor()
-  const s = await servidorDoGuid('g-1')
-  try {
-    gravar(p.perfil, { porta: s.porta, guid: 'g-1' })
-    const k = chaveDoC1(p.raiz)
-    const certo = doProjeto(p, s.porta)
-    assert.equal((await p.conferir(certo)).estado, 'conferido', 'canario: a entrada certa confere')
-    const semCdp = argsDoC1(s.porta).filter((a, i, l) => a !== '--cdp-endpoint' && l[i - 1] !== '--cdp-endpoint')
-    const casos = {
-      'sem arquivo': join(p.base, 'nao-existe.json'),
-      'arquivo quebrado': config(p.base, '{ isso nao e json'),
-      'sem a entrada do projeto': config(p.base, { [k + '-outro']: navegadorEm(argsDoC1(s.porta)) }),
-      'servidor de outro nome': config(p.base, { [k]: { mcpServers: { playwright: { args: argsDoC1(s.porta) } } } }),
-      'args sem --cdp-endpoint': config(p.base, { [k]: navegadorEm(semCdp) }),
-      'endpoint fora de 127.0.0.1': config(p.base, { [k]: navegadorEm(['--cdp-endpoint', `http://10.0.0.1:${s.porta}`]) }),
-      'porta fora da faixa valida': config(p.base, { [k]: navegadorEm(['--cdp-endpoint', 'http://127.0.0.1:80']) }),
-    }
-    assert.equal(new Set(Object.values(casos)).size, Object.keys(casos).length, 'canario: cada caso le o proprio arquivo')
-    // a janela segue anotada na porta certa; so o arquivo de agora estragou
-    for (const [nome, arquivo] of Object.entries(casos))
-      assert.deepEqual(await p.conferirSo(arquivo), { estado: 'sem-config', porta: null }, nome)
-  } finally { await s.fechar(); p.limpar() }
-})
-
-test('conferirServidor: no Windows a chave com outra caixa e outra barra acha a entrada; duas chaves que discordam dao sem-config', async () => {
-  const p = projetoDoServidor()
-  const s = await servidorDoGuid('g-1')
-  try {
-    gravar(p.perfil, { porta: s.porta, guid: 'g-1' })
-    // fora do Windows caixa muda o caminho: a chave vai igual e o teste confere so a discordancia
-    const variante = process.platform === 'win32' ? p.raiz.toUpperCase() : chaveDoC1(p.raiz)
-    if (process.platform === 'win32') assert.ok(variante.includes(String.fromCharCode(92)) && variante !== chaveDoC1(p.raiz), 'canario: a variante tem outra caixa e barra invertida')
-    assert.deepEqual(await p.conferir(config(p.base, { [variante]: navegadorEm(argsDoC1(s.porta)) })), { estado: 'conferido', porta: s.porta })
-    const duas = { [chaveDoC1(p.raiz)]: navegadorEm(argsDoC1(s.porta)), [chaveDoC1(p.raiz) + '/']: navegadorEm(argsDoC1(s.porta + 1)) }
-    assert.deepEqual(await p.conferirSo(config(p.base, duas)), { estado: 'sem-config', porta: null })
-  } finally { await s.fechar(); p.limpar() }
-})
-
-// A anotacao da porta (5.31): a porta que vale e a de quando o servidor nasceu, nunca a do arquivo de agora.
-test('conferirServidor: o P1 da 5.30, anotada X e o arquivo em Y com o Chrome do projeto em Y, barra religado sem perguntar ao Chrome', async () => {
-  const p = projetoDoServidor()
-  const ch = chromeFalso()
-  try {
-    const x = FAIXA.inicio + 11
-    const y = FAIXA.inicio + 12
-    ch.portas[y] = 'g-y'
-    gravar(p.perfil, { porta: y, guid: 'g-y' })
-    assert.deepEqual(await p.conferir(doProjeto(p, y), { fetchFn: ch.fetchFn }), { estado: 'conferido', porta: y }, 'canario: anotada em Y, o Chrome em Y passa')
-    // a janela abriu com o navegador em X e foi religada de outro terminal pra Y: o servidor segue em X
-    p.anotar(doProjeto(p, x))
-    let perguntas = 0
-    const contar = async (...a) => { perguntas += 1; return ch.fetchFn(...a) }
-    assert.deepEqual(await p.conferirSo(doProjeto(p, y), { fetchFn: contar }), { estado: 'religado', porta: x })
-    assert.equal(perguntas, 0, 'nenhum pedido ao Chrome de mentira')
-  } finally { p.limpar() }
-})
-
-test('conferirServidor: sem anotacao da janela, anotada null ou sem janela e sem sessao da sem-anotacao', async () => {
-  const p = projetoDoServidor()
-  const s = await servidorDoGuid('g-1')
-  try {
-    gravar(p.perfil, { porta: s.porta, guid: 'g-1' })
-    const cfg = doProjeto(p, s.porta)
-    assert.deepEqual(await p.conferirSo(cfg), { estado: 'sem-anotacao', porta: null }, 'nada anotado')
-    p.anotar(config(p.base, { [chaveDoC1(p.raiz) + '-outro']: navegadorEm(argsDoC1(s.porta)) }))
-    assert.equal(anotacoes(p)['janela:J1'].porta, null, 'canario: o navegador nao estava ligado quando a janela abriu')
-    assert.deepEqual(await p.conferirSo(cfg), { estado: 'sem-anotacao', porta: null }, 'anotada null')
-    p.anotar(cfg)
-    assert.equal((await p.conferirSo(cfg)).estado, 'conferido', 'canario: anotada na porta, passa')
-    assert.deepEqual(await p.conferirSo(cfg, { janela: 'J2' }), { estado: 'sem-anotacao', porta: null }, 'outra janela')
-    assert.deepEqual(await p.conferirSo(cfg, { janela: undefined, sessao: undefined }), { estado: 'sem-anotacao', porta: null }, 'sem janela e sem sessao')
-    assert.deepEqual(await conferirServidor({ raiz: undefined, janela: 'J1', config: cfg, pasta: p.pasta }), { estado: 'sem-anotacao', porta: null }, 'sem raiz')
-  } finally { await s.fechar(); p.limpar() }
-})
-
-test('conferirServidor: arquivo de anotacao quebrado barra', async () => {
-  const p = projetoDoServidor()
-  const s = await servidorDoGuid('g-1')
-  try {
-    gravar(p.perfil, { porta: s.porta, guid: 'g-1' })
-    const cfg = doProjeto(p, s.porta)
-    assert.equal((await p.conferir(cfg)).estado, 'conferido', 'canario')
-    const dir = pastaDaRaizNoTeste(p)
-    const [arquivo] = readdirSync(dir)
-    for (const ruim of ['{ quebrado', '[]', 'null', JSON.stringify({ porta: '29300', em: Date.now() }), JSON.stringify({ porta: 80, em: Date.now() })]) {
-      writeFileSync(join(dir, arquivo), ruim)
-      assert.deepEqual(await p.conferirSo(cfg), { estado: 'sem-anotacao', porta: null }, ruim)
-    }
-  } finally { await s.fechar(); p.limpar() }
-})
-
-test('anotarSessao: a regra do C1, startup anota pelo arquivo e a janela ja anotada mantem no compact, clear e resume', () => {
-  const p = projetoDoServidor()
-  try {
-    const x = FAIXA.inicio + 21
-    const y = FAIXA.inicio + 22
-    p.anotar(doProjeto(p, x), { agora: 1000 })
-    assert.deepEqual(anotacoes(p)['janela:J1'], { janela: 'J1', sessao: 'S1', porta: x, origem: 'startup', em: 1000 })
-    // religado pra Y de outro processo: o servidor desta janela nao renasce
-    for (const [origem, sessao] of [['compact', 'S1'], ['clear', 'S2'], ['resume', 'S1'], ['fork', 'S3']]) {
-      p.anotar(doProjeto(p, y), { origem, sessao, agora: 2000 })
-      assert.equal(anotacoes(p)['janela:J1'].porta, x, `${origem} mantem a porta da janela`)
-    }
-    // janela nova (o --resume ou o --continue de processo novo) nasce lendo o arquivo
-    p.anotar(doProjeto(p, y), { janela: 'J2', origem: 'resume', agora: 3000 })
-    assert.equal(anotacoes(p)['janela:J2'].porta, y)
-    // startup sempre sobrescreve: pid reaproveitado por janela nova
-    p.anotar(doProjeto(p, y), { agora: 4000 })
-    assert.equal(anotacoes(p)['janela:J1'].porta, y)
-  } finally { p.limpar() }
-})
-
-// Codex final da 5.31: a anotacao da janela some (temporario limpo, ou vencida) e vem um compact ou clear
-test('anotarSessao: janela sem anotacao no compact ou clear anota null e barra, nunca le o arquivo', async () => {
-  const p = projetoDoServidor()
-  const y = await servidorDoGuid('g-y')
-  try {
-    // aberta em X, religado pra Y com o Chrome deste projeto em Y; o servidor desta janela segue em X
-    gravar(p.perfil, { porta: y.porta, guid: 'g-y' })
-    const cfgY = doProjeto(p, y.porta)
-    for (const origem of ['compact', 'clear', undefined]) {
-      rmSync(p.pasta, { recursive: true, force: true })
-      p.anotar(cfgY, { origem })
-      assert.equal(anotacoes(p)['janela:J1'].porta, null, `${origem}: anotada null`)
-      assert.deepEqual(await p.conferirSo(cfgY), { estado: 'sem-anotacao', porta: null }, `${origem}: barra`)
-    }
-    // canario: o resume de processo novo le o arquivo e passa
-    rmSync(p.pasta, { recursive: true, force: true })
-    p.anotar(cfgY, { origem: 'resume' })
-    assert.equal((await p.conferirSo(cfgY)).estado, 'conferido')
-  } finally { await y.fechar(); p.limpar() }
-})
-
-test('anotarSessao: duas janelas na mesma conversa, a que ficou na porta velha barra e a nova passa', async () => {
-  const p = projetoDoServidor()
-  const x = await servidorDoGuid('g-x')
-  const y = await servidorDoGuid('g-y')
-  try {
-    // janela A abre a conversa S com o navegador em X
-    p.anotar(doProjeto(p, x.porta), { janela: 'A', sessao: 'S' })
-    // religado pra Y e o Chrome deste projeto agora em Y; claude --resume S noutro terminal abre a janela B
-    gravar(p.perfil, { porta: y.porta, guid: 'g-y' })
-    const cfgY = doProjeto(p, y.porta)
-    p.anotar(cfgY, { janela: 'B', sessao: 'S', origem: 'resume' })
-    assert.deepEqual(await p.conferirSo(cfgY, { janela: 'A', sessao: 'S' }), { estado: 'religado', porta: x.porta }, 'A segue no servidor de X')
-    assert.deepEqual(await p.conferirSo(cfgY, { janela: 'B', sessao: 'S' }), { estado: 'conferido', porta: y.porta }, 'B nasceu em Y')
-  } finally { await x.fechar(); await y.fechar(); p.limpar() }
-})
-
-test('anotarSessao: sem CLAUDE_PID a chave e a sessao, e o clear herda a ultima anotacao da raiz (D21)', () => {
-  const p = projetoDoServidor()
-  try {
-    const x = FAIXA.inicio + 31
-    const y = FAIXA.inicio + 32
-    const semJanela = { janela: undefined }
-    p.anotar(doProjeto(p, x), { ...semJanela, agora: 1000 })
-    assert.equal(anotacoes(p)['sessao:S1'].porta, x)
-    assert.ok(!('janela:J1' in anotacoes(p)), 'sem janela nada se anota por janela')
-    // religado pra Y; /clear e /compact chegam com sessao nova e o servidor segue em X
-    p.anotar(doProjeto(p, y), { ...semJanela, origem: 'clear', sessao: 'S2', agora: 2000 })
-    assert.equal(anotacoes(p)['sessao:S2'].porta, x, 'o clear herda a porta, nunca le o arquivo')
-    p.anotar(doProjeto(p, y), { ...semJanela, origem: 'compact', sessao: 'S1', agora: 2500 })
-    assert.equal(anotacoes(p)['sessao:S1'].porta, x, 'sessao ja anotada mantem')
-    // processo novo (resume) nasce lendo o arquivo
-    p.anotar(doProjeto(p, y), { ...semJanela, origem: 'resume', sessao: 'S9', agora: 3000 })
-    assert.equal(anotacoes(p)['sessao:S9'].porta, y)
-    // sem janela e sem sessao nao anota nada
-    p.anotar(doProjeto(p, y), { janela: undefined, sessao: undefined, agora: 4000 })
-    assert.equal(Object.keys(anotacoes(p)).length, 3)
-  } finally { p.limpar() }
-})
-
-test('anotarSessao: tira anotacao com mais de 30 dias, conserta arquivo quebrado e nunca joga erro', () => {
-  const p = projetoDoServidor()
-  try {
-    const dia = 24 * 60 * 60_000
-    const cfg = doProjeto(p, FAIXA.inicio + 41)
-    p.anotar(cfg, { janela: 'velha', agora: 0 })
-    p.anotar(cfg, { janela: 'nova', agora: 29 * dia })
-    p.anotar(cfg, { janela: 'hoje', agora: 31 * dia })
-    assert.deepEqual(Object.keys(anotacoes(p)).sort(), ['janela:hoje', 'janela:nova'])
-    // anotacao quebrada de outra janela sai na proxima gravacao; o temporario de quem grava agora fica
-    const dir = pastaDaRaizNoTeste(p)
-    writeFileSync(join(dir, 'quebrada.json'), '{ quebrado')
-    writeFileSync(join(dir, 'outra.json.77.tmp'), '{')
-    p.anotar(cfg, { agora: 32 * dia })
-    assert.deepEqual(readdirSync(dir).filter(n => n.endsWith('.json')).length, 3, 'hoje, nova e J1')
-    assert.ok(!readdirSync(dir).includes('quebrada.json'))
-    assert.ok(readdirSync(dir).includes('outra.json.77.tmp'), 'o temporario alheio fica')
-    assert.equal(readdirSync(dir).filter(n => n.endsWith('.tmp')).length, 1, 'nenhum temporario proprio sobrou')
-    // configuracao quebrada anota null; pasta que nao se cria nao joga erro
-    p.anotar(config(p.base, '{ nao e json'), { agora: 33 * dia })
-    assert.equal(anotacoes(p)['janela:J1'].porta, null)
-    writeFileSync(join(p.base, 'arquivo'), 'x')
-    assert.doesNotThrow(() => anotarSessao({ raiz: p.raiz, janela: 'J1', origem: 'startup', config: cfg, pasta: join(p.base, 'arquivo', 'dentro') }))
-    assert.doesNotThrow(() => anotarSessao())
-  } finally { p.limpar() }
-})
-
-// Codex comum da 5.31: com um arquivo so por raiz, duas janelas abrindo juntas liam o mesmo arquivo e a
-// segunda gravacao apagava a primeira. Agora cada janela grava so o proprio arquivo.
-test('anotarSessao: a gravacao de uma janela nunca reescreve a anotacao de outra', () => {
-  const p = projetoDoServidor()
-  try {
-    const cfg = doProjeto(p, FAIXA.inicio + 61)
-    p.anotar(cfg, { janela: 'A' })
-    const dir = pastaDaRaizNoTeste(p)
-    const [deA] = readdirSync(dir)
-    // marca que so sobrevive se ninguem reescrever o arquivo da A
-    const marca = JSON.stringify({ janela: 'A', sessao: 'S1', porta: FAIXA.inicio + 62, origem: 'startup', em: Date.now() })
-    writeFileSync(join(dir, deA), marca)
-    p.anotar(cfg, { janela: 'B' })
-    p.anotar(cfg, { janela: 'C', origem: 'resume' })
-    assert.equal(readFileSync(join(dir, deA), 'utf8'), marca)
-    assert.deepEqual(Object.keys(anotacoes(p)).sort(), ['janela:A', 'janela:B', 'janela:C'])
-  } finally { p.limpar() }
-})
-
-test('anotarSessao: o arquivo da anotacao fica fora do projeto e um por raiz', () => {
-  const p = projetoDoServidor()
-  const q = projetoDoServidor()
-  try {
-    const cfg = doProjeto(p, FAIXA.inicio + 51)
-    p.anotar(cfg)
-    anotarSessao({ raiz: q.raiz, janela: 'J1', sessao: 'S1', origem: 'startup', config: cfg, pasta: p.pasta })
-    assert.equal(readdirSync(p.pasta).length, 2)
-    assert.ok(!existsSync(p.perfil), 'nada nasce no perfil do Chrome')
-    assert.ok(pastaDaAnotacao().startsWith(tmpdir()), 'a pasta de verdade fica no temporario do sistema')
-  } finally { p.limpar(); q.limpar() }
 })
 
 test('candidatos e acharChrome', () => {
@@ -1446,12 +1130,67 @@ test('conectar sem Playwright cita a skill no npm install', async () => {
   )
 })
 
-test('sessaoCaiu: login e registration do Mercado Livre dao sessao-caida', () => {
-  assert.equal(sessaoCaiu({ url: 'https://www.mercadolivre.com.br/login?x=1', host: 'mercadolivre.com.br' }), 'sessao-caida')
-  assert.equal(sessaoCaiu({ url: 'https://www.mercadolivre.com.br/registration?x=1', host: 'mercadolivre.com.br' }), 'sessao-caida')
-  assert.equal(sessaoCaiu({ url: 'https://www.mercadolivre.com.br/login?x=1', host: 'lista.mercadolivre.com.br' }), 'sessao-caida', 'subdominio do site conta')
-  assert.equal(sessaoCaiu({ url: 'https://www.mercadolibre.com/registration?x=1', host: 'mercadolibre.com' }), 'sessao-caida')
+// 5.49 (bloco C, 2026-11-03): login e registration no endereco deixam de dar sessao-caida
+// (a palavra login no endereco nao para mais a coleta); sessao caida so com a pagina pedindo login.
+test('sessaoCaiu: pagina pedindo login no Mercado Livre da sessao-caida', () => {
+  assert.equal(sessaoCaiu({ url: 'https://www.mercadolivre.com.br/login/identification', host: 'mercadolivre.com.br', pedeLogin: true }), 'sessao-caida')
+  assert.equal(sessaoCaiu({ url: 'https://www.mercadolivre.com.br/gz/account-verification', host: 'lista.mercadolivre.com.br', pedeLogin: true }), 'sessao-caida', 'subdominio do site conta')
+  assert.equal(sessaoCaiu({ url: 'https://www.mercadolibre.com/x', host: 'mercadolibre.com', pedeLogin: true }), 'sessao-caida')
   assert.match(AVISO['sessao-caida'], /Entre de novo na conta/)
+})
+
+test('sessaoCaiu: login no endereco sem formulario na pagina nao para', () => {
+  assert.equal(sessaoCaiu({ url: 'https://www.mercadolivre.com.br/login?x=1', host: 'mercadolivre.com.br', pedeLogin: false }), null)
+  assert.equal(sessaoCaiu({ url: 'https://www.mercadolivre.com.br/registration?x=1', host: 'mercadolivre.com.br' }), null, 'sem o sinal da pagina, nao para')
+  assert.equal(sessaoCaiu({ url: 'https://www.mercadolivre.com.br/login?x=1', host: 'mercadolivre.com.br', pedeLogin: 'sim' }), null, 'so o true da pagina conta')
+})
+
+test('estadoDaUrl: o relogin segue lendo o login pelo endereco', () => {
+  const receita = { host: 'mercadolivre.com.br' }
+  assert.equal(estadoDaUrl('https://www.mercadolivre.com.br/login?x=1', receita), 'sessao-caida')
+  assert.equal(estadoDaUrl('https://www.mercadolivre.com.br/login/captcha', receita), 'captcha')
+  assert.equal(estadoDaUrl('https://lista.mercadolivre.com.br/caneca', receita), null)
+  assert.equal(estadoDaUrl('https://exemplo.com/entrar', { host: 'exemplo.com', sessao: 'entrar' }), 'sessao-caida', 'sessao da receita')
+})
+
+// pagina falsa que roda a funcao do paginaPedeLogin contra um documento de mentira
+function paginaComDom(elementos) {
+  return {
+    evaluate: async (fn, sel) => {
+      globalThis.document = { querySelectorAll: s => (s === sel ? elementos : []) }
+      try { return fn(sel) } finally { delete globalThis.document }
+    },
+  }
+}
+
+test('paginaPedeLogin: so o sinal visivel conta, e pagina que falha da false', async () => {
+  const visivel = { offsetWidth: 10, offsetHeight: 10, getClientRects: () => [1] }
+  const escondido = { offsetWidth: 0, offsetHeight: 0, getClientRects: () => [] }
+  assert.equal(await paginaPedeLogin(paginaComDom([visivel])), true, 'canario: o campo visivel casa')
+  assert.equal(await paginaPedeLogin(paginaComDom([escondido])), false)
+  assert.equal(await paginaPedeLogin(paginaComDom([])), false)
+  assert.equal(await paginaPedeLogin({ evaluate: async () => { throw new Error('navegando') } }), false)
+  for (const s of ['input[type="password"]', 'input[name="identifier"]', 'a.old-user-button']) assert.ok(SINAL_LOGIN.includes(s), s)
+})
+
+// 5.49 (bloco C, revisao 2026-11-03): o sinal da pagina chega por um lugar so. A revisao achou que
+// tirar o pedeLogin do espionar, do simular ou do rx passava sem teste reprovar
+test('sessaoDaPagina: junta o endereco e o sinal da pagina, e os 5 que leem pagina do ML usam ela', async () => {
+  const visivel = { offsetWidth: 10, offsetHeight: 10, getClientRects: () => [1] }
+  const pagina = (url, elementos) => ({ ...paginaComDom(elementos), url: () => url })
+  const busca = 'https://lista.mercadolivre.com.br/acme'
+  assert.equal(await sessaoDaPagina(pagina(busca, [visivel]), 'mercadolivre.com.br'), 'sessao-caida', 'canario: o formulario na tela cai')
+  assert.equal(await sessaoDaPagina(pagina(busca, []), 'mercadolivre.com.br'), null)
+  assert.equal(await sessaoDaPagina(pagina('https://www.mercadolivre.com.br/login?x=1', []), 'mercadolivre.com.br'), null, 'login so no endereco nao cai')
+  assert.equal(await sessaoDaPagina(pagina('https://www.mercadolivre.com.br/captcha?x=1', []), 'mercadolivre.com.br'), 'captcha')
+  const skills = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
+  const quem = ['espionar-concorrente/scripts/espionar.mjs', 'montar-anuncio/scripts/simular.mjs', 'engenharia-reversa/scripts/rx.mjs', 'pesquisar-tendencia/scripts/coletar-cdp.mjs', 'pode-vender/scripts/lib/ml.mjs']
+  for (const rel of quem) {
+    const t = readFileSync(join(skills, rel), 'utf8')
+    assert.ok(t.length > 500, 'canario: leu ' + rel)
+    assert.ok(t.includes("await sessaoDaPagina(page, 'mercadolivre.com.br')"), rel + ' sem o sessaoDaPagina')
+    assert.ok(!/sessaoCaiu\s*\(/.test(t), rel + ' monta o sessaoCaiu sozinho')
+  }
 })
 
 test('sessaoCaiu: captcha do Mercado Livre da captcha', () => {

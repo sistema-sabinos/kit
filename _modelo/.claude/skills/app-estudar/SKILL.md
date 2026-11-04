@@ -47,8 +47,9 @@ por ele, e escrever tudo de novo, com código, texto e visual próprios. O que �
 outro app (o código, os textos, a marca, os clientes) fica com ele.
 
 - **Só fonte pública e a conta da própria pessoa.** Entrar só na conta que é dela,
-  com ela mesma digitando a senha. Nunca pedir senha, nunca aceitar senha colada no
-  chat, nunca passar de uma tela de login ou de pagamento por truque.
+  e a senha nunca no chat. Senha de site também vai no `.env`: a IA lê de lá pra
+  fazer o login e nunca mostra no chat. Nunca aceitar senha colada no chat, nunca
+  passar de uma tela de login ou de pagamento por truque.
 - **Leitura no ritmo de gente.** Abre a página, lê, anota, vai pra próxima, com a
   pessoa acompanhando. Robô que varre o site sozinho (o que se chama de raspagem),
   download em lote e repetição automática ficam proibidos.

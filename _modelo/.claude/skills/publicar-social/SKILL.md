@@ -49,7 +49,8 @@ chave no chat: a chave vai no arquivo `.env`.
    node .claude/skills/publicar-social/scripts/publicar-social.mjs <pasta> --quando "AAAA-MM-DD HH:MM" [--capa <segundos>] [--redes instagram,tiktok]
    ```
    Mostrar a saida inteira: arquivo e tamanho, hora em Brasilia, o texto de cada rede, o titulo do
-   Short, o rotulo de IA e os avisos.
+   Short, o rotulo de IA e os avisos. A ultima linha e a parada da trava `publicar-social`, regra
+   `confirmar`: e o esperado da simulacao, e o proximo passo e o gate humano abaixo.
 
 3. **Capa do video.** Sem `--capa`, a capa do Reel e do TikTok vira o primeiro quadro, que muitas
    vezes sai borrado. Oferecer tirar 3 ou 4 quadros pra pessoa escolher:

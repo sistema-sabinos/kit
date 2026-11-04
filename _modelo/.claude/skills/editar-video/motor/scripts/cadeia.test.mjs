@@ -760,7 +760,7 @@ test('verificar-video le props em JSON, usa --public-dir e reprova pessoa sem ro
 test('fiscal lista as flags que o orquestrador precisa passar', () => {
   const r = py('fiscal.py', ['--help'])
   assert.equal(r.status, 0, semTraco(r.stderr))
-  for (const f of ['--remotion', '--public-dir', '--props-base', '--ver-video', '--preco-usd', '--registrar-custo', '--transcrever', '--modelo', '--midia']) assert.ok(r.stdout.includes(f), `sem ${f}`)
+  for (const f of ['--remotion', '--public-dir', '--props-base', '--ver-video', '--preco-usd', '--registrar-custo', '--transcrever', '--modelo', '--midia', '--acima-do-teto']) assert.ok(r.stdout.includes(f), `sem ${f}`)
 })
 
 // A transcricao do final so roda depois do render do Remotion, entao nao da pra isolar o ramo aqui: confere-se o codigo.
@@ -774,7 +774,7 @@ test('fiscal passa o modelo do whisper ao transcrever (e nao ha mais medium fixo
 // Portao pago do fiscal: o olho final (Gemini) so roda com roteiro, preco e autorizacao; o custo vira UMA linha.
 const CLI_CUSTO = join(AQUI, '..', '..', '..', 'configurar-video', 'scripts', 'lib', 'registrar-custo-cli.mjs')
 const linhasDe = (p) => readFileSync(p, 'utf8').split(String.fromCharCode(10)).filter((l) => l.trim())
-function olho(d, { preco, autorizado, codigo }) {
+function olho(d, { preco, autorizado, codigo, acima }) {
   const marca = join(d, 'chamadas.txt'), raiz = join(d, 'raiz'), stub = join(d, 'ver-video-falso.mjs')
   writeFileSync(stub, `import { appendFileSync } from 'node:fs'
 appendFileSync(${JSON.stringify(marca)}, 'chamado' + String.fromCharCode(10))
@@ -786,6 +786,7 @@ process.exit(${codigo})
   const args = ['x', final, 'x', join(d, 'saida'), '--so-olho-final', '--roteiro', roteiro, '--ver-video', stub, '--registrar-custo', CLI_CUSTO, '--raiz-custo', raiz]
   if (preco !== undefined) args.push('--preco-usd', String(preco))
   if (autorizado) args.push('--autorizado')
+  if (acima !== undefined) args.push('--acima-do-teto', String(acima))
   const r = py('fiscal.py', args)
   const custos = join(raiz, 'dados', 'custos.jsonl')
   return {
@@ -820,6 +821,36 @@ test('fiscal com preco e autorizacao chama o olho final uma vez e grava uma linh
   assert.equal(o.linhas[0].servico, 'gemini-fiscal-olho-final')
   assert.equal(o.linhas[0].usd, 0.5)
 }))
+
+// 5.49 (bloco C, 2026-11-03): sem orcamento do mes, a raiz de teste nao tem _contexto e vale o teto padrao de
+// US$ 4 por lote; o olho final de US$ 5 so passa com o --acima-do-teto que cobre o preco (o ver-video e falso)
+test('fiscal acima do teto por lote: sem --acima-do-teto ou com valor menor pula; com o valor citado chama uma vez', () => comTemp((d) => {
+  // 5.49 (bloco C, 2026-11-03): sem a opcao, cobra a mensagem "este gasto ... passa", nao so o comoPassar comum
+  // as duas; senao um fiscal que manda "--acima-do-teto None" passa calado com a mensagem de valor menor
+  const casos = [[undefined, 0, /Barrada pela trava gasto, regra teto-do-lote: este gasto .* passa do limite_gasto_usd .* por lote: .*--acima-do-teto 5 --autorizado/], ['4', 0, /e menor que a estimativa/], ['5', 1, null]]
+  for (const [acima, chamadas, motivo] of casos) {
+    const sub = join(d, `caso-${acima ?? 'sem'}`)
+    mkdirSync(sub)
+    const o = olho(sub, { preco: 5, autorizado: true, codigo: 0, acima })
+    assert.ok(o.saida.length > 0, 'canario: o fiscal escreveu alguma coisa')
+    assert.equal(o.r.status, 0, o.saida)
+    assert.equal(o.chamadas, chamadas, `--acima-do-teto ${acima}: ${o.saida}`)
+    assert.equal(o.linhas.length, chamadas)
+    if (motivo) assert.match(o.saida, motivo)
+  }
+}))
+
+// 5.49 (bloco C, 2026-11-03): o sim do passo 2 ja cita o valor; o passo 3 leva o --acima-do-teto na mesma chamada,
+// senao a trava so barra depois do fiscal inteiro e o aluno ouve a mesma pergunta duas vezes
+test('SKILL: o passo 3 do olho final ja leva o --acima-do-teto acima do teto por vez', () => {
+  const skill = readFileSync(join(AQUI, '..', '..', 'SKILL.md'), 'utf8')
+  const ini = skill.indexOf('3. Só com o sim, rode o fiscal de novo')
+  const fim = skill.indexOf('4. O custo vira uma linha', ini)
+  assert.ok(ini > 0 && fim > ini, 'canario: a SKILL.md tem os passos 3 e 4 do olho final')
+  const passo3 = skill.slice(ini, fim)
+  assert.ok(passo3.includes('--liberar-gasto'), 'canario: o trecho e o do comando do olho final')
+  assert.match(passo3, /--acima-do-teto <o valor do passo 2>/, 'o passo 3 nao junta o --acima-do-teto')
+})
 
 test('fiscal: ver-video que falha nao grava custo e avisa que pode ter sido cobrado', () => comTemp((d) => {
   const o = olho(d, { preco: 0.5, autorizado: true, codigo: 1 })

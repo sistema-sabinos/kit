@@ -66,17 +66,19 @@ que a resposta deixou faltando.
      > "Os programas já estão instalados, só falta o VS Code enxergar. Fecha todas as janelas
      > do VS Code, abre de novo nesta pasta e me chama numa conversa nova. A gente continua
      > daqui."
-   - `FALTA ...` com Git e Node, pedir o ok com este texto exato:
+   - `FALTA ...` com Git e Node, avisar com este texto exato e já seguir pra instalação
+     abaixo, sem esperar resposta (os dois são de graça):
      > "Antes de começar, faltam 2 programas que o sistema usa: o **Git**, que guarda o
      > histórico e faz o backup do seu trabalho, e o **Node**, o motor que roda as
-     > ferramentas do SabinOS. Posso instalar? Leva uns minutos. Pode aparecer uma janela do
+     > ferramentas do SabinOS. Vou instalar agora, leva uns minutos. Pode aparecer uma janela do
      > Windows pedindo permissão. É só clicar em **Sim**."
 
      Faltando um só, a frase cita só ele. Se o Claude for pedir licença pra rodar o comando,
      junta: "Se eu pedir licença pra rodar o comando, clica em permitir também." No Mac, a
      última frase vira o aviso da janela da Apple. Node instalado abaixo da versão 22 também
      sai `FALTA node`: aí a frase diz que o Node daqui está velho e precisa da versão nova.
-3. Com o sim, no Windows, um comando por programa, pela PowerShell com `timeout` de 600000:
+3. Instalar só para se faltar espaço no disco: aí dizer quanto falta e esperar a pessoa
+   liberar. No Windows, um comando por programa, pela PowerShell com `timeout` de 600000:
 
    ```
    winget install --id Git.Git -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity
@@ -310,8 +312,8 @@ de forma, nesta ordem de importância:
 - **As regras de casa no topo, e repetidas em uma linha no rodapé.** São quatro:
   pesquisa mundial (buscar em qualquer idioma, principalmente inglês, entregar em
   português); economia de conversa (processo fechado, conversa nova); chave de
-  API só no `.env`, nunca no chat nem em outro arquivo, e senha de site não se
-  guarda, salvo na conta em que a pessoa ligar o relogin automático; e gate humano
+  API só no `.env`, nunca no chat nem em outro arquivo, e senha de site também vai
+  no `.env`, que a IA lê pra fazer o login e nunca mostra no chat; e gate humano
   (nada que gasta dinheiro, manda mensagem pra fora, publica ou altera conta de
   terceiro roda sem o "pode ir" da pessoa naquele momento). Depois delas, o tom
   de escrita resumido em poucas linhas.
@@ -703,13 +705,13 @@ uma pasta com esse nome na raiz, avisar e perguntar outro nome antes de seguir.
   está no `_modelo/AGENTS.md`.
 - `.claude/hooks/barrar-perigoso.mjs`, só o script (nunca o `.claude/hooks/barrar-perigoso.test.mjs`,
   que é teste de desenvolvimento e não serve de nada no projeto do aluno). É a trava de
-  segurança que barra comando destrutivo (apagar pasta, reescrever histórico do GitHub,
-  rodar script baixado da internet) antes de ele rodar. Vai sempre, em todo projeto,
+  segurança dos comandos; o que ela segura está na regra 12 do `.claude/detalhe-regras.md`,
+  e só aquela lista vale. Vai sempre, em todo projeto,
   mesmo quando a pessoa recusou o auto-sync: o `settings.json` copiado já chama ela pelo
   bloco `PreToolUse`, e sem o arquivo o projeto nasce apontando pra um script que não existe.
 - `.claude/hooks/barrar-mcp.mjs`, só o script (nunca o `.test.mjs`). É a trava das
-  ferramentas de fora (navegador, email, redes): barra o que lê login ou roda código no
-  navegador e pergunta antes de mandar, apagar ou publicar em conta. Vai sempre, como a
+  ferramentas de fora (navegador, email, redes); o que ela segura também está na regra 12
+  do `.claude/detalhe-regras.md`. Vai sempre, como a
   outra trava: o `settings.json` copiado já chama ela.
 - `.claude/hooks/auto-sync.mjs`, só o script (nunca o `auto-sync.test.mjs`). É o
   backup automático que o bloco `Stop` do `settings.json` chama: manda o trabalho

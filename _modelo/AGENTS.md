@@ -85,7 +85,7 @@ Rotina (robô do `/agendar`, Hermes, agente agendado) escreve só no próprio di
 
 **3. Loop de lições.** Erro corrigido, retrabalho ou regra que mudou numa tarefa vira uma linha datada em `_contexto/licoes.md`, na seção do assunto, na hora e sem pedir. Antes de repetir tarefa que já deu errado, ler a seção dela. Lição repetida vira regra na skill, proposta pelo `/atualizar` ao fechar a sessão.
 
-**4. Gate humano.** Nada que gasta dinheiro, envia mensagem pra fora, publica conteúdo ou altera conta de terceiros executa sem aprovação explícita do usuário naquele momento. Antes do "pode ir", mostrar em duas linhas o que vai acontecer e o risco (e como desfazer, só quando tem volta). Depois esperar o "pode ir".
+**4. Gate humano.** Nada que gasta dinheiro, envia mensagem pra fora, publica conteúdo ou altera conta de terceiros executa sem aprovação explícita do usuário naquele momento. Antes do "pode ir", mostrar em duas linhas o que vai acontecer e o risco (e como desfazer, só quando tem volta). Robô do `/agendar`: o "pode ir" se dá ao agendar e vale pra toda execução.
 
 **5. Auto-sync.** Com o GitHub ligado, o hook de `.claude/settings.json` salva sozinho (commit e push) ao fim de cada resposta: não oferecer `/syncar` nem tratar "salvar" como pendência. Sem GitHub ligado (sem `origin`), o `/syncar` é como se liga o backup: lembrar uma vez, no fim da sessão.
 
@@ -101,13 +101,13 @@ Rotina (robô do `/agendar`, Hermes, agente agendado) escreve só no próprio di
 
 **11. Camadas de regra.** Cada regra mora na camada mais alta em que é verdade (global, pasta-mãe, projeto); as regras 1, 2, 4, 10 e 15 se repetem aqui de propósito, porque o projeto roda sem o global no Codex e em outra máquina: não cortar. Formato e detalhe vão pro `.claude/detalhe-regras.md`; história e nota de ferramenta, pro `_contexto/`. O `/checar` mede.
 
-**12. Trava de comando destrutivo.** Um hook barra comando que apaga pasta inteira, reescreve histórico do Git ou roda script baixado da internet. Barrou: parar e explicar o que se tentou fazer, sem buscar outro caminho pra mesma coisa.
+**12. Travas.** Trava barrou ("Barrada pela trava X, regra Y"): repetir o nome pro usuário e seguir sem o passo, se era acessório, ou pedir o que falta, sem refazer por outro caminho. Só na regra erro-interno do barrar-perigoso (a trava não leu o comando) dá pra reescrever mais simples ou usar ferramenta equivalente, avisando.
 
 **13. Um projeto por pasta.** Pedido de outro projeto, sem relação com este negócio, ganha pasta própria, senão memória e regras se misturam. Recomendar em uma linha, com esse porquê, e, com o sim, criar pela skill `../.claude/skills/novo-projeto/SKILL.md` da pasta-mãe. Tarefa do mesmo negócio fica aqui.
 
 **14. Terminal é da IA.** A pessoa nunca digita no terminal: só clica (login, senha) e escreve no chat.
 
-**15. Chave no `.env`.** Chave de API só no `.env`, nunca no chat; senha de site: ver `/conectar`.
+**15. Chave no `.env`.** Chave de API só no `.env`, nunca no chat; senha de site também: a IA lê pra usar, nunca mostra (`/conectar`).
 
 ## Estrutura de pastas
 

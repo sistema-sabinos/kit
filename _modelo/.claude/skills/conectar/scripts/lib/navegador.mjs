@@ -14,7 +14,6 @@ import { join, resolve, dirname, basename, relative, isAbsolute, sep, win32, pos
 import { spawn } from 'node:child_process'
 import { createServer } from 'node:net'
 import { createHash, randomUUID } from 'node:crypto'
-import { homedir, tmpdir } from 'node:os'
 import { RAIZ } from './raiz.mjs'
 import { codigo as codigoTotp, CONTA } from '../totp.mjs'
 
@@ -263,126 +262,8 @@ export async function conferirPerfil({ porta, perfil, fetchFn, timeoutMs } = {})
   return { estado: s.porta === porta && s.guid === guid ? 'conferido' : 'outro-na-porta', guid }
 }
 
-// A configuracao local do Claude Code (o claude mcp add do passo 3 do Degrau 5 grava ali), no
-// lugar que o C1 da 5.30 mediu: <CLAUDE_CONFIG_DIR>/.claude.json com a variavel, senao a home.
-function configDoClaude(env = process.env) {
-  return join(env.CLAUDE_CONFIG_DIR || homedir(), '.claude.json')
-}
-
-// A porta do --cdp-endpoint com que o servidor navegador desta raiz foi ligado; null quando a
-// entrada nao existe, nao tem a forma do C1 ou duas chaves da mesma raiz discordam.
-function portaDoServidor(raiz, config) {
-  const projetos = JSON.parse(readFileSync(config, 'utf8'))?.projects
-  if (!projetos || typeof projetos !== 'object') return null
-  const portas = new Set()
-  for (const [k, p] of Object.entries(projetos)) {
-    if (chave(k) !== chave(raiz)) continue
-    const args = p?.mcpServers?.navegador?.args
-    if (!Array.isArray(args)) continue
-    const i = args.indexOf('--cdp-endpoint')
-    const u = i >= 0 && typeof args[i + 1] === 'string' ? /^http:\/\/127\.0\.0\.1:(\d+)\/?$/.exec(args[i + 1]) : null
-    const n = u ? Number(u[1]) : NaN
-    portas.add(n >= 1024 && n <= 65535 ? n : null)
-  }
-  return portas.size === 1 ? [...portas][0] : null
-}
-
-// O texto de religar mora so aqui: o log do pulo de porta do abrirChrome e os recados do hook usam ele.
+// O texto de religar mora so aqui: o log do pulo de porta do abrirChrome usa ele.
 export const RELIGAR = 'ligue o `navegador` de novo com a porta nova (`claude mcp remove navegador` e o passo 3 do Degrau 5) e feche e abra o Claude Code antes de usar, porque o `navegador` que já está rodando só pega a porta nova numa sessão nova'
-
-// A anotacao da porta (5.31). O servidor navegador le o .claude.json so quando nasce: religar no meio
-// da sessao troca o arquivo e nao o servidor (P1 da final da 5.30). O hook anota no SessionStart a
-// porta com que o servidor nasceu, e a conferencia usa a anotada. A chave e a janela, pelo CLAUDE_PID
-// que o Claude Code passa ao hook (C1 da 5.31: estavel na janela, diferente entre janelas); sem ele,
-// o session_id, e o /clear herda a ultima anotacao da raiz (D21). Mora no temporario do sistema: fora
-// do backup, do perfil do Chrome (que o soExistente da sonda acharia) e da pasta de saida do navegador.
-export function pastaDaAnotacao() {
-  return join(tmpdir(), 'sabinos-navegador')
-}
-const VIDA_DA_ANOTACAO_MS = 30 * 24 * 60 * 60_000
-const chaveDaJanela = (janela, sessao) => (janela ? `janela:${janela}` : sessao ? `sessao:${sessao}` : null)
-const portaValida = n => Number.isInteger(n) && n >= 1024 && n <= 65535
-const resumo = texto => createHash('sha256').update(texto).digest('hex').slice(0, 32)
-// uma pasta por raiz e um arquivo por janela: cada janela so grava o proprio arquivo, entao duas
-// abrindo juntas nao apagam a anotacao uma da outra (Codex comum da 5.31)
-const pastaDaRaiz = (raiz, pasta) => join(pasta, resumo(chave(raiz)))
-
-function lerAnotacao(arquivo) {
-  const a = JSON.parse(readFileSync(arquivo, 'utf8'))
-  if (!a || typeof a !== 'object' || Array.isArray(a)) throw new Error('anotacao quebrada')
-  return a
-}
-
-// Pelo C1: startup anota pelo arquivo, sempre (o servidor nasceu agora). Janela ja anotada mantem
-// (/compact, /clear e /resume de dentro nao fazem o servidor renascer); janela sem anotacao e o
-// --resume ou --continue de processo novo, que renasce, e anota pelo arquivo. Sem o CLAUDE_PID o
-// /clear chega com session_id novo e herda a porta da ultima anotacao da raiz. Sincrona, nunca joga
-// erro: anotar e melhor esforco, e quem barra e a conferencia.
-export function anotarSessao({ raiz, janela, sessao, origem, config = configDoClaude(), pasta = pastaDaAnotacao(), agora = Date.now() } = {}) {
-  try {
-    const k = chaveDaJanela(janela, sessao)
-    if (!raiz || !k) return
-    const dir = pastaDaRaiz(raiz, pasta)
-    const nome = resumo(k) + '.json'
-    // as anotacoes desta raiz que valem; a velha ou quebrada sai (o temporario de quem grava agora fica)
-    const vivas = {}
-    let nomes = []
-    try { nomes = readdirSync(dir).filter(n => n.endsWith('.json')) } catch {}
-    for (const n of nomes) {
-      let a = null
-      try { a = lerAnotacao(join(dir, n)) } catch {}
-      if (agora - a?.em < VIDA_DA_ANOTACAO_MS) vivas[n] = a
-      else try { rmSync(join(dir, n), { force: true }) } catch {}
-    }
-    if (origem !== 'startup' && nome in vivas) return
-    // janela sem anotacao no compact ou no clear (anotacao perdida ou vencida) fica null e barra ate
-    // reabrir: ler o arquivo ali reabriria o religar no meio (Codex final da 5.31)
-    let porta = null
-    if (['startup', 'resume', 'fork'].includes(origem)) {
-      try { porta = portaDoServidor(raiz, config) } catch {}
-    } else if (!janela) {
-      const ultima = Object.values(vivas).sort((a, b) => b.em - a.em)[0]
-      porta = portaValida(ultima?.porta) ? ultima.porta : null
-    }
-    mkdirSync(dir, { recursive: true })
-    // grava ao lado e troca: a conferencia nunca le o arquivo pela metade
-    const arquivo = join(dir, nome)
-    const temp = `${arquivo}.${process.pid}.tmp`
-    writeFileSync(temp, JSON.stringify({ janela: janela || null, sessao: sessao || null, porta, origem: origem ?? null, em: agora }) + '\n')
-    renameSync(temp, arquivo)
-  } catch {}
-}
-
-function portaAnotada(raiz, janela, sessao, pasta) {
-  const k = chaveDaJanela(janela, sessao)
-  if (!raiz || !k) return null
-  try {
-    const p = lerAnotacao(join(pastaDaRaiz(raiz, pasta), resumo(k) + '.json')).porta
-    return portaValida(p) ? p : null
-  } catch {
-    return null
-  }
-}
-
-// O porteiro do perfil (5.30, D19 e D20; 5.31): o Chrome na porta em que o navegador desta janela
-// nasceu e o deste projeto? Os estados do conferirPerfil, mais sem-anotacao (nada anotado desta
-// janela, ou anotado null), religado (o arquivo mudou depois da anotacao), porta-mudou (servidor numa
-// porta e sentinela noutra) e sem-config. Nunca joga erro e nunca devolve nada do arquivo alem da porta.
-export async function conferirServidor({ raiz, janela, sessao, pasta = pastaDaAnotacao(), config = configDoClaude(), fetchFn, timeoutMs = 1500 } = {}) {
-  try {
-    const anotada = portaAnotada(raiz, janela, sessao, pasta)
-    if (anotada === null) return { estado: 'sem-anotacao', porta: null }
-    const porta = portaDoServidor(raiz, config)
-    if (porta === null) return { estado: 'sem-config', porta: null }
-    if (porta !== anotada) return { estado: 'religado', porta: anotada }
-    const perfil = perfilDedicado(raiz)
-    const s = lerSentinela(perfil)
-    if (s && s.porta !== porta) return { estado: 'porta-mudou', porta }
-    return { estado: (await conferirPerfil({ porta, perfil, fetchFn, timeoutMs })).estado, porta }
-  } catch {
-    return { estado: 'sem-config', porta: null }
-  }
-}
 
 // soExistente: so usa perfil que ja existe e nunca pula de porta (a sonda agendada roda assim).
 // headless: tarefa sem a pessoa na frente; o login feito com janela vale sem janela (C1c, volta 4).
@@ -693,19 +574,45 @@ function pidDaTrava(texto) {
 
 // Pagina de login, cadastro ou verificacao no lugar da que o script pediu. host e o site que o
 // script estava lendo (o proprio ou um subdominio dele); site fora da tabela devolve null.
-// A regra da verificacao de conta e a de hoje ate ter pagina real gravada.
+// O sessao da tabela (endereco) so vale pro relogin (estadoDaUrl), que anda dentro do login.
 const TABELA = [
   { hosts: ['mercadolivre.com.br', 'mercadolibre.com'], sessao: /login|registration/i, captcha: /captcha/i },
 ]
 
-export function sessaoCaiu({ url, host } = {}) {
-  if (typeof url !== 'string' || typeof host !== 'string') return null
+function regraDoHost(host) {
   const h = host.toLowerCase()
-  const regra = TABELA.find(r => r.hosts.some(x => h === x || h.endsWith('.' + x)))
+  return TABELA.find(r => r.hosts.some(x => h === x || h.endsWith('.' + x))) || null
+}
+
+// 5.49 (bloco C, 2026-11-03): a palavra login no endereco deixa de parar a coleta. Sessao
+// caida so com a pagina pedindo login de verdade, lido na pagina: campo de senha, o campo de
+// usuario do formulario de entrada do ML (input name=identifier) ou o botao "Ja tenho conta" do
+// muro de verificacao (a.old-user-button), medidos ao vivo sem logar em 2026-11-03. Captcha
+// segue pelo endereco.
+export const SINAL_LOGIN = 'input[type="password"], input[name="identifier"], a.old-user-button'
+
+// true quando a pagina mostra o sinal de login; pagina que nao responde (no meio de navegar) da false
+export async function paginaPedeLogin(page) {
+  try {
+    return true === await page.evaluate(sel => [...document.querySelectorAll(sel)].some(el => !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length)), SINAL_LOGIN)
+  } catch {
+    return false
+  }
+}
+
+export function sessaoCaiu({ url, host, pedeLogin = false } = {}) {
+  if (typeof url !== 'string' || typeof host !== 'string') return null
+  const regra = regraDoHost(host)
   if (!regra) return null
   if (regra.captcha.test(url)) return 'captcha'
-  if (regra.sessao.test(url)) return 'sessao-caida'
-  return null
+  return pedeLogin === true ? 'sessao-caida' : null
+}
+
+// 5.49 (bloco C, revisao 2026-11-03): quem le a pagina chama este, que junta o endereco e o sinal
+// da pagina num lugar so. Com cada script montando o sessaoCaiu, tirar o pedeLogin de um deles
+// passava sem teste nenhum reprovar e a coleta lia a tela de login como se fosse a busca.
+export async function sessaoDaPagina(page, host) {
+  return sessaoCaiu({ url: page.url(), host, pedeLogin: await paginaPedeLogin(page) })
 }
 
 // Relogin automatico (5.29, D15): so na conta com <CONTA>_USUARIO, <CONTA>_SENHA e <CONTA>_TOTP no
@@ -809,10 +716,13 @@ export function receitaValida(r) {
   return null
 }
 
-// sessao-caida, captcha ou null pra url, pela TABELA e pelo sessao e captcha da receita
+// sessao-caida, captcha ou null pra url, pela TABELA e pelo sessao e captcha da receita. O relogin
+// anda dentro do proprio login, entao aqui o endereco segue valendo (5.49, bloco C)
 export function estadoDaUrl(url, receita) {
-  const daTabela = sessaoCaiu({ url, host: receita.host })
-  if (daTabela || typeof url !== 'string') return daTabela
+  if (typeof url !== 'string') return null
+  const regra = typeof receita.host === 'string' ? regraDoHost(receita.host) : null
+  if (regra?.captcha.test(url)) return 'captcha'
+  if (regra?.sessao.test(url)) return 'sessao-caida'
   if (receita.captcha && new RegExp(receita.captcha, 'i').test(url)) return 'captcha'
   if (receita.sessao && new RegExp(receita.sessao, 'i').test(url)) return 'sessao-caida'
   return null
