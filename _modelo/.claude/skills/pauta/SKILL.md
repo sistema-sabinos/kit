@@ -83,8 +83,9 @@ antes de despachar, aqui na sessao principal (o `pauta-leitor` nao roda comando)
    dizendo que falta o faster-whisper, a mensagem e pra IA: dizer em uma frase o que falta, pedir o
    sim e instalar com o comando dela, nunca repassar o comando a pessoa.
 2. So na rota com Gemini, depois do "pode ir" da secao Custo: cada Reel com
-   `node .claude/skills/assistir-video/ver-video.mjs "<mp4>" --pergunta "<conteudo inteiro de .claude/skills/pauta/prompt-conteudo.md>"`,
-   em primeiro plano, um por vez, colhendo o resultado na propria chamada (lote em segundo plano ja foi
+   `node .claude/skills/assistir-video/ver-video.mjs "<mp4>" --pergunta "<conteudo inteiro de .claude/skills/pauta/prompt-conteudo.md>" --usd <estimativa do video em dolar> --autorizado`
+   (o `--usd` passa pela trava do gasto; com a permissao de gasto do `_contexto/autonomia.md`, sem o
+   `--autorizado`, e a linha `[permissao]` diz quanto resta; saida 3 e parada antes de gastar), em primeiro plano, um por vez, colhendo o resultado na propria chamada (lote em segundo plano ja foi
    morto no meio e gastou a toa), e gravar em `inteligencia/base-ideias/<perfil>/analises/<codigo>.md`.
    O script anota o custo de cada video sozinho em `dados/custos.jsonl`: nao registrar de novo.
 

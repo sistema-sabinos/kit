@@ -151,9 +151,11 @@ ffmpeg -y -f lavfi -i "gradients=s=1080x1920:c0=0x1b2a49:c1=0x4a6fa5:x0=540:y0=0
   - Degrau `gemini` custa dinheiro por imagem: confira na web, hoje, o preço por
     imagem na página oficial de preços do Google AI, conte 3 imagens, mostre a
     conta ("3 imagens a US$ X cada, total US$ Y") e espere o "pode ir".
-  - Degrau `codex`: ele cobra pela cota do plano, e passando dela gasta créditos
-    avulsos. Diga isso e espere o "pode ir" do aluno antes de gerar, como nos
-    outros gastos.
+  - Degrau `codex`: dentro da cota do plano do aluno ele roda sem pedir (regra 4).
+    Com `codex_credito_avulso: sim` no `_contexto/ferramentas.md`, passar da cota
+    gasta os créditos avulsos que ele comprou: diga isso e espere o "pode ir" antes
+    de gerar, como nos outros gastos. Sem a linha, pergunte uma vez se ele comprou
+    créditos avulsos do Codex e grave `sim` ou `não` lá.
 
   Escreva `producao/<slug>/cenarios/cenas.json` com três cenas, cada uma com
   `out` e uma `descricao` do lugar, fotorrealista, sem pessoa e sem texto, com o
@@ -216,10 +218,12 @@ tiras de `trab/cru/`, com o `trab/cru/bordas.md` do lado, e grave
 tabela de cortes, com o corte final de cada trecho).
 
 Opcional e pago: o Gemini ouve o cru e diz que take foi mais bem dito (você vê
-as folhas, mas não ouve). Rode primeiro sem `--autorizado`, que só estima:
+as folhas, mas não ouve). Rode primeiro sem `--preco-usd`, que só estima:
 `node .claude/skills/editar-video/scripts/gemini-cru.mjs producao/<slug>/bruto/<arquivo>.mp4 producao/<slug>/trab/cru/bordas.md producao/<slug>/trab/cru/gemini.md`.
 Mostre a conta ao aluno; com o sim, rode de novo com `--preco-usd <valor> --autorizado --video <slug>`.
-Saída 3 é parada antes de gastar: repasse a mensagem como veio.
+Com a permissão de gasto escrita no `_contexto/autonomia.md`, rode com `--preco-usd <valor> --video <slug>`,
+sem o `--autorizado`: o script confere a permissão e a linha `[permissao]` diz quanto resta; conte ao aluno
+logo depois quanto gastou. Saída 3 é parada antes de gastar: repasse a mensagem como veio.
 
 **3.2c Mapa do corte.** Mostre ao aluno, em até 5 linhas: o que fica, o que sai,
 se algo mexe no roteiro aprovado e por quê. Pergunte "Posso montar assim?" e só
@@ -480,6 +484,9 @@ nas camadas:
    Se o valor passa do teto por vez (o `limite_gasto_usd`, ou US$ 4 sem o campo), o
    sim do passo 2 já citou ele: junte `--acima-do-teto <o valor do passo 2>` nesta
    mesma chamada, sem perguntar de novo, que o fiscal leva uns 5 minutos.
+   Com a permissão de gasto escrita no `_contexto/autonomia.md`, o passo 2 vira aviso
+   e a chamada vai sem o `--autorizado`: o fiscal confere a permissão e, se passou
+   por ela, o relatório diz quanto resta; conte ao aluno logo depois quanto gastou.
 4. O custo vira uma linha em `dados/custos.jsonl`, sozinho. Se o relatório disser
    que o `ver-video` falhou, pode ter havido cobrança: diga ao aluno para
    conferir no painel do Gemini.
@@ -534,7 +541,9 @@ projeto e avise o aluno do que mudou.
 
 - **Gate humano:** o roteiro se aprova antes de gravar, a música é escolha do
   aluno, o vídeo se aprova no fim, e gasto (imagem por IA, olho final) só com o
-  "pode ir" daquele momento, com o preço do dia conferido na web antes.
+  "pode ir" daquele momento, com o preço do dia conferido na web antes, fora a
+  permissão de gasto do `_contexto/autonomia.md`, em que o script roda sem o
+  `--autorizado` e a IA avisa logo depois quanto gastou.
 - **Custo avisado antes.** Todo gasto vira uma linha em `dados/custos.jsonl`.
 - **Nada de dado de memória:** preço, regra de plataforma e número do roteiro se
   conferem na fonte, no dia.

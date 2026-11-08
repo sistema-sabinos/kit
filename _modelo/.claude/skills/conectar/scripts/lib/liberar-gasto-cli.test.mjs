@@ -73,6 +73,17 @@ test('SKILL: todo passo que roda o liberar-gasto-cli explica o --acima-do-teto',
   for (const a of achados) assert.ok(a.passo.includes(`US$ ${TETO_PADRAO_USD} sem`), `${a.nome}: o passo do liberar-gasto-cli nao cita o teto padrao (US$ ${TETO_PADRAO_USD} sem o campo)`)
 })
 
+// 5.52 (chat 3, decisao 1): sem --autorizado, a permissao escrita do _contexto/autonomia.md libera dentro do teto
+test('sem --autorizado com permissao de gasto: sai 0 com o resto da permissao; acima do por_vez sai 3', () => comRaiz(5, (raiz) => {
+  writeFileSync(join(raiz, '_contexto', 'autonomia.md'), ['```autonomia', 'area: gasto-ia', 'pode: gastar', 'teto: 2 USD semana', 'por_vez: 1', '```', ''].join(String.fromCharCode(10)))
+  const r = rodar(['--usd', '0.5', '--pid', '4242', '--raiz', raiz])
+  assert.equal(r.status, 0, r.stdout)
+  assert.deepEqual(JSON.parse(r.stdout).permissao, { resta_usd: 1.5, teto_usd: 2, periodo: 'semana' })
+  const acima = rodar(['--usd', '1.5', '--raiz', raiz])
+  assert.equal(acima.status, 3, acima.stdout)
+  assert.match(JSON.parse(acima.stdout).parou, /regra pode-ir/)
+}))
+
 test('sem --autorizado, acima do saldo ou sem --usd valido: sai 3 com o motivo', () => comRaiz(5, (raiz) => {
   for (const [args, motivo] of [[['--usd', '0.5'], /pode ir/], [['--usd', '9', '--autorizado'], /nao cabe/], [['--usd', 'muito', '--autorizado'], /--usd valido/]]) {
     const r = rodar([...args, '--raiz', raiz])

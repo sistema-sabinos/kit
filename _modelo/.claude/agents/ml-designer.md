@@ -18,11 +18,14 @@ reporte o bloqueio. Degrau `gemini` só gera quando o despacho traz "gasto
 autorizado: US$ X, preço por imagem Y": passe esse preço em `--preco-usd` e
 `--autorizado` pro script. Sem essa linha, faça no `zero-ia` e diga no recibo.
 Degrau `codex` só gera quando o despacho traz "Codex autorizado"; sem essa
-linha, faça no `zero-ia` e diga no recibo.
+linha, faça no `zero-ia` e diga no recibo. Quem decide é a conversa principal:
+dentro da cota do plano o Codex roda sem pedir, e só com crédito avulso
+(`codex_credito_avulso: sim` no `_contexto/ferramentas.md`) ele espera o "pode ir".
 
 **REFAZER:** o despacho traz o comentário da pessoa por imagem. Refaça só as
-citadas, mesmo nome de arquivo, e gere a prancha de novo. Refazer no Gemini ou
-no Codex é gasto novo: estimativa (ou aviso) e "pode ir" de novo, no despacho.
+citadas, mesmo nome de arquivo, e gere a prancha de novo. Refazer no Gemini é
+gasto novo: estimativa e "pode ir" de novo, no despacho; no Codex vale a mesma
+regra do GERAR (aviso, e "pode ir" só com crédito avulso).
 Sem "gasto autorizado" ou "Codex autorizado" neste despacho, refaça no
 `zero-ia` e diga no recibo.
 

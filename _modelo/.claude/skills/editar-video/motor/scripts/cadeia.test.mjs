@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync, readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { rodarPython } from '../../../configurar-video/scripts/lib/plataforma.mjs'
 import { hashPasta } from '../../../configurar-video/scripts/lib/pasta-video.mjs'
 
@@ -774,9 +774,16 @@ test('fiscal passa o modelo do whisper ao transcrever (e nao ha mais medium fixo
 // Portao pago do fiscal: o olho final (Gemini) so roda com roteiro, preco e autorizacao; o custo vira UMA linha.
 const CLI_CUSTO = join(AQUI, '..', '..', '..', 'configurar-video', 'scripts', 'lib', 'registrar-custo-cli.mjs')
 const linhasDe = (p) => readFileSync(p, 'utf8').split(String.fromCharCode(10)).filter((l) => l.trim())
-function olho(d, { preco, autorizado, codigo, acima }) {
-  const marca = join(d, 'chamadas.txt'), raiz = join(d, 'raiz'), stub = join(d, 'ver-video-falso.mjs')
-  writeFileSync(stub, `import { appendFileSync } from 'node:fs'
+// 5.52 (chat 3): projeto com orcamento do mes e, se pedido, a permissao de gasto escrita
+function contexto(raiz, { orcamento = 10, permissao = null } = {}) {
+  mkdirSync(join(raiz, '_contexto'), { recursive: true })
+  writeFileSync(join(raiz, '_contexto', 'orcamento.md'), '```orcamento\norcamento_mes_usd: ' + orcamento + '\n```\n')
+  if (permissao) writeFileSync(join(raiz, '_contexto', 'autonomia.md'), '```autonomia\narea: gasto-ia\npode: gastar\nteto: ' + permissao + '\n```\n')
+}
+function olho(d, { preco, autorizado, codigo, acima, projeto, verVideo, env }) {
+  const marca = join(d, 'chamadas.txt'), raiz = join(d, 'raiz'), stub = verVideo || join(d, 'ver-video-falso.mjs')
+  if (projeto) contexto(raiz, projeto)
+  if (!verVideo) writeFileSync(stub, `import { appendFileSync } from 'node:fs'
 appendFileSync(${JSON.stringify(marca)}, 'chamado' + String.fromCharCode(10))
 if (${codigo} === 0) console.log('VEREDITO: APROVADO')
 process.exit(${codigo})
@@ -787,12 +794,14 @@ process.exit(${codigo})
   if (preco !== undefined) args.push('--preco-usd', String(preco))
   if (autorizado) args.push('--autorizado')
   if (acima !== undefined) args.push('--acima-do-teto', String(acima))
-  const r = py('fiscal.py', args)
+  const r = py('fiscal.py', args, env ? { env: { ...ENV, ...env } } : {})
   const custos = join(raiz, 'dados', 'custos.jsonl')
+  const ler = (rel) => existsSync(join(raiz, rel)) ? readFileSync(join(raiz, rel), 'utf8') : ''
   return {
     r, saida: semTraco(r.stdout) + semTraco(r.stderr),
     chamadas: existsSync(marca) ? linhasDe(marca).length : 0,
     linhas: existsSync(custos) ? linhasDe(custos).map((l) => JSON.parse(l)) : [],
+    reservas: ler('dados/orcamento-reservas.json'), permissao: ler('dados/permissao-gastos.jsonl'),
   }
 }
 
@@ -805,12 +814,77 @@ test('fiscal sem --preco-usd nao chama o olho final nem grava custo', () => comT
   assert.match(o.saida, /preco-usd/)
 }))
 
-test('fiscal com preco e sem --autorizado nao chama o olho final nem grava custo', () => comTemp((d) => {
-  const o = olho(d, { preco: 0.5, codigo: 0 })
-  assert.equal(o.chamadas, 0)
-  assert.equal(o.linhas.length, 0)
-  assert.match(o.saida, /pulado/)
-  assert.match(o.saida, /autorizado/)
+// 5.52 (chat 3): sem permissao, igual a antes; com a permissao de gasto escrita, o olho final roda sem o sim
+test('fiscal com preco e sem --autorizado: sem permissao nao chama o olho final; com permissao chama e avisa', () => comTemp((d) => {
+  for (const [nome, projeto] of [['sem orcamento', undefined], ['sem permissao', {}]]) {
+    const sub = join(d, nome)
+    mkdirSync(sub)
+    const o = olho(sub, { preco: 0.5, codigo: 0, projeto })
+    assert.equal(o.chamadas, 0, nome)
+    assert.equal(o.linhas.length, 0, nome)
+    assert.match(o.saida, /olho final pulado \(e pago\): falta --autorizado \(o sim da pessoa\)/, nome)
+  }
+  const sub = join(d, 'com permissao')
+  mkdirSync(sub)
+  const o = olho(sub, { preco: 0.5, codigo: 0, projeto: { permissao: '2 USD semana' } })
+  assert.equal(o.r.status, 0, o.saida)
+  assert.equal(o.chamadas, 1)
+  assert.equal(o.linhas.length, 1)
+  assert.ok(o.linhas[0].reserva, 'a linha leva a reserva da liberacao')
+  assert.match(o.saida, /foi pela permissao do _contexto\/autonomia\.md, resta US\$ 1\.50 de US\$ 2\.00 na semana/)
+  assert.equal(o.permissao.trim().split(String.fromCharCode(10)).length, 1)
+}))
+
+// 5.52 (chat 3): o ver-video de verdade (so a rede e falsa, pelo NODE_OPTIONS), com o orcamento do mes igual ao preco:
+// o fiscal reserva uma vez e o ver-video com a --reserva dele (conferida, conserto da interna) nao reserva de novo
+const REDE_FALSA = `
+import https from 'node:https'
+import { EventEmitter } from 'node:events'
+const resposta = (corpo, cab = {}) => ({ status: 200, ok: true, headers: new Headers(cab), json: async () => corpo, text: async () => JSON.stringify(corpo) })
+globalThis.fetch = async (url, op = {}) => {
+  const u = String(url)
+  if (op.method === 'DELETE') return resposta({})
+  if (u.includes('/upload/')) return resposta({}, { 'x-goog-upload-url': 'https://falso.invalido/subir' })
+  if (u.startsWith('https://falso.invalido/subir')) return resposta({ file: { name: 'files/abc' } })
+  return resposta({ state: 'ACTIVE', uri: 'https://falso.invalido/files/abc', name: 'files/abc', mimeType: 'video/mp4', models: [] })
+}
+https.request = (url, op, responder) => {
+  const req = new EventEmitter()
+  req.setTimeout = () => req
+  req.end = () => setImmediate(() => {
+    const res = new EventEmitter()
+    res.statusCode = 200
+    res.setEncoding = () => {}
+    responder(res)
+    res.emit('data', JSON.stringify({ candidates: [{ content: { parts: [{ text: 'VEREDITO: APROVADO' }] } }], usageMetadata: { promptTokenCount: 1000, candidatesTokenCount: 100 } }))
+    res.emit('end')
+  })
+  return req
+}
+`
+test('fiscal com o ver-video de verdade e saldo igual ao preco: uma reserva so, uma linha de custo', () => comTemp((d) => {
+  const falsa = join(d, 'rede-falsa.mjs')
+  writeFileSync(falsa, REDE_FALSA)
+  const VER = join(AQUI, '..', '..', '..', 'assistir-video', 'ver-video.mjs')
+  for (const [nome, autorizado, permissao] of [['permissao', false, '1 USD mes'], ['sim', true, null]]) {
+    const sub = join(d, nome)
+    mkdirSync(sub)
+    const o = olho(sub, { preco: 0.5, autorizado, codigo: 0, projeto: { orcamento: 0.5, permissao }, verVideo: VER, env: { GEMINI_API_KEY: 'falsa', NODE_OPTIONS: `--import ${pathToFileURL(falsa).href}` } })
+    assert.equal(o.r.status, 0, `${nome}: ${o.saida}`)
+    assert.doesNotMatch(o.saida, /ver-video falhou|pulado/, nome)
+    assert.equal(o.linhas.length, 1, `${nome}: ${o.saida}`)
+    assert.equal(o.linhas[0].servico, 'gemini-fiscal-olho-final', nome)
+    assert.deepEqual(JSON.parse(o.reservas), [], `${nome}: a reserva fechou`)
+    assert.equal(o.permissao !== '', nome === 'permissao', `${nome}: so o gasto pela permissao entra na conta dela`)
+  }
+  // 5.52 (conserto da interna): no teto por lote, sem reserva, o ver-video passa pela trava com o mesmo sim e o
+  // --sem-registro so tira a linha dele: uma linha de custo, a do fiscal
+  const sub = join(d, 'lote')
+  mkdirSync(sub)
+  const o = olho(sub, { preco: 0.5, autorizado: true, codigo: 0, verVideo: VER, env: { GEMINI_API_KEY: 'falsa', NODE_OPTIONS: `--import ${pathToFileURL(falsa).href}` } })
+  assert.equal(o.r.status, 0, `lote: ${o.saida}`)
+  assert.doesNotMatch(o.saida, /ver-video falhou|pulado/, 'lote')
+  assert.deepEqual(o.linhas.map((l) => l.servico), ['gemini-fiscal-olho-final'], `lote: ${o.saida}`)
 }))
 
 test('fiscal com preco e autorizacao chama o olho final uma vez e grava uma linha de custo', () => comTemp((d) => {

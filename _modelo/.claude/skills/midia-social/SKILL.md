@@ -74,7 +74,8 @@ conta o resultado.
 ## Custo
 
 So o Gemini e pago, e e opcional. Antes de qualquer uso, o comando diz quanto vai custar e espera o
-"pode ir". Todo gasto vira uma linha em `dados/custos.jsonl`. O Gemini assistindo video (pelo
+"pode ir", fora a permissao de gasto do `_contexto/autonomia.md`, em que o script roda sem o
+`--autorizado` e a IA avisa logo depois quanto gastou. Todo gasto vira uma linha em `dados/custos.jsonl`. O Gemini assistindo video (pelo
 `ver-video.mjs` da `/assistir-video`) anota sozinho. Outro gasto pago passa pelo orcamento do mes
 do projeto: depois do "pode ir" e antes de gastar, rodar
 ```

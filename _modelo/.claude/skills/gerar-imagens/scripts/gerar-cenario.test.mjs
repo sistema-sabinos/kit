@@ -4,10 +4,10 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, writeFileSync, rmSync, existsSync } from 'node:fs'
+import { mkdtempSync, writeFileSync, rmSync, existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { REGRAS, montarPrompt, cotaEstourou, escolherModeloImagem, erroSemModelo, avisoDePreco, PRECO_IMAGEM, PRAZO_LISTA_MS, PRAZO_GERAR_MS, viaCodex, viaGemini, codigoDeSaida } from './gerar-cenario.mjs'
+import { REGRAS, montarPrompt, cotaEstourou, escolherModeloImagem, erroSemModelo, avisoDePreco, PRECO_IMAGEM, PRAZO_LISTA_MS, PRAZO_GERAR_MS, viaCodex, viaGemini, codigoDeSaida, main } from './gerar-cenario.mjs'
 import { rodarComPrazo } from './motor.mjs'
 import { EventEmitter } from 'node:events'
 import { CAMINHO_ENV } from '../../conectar/scripts/lib/env.mjs'
@@ -427,4 +427,69 @@ test('codigoDeSaida: parou vale 3 mesmo com cena faltando, faltou vale 1, tudo g
     [{ faltaram: [] }, 0],
   ]
   for (const [r, esperado] of tabela) assert.equal(codigoDeSaida(r), esperado, JSON.stringify(r))
+})
+
+// 5.52 (chat 3, decisao 1): sem o --autorizado, a permissao de gasto escrita libera e o script diz quanto resta
+test('main gemini: sem --autorizado e com a permissao de gasto, libera, imprime "foi pela permissao, resta" e grava a conta dela', async () => {
+  const raiz = mkdtempSync(join(tmpdir(), 'gerar-cenario-permissao-'))
+  const original = console.error
+  const erros = []
+  try {
+    mkdirSync(join(raiz, '_contexto'))
+    writeFileSync(join(raiz, '_contexto', 'orcamento.md'), '```orcamento\norcamento_mes_usd: 10\n```\n')
+    writeFileSync(join(raiz, '_contexto', 'autonomia.md'), '```autonomia\narea: gasto-ia\npode: gastar\nteto: 1 USD dia\n```\n')
+    const arquivo = join(raiz, 'cenas.json')
+    writeFileSync(arquivo, JSON.stringify([{ out: join(raiz, 'c0.png'), descricao: 'bancada clara' }]))
+    console.error = (...a) => erros.push(a.join(' '))
+    // sem chave: para depois da liberacao, antes da rede
+    await main(['--degrau', 'gemini', '--cenas', arquivo, '--preco-usd', '0.05'], { raiz, ler: () => ({}) })
+    console.error = original
+    assert.equal(process.exitCode, 2, erros.join(' | '))
+    assert.ok(erros.some(l => /\[permissao\] foi pela permissao .*resta US\$ 0\.95 de US\$ 1\.00 no dia/.test(l)), erros.join(' | '))
+    // Codex comum (5.52, chat 3): parou antes da rede, nada cobrou, e a reserva fechada devolve o teto
+    const linhas = readFileSync(join(raiz, 'dados', 'permissao-gastos.jsonl'), 'utf8').trim().split('\n').map(l => JSON.parse(l))
+    assert.equal(linhas.length, 2)
+    assert.deepEqual([linhas[1].devolucao, linhas[1].reserva, linhas[1].usd], [true, linhas[0].reserva, 0.05])
+    erros.length = 0
+    console.error = (...a) => erros.push(a.join(' '))
+    await main(['--degrau', 'gemini', '--cenas', arquivo, '--preco-usd', '0.05'], { raiz, ler: () => ({}) })
+    console.error = original
+    assert.ok(erros.some(l => /resta US\$ 0\.95 de US\$ 1\.00 no dia/.test(l)), 'a segunda tentativa acha o teto inteiro: ' + erros.join(' | '))
+  } finally {
+    console.error = original
+    process.exitCode = 0
+    rmSync(raiz, { recursive: true, force: true })
+  }
+})
+
+// Codex comum (5.52, chat 3, segunda volta): o POST que lanca (ECONNRESET depois de sair) pode ter cobrado
+test('main gemini: POST da geracao que lanca e cobranca incerta, segura a reserva aberta e nao devolve o teto da permissao', async () => {
+  const raiz = mkdtempSync(join(tmpdir(), 'gerar-cenario-incerta-'))
+  const original = console.error
+  const erros = []
+  let posts = 0
+  const buscar = async (url, op = {}) => {
+    if (url.includes('/models?')) return { status: 200, json: async () => ({ models: [{ name: 'models/gemini-3.1-flash-image', supportedGenerationMethods: ['generateContent'] }] }) }
+    if (op.method === 'POST') { posts++; throw Object.assign(new Error('socket hang up'), { code: 'ECONNRESET' }) }
+    throw new Error('url inesperada ' + url)
+  }
+  try {
+    mkdirSync(join(raiz, '_contexto'))
+    writeFileSync(join(raiz, '_contexto', 'orcamento.md'), '```orcamento\norcamento_mes_usd: 10\n```\n')
+    writeFileSync(join(raiz, '_contexto', 'autonomia.md'), '```autonomia\narea: gasto-ia\npode: gastar\nteto: 1 USD dia\n```\n')
+    const arquivo = join(raiz, 'cenas.json')
+    writeFileSync(arquivo, JSON.stringify([{ out: join(raiz, 'c0.png'), descricao: 'bancada clara' }]))
+    console.error = (...a) => erros.push(a.join(' '))
+    await main(['--degrau', 'gemini', '--cenas', arquivo, '--preco-usd', '0.5'], { raiz, ler: () => ({ GEMINI_API_KEY: 'k' }), buscar })
+    console.error = original
+    assert.equal(posts, 1, 'canario: o POST rodou e lancou: ' + erros.join(' | '))
+    const linhas = readFileSync(join(raiz, 'dados', 'permissao-gastos.jsonl'), 'utf8').trim().split('\n').map(l => JSON.parse(l))
+    assert.equal(linhas.length, 1, 'sem linha de devolucao')
+    assert.equal(JSON.parse(readFileSync(join(raiz, 'dados', 'orcamento-reservas.json'), 'utf8')).length, 1, 'a reserva ficou aberta')
+    assert.ok(erros.some(l => /ficou aberta/.test(l)), erros.join(' | '))
+  } finally {
+    console.error = original
+    process.exitCode = 0
+    rmSync(raiz, { recursive: true, force: true })
+  }
 })

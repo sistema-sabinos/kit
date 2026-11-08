@@ -1,4 +1,28 @@
 {
+  "permissions": {
+    "ask": [
+      "Edit(/_contexto/autonomia.md)"
+    ],
+    "allow": [
+      "Bash(node .claude/skills/*)",
+      "Bash(node _ferramentas/*)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git pull *)",
+      "Bash(git push *)",
+      "Bash(npm install)",
+      "Bash(npm install --prefix .claude/skills/*)",
+      "Bash(npm ci)",
+      "Bash(npm ci --prefix .claude/skills/*)",
+      "Bash(ffmpeg *)",
+      "Bash(ffprobe *)",
+      "Bash(python .claude/skills/*)",
+      "Bash(python3 .claude/skills/*)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {

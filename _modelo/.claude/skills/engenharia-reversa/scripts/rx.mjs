@@ -17,7 +17,7 @@ import { sessaoDaPagina, AVISO } from '../../conectar/scripts/lib/navegador.mjs'
 import { tokenMl } from '../../mercado-livre/scripts/lib/tokens.mjs'
 import { mlGet } from '../../mercado-livre/scripts/lib/ml-api.mjs'
 import { lerEnv } from '../../mercado-livre/scripts/lib/env.mjs'
-import { liberarGasto, fecharReserva } from '../../conectar/scripts/lib/orcamento.mjs'
+import { liberarGasto, fecharReserva, avisoDaPermissao } from '../../conectar/scripts/lib/orcamento.mjs'
 import { slugDe, lerJson, gravarJson, dataLocal } from '../../mercado-livre/scripts/lib/pipeline.mjs'
 import { coletarBusca, tipoDoLink } from '../../pesquisar-tendencia/scripts/coletar-cdp.mjs'
 import { lerPagina, fotosUnicas, urlParaAbrir } from '../../espionar-concorrente/scripts/espionar.mjs'
@@ -150,7 +150,8 @@ function gravarSaidas(c, coleta, fichas) {
 
 // O portao de custo. Devolve o codigo em vez de encerrar o processo: process.exit com a conexao
 // do Gemini aberta derruba o Node no Windows (visto no ensaio de 2026-10-04, codigo 127 em vez de 3).
-// Codigo 3 = parou antes de gastar (fora da tabela, a trava do conectar parou, ou sem o --sim).
+// Codigo 3 = parou antes de gastar (fora da tabela, a trava do conectar parou, ou sem o --sim e fora da
+// permissao de gasto do _contexto/autonomia.md, 5.52).
 // A trava e a unica do kit: orcamento do mes quando definido, senao o limite_gasto_usd por lote. O pedido
 // a trava e o teto (a estimativa com folga, porque o consumo de tokens varia em volta da media medida).
 // Teto do gasto real: o mesmo teto mostrado a pessoa e reservado no orcamento (a trava ja conferiu que
@@ -165,7 +166,10 @@ export async function passoVer({ porAnuncio, chave, hoje, sim, acimaDoTeto, desc
   const resumo = { modelo, fotos, estimativa_usd: est.usd, teto_usd: teto, minutos: est.minutos, preco_conferido_em: est.preco.conferido_em, promocional_ate: est.preco.promocional_ate }
   const lib = liberar({ estimativaUsd: teto, autorizado: sim, ...(acimaDoTeto !== undefined ? { acimaDoTetoUsd: acimaDoTeto } : {}) })
   if (lib.aviso) resumo.aviso = lib.aviso
-  if (lib.codigo !== 0) return { codigo: 3, saida: { parou: lib.parou, ...resumo } }
+  if (lib.codigo !== 0) return { codigo: 3, saida: { parou: lib.parou, ...resumo, ...(lib.fora_da_permissao ? { fora_da_permissao: lib.fora_da_permissao } : {}) } }
+  // 5.52 (chat 3): sem o --sim, o que passou foi pela permissao escrita; a pessoa fica sabendo logo depois
+  const permissao = avisoDaPermissao(lib)
+  if (permissao) log(permissao)
   const reserva = lib.reserva || null
   const limite = teto
   const aberta = `A reserva ${reserva} do orcamento do mes ficou aberta e conta no saldo: anote em dados/custos.jsonl o que foi cobrado sem linha e feche pelo --saldo do /configurar-video`

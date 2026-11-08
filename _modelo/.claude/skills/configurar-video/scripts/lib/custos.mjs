@@ -2,7 +2,7 @@
 // (conectar/scripts/lib/orcamento.mjs), que vale pro projeto inteiro; aqui fica o reexport
 // pra quem ja importava daqui e as contas do video. Linha de "aberta" com custo conta em
 // dobro na soma, por isso nao existe.
-export { registrarCusto, liberarGasto, fecharReserva } from '../../../conectar/scripts/lib/orcamento.mjs'
+export { registrarCusto, liberarGasto, fecharReserva, avisoDaPermissao } from '../../../conectar/scripts/lib/orcamento.mjs'
 
 export function estimar({ n, precoUsd, limiteUsd }) {
   const total = Math.round(n * precoUsd * 10000) / 10000

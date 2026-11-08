@@ -315,7 +315,10 @@ de forma, nesta ordem de importância:
   API só no `.env`, nunca no chat nem em outro arquivo, e senha de site também vai
   no `.env`, que a IA lê pra fazer o login e nunca mostra no chat; e gate humano
   (nada que gasta dinheiro, manda mensagem pra fora, publica ou altera conta de
-  terceiro roda sem o "pode ir" da pessoa naquele momento). Depois delas, o tom
+  terceiro roda sem o "pode ir" da pessoa naquele momento, fora da permissão escrita
+  de cada projeto). No rodapé, a mesma regra do gate já na forma curta, "naquele momento,
+  fora da permissão escrita" (sem o "de cada projeto"), pra o `/atualizar-kit` achar "permissão
+  escrita" ali e não propor troca de uma linha recém-gravada. Depois delas, o tom
   de escrita resumido em poucas linhas.
 - **Curto.** Meta: menos de 900 tokens, uns 3.500 caracteres. Regra que vale só
   pra um projeto não entra aqui; vai pro `AGENTS.md` daquele projeto. Cada regra
@@ -390,7 +393,36 @@ Explicar em uma frase e perguntar:
 
 Guardar a escolha para aplicar na cópia do `settings.json` abaixo.
 
-### Equipe e computadores (logo depois do auto-sync)
+### Quanto eu posso fazer sozinho? (logo depois do auto-sync)
+
+Pergunta de botão, cabeçalho `Sozinho`, fora do `RESPONDA-AQUI.txt`. O porquê numa linha
+antes: "Pergunto pra saber quando eu paro pra te consultar e quando eu sigo. Dá pra mudar
+quando quiser, é só falar."
+
+> "Quanto eu posso fazer sozinho?"
+
+Opções, nesta ordem, com o Colaborativo como padrão:
+
+1. **Consultivo:** te pergunto tudo, até escolha de gosto (cor, título, qual das opções).
+2. **Colaborativo (padrão):** pergunto o que muda o trabalho e sigo no resto. Gastar,
+   publicar e mandar mensagem pra fora eu sempre te pergunto antes.
+3. **Delegado:** o colaborativo, e o gasto pequeno com IA paga (imagem, vídeo) eu faço
+   sozinho até um limite que você diz, e te aviso logo depois quanto foi. Essa permissão
+   fica escrita no `_contexto/autonomia.md` e só liga depois que você disser o valor.
+4. **Executivo:** o delegado, e escolha de gosto eu faço sem parar pra perguntar e te digo
+   qual foi.
+
+Em todo modo, publicar, mandar mensagem pra fora e mexer em conta de terceiro (anúncio,
+tráfego pago) seguem com o seu "pode ir". Resposta fora das opções ou "não sei" fica no
+Colaborativo. Guardar a escolha para o `preferencias.md` (Passo 5, "O que copiar").
+
+O limite do gasto sozinho entra só pelo passo do orçamento do mês do `/configurar-video`,
+porque a permissão de gasto só vale com o orçamento do mês definido. No Delegado e no
+Executivo, com o pacote de vídeo instalado, uma linha no `tarefas.md`: "dizer até quanto a
+IA pode gastar sozinha com IA paga: o `/configurar-video` pergunta no passo do orçamento do
+mês". Sem o pacote de vídeo, contar em uma frase que o gasto sozinho liga junto com ele.
+
+### Equipe e computadores (logo depois do quanto posso fazer sozinho)
 
 Perguntar na conversa, no formato de 4 partes:
 
@@ -702,7 +734,11 @@ uma pasta com esse nome na raiz, avisar e perguntar outro nome antes de seguir.
   e, sem GitHub, manda lembrar o `/syncar` uma vez) precisa ser reescrita: dizer que não existe backup
   automático configurado e que o assistente deve sugerir `/syncar` ao fim das
   sessões de trabalho. Caminho padrão (auto-sync aceito) mantém a regra 5 como
-  está no `_modelo/AGENTS.md`.
+  está no `_modelo/AGENTS.md`. O `settings.json` traz uma lista curta de comandos
+  do kit que rodam sem pedir licença (o `permissions.allow`). Diga isso à pessoa
+  numa linha: a lista só passa a valer depois que ela responde que sim quando o
+  Claude Code pergunta se ela confia na pasta, e com as perguntas desligadas ela
+  não muda nada.
 - `.claude/hooks/barrar-perigoso.mjs`, só o script (nunca o `.claude/hooks/barrar-perigoso.test.mjs`,
   que é teste de desenvolvimento e não serve de nada no projeto do aluno). É a trava de
   segurança dos comandos; o que ela segura está na regra 12 do `.claude/detalhe-regras.md`,
@@ -725,9 +761,9 @@ uma pasta com esse nome na raiz, avisar e perguntar outro nome antes de seguir.
 - `.gitattributes`, copiar como está. Faz o diário e as decisões, que só recebem
   linha nova, juntarem as duas versões sozinhos quando dois computadores escrevem
   ao mesmo tempo, em vez de travar o backup.
-- `_contexto/` inteira (os 8 arquivos: `empresa.md`, `preferencias.md`,
+- `_contexto/` inteira (os 10 arquivos: `empresa.md`, `preferencias.md`,
   `estrategia.md`, `agora.md`, `licoes.md`, `ferramentas.md`, `automacoes.md`,
-  `infra.md`, mais a pasta `arquivo/` com o `README.md` e a `pessoas/` com o `.gitkeep`), preenchidos com as respostas colhidas (o `automacoes.md` nasce quase
+  `infra.md`, `orcamento.md` e `autonomia.md` (os dois últimos nascem em branco, como estão no `_modelo`), mais a pasta `arquivo/` com o `README.md` e a `pessoas/` com o `.gitkeep`), preenchidos com as respostas colhidas (o `automacoes.md` nasce quase
   vazio quando a pessoa não citou rotina; o `infra.md` sai do "Onde as suas coisas
   moram" do Passo 2), nunca deixando o aviso `NOT CONFIGURED` no projeto final.
   No `ferramentas.md`, uma linha pra cada um dos sete assuntos do arquivo, tirada
@@ -744,6 +780,12 @@ uma pasta com esse nome na raiz, avisar e perguntar outro nome antes de seguir.
   bem" troca o parágrafo pela versão direta escrita no próprio comentário ("Linguagem
   direta, termo técnico sem explicação; explicar só quando pedirem. ..."), e o
   comentário sai junto. Mudança de tom pedida no Passo 2 vale por cima disso.
+  No fim da seção Formato do `preferencias.md`, a linha do modo do "Quanto eu posso fazer
+  sozinho?": `Modo: consultivo. Escolha de gosto (cor, título, qual das opções) também se
+  pergunta antes.`, `Modo: colaborativo.`, `Modo: delegado.` ou `Modo: executivo.`; no
+  Executivo, mais a linha `Só faz: escolhas de gosto (cor, título, qual das opções).`. O
+  `autonomia.md` nasce em branco em todo modo: a permissão de gasto do Delegado e do
+  Executivo se grava só quando a pessoa disser o valor.
 - `marca/design-guide.md`, preenchido com o que veio do Passo 2 (identidade
   visual), ou mantido neutro se a pessoa não tinha nada ainda.
 - `marca/tom-de-voz.md`, preenchido com a voz da marca do Passo 2 (o exemplo real
@@ -978,7 +1020,7 @@ qual é o próximo passo ao terminar cada etapa)".
 
 - Gerar tudo do Passo 5 em diante de uma vez só, depois de fechados os Passos 0 a
   4. Nunca criar arquivo por arquivo durante a entrevista. As confirmações do
-  Passo 5 (auto-sync, equipe e computadores, sistema operacional só quando o
+  Passo 5 (auto-sync, quanto posso fazer sozinho, equipe e computadores, sistema operacional só quando o
   Passo 0 não rodou, e por fim a estrutura de pastas proposta) vêm antes de gerar
   e não contam como quebrar essa regra. Cada uma sai sozinha, no seu bloco, com
   botão. Quando a entrevista já deu a resposta, a opção correspondente vem

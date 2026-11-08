@@ -15,7 +15,8 @@
 //
 // DINHEIRO. Nenhuma chamada paga sai sem o preco do dia (--preco-usd e os
 // outros, conferidos na pagina de precos do Gemini no dia, nunca chumbados) e sem
-// --autorizado (o "pode ir" da pessoa). A estimativa da fase 2 soma: clipes que
+// --autorizado (o "pode ir" da pessoa) ou a permissao de gasto escrita no _contexto/autonomia.md
+// (5.52, chat 3: a liberacao imprime "foi pela permissao, resta ..."). A estimativa da fase 2 soma: clipes que
 // faltam x 8 s x preco por segundo, a musica se faltar, e uma folga de US$ 0,01
 // por bloco com algo faltando (voz e transcricao de volta de 8 s custam fracoes
 // de centavo; a folga so existe pra estimativa nao subestimar). Nao cabe no
@@ -49,7 +50,7 @@ import { gerarMusica, ESTILOS } from './lib/musica.mjs'
 import { fetchComTimeout } from './lib/fetch-timeout.mjs'
 import { RAIZ } from '../../mercado-livre/scripts/lib/raiz.mjs'
 import { carregarConfiguracao, PADROES } from '../../mercado-livre/scripts/lib/config.mjs'
-import { registrarCusto, estimar, liberarGasto, fecharReserva } from '../../configurar-video/scripts/lib/custos.mjs'
+import { registrarCusto, estimar, liberarGasto, fecharReserva, avisoDaPermissao } from '../../configurar-video/scripts/lib/custos.mjs'
 import { RECADO_TRAVA } from '../../conectar/scripts/lib/orcamento.mjs'
 import { lerOrcamento } from '../../conectar/scripts/lib/orcamento.mjs'
 import { realpathSync } from 'node:fs'
@@ -539,7 +540,7 @@ const USO = [
   '  --fase=3              emenda, legenda, gate tecnico e gate de voz (a transcricao e paga)',
   '',
   '  --dry-run             sem gastar API: na fase 2 so mostra os prompts e o custo; na fase 3 monta e pula o gate de voz (sai 3, "incompleto")',
-  '  --autorizado          o "pode ir" da pessoa: sem ele, qualquer rodada paga para (sai 3) e mostra a estimativa',
+  '  --autorizado          o "pode ir" da pessoa: sem ele, so a permissao de gasto do _contexto/autonomia.md libera; fora dela a rodada paga para (sai 3) e mostra a estimativa',
   '  --acima-do-teto=<US$> sem orcamento do mes, o valor que a pessoa ouviu no pode ir pra rodada acima do limite_gasto_usd (igual ou maior que a estimativa, junto do --autorizado)',
   '  --preco-usd=<US$/s>   preco do dia do clipe do Gemini Omni Flash por segundo (obrigatorio na fase 2 fora do dry-run)',
   '  --preco-musica-usd=<US$>               preco do dia de uma musica (obrigatorio se faltar a musica)',
@@ -633,6 +634,8 @@ function liberar(ctx, estimativaUsd) {
     lerOrcamento: () => lerOrcamento({ raiz: d.raizGasto, lerLote: () => limiteDeGasto(d) }),
   })
   if (lib.aviso) console.error(`[aviso] ${lib.aviso}`)
+  const permissao = avisoDaPermissao(lib)
+  if (permissao) console.error(permissao)
   ctx.gasto.reserva = lib.reserva || null
   return lib
 }

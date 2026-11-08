@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Consulta de leitura na API do Mercado Livre pela IA, sem ela ver o token. O .env fica em deny
-// desde a 5.28: o mlGet le e renova o token sozinho, e aqui sai so o JSON da resposta.
+// Consulta de leitura na API do Mercado Livre pela IA, sem o token aparecer no chat (regra 15: a IA
+// le o .env pra usar e nunca mostra o valor): o mlGet le e renova o token sozinho, e aqui sai so o
+// JSON da resposta.
 // Uso, da raiz do projeto: node .claude/skills/mercado-livre/scripts/consultar-ml.mjs "<caminho>"
 //   ex.: "/sites/MLB/listing_prices?price=100&category_id=MLB1234&listing_type_id=gold_special"
 // Saida: 0 com o JSON; 1 quando a API recusa; 2 sem caminho ou com endereco que nao e da API.

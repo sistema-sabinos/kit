@@ -91,7 +91,30 @@ export const TIRADAS_DO_KIT = {
     'mcp__playwright__browser_run_code_unsafe', 'mcp__navegador__browser_run_code_unsafe',
   ],
   ask: ['Read(./.env)', 'Read(./.env.*)'],
+  allow: [],
   SessionStart: 'anotação do navegador (barrar-mcp)',
+}
+
+// 5.52 (chat 3, Task 3c, decisoes 2 e 18): o que o settings do _modelo traz em permissions, lista fechada (a mesma
+// que o Gate 9 do verificar-kit cobra). O ask pergunta antes de a Edit ou a Write mexer na permissao escrita
+// (_contexto/autonomia.md), em todo modo; o / da frente prende o caminho na pasta do settings, o ./ seguiria a
+// pasta corrente. O allow solta da caixinha so o script do kit, o git do backup, a instalacao das skills e o
+// ffmpeg: nada de node ou python soltos (node -e apaga), rm, Remove-Item, mcp__, Edit nem Write amplos. O allow
+// so vale depois de a pessoa confiar na pasta e nao muda nada no modo bypass; a trava barrar-perigoso roda antes
+// dele em todo comando. A pasta-mae fica sem allow (ela nao liga o barrar-perigoso no shell). O allow casa pelo
+// comeco do texto: o .. no caminho e o pacote a mais no npm --prefix saem dele, e a trava pergunta (regra
+// fora-do-allow); o --output do git e o ffmpeg gravando no autonomia.md tambem perguntam (grava-autonomia). Furos
+// nomeados no T53: o script gravado dentro de .claude/skills/ ou _ferramentas/ roda calado, e o ffmpeg -y grava por
+// cima de outro arquivo do aluno sem pergunta
+export const PERMISSOES_DO_KIT = {
+  ask: ['Edit(/_contexto/autonomia.md)'],
+  allow: [
+    'Bash(node .claude/skills/*)', 'Bash(node _ferramentas/*)',
+    'Bash(git status *)', 'Bash(git diff *)', 'Bash(git log *)', 'Bash(git add *)', 'Bash(git commit *)', 'Bash(git pull *)', 'Bash(git push *)',
+    'Bash(npm install)', 'Bash(npm install --prefix .claude/skills/*)', 'Bash(npm ci)', 'Bash(npm ci --prefix .claude/skills/*)',
+    'Bash(ffmpeg *)', 'Bash(ffprobe *)',
+    'Bash(python .claude/skills/*)', 'Bash(python3 .claude/skills/*)',
+  ],
 }
 
 export function mesclarSettings(daPessoa, doKit) {
@@ -105,7 +128,14 @@ export function mesclarSettings(daPessoa, doKit) {
   const doKitDeny = doKit?.permissions?.deny ?? []
   const deny = lista('deny')
   for (const regra of doKitDeny) if (!deny.includes(regra)) { deny.push(regra); faltava.push(regra) }
-  for (const [chave, atual] of [['deny', deny], ['ask', lista('ask')]]) {
+  // 5.52 (chat 3, Task 3c): o ask e o allow do kit entram por juncao, como o deny, sem tirar nada da pessoa
+  const juntas = { ask: lista('ask'), allow: lista('allow') }
+  for (const chave of ['ask', 'allow']) {
+    for (const regra of doKit?.permissions?.[chave] ?? []) {
+      if (!juntas[chave].includes(regra)) { juntas[chave].push(regra); faltava.push(`${chave} ${regra}`) }
+    }
+  }
+  for (const [chave, atual] of [['deny', deny], ['ask', juntas.ask], ['allow', juntas.allow]]) {
     const fica = atual.filter(r => !TIRADAS_DO_KIT[chave].includes(r) || (doKit?.permissions?.[chave] ?? []).includes(r))
     tirou.push(...atual.filter(r => !fica.includes(r)).map(r => `${chave} ${r}`))
     if (fica.length) settings.permissions = { ...(settings.permissions ?? {}), [chave]: fica }
@@ -519,7 +549,7 @@ function principal(argv) {
     const daPessoa = lerJson(arqProjeto)
     const { settings, faltava, tirou } = mesclarSettings(daPessoa, lerJson(join(kit, '_modelo', '.claude', 'settings.json')))
     const listas = s => JSON.stringify({
-      deny: s.permissions?.deny ?? [], ask: s.permissions?.ask ?? [],
+      deny: s.permissions?.deny ?? [], ask: s.permissions?.ask ?? [], allow: s.permissions?.allow ?? [],
       travaDoMcp: (s.hooks?.PreToolUse ?? []).some(citaMcp), anotacaoDoNavegador: (s.hooks?.SessionStart ?? []).some(citaMcp),
     })
     console.log(`antes: ${listas(daPessoa)}`)

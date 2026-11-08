@@ -41,8 +41,10 @@ As skills são o roteiro: nunca improvisar o fluxo.
 4. Erro corrigido no onboarding vira linha datada no `_contexto/licoes.md` do
    projeto criado.
 5. Nada que gasta dinheiro, publica, envia mensagem pra fora ou altera conta de terceiros
-   roda sem aprovação explícita na hora. Robô do `/agendar`: o "pode ir" se dá ao
-   agendar e vale pra toda execução.
+   roda sem aprovação explícita na hora. Exceções: gasto dentro da permissão escrita
+   no `_contexto/autonomia.md` de cada projeto, e uso dentro da assinatura (Claude e
+   Codex do plano) e atualizar ferramenta, que rodam sem pedir; crédito avulso pede.
+   Robô do `/agendar`: o "pode ir" se dá ao agendar e vale pra toda execução.
 6. Chave de API só no `.env`, nunca no chat nem em outro arquivo. Senha de site também vai no `.env`: a IA lê pra fazer o login, nunca mostra no chat (o `/conectar` explica).
 7. Nunca editar `_modelo/` (o molde dos próximos projetos) sem o usuário pedir
    explicitamente.

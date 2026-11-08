@@ -27,15 +27,17 @@ Para áudio puro (podcast, vídeo sem nada visual relevante), a skill `transcrib
 ## Como rodar
 
 ```bash
-node .claude/skills/assistir-video/ver-video.mjs "<url ou arquivo>"
+node .claude/skills/assistir-video/ver-video.mjs "<url ou arquivo>" --usd <estimativa em dólar> --autorizado
 ```
+
+O `--usd` é a estimativa da seção Custo: o script passa pela trava do gasto do kit (orçamento do mês, ou o limite por vez sem ele) antes de chamar o Gemini, e sem `--usd` para sem gastar. `--autorizado` é o "pode ir" da pessoa. Com a permissão de gasto escrita no `_contexto/autonomia.md`, rode sem o `--autorizado`: o script confere o limite dela e a linha `[permissao]` diz quanto resta; conte à pessoa logo depois quanto gastou. Saída 3 é parada antes de gastar: repasse o motivo como veio.
 
 Opções:
 - `--pergunta "..."` responde uma pergunta específica em vez da análise completa.
 - `--barato` usa o flash mais novo em vez do pro. **É o que derruba o custo de verdade** (cai a qualidade da leitura de texto miúdo na tela).
 - `--model gemini-3.1-pro-preview` força um modelo específico (normalmente desnecessário, ver abaixo).
 - `--lowres` pede resolução de mídia baixa. Não muda o número de tokens nos modelos 3.x, então não conte com ele pra economizar; use `--barato`.
-- `--baixar` força baixar mesmo sendo YouTube. `--manter` não apaga o arquivo temporário. `--so-baixar` só baixa e imprime o caminho (grátis: não chama o Gemini nem precisa de chave). `--sem-registro` não grava o custo, pra script que já anota ele mesmo (o fiscal do `/editar-video`).
+- `--baixar` força baixar mesmo sendo YouTube. `--manter` não apaga o arquivo temporário. `--so-baixar` só baixa e imprime o caminho (grátis: não chama o Gemini nem precisa de chave). O `--reserva`, o `--sem-registro` e o `--raiz` são só dos scripts do `/editar-video` que chamam este (o fiscal e o Gemini no cru), e o ver-video confere a reserva deles antes de gastar: a IA nunca usa essas opções.
 
 O texto sai no stdout. O stderr mostra a rota usada, o modelo, os tokens e o custo em dólar. Cada chamada paga vira uma linha em `dados/custos.jsonl` sozinha.
 
@@ -68,7 +70,7 @@ Avisar o custo aproximado antes de toda chamada e esperar o "pode ir" (regra do 
 
 1. Pegar a URL (ou caminho) do argumento. Se não vier, pedir.
 2. Se o usuário fez uma pergunta específica, passar via `--pergunta`. Vídeo longo sem texto miúdo na tela: considerar `--barato`.
-3. Avisar o custo aproximado e esperar o "pode ir". Depois rodar o script e apresentar a análise.
+3. Avisar o custo aproximado e esperar o "pode ir" (com a permissão de gasto do `_contexto/autonomia.md`, avisar logo depois). Depois rodar o script com o `--usd` e apresentar a análise.
 4. Se o usuário pediu pra checar se o vídeo fala verdade, pegar a seção "afirmações verificáveis" e conferir cada uma com WebSearch/WebFetch antes de responder.
 
 ## Limitações

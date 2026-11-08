@@ -26,13 +26,24 @@
  * Se não achar, avisa como criar (ver /conectar) e sai.
  *
  * Saída: o texto da análise no stdout; modelo, rota e uso de tokens no stderr.
+ *
+ * Gasto (5.52, chat 3): chamado direto, passa pela trava do gasto do kit antes de subir o vídeo, com
+ * --usd <estimativa> e, com o sim da pessoa, --autorizado (sem ele, só a permissão de gasto do
+ * _contexto/autonomia.md libera). Parou: sai 3, com o motivo no stderr.
+ * Conserto da interna (5.52, chat 3): nenhuma opção pula a trava sem prova. --reserva <id> é de script que já passou
+ * pela trava e anota o custo ele mesmo (o gemini-cru e o fiscal do /editar-video): o ver-video confere, sob a trava
+ * do orçamento, que a reserva existe em dados/orcamento-reservas.json, é do processo que o chamou e ainda não foi
+ * usada; aí não confere o saldo de novo (senão a mesma chamada reservaria duas vezes) e não anota o custo.
+ * --sem-registro só tira a linha de custo (quem chamou anota): a trava roda inteira, e com orçamento do mês ele
+ * para e pede a --reserva. --raiz <pasta> (a raiz de quem chamou) só vale junto de uma das duas.
  */
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import https from 'https';
 import { baixarVideo, ehYoutube } from './baixar-video.mjs';
-import { linhaDeCusto, registrarCusto, tokensDaResposta, dataLocal } from './custo.mjs';
+import { linhaDeCusto, registrarCusto, tokensDaResposta, dataLocal, RAIZ } from './custo.mjs';
+import { liberarGasto, fecharReserva, avisoDaPermissao, comTrava } from '../conectar/scripts/lib/orcamento.mjs';
 
 // ---------------- chave ----------------
 function readKeyFrom(file) {
@@ -89,6 +100,95 @@ const prompt = pergunta
 // --so-baixar nunca chama o Gemini: roda sem chave, e a rota gratis de quem usa esta skill depende disso
 const key = has('so-baixar') ? null : loadApiKey();
 const API ='https://generativelanguage.googleapis.com/v1beta';
+
+// ---------------- trava do gasto (chamado direto) ----------------
+const RESERVA_DE_QUEM_CHAMOU = has('reserva') ? String(flag('reserva', '')) : null;
+if (has('raiz') && RESERVA_DE_QUEM_CHAMOU === null && !has('sem-registro')) {
+  console.error('parou: o --raiz é só de script que já passou pela trava (com --reserva <id> ou --sem-registro). Chamado direto, vale a raiz do projeto.');
+  process.exit(2);
+}
+const RAIZ_GASTO = flag('raiz', RAIZ);
+let reservaDoGasto = null;
+// a estimativa que a trava liberou (--usd): vale como custo quando o preco do modelo nao esta na tabela
+let estimativaDoGasto = null;
+// sem registro: quem chamou anota o custo (com a reserva dele, ou no teto por lote sem reserva)
+let semRegistro = false;
+const numeroDe = (v) => Number(String(v).replace(',', '.'));
+// A reserva que o chamador passou tem de existir, ser dele (o pai deste processo) e nao ter linha de custo ainda
+function conferirReserva(id) {
+  if (!id || id.startsWith('--')) return 'faltou o id depois do --reserva';
+  try {
+    return comTrava(RAIZ_GASTO, () => {
+      const arq = path.join(RAIZ_GASTO, 'dados', 'orcamento-reservas.json');
+      const texto = fs.existsSync(arq) ? fs.readFileSync(arq, 'utf8') : '';
+      const lista = texto.trim() ? JSON.parse(texto) : [];
+      const r = Array.isArray(lista) ? lista.find((x) => x && x.id === id) : null;
+      if (!r) return `a reserva ${id} não existe em dados/orcamento-reservas.json`;
+      if (r.pid !== process.ppid) return `a reserva ${id} não é do processo que chamou o ver-video`;
+      const custos = path.join(RAIZ_GASTO, 'dados', 'custos.jsonl');
+      const usada = fs.existsSync(custos) && fs.readFileSync(custos, 'utf8').split(/\r?\n/).some((l) => { try { return JSON.parse(l).reserva === id; } catch { return false; } });
+      if (usada) return `a reserva ${id} já tem linha de custo: foi usada por outra chamada`;
+      // Codex comum (5.52, chat 3): a primeira conferencia marca a reserva como usada, sob a mesma trava, e a
+      // segunda chamada com o mesmo id para antes da rede (antes, dois filhos passavam antes do pai anotar o custo)
+      if (r.usada_por !== undefined) return `a reserva ${id} já foi usada por outra chamada`;
+      r.usada_por = process.pid;
+      fs.writeFileSync(arq, JSON.stringify(lista, null, 2) + '\n');
+      return null;
+    });
+  } catch (e) { return `não consegui conferir a reserva (${e.message})`; }
+}
+function passarPelaTrava() {
+  if (RESERVA_DE_QUEM_CHAMOU !== null) {
+    const motivo = conferirReserva(RESERVA_DE_QUEM_CHAMOU);
+    if (motivo) {
+      console.error(`parou: ${motivo}. Sem reserva conferida, o ver-video passa pela trava: rode com --usd <estimativa> e, com o sim, --autorizado.`);
+      process.exitCode = 3;
+      return false;
+    }
+    semRegistro = true;
+    return true;
+  }
+  const usd = numeroDe(flag('usd', ''));
+  if (!has('usd') || !Number.isFinite(usd) || usd <= 0) {
+    console.error('parou: assistir com o Gemini é pago. Estime o custo (segundos do vídeo x 91 tokens x preço de entrada do dia, na página oficial), mostre à pessoa e rode de novo com --usd <estimativa> e, com o sim, --autorizado (com a permissão de gasto do _contexto/autonomia.md, sem o --autorizado).');
+    process.exitCode = 3;
+    return false;
+  }
+  const acima = flag('acima-do-teto', undefined);
+  const lib = liberarGasto({ estimativaUsd: usd, autorizado: has('autorizado'), acimaDoTetoUsd: acima === undefined ? undefined : numeroDe(acima) },
+    { raiz: RAIZ_GASTO, contexto: `assistir-video ${alvo}` });
+  if (lib.aviso) console.error(`[aviso] ${lib.aviso}`);
+  if (lib.codigo !== 0) {
+    console.error(`parou: ${lib.parou}${lib.fora_da_permissao ? ` (fora da permissão: ${lib.fora_da_permissao})` : ''}`);
+    process.exitCode = 3;
+    return false;
+  }
+  if (has('sem-registro')) {
+    // com orcamento do mes, sem linha de custo a reserva ficaria aberta sem dono: quem chama passa a reserva dele
+    if (lib.reserva) {
+      try { fecharReserva(lib.reserva, { raiz: RAIZ_GASTO, devolver: true }); } catch {}
+      console.error('parou: com o orçamento do mês, o --sem-registro não vale; o script que chama passa pela trava e manda a reserva dele (--reserva <id>).');
+      process.exitCode = 3;
+      return false;
+    }
+    semRegistro = true;
+  }
+  const permissao = avisoDaPermissao(lib);
+  if (permissao) console.error(permissao);
+  reservaDoGasto = lib.reserva || null;
+  estimativaDoGasto = usd;
+  return true;
+}
+// devolve ao saldo o que a reserva não gastou; chamada que caiu no meio deixa a reserva aberta (pode ter cobrado).
+// Daqui so se chega antes da analise sair pra rede ou com a linha de custo gravada: a liberacao pela permissao que nao
+// cobrou devolve o teto. Codex final (5.52, chat 3): depois que a analise saiu, nada devolve (cobranca incerta)
+function fecharGasto() {
+  if (!reservaDoGasto) return;
+  const id = reservaDoGasto;
+  reservaDoGasto = null;
+  try { fecharReserva(id, { raiz: RAIZ_GASTO, devolver: true }); } catch (e) { console.error(`[orcamento] não consegui fechar a reserva ${id} (${e.message}); feche pelo --saldo do /configurar-video`); }
+}
+const reservaAberta = () => reservaDoGasto ? ` A reserva ${reservaDoGasto} do orçamento do mês ficou aberta: anote em dados/custos.jsonl o que foi cobrado e feche pelo --saldo do /configurar-video.` : '';
 
 // ---------------- escolha do modelo (viva, não chumbada) ----------------
 const LIXO = /image|tts|lite|robotics|embedding|computer-use|customtools|deep-research|antigravity|omni|thinking/i;
@@ -196,6 +296,7 @@ async function faxina() {
 async function main() {
   if (usarLinkDireto) {
     console.error('[rota] link direto do YouTube (o Gemini busca sozinho)');
+    if (!passarPelaTrava()) return;
     filePart = { file_data: { file_uri: alvo } };
   } else {
     let arquivo = alvo;
@@ -208,8 +309,10 @@ async function main() {
       console.error('[rota] arquivo local');
     }
     if (has('so-baixar')) { console.log(arquivo); return; }
+    if (!passarPelaTrava()) { await faxina(); return; }
     let subido;
-    try { subido = await subirArquivo(arquivo); } catch (e) { await faxina(); throw e; }
+    // o envio do arquivo nao cobra: falhou antes da analise, a reserva volta pro saldo
+    try { subido = await subirArquivo(arquivo); } catch (e) { await faxina(); fecharGasto(); throw e; }
     nomeRemoto = subido.name;
     filePart = { file_data: { file_uri: subido.uri, mime_type: subido.mime } };
   }
@@ -228,6 +331,8 @@ async function main() {
         r.setEncoding('utf8');
         r.on('data', (c) => { txt += c; });
         r.on('end', () => { try { ok({ status: r.statusCode, json: JSON.parse(txt) }); } catch { ok({ status: r.statusCode, json: { error: { message: txt.slice(0, 300) } } }); } });
+        // a conexao que cai no meio do corpo vira erro da chamada (cobranca incerta), nunca um corpo pela metade
+        r.on('error', falha);
       });
       req.setTimeout(tetoMs, () => req.destroy(new Error(`o Gemini passou de ${tetoMs / 60000} minutos sem responder`)));
       req.on('error', falha);
@@ -240,18 +345,26 @@ async function main() {
   try {
     ({ status, json: j } = await postarJson(`${API}/models/${modelo}:generateContent?key=${key}`, corpo));
   } catch (e) {
-    console.error(`ERRO: [${modelo}] a chamada caiu antes da resposta (${e.message}). Pode ter sido cobrada: confira o uso em aistudio.google.com antes de tentar de novo. Vídeo muito longo: tente com --pergunta focada num trecho.`);
+    console.error(`ERRO: [${modelo}] a chamada caiu antes da resposta (${e.message}). Pode ter sido cobrada: confira o uso em aistudio.google.com antes de tentar de novo. Vídeo muito longo: tente com --pergunta focada num trecho.${reservaAberta()}`);
     await faxina(); // a chamada caiu
     process.exitCode = 1;
     return;
   }
 
   // a cobranca ja aconteceu quando vem uso de tokens: anota antes de olhar se a resposta presta
-  // --sem-registro: quem chamou anota o custo ele mesmo (o fiscal do /editar-video), pra nao contar em dobro
+  // com a reserva conferida (ou o --sem-registro no teto por lote), quem chamou anota o custo, pra nao contar em dobro
   let custo = null;
   if (j.usageMetadata) {
     custo = linhaDeCusto({ modelo, uso: j.usageMetadata, contexto: `assistir-video ${alvo}`, hoje: dataLocal(), agora: new Date().toISOString() });
-    if (!has('sem-registro')) try { registrarCusto(custo); } catch (e) { console.error(`[custo] chamada cobrada mas nao anotada em dados/custos.jsonl (${e.message}); anote a mao: ${JSON.stringify(custo)}`); }
+    // Codex comum (5.52, chat 3): preco fora da tabela (usd null) saia da soma do mes com a cobranca feita; conta a
+    // estimativa liberada, marcada com usd_estimado, e nunca solta a reserva de graca
+    if (custo.usd == null && estimativaDoGasto !== null) { custo.usd = estimativaDoGasto; custo.usd_estimado = true; }
+    if (reservaDoGasto) custo.reserva = reservaDoGasto;
+    if (!semRegistro) try { registrarCusto(custo, RAIZ_GASTO); fecharGasto(); } catch (e) { console.error(`[custo] chamada cobrada mas nao anotada em dados/custos.jsonl (${e.message}); anote a mao: ${JSON.stringify(custo)}.${reservaAberta()}`); }
+  } else {
+    // Codex final (5.52, chat 3): a analise ja saiu; resposta sem uso de tokens (erro HTTP, corpo cortado, JSON
+    // invalido) pode ter sido cobrada, entao a reserva fica aberta e o teto da permissao nao volta
+    console.error(`[custo] a resposta do Gemini veio sem o uso de tokens. Pode ter sido cobrada: confira o uso em aistudio.google.com antes de tentar de novo.${reservaAberta()}`);
   }
 
   await faxina();
@@ -266,7 +379,7 @@ async function main() {
     process.exitCode = 1; return;
   }
   const t = tokensDaResposta(j.usageMetadata);
-  console.error(`(modelo: ${modelo} | tokens entrada: ${t.entrada} | saída com raciocínio: ${t.saida} | custo: ${custo?.usd == null ? 'preço fora da tabela, conferir' : `US$ ${custo.usd}`})`);
+  console.error(`(modelo: ${modelo} | tokens entrada: ${t.entrada} | saída com raciocínio: ${t.saida} | custo: ${custo?.usd == null ? 'preço fora da tabela, conferir' : custo.usd_estimado ? `preço fora da tabela, contado pela estimativa de US$ ${custo.usd}` : `US$ ${custo.usd}`})`);
   console.log(txt);
 }
 

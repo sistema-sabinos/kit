@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { spawn, spawnSync } from 'node:child_process'
 import {
   lerTeto, TETO_PADRAO_USD, lerOrcamento, gastoDoMes, saldoDoMes, liberarGasto, fecharReserva,
-  registrarCusto, mesDaLinha, emLocal, comTrava, SEM_ORCAMENTO, MINIMO_VIDEOS_HISTORICO,
+  registrarCusto, mesDaLinha, emLocal, comTrava, SEM_ORCAMENTO, MINIMO_VIDEOS_HISTORICO, avisoDaPermissao,
 } from './orcamento.mjs'
 
 const LIB = join(dirname(fileURLToPath(import.meta.url)), 'orcamento.mjs')
@@ -364,6 +364,168 @@ test('registrarCusto grava area, modelo e tokens; area fora da lista nao grava',
   assert.equal(b.tokens, 7)
 }))
 
+// 5.52 (chat 3, decisao 1): a permissao de gasto (area gasto-ia do _contexto/autonomia.md)
+const blocoAut = (...linhas) => ['# Permissoes', '', '```autonomia', ...linhas, '```', ''].join(NL)
+const gastoIa = (teto = '5 USD mes', porVez = '2') => blocoAut('area: gasto-ia', 'pode: gastar', `teto: ${teto}`, ...(porVez ? [`por_vez: ${porVez}`] : []), 'definido_em: 2026-11-07', 'frase: pode gastar ate 25 reais por mes')
+const PERM = (raiz) => join(raiz, 'dados', 'permissao-gastos.jsonl')
+const linhasPerm = (raiz) => existsSync(PERM(raiz)) ? readFileSync(PERM(raiz), 'utf8').trim().split(NL).filter(Boolean).map(l => JSON.parse(l)) : []
+async function comPermissao({ autonomia, orcamento = blocoOrc('orcamento_mes_usd: 10'), custos, permissao } = {}, fazer) {
+  return comProjeto({ orcamento, custos }, (raiz) => {
+    if (autonomia !== undefined) writeFileSync(join(raiz, '_contexto', 'autonomia.md'), autonomia)
+    if (permissao) writeFileSync(PERM(raiz), permissao.map(l => typeof l === 'string' ? l : JSON.stringify(l)).join(NL) + NL)
+    return fazer(raiz)
+  })
+}
+
+test('permissao: dentro do teto libera sem o sim, reserva, grava a linha da permissao e diz quanto resta', () => comPermissao({ autonomia: gastoIa() }, (raiz) => {
+  const r = liberarGasto({ estimativaUsd: 1.5, autorizado: false }, { raiz, contexto: 'teste' })
+  assert.equal(r.codigo, 0, r.parou)
+  assert.ok(r.reserva)
+  assert.deepEqual(r.permissao, { resta_usd: 3.5, teto_usd: 5, periodo: 'mes' })
+  assert.match(avisoDaPermissao(r), /foi pela permissao .*resta US\$ 3\.50 de US\$ 5\.00 no mes/)
+  const [l] = linhasPerm(raiz)
+  assert.deepEqual([l.usd, l.reserva, l.contexto, l.teto], [1.5, r.reserva, 'teste', '5 USD mes'])
+  assert.equal(saldoDoMes({ raiz }).reservado_usd, 1.5, 'a reserva do mes segue igual a do sim')
+  assert.ok(!existsSync(join(raiz, 'dados', 'custos.jsonl')), 'a linha da permissao fica fora do custos.jsonl')
+  assert.equal(liberarGasto({ estimativaUsd: 2, autorizado: false }, { raiz }).codigo, 0)
+  assert.equal(liberarGasto({ estimativaUsd: 1.5, autorizado: false }, { raiz }).permissao?.resta_usd, 0, 'o ultimo centavo do teto ainda cabe')
+  assert.equal(liberarGasto({ estimativaUsd: 0.01, autorizado: false }, { raiz }).codigo, 3, 'canario: com o teto cheio para')
+}))
+
+// Codex comum (5.52, chat 3): a liberacao que termina sem cobranca devolve o teto da permissao; cobranca nunca volta
+test('permissao: fechar com devolver sem linha de custo devolve o teto uma vez; com cobranca ou fechada a mao nao devolve', () => comPermissao({ autonomia: gastoIa('1 USD mes', '') }, (raiz) => {
+  const a = liberarGasto({ estimativaUsd: 0.5, autorizado: false }, { raiz })
+  const m = liberarGasto({ estimativaUsd: 0.5, autorizado: false }, { raiz })
+  assert.deepEqual([a.codigo, m.codigo], [0, 0])
+  assert.equal(liberarGasto({ estimativaUsd: 0.01, autorizado: false }, { raiz }).codigo, 3, 'canario: teto cheio')
+  assert.equal(fecharReserva(m.reserva, { raiz }), true)
+  assert.equal(liberarGasto({ estimativaUsd: 0.01, autorizado: false }, { raiz }).codigo, 3, 'fechada a mao (--saldo) nao devolve')
+  assert.equal(fecharReserva(a.reserva, { raiz, devolver: true }), true)
+  assert.equal(fecharReserva(a.reserva, { raiz, devolver: true }), false)
+  const b = liberarGasto({ estimativaUsd: 0.5, autorizado: false }, { raiz })
+  assert.equal(b.codigo, 0, 'a liberacao sem cobranca devolveu o teto')
+  assert.equal(b.permissao.resta_usd, 0, 'devolveu uma vez so')
+  registrarCusto({ servico: 'gemini-imagem', usd: 0.2, contexto: 't', reserva: b.reserva }, { raiz })
+  assert.equal(fecharReserva(b.reserva, { raiz, devolver: true }), true)
+  assert.equal(liberarGasto({ estimativaUsd: 0.01, autorizado: false }, { raiz }).codigo, 3, 'cobranca de verdade nunca devolve')
+  assert.deepEqual(linhasPerm(raiz).filter(l => l.devolucao).map(l => l.reserva), [a.reserva])
+  assert.equal(saldoDoMes({ raiz }).gasto_usd, 0.2, 'a devolucao fica fora da soma do mes')
+}))
+
+test('permissao: acima do por_vez para com o pode ir de sempre e nao grava nada', () => comPermissao({ autonomia: gastoIa() }, (raiz) => {
+  const r = liberarGasto({ estimativaUsd: 2.5, autorizado: false }, { raiz })
+  assert.equal(r.codigo, 3)
+  assert.match(r.parou, /^Barrada pela trava gasto, regra pode-ir: precisa do pode ir/)
+  assert.match(r.fora_da_permissao, /passa do por_vez da permissao \(US\$ 2\.00\)/)
+  assert.deepEqual(linhasPerm(raiz), [])
+  assert.equal(saldoDoMes({ raiz }).reservado_usd, 0)
+  assert.equal(liberarGasto({ estimativaUsd: 2.5, autorizado: true }, { raiz }).codigo, 0, 'com o sim passa')
+  assert.deepEqual(linhasPerm(raiz), [], 'gasto com o sim explicito nao conta no teto da permissao')
+}))
+
+test('permissao: teto do periodo estourado para; linha de outro mes nao entra na soma', () => comPermissao({
+  autonomia: gastoIa('5 USD mes', ''),
+  permissao: [{ em: emLocal(), usd: 4.5, reserva: 'a' }, { em: emLocal(new Date(new Date().getFullYear() - 1, 0, 15, 12)), usd: 100, reserva: 'velha' }],
+}, (raiz) => {
+  const r = liberarGasto({ estimativaUsd: 1, autorizado: false }, { raiz })
+  assert.equal(r.codigo, 3)
+  assert.match(r.fora_da_permissao, /passa do que resta do teto da permissao \(US\$ 0\.50 de US\$ 5\.00 no mes\)/)
+  assert.equal(linhasPerm(raiz).length, 2)
+  const ok = liberarGasto({ estimativaUsd: 0.5, autorizado: false }, { raiz })
+  assert.equal(ok.codigo, 0, 'canario: o resto do mes ainda libera, e a linha velha ficou fora')
+  assert.equal(ok.permissao.resta_usd, 0)
+}))
+
+test('permissao: mes estourado para pela regra orcamento-do-mes mesmo com permissao', () => comPermissao({ autonomia: gastoIa(), orcamento: blocoOrc('orcamento_mes_usd: 1'), custos: [{ em: emLocal(), servico: 'gemini-imagem', usd: 0.8 }] }, (raiz) => {
+  const r = liberarGasto({ estimativaUsd: 0.5, autorizado: false }, { raiz })
+  assert.equal(r.codigo, 3)
+  assert.match(r.parou, /^Barrada pela trava gasto, regra orcamento-do-mes: este gasto \(US\$ 0\.50\) nao cabe/)
+  assert.deepEqual(linhasPerm(raiz), [])
+}))
+
+test('permissao: arquivo quebrado, permissao tirada ou sem orcamento do mes voltam ao pode ir', async () => {
+  for (const [nome, autonomia] of [
+    ['bloco aberto', '```autonomia' + NL + 'area: gasto-ia' + NL + 'pode: gastar' + NL + 'teto: 5 USD mes' + NL],
+    ['linha ilegivel', blocoAut('area: gasto-ia', 'pode: gastar', 'teto: 5 USD mes', 'isto nao e campo')],
+    ['teto em reais', blocoAut('area: gasto-ia', 'pode: gastar', 'teto: 25 BRL mes')],
+    ['permissao tirada', blocoAut('area: gasto-ia', 'pode: gastar', 'teto: 5 USD mes', 'area: gasto-ia', 'pode:')],
+  ]) {
+    await comPermissao({ autonomia }, (raiz) => {
+      const r = liberarGasto({ estimativaUsd: 0.5, autorizado: false }, { raiz })
+      assert.equal(r.codigo, 3, nome)
+      assert.match(r.parou, /regra pode-ir: precisa do pode ir/, nome)
+      assert.deepEqual(linhasPerm(raiz), [], nome)
+    })
+  }
+  await comPermissao({ autonomia: gastoIa(), permissao: ['{lixo'] }, (raiz) => {
+    const r = liberarGasto({ estimativaUsd: 0.5, autorizado: false }, { raiz })
+    assert.equal(r.codigo, 3)
+    assert.match(r.fora_da_permissao, /permissao-gastos\.jsonl tem defeito/)
+  })
+  await comPermissao({ autonomia: gastoIa(), orcamento: null }, (raiz) => {
+    const r = liberarGasto({ estimativaUsd: 0.5, autorizado: false }, { raiz })
+    assert.equal(r.codigo, 3)
+    assert.match(r.fora_da_permissao, /so vale com o orcamento do mes definido/)
+    assert.deepEqual(linhasPerm(raiz), [])
+  })
+  // canario: a mesma permissao certa libera
+  await comPermissao({ autonomia: gastoIa() }, (raiz) => assert.equal(liberarGasto({ estimativaUsd: 0.5, autorizado: false }, { raiz }).codigo, 0))
+})
+
+test('permissao: dois processos no ultimo centavo do teto, so um libera', () => comPermissao({ autonomia: gastoIa('1 USD mes', '') }, async (raiz) => {
+  const filho = join(raiz, 'gasto.mjs')
+  writeFileSync(filho, [
+    `import { liberarGasto } from ${JSON.stringify(pathToFileURL(LIB).href)}`,
+    'const [raiz, largada] = process.argv.slice(2)',
+    'while (Date.now() < Number(largada)) {}',
+    "const r = liberarGasto({ estimativaUsd: 0.6, autorizado: false }, { raiz })",
+    'console.log(JSON.stringify({ codigo: r.codigo }))',
+  ].join(NL))
+  const largada = String(Date.now() + 600)
+  const rodar = () => new Promise((ok) => {
+    const p = spawn(process.execPath, [filho, raiz, largada])
+    let out = ''
+    p.stdout.on('data', c => { out += c })
+    p.on('close', () => ok(JSON.parse(out).codigo))
+  })
+  const codigos = (await Promise.all([rodar(), rodar()])).sort()
+  assert.deepEqual(codigos, [0, 3])
+  assert.equal(linhasPerm(raiz).length, 1)
+}))
+
+test('permissao: virada de semana e de mes pelo fuso da maquina', () => {
+  // 2026-11-09 e segunda; 02:30 UTC dela ainda e domingo 23:30 em Sao Paulo
+  const conta = (linhas, periodo, agora) => `console.log(JSON.stringify(o.gastoDaPermissao(${JSON.stringify(linhas.map(l => JSON.stringify(l)).join(NL))}, { periodo: ${JSON.stringify(periodo)}, agora: new Date(${JSON.stringify(agora)}) })))`
+  const semana = [{ em: '2026-11-09T02:30:00Z', usd: 1 }, { em: '2026-11-01T12:00:00-03:00', usd: 2 }]
+  assert.equal(noFuso('America/Sao_Paulo', conta(semana, 'semana', '2026-11-08T15:00:00-03:00')), 1)
+  assert.equal(noFuso('UTC', conta(semana, 'semana', '2026-11-08T15:00:00Z')), 0, 'canario: em UTC a linha ja e da semana seguinte')
+  assert.equal(noFuso('America/Sao_Paulo', conta(semana, 'semana', '2026-11-09T12:00:00-03:00')), 0)
+  const mes = [{ em: '2026-12-01T02:30:00Z', usd: 3 }]
+  assert.equal(noFuso('America/Sao_Paulo', conta(mes, 'mes', '2026-11-20T12:00:00-03:00')), 3)
+  assert.equal(noFuso('UTC', conta(mes, 'mes', '2026-11-20T12:00:00Z')), 0, 'canario: em UTC a linha ja e de dezembro')
+  assert.equal(noFuso('America/Sao_Paulo', conta([{ em: '2026-11-08T23:59:00-03:00', usd: 1 }], 'dia', '2026-11-09T00:01:00-03:00')), 0)
+})
+
 test('emLocal: em Sao Paulo a hora e a local e o deslocamento e -03:00', () => {
   assert.equal(noFuso('America/Sao_Paulo', "console.log(JSON.stringify(o.emLocal(new Date('2026-11-01T02:30:00Z'))))"), '2026-10-31T23:30:00.000-03:00')
+})
+
+// 5.52 (chat 3, conserto da interna): os textos de gasto que mandam esperar o pode ir citam a permissao escrita no
+// mesmo trecho, senao a IA pede o pode ir mesmo com a permissao dada, ou fica entre duas ordens
+test('SKILL: os textos de gasto com o pode ir citam a permissao do autonomia.md no mesmo trecho', () => {
+  const SKILLS = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
+  const casos = [
+    ['editar-video', 'gasto (imagem por IA, olho final) só com o'],
+    ['mercado-livre', 'Custo: antes de todo gasto, mesmo pequeno e dentro do teto'],
+    ['gerar-imagens', 'Gemini, só depois do "pode ir" desta rodada'],
+    ['midia-social', 'Antes de qualquer uso, o comando diz quanto vai custar'],
+  ]
+  for (const [skill, ancora] of casos) {
+    const texto = readFileSync(join(SKILLS, skill, 'SKILL.md'), 'utf8')
+    const ini = texto.indexOf(ancora)
+    assert.ok(ini >= 0, `canario: a ${skill}/SKILL.md tem o trecho de gasto`)
+    const trecho = texto.slice(ini, ini + 400)
+    assert.match(trecho, /pode ir/, `canario: o trecho da ${skill} fala do pode ir`)
+    assert.match(trecho, /_contexto\/autonomia\.md`?, em que o script roda sem o\s+`--autorizado`/, `${skill}: o pode ir sem a permissao`)
+  }
 })

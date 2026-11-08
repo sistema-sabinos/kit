@@ -5,6 +5,8 @@
 // Uso: node liberar-gasto-cli.mjs --usd 0.05 [--autorizado] [--acima-do-teto <valor em dolar>] [--pid <pid de quem vai gastar>] [--contexto "texto"] [--raiz <pasta>]
 // 5.49 (bloco C, 2026-11-03): --acima-do-teto e o valor que a pessoa ouviu no pode ir, pro gasto acima do
 // limite_gasto_usd (teto por lote); vai pro liberarGasto como acimaDoTetoUsd.
+// 5.52 (chat 3): sem --autorizado, a permissao escrita da area gasto-ia (_contexto/autonomia.md) libera dentro do
+// teto dela; a linha JSON traz permissao: { resta_usd, teto_usd, periodo }, e quem chamou avisa a pessoa.
 // O pid vai na reserva: quem gasta e quem chamou (a CLI sai logo), e a reserva dele fecha pelo
 // registrar-custo-cli.mjs com --reserva. Sem --pid e gasto feito a mao (5.44): a reserva vai sem pid e com o
 // relogio do PRAZO_RESERVA_MAO_MS, porque o pid da propria CLI morria na hora.

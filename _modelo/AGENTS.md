@@ -17,6 +17,7 @@ Pra saber X, leia Y. Única fonte de caminho do sistema: skill e regra dizem "a 
 - ferramenta e conta ligada: `_contexto/ferramentas.md`
 - o que roda sozinho: `_contexto/automacoes.md`
 - site, domínio, servidor, banco, DNS: `_contexto/infra.md`
+- o que a IA faz sem perguntar, e até quanto: `_contexto/autonomia.md`
 - contato que volta (fornecedor, parceiro, quem não é cliente nem equipe): `_contexto/pessoas/`, um arquivo por nome
 - o que foi feito em cada dia (o diário): `_memoria/diario/AAAA-MM-DD.md` (`AAAA-MM-DD-<origem>.md` quando o `.origem` não é `dono`)
 - decisão e o porquê: `_memoria/decisoes.md`
@@ -39,6 +40,7 @@ Aconteceu X, escreve em Y. Diário, `licoes.md`, decisão e fato do negócio vã
 - ferramenta → `ferramentas.md`
 - automação → `automacoes.md`
 - hospedagem → `infra.md`
+- permissão dada ou tirada → `autonomia.md`, com o sim e a frase da pessoa
 - contato com telefone, email ou preço, ou que aparece pela segunda vez → `pessoas/<nome>.md`
 - onde paramos → `agora.md`
 - tarefa pra depois (sua ou do sistema) → `tarefas.md`; esperando alguém de fora → `agora.md`, Pendências
@@ -58,7 +60,7 @@ Diário: `- HH:MM, <o que foi feito> (<arquivo>)`, hora local; arquivo novo nasc
 
 ## Gatilhos
 
-- começo de conversa → ler em background, sem confirmar, `empresa.md`, `preferencias.md`, `estrategia.md` e `agora.md`; tarefa visual ou texto pro cliente, também a marca. Existe `.backup-falhou` na raiz: avisar na primeira resposta, em uma linha, "Seu último backup no GitHub falhou, o trabalho está só neste computador. Rode `/syncar` pra resolver." e seguir. Buscar `precisa de ação: sim` nos recados de `_memoria/recados/`: avisar em uma linha. Sem `.origem` na raiz e com a linha "Equipe e máquinas" no `_contexto/ferramentas.md`: perguntar na primeira resposta qual nome da linha é este computador e gravar o `.origem` (regra do `/syncar`, seção "Outro computador") antes de escrever no diário.
+- começo de conversa → ler em background, sem confirmar, `empresa.md`, `preferencias.md`, `estrategia.md`, `agora.md` e `autonomia.md`; tarefa visual ou texto pro cliente, também a marca. Existe `.backup-falhou` na raiz: avisar na primeira resposta, em uma linha, "Seu último backup no GitHub falhou, o trabalho está só neste computador. Rode `/syncar` pra resolver." e seguir. Buscar `precisa de ação: sim` nos recados de `_memoria/recados/`: avisar em uma linha. Sem `.origem` na raiz e com a linha "Equipe e máquinas" no `_contexto/ferramentas.md`: perguntar na primeira resposta qual nome da linha é este computador e gravar o `.origem` (regra do `/syncar`, seção "Outro computador") antes de escrever no diário.
 - antes de tarefa → skill de `.claude/skills/` que cubra o pedido; tarefa repetível sem skill: "Isso pode virar um comando pra próxima vez. Quer que eu crie?" (nunca pra coisa pontual)
 - vai escrever recado, rotina ou skill → `.claude/detalhe-regras.md` antes (skill: pelo `/mapear`, com gate humano se gasta ou publica)
 - "por quê", ou vai mudar algo decidido → `decisoes.md` antes
@@ -85,23 +87,23 @@ Rotina (robô do `/agendar`, Hermes, agente agendado) escreve só no próprio di
 
 **3. Loop de lições.** Erro corrigido, retrabalho ou regra que mudou numa tarefa vira uma linha datada em `_contexto/licoes.md`, na seção do assunto, na hora e sem pedir. Antes de repetir tarefa que já deu errado, ler a seção dela. Lição repetida vira regra na skill, proposta pelo `/atualizar` ao fechar a sessão.
 
-**4. Gate humano.** Nada que gasta dinheiro, envia mensagem pra fora, publica conteúdo ou altera conta de terceiros executa sem aprovação explícita do usuário naquele momento. Antes do "pode ir", mostrar em duas linhas o que vai acontecer e o risco (e como desfazer, só quando tem volta). Robô do `/agendar`: o "pode ir" se dá ao agendar e vale pra toda execução.
+**4. Gate humano.** Nada que gasta dinheiro, envia mensagem pra fora, publica conteúdo ou altera conta de terceiros executa sem aprovação explícita do usuário naquele momento. Exceções: gasto dentro da permissão escrita no `autonomia.md` (o script roda sem o `--autorizado` e diz quanto resta) e uso dentro da assinatura (Claude e Codex do plano) e atualizar ferramenta, que rodam sem pedir; crédito avulso pede. Antes do "pode ir", mostrar em duas linhas o que vai acontecer e o risco (e como desfazer, só quando tem volta). Robô do `/agendar`: o "pode ir" se dá ao agendar e vale pra toda execução.
 
 **5. Auto-sync.** Com o GitHub ligado, o hook de `.claude/settings.json` salva sozinho (commit e push) ao fim de cada resposta: não oferecer `/syncar` nem tratar "salvar" como pendência. Sem GitHub ligado (sem `origin`), o `/syncar` é como se liga o backup: lembrar uma vez, no fim da sessão.
 
-**6. Custo de API registrado.** Toda chamada paga de API registra uma linha em `dados/custos.jsonl` (data, serviço, custo), e o custo aproximado é avisado antes de rodar.
+**6. Custo de API registrado.** Toda chamada paga de API registra uma linha em `dados/custos.jsonl` (data, serviço, custo), e o custo aproximado é avisado antes de rodar, ou logo depois quando foi pela permissão.
 
 **7. Tom e escrita.** Com a pessoa, no chat: `_contexto/preferencias.md`. Texto que sai pro cliente dela: a voz da marca. As proibições de escrita do `preferencias.md` valem nos dois.
 
-**8. Pedido vago: completar, confirmar, perguntar por último.** Completar com o `_contexto/` e confirmar em uma linha ("entendi que é X, sigo?") e parar ali: o trabalho começa depois do sim. Perguntar só o que o contexto não responde e muda o trabalho (o quê, pra quê, como fica pronto): até 3 perguntas, com opções (botão quando houver; sem botão, numeradas 1, 2, 3). Pedido claro executa direto. "Só faz": parar de perguntar até o fim da sessão. Sem gente na frente (rotina, subagente): nunca perguntar, seguir pela suposição mais segura e declará-la (no recado ou na resposta). Duas correções sem acertar: resumir o pedido certo num bloco e sugerir colar numa conversa nova. Entrega de pedido vago fecha com "da próxima vez, pode pedir assim: <pedido completo>", menos com `Dicas de pedido: desligadas` no `preferencias.md`; "para com as dicas" grava essa linha no fim da seção Formato de lá na hora, "volta com as dicas" a tira.
+**8. Pedido vago: completar, confirmar, perguntar por último.** Completar com o `_contexto/` e confirmar em uma linha ("entendi que é X, sigo?") e parar ali: o trabalho começa depois do sim. Perguntar só o que o contexto não responde e muda o trabalho (o quê, pra quê, como fica pronto): até 3 perguntas, com opções (botão quando houver; sem botão, numeradas 1, 2, 3). Pedido claro executa direto. "Só faz": parar de perguntar até o fim da sessão e perguntar uma vez se vale pra sempre; com o sim, gravar `Só faz: <assunto>` no fim da seção Formato do `preferencias.md` (vale pra gosto e pedido vago; gasto, publicação e envio seguem o gate humano; "me pergunta de novo sobre <assunto>" tira essa linha `Só faz:`; trocar o modo tira o `Só faz:` que o novo não tem; ir pra modo sem gasto sozinho (Colaborativo ou Consultivo) revoga o `gasto-ia` (registro novo `area: gasto-ia`, `pode:` vazio, `frase` do pedido, pela caixa de sempre) e diz em uma linha). Sem gente na frente (rotina, subagente): nunca perguntar, seguir pela suposição mais segura e declará-la (no recado ou na resposta). Duas correções sem acertar: resumir o pedido certo num bloco e sugerir colar numa conversa nova. Entrega de pedido vago fecha com "da próxima vez, pode pedir assim: <pedido completo>", menos com `Dicas de pedido: desligadas` no `preferencias.md`; "para com as dicas" grava essa linha no fim da seção Formato de lá na hora, "volta com as dicas" a tira.
 
 **9. Nunca chumbar nome de modelo de IA em código.** Modelo some sem aviso: descobrir o disponível na API do provedor e escolher na hora.
 
 **10. Pesquisa mundial.** Pesquisa na internet busca em qualquer idioma, principalmente inglês. A entrega sai em português (ou no idioma do preferencias.md).
 
-**11. Camadas de regra.** Cada regra mora na camada mais alta em que é verdade (global, pasta-mãe, projeto); as regras 1, 2, 4, 10 e 15 se repetem aqui de propósito, porque o projeto roda sem o global no Codex e em outra máquina: não cortar. Formato e detalhe vão pro `.claude/detalhe-regras.md`; história e nota de ferramenta, pro `_contexto/`. O `/checar` mede.
+**11. Camadas de regra.** Cada regra mora na camada mais alta em que é verdade (global, pasta-mãe, projeto); as regras 1, 2, 4, 10 e 15 se repetem aqui de propósito, porque o projeto roda sem o global no Codex e em outra máquina: não cortar. Formato e detalhe vão pro `.claude/detalhe-regras.md`; história e nota de ferramenta, pro `_contexto/`. Precedência: primeiro o que nunca se delega (as travas e o que nenhum modo libera), depois a permissão escrita no `autonomia.md`, a preferência, a skill e o padrão do kit; o "pode ir" da regra 4 vale onde não há permissão escrita; se divergirem, avisar antes de mudar. O `/checar` mede.
 
-**12. Travas.** Trava barrou ("Barrada pela trava X, regra Y"): repetir o nome pro usuário e seguir sem o passo, se era acessório, ou pedir o que falta, sem refazer por outro caminho. Só na regra erro-interno do barrar-perigoso (a trava não leu o comando) dá pra reescrever mais simples ou usar ferramenta equivalente, avisando.
+**12. Travas.** Trava barrou ("Barrada pela trava X, regra Y"): repetir o nome pro usuário e seguir sem o passo, se era acessório, ou pedir o que falta, sem refazer por outro caminho. Antes de apagar pasta fora da lista que apaga livre (`node_modules`, `dist`, `build`, `.next`, `__pycache__`), escrever no chat o que tem nela e se aquilo se refaz ou é dado do usuário; apagar de vez pergunta (apaga-de-vez). Só na regra erro-interno do barrar-perigoso (a trava não leu o comando) dá pra reescrever mais simples ou usar ferramenta equivalente, avisando.
 
 **13. Um projeto por pasta.** Pedido de outro projeto, sem relação com este negócio, ganha pasta própria, senão memória e regras se misturam. Recomendar em uma linha, com esse porquê, e, com o sim, criar pela skill `../.claude/skills/novo-projeto/SKILL.md` da pasta-mãe. Tarefa do mesmo negócio fica aqui.
 

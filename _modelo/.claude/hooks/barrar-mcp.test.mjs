@@ -18,16 +18,53 @@ const solto = (tool_name, tool_input, cwd = CWD) => avaliarMcp({ tool_name, tool
 const ENV = '.e' + 'nv'
 const PONTOS = '.' + '.'
 
-test('estrito: leitura de sessao e codigo arbitrario barram, com qualquer nome de servidor', () => {
+// 5.52, decisao 20 da carta (2026-11-05): o browser_run_code_unsafe, o browser_evaluate e o
+// javascript_tool sairam desta lista, porque rodar codigo passa no estrito (teste logo abaixo); o
+// run_code_unsafe roda na maquina, furo aceito na decisao
+test('estrito: leitura de sessao barra, com qualquer nome de servidor', () => {
   // nomes do Playwright conferidos no coreBundle.js da 0.0.81 e na sonda C1a da 0.0.83; da 0.0.82 em
   // diante a ferramenta da pagina chega como webmcp_<nome>, sem o browser_
-  const doPlaywright = ['browser_run_code_unsafe', 'browser_evaluate', 'browser_network_request', 'browser_network_requests',
+  const doPlaywright = ['browser_network_request', 'browser_network_requests',
     'browser_cookie_list', 'browser_localstorage_get', 'browser_sessionstorage_set', 'browser_storage_state',
     'browser_set_storage_state', 'browser_webmcp_call', 'browser_webmcp_list', 'webmcp_x']
   for (const servidor of ['playwright', 'pw2'])
     for (const nome of doPlaywright) assert.equal(decide(`mcp__${servidor}__${nome}`, {}), 'barra', `${servidor}: ${nome}`)
-  for (const nome of ['javascript_tool', 'read_network_requests'])
+  for (const nome of ['read_network_requests'])
     assert.equal(decide(`mcp__claude-in-chrome__${nome}`, {}), 'barra', `claude-in-chrome: ${nome}`)
+})
+
+// 5.52, decisao 20 da carta (2026-11-05): rodar codigo na pagina passa no estrito, no navegador
+// isolado (playwright, sem login) e no logado (navegador, o Chrome dedicado pelo cdp, e o Claude in Chrome);
+// ler a sessao segue barrando, e o filename de quem grava segue julgado
+test('estrito: codigo na pagina passa logado e nao logado, sessao barra e filename fora da saida barra (decisao 20)', () => {
+  const julga = (nome, entrada = {}) => {
+    const d = avaliarMcp({ tool_name: nome, tool_input: entrada, cwd: CWD }, { estrito: true })
+    return [d.decisao, d.regra]
+  }
+  const codigo = ['mcp__playwright__browser_evaluate', 'mcp__navegador__browser_evaluate', 'mcp__claude-in-chrome__javascript_tool']
+  for (const nome of codigo) {
+    assert.deepEqual(julga(nome, { function: '() => document.title' }), ['passa', ''], `estrito: ${nome}`)
+    assert.equal(solto(nome, { function: '() => document.title' }).decisao, 'passa', `solto: ${nome}`)
+  }
+  // o run_code_unsafe roda no processo do servidor, fora da pagina, e passa tambem (furo aceito na decisao)
+  for (const nome of ['mcp__playwright__browser_run_code_unsafe', 'mcp__navegador__browser_run_code_unsafe']) {
+    assert.deepEqual(julga(nome, { code: 'async (page) => page.title()' }), ['passa', ''], `estrito: ${nome}`)
+    assert.equal(solto(nome, { code: 'async (page) => page.title()' }).decisao, 'passa', `solto: ${nome}`)
+  }
+  const sessao = ['mcp__playwright__browser_cookie_list', 'mcp__navegador__browser_cookie_list', 'mcp__playwright__browser_storage_state',
+    'mcp__navegador__browser_network_requests', 'mcp__playwright__webmcp_x', 'mcp__navegador__browser_webmcp_call',
+    'mcp__claude-in-chrome__read_network_requests']
+  for (const nome of sessao) assert.deepEqual(julga(nome), ['barra', 'navegador-sessao'], nome)
+  // o filename de quem roda codigo segue julgado: fora da saida barra, dentro passa
+  for (const nome of ['mcp__playwright__browser_evaluate', 'mcp__navegador__browser_evaluate']) {
+    assert.deepEqual(julga(nome, { filename: 'dados/navegador-saida/r.json' }), ['passa', ''], `canario: ${nome} com filename na saida`)
+    for (const f of ['r.json', PONTOS + '/r.json', 'dados/ses' + 'sao/r.json'])
+      assert.deepEqual(julga(nome, { filename: f }), ['barra', 'filename-fora-saida'], `${nome}: ${f}`)
+  }
+  // so a grafia que cada servidor tem na sonda: nome novo com a mesma palavra nao conhece, e o de um
+  // servidor nao vale no outro
+  for (const nome of ['mcp__playwright__browser_evaluate_v2', 'mcp__navegador__browser_javascript_tool', 'mcp__claude-in-chrome__browser_evaluate'])
+    assert.deepEqual(julga(nome), ['barra', 'navegador-desconhecida'], nome)
 })
 
 test('estrito: canario, snapshot, navegar e clicar passam', () => {
@@ -166,9 +203,10 @@ test('estrito: browser_batch julgado acao por acao', () => {
   assert.equal(lote(JSON.parse(LOTE)), 'passa', 'canario: o lote medido passa')
   assert.equal(lote(comAcoes({ name: 'computer', input: { action: 'screenshot' } })), 'passa', 'canario: computer vale como solto')
   assert.equal(lote(comAcoes({ name: 'read_page', input: { filename: 'dados/navegador-saida/p.png' } })), 'passa', 'canario: filename na saida passa')
+  // 5.52, decisao 20 da carta (2026-11-05): o javascript_tool saiu dos ruins, rodar codigo passa no lote
+  assert.equal(lote(comAcoes({ name: 'javascript_tool', input: { text: 'document.title' } })), 'passa', 'javascript_tool no lote')
   const ruins = {
     ...FORMATO_RUIM,
-    'javascript_tool': comAcoes({ name: 'javascript_tool', input: { text: 'x' } }),
     'read_network_requests': comAcoes({ name: 'read_network_requests', input: {} }),
     'filename fora da saida': comAcoes({ name: 'read_page', input: { filename: 'tela.png' } }),
     'file_upload': comAcoes({ name: 'file_upload', input: {} }),
@@ -224,12 +262,11 @@ test('estrito: permission_mode, pede fica pede sem modo e vira barra nos modos d
 })
 
 // 5.49 (bloco B, 2026-11-03, blocos 1 a 3): o que o estrito barra ou pede e o solto deixa passar
-test('solto: codigo e login na pagina, ferramenta nova, print fora da saida e acao de conta passam', () => comUpload(({ proj, fora, bom }) => {
+// 5.52, decisao 20 da carta (2026-11-05): o codigo na pagina saiu desta lista, porque agora o estrito
+// tambem deixa passar (o teste "estrito: codigo na pagina passa" confere os dois modos)
+test('solto: login na pagina, ferramenta nova, print fora da saida e acao de conta passam', () => comUpload(({ proj, fora, bom }) => {
   const soltos = [
-    ['mcp__playwright__browser_evaluate', { function: '() => document.title' }],
-    ['mcp__navegador__browser_run_code_unsafe', { code: 'x' }],
     ['mcp__playwright__browser_cookie_list', {}],
-    ['mcp__claude-in-chrome__javascript_tool', { text: 'x' }],
     ['mcp__playwright__browser_algo_novo', {}],
     ['mcp__claude-in-chrome__ferramenta_nova', {}],
     ['mcp__playwright__browser_take_screenshot', { filename: 'tela.png' }],
@@ -345,7 +382,13 @@ test('settings do _modelo e da pasta-mae ligam a trava pra todo mcp, com onFailu
     assert.equal(blocos[0].matcher, 'mcp__.*', `${qual}: matcher`)
     const hook = blocos[0].hooks.find(h => h.command.includes('barrar-mcp'))
     assert.equal(hook.onFailure, 'block', `${qual}: onFailure`)
-    assert.equal(settings.permissions, undefined, `${qual}: o permissions saiu inteiro`)
+    // 5.52 (chat 3, Task 3c): o deny segue fora dos dois; o _modelo ganhou o ask e o allow (sem mcp__), a pasta-mae nada
+    assert.equal(settings.permissions?.deny, undefined, `${qual}: o deny saiu`)
+    if (qual === 'mae') assert.equal(settings.permissions, undefined, `${qual}: o permissions segue fora da pasta-mae`)
+    else {
+      assert.ok(settings.permissions.allow.length > 0, 'canario: o _modelo tem allow')
+      assert.ok(!settings.permissions.allow.some(r => r.startsWith('mcp__')), `${qual}: nenhum mcp__ no allow`)
+    }
     assert.equal(settings.hooks.SessionStart, undefined, `${qual}: o SessionStart saiu`)
     assert.ok(Array.isArray(settings.hooks.Stop) && settings.hooks.Stop.length === 1, `${qual}: o Stop do backup fica`)
     if (qual === 'mae') {

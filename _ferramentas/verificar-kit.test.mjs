@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os'
 import { join, dirname, resolve, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
-import { rodarGates, carregarProibidos, foraDoBackup, podeIrSoAcimaDoTeto, codexAvulsoSemPodeIr } from './verificar-kit.mjs'
-import { hashArquivo, vaiNaTabelaMae, listar as listarMotor } from './atualizar-projeto.mjs'
+import { rodarGates, carregarProibidos, foraDoBackup, podeIrSoAcimaDoTeto, codexAvulsoSemPodeIr, gastoSemPedirSemPermissao } from './verificar-kit.mjs'
+import { hashArquivo, vaiNaTabelaMae, listar as listarMotor, PERMISSOES_DO_KIT } from './atualizar-projeto.mjs'
 
 // dois testes leem a lista real, que so existe na _kits; num clone publico eles pulam
 const CAMINHO_BANCADA = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'bancada', 'proibidos.json')
@@ -343,6 +343,20 @@ test('gate 5 tambem confere o settings.json do _modelo', () => {
   const { falhas } = rodarGates(dir)
   assert.ok(falhas.some(f => f.gate === 5 && f.arquivo === '_modelo/.claude/settings.json'))
   rmSync(dir, { recursive: true, force: true })
+})
+
+// 5.52 (chat 3, Task 3c): o git do permissions.allow nao e hook; a guarda de repo/remote so se cobra no hook
+test('gate 5 (5.52): o git do permissions.allow nao cobra guarda, o git do hook segue cobrando', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '.claude'), { recursive: true })
+    const gravar = cfg => writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify(cfg))
+    const doCinco = () => rodarGates(dir).falhas.filter(f => f.gate === 5 && f.arquivo === '.claude/settings.json')
+    gravar({ permissions: { allow: ['Bash(git push *)'] }, hooks: { Stop: [{ hooks: [{ type: 'command', command: 'node x.mjs' }] }] } })
+    assert.deepEqual(doCinco(), [])
+    gravar({ permissions: { allow: ['Bash(git push *)'] }, hooks: { Stop: [{ hooks: [{ type: 'command', command: 'git push' }] }] } })
+    assert.equal(doCinco().length, 1, 'canario: o git no hook sem guarda segue acusando')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
 test('gate 1 acusa a mesma cara de chave que o backup do aluno seguraria', () => {
@@ -820,15 +834,17 @@ test('gate 9 aceita os dois settings sem deny e sem SessionStart, so com as trav
   try {
     mkdirSync(join(dir, '_modelo/.claude/hooks'), { recursive: true })
     writeFileSync(join(dir, '_modelo/.claude/hooks/barrar-perigoso.mjs'), 'export function ehPerigoso() { return null }\n')
+    // 5.52 (chat 3, Task 3c): o _modelo traz o ask e o allow da lista fechada; a pasta-mae, nenhum permissions
+    const permissoes = rel => (rel.startsWith('_modelo') ? { permissions: PERMISSOES_DO_KIT } : {})
     for (const rel of ['.claude', '_modelo/.claude']) {
       mkdirSync(join(dir, rel), { recursive: true })
-      writeFileSync(join(dir, rel, 'settings.json'), JSON.stringify({ hooks: { PreToolUse: [BLOCO_PERIGOSO, BLOCO_MCP] } }))
+      writeFileSync(join(dir, rel, 'settings.json'), JSON.stringify({ ...permissoes(rel), hooks: { PreToolUse: [BLOCO_PERIGOSO, BLOCO_MCP] } }))
     }
     const doNove = rodarGates(dir).falhas.filter(f => f.gate === 9 && /settings\.json$/.test(f.arquivo))
     assert.deepEqual(doNove, [])
     // canario: o mesmo kit sem a trava do mcp acusa, entao o gate rodou nos dois
     for (const rel of ['.claude', '_modelo/.claude'])
-      writeFileSync(join(dir, rel, 'settings.json'), JSON.stringify({ hooks: { PreToolUse: [BLOCO_PERIGOSO] } }))
+      writeFileSync(join(dir, rel, 'settings.json'), JSON.stringify({ ...permissoes(rel), hooks: { PreToolUse: [BLOCO_PERIGOSO] } }))
     const sem = rodarGates(dir).falhas.filter(f => f.gate === 9 && /settings\.json$/.test(f.arquivo)).map(f => f.arquivo).sort()
     assert.deepEqual(sem, ['.claude/settings.json', '_modelo/.claude/settings.json'])
   } finally {
@@ -840,8 +856,53 @@ test('gate 9 nao cobra o deny nem o SessionStart do kit de verdade', () => {
   for (const rel of ['../.claude/settings.json', '../_modelo/.claude/settings.json']) {
     const cfg = JSON.parse(readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8'))
     assert.ok(cfg.hooks?.PreToolUse?.length > 0, `canario: ${rel} foi lido`)
-    assert.equal(cfg.permissions, undefined, `${rel}: o deny saiu`)
+    // 5.52 (chat 3, Task 3c): o deny segue fora; o _modelo ganhou o ask e o allow da lista fechada, a pasta-mae nada
+    assert.equal(cfg.permissions?.deny, undefined, `${rel}: o deny saiu`)
+    assert.deepEqual(cfg.permissions, rel.includes('_modelo') ? PERMISSOES_DO_KIT : undefined, `${rel}: permissions`)
     assert.equal(cfg.hooks.SessionStart, undefined, `${rel}: o SessionStart saiu`)
+  }
+})
+
+// 5.52 (chat 3, Task 3c, decisoes 2 e 18): o Gate 9 cobra a lista fechada no _modelo e recusa o que solta tudo
+test('gate 9 (5.52): cobra o ask e o allow da lista fechada no _modelo e recusa Bash, Bash(*), mcp__ e bypassPermissions', () => {
+  assert.ok(PERMISSOES_DO_KIT.allow.length >= 10 && PERMISSOES_DO_KIT.ask.length === 1, 'canario: a lista fechada nao veio vazia')
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo/.claude/hooks'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/.claude/hooks/barrar-perigoso.mjs'), 'export function ehPerigoso() { return null }\n')
+    mkdirSync(join(dir, '.claude'), { recursive: true })
+    const gravar = (rel, extra) => writeFileSync(join(dir, rel), JSON.stringify({ ...extra, hooks: { PreToolUse: [BLOCO_PERIGOSO, BLOCO_MCP] } }))
+    const doNove = rel => rodarGates(dir).falhas.filter(f => f.gate === 9 && f.arquivo === rel).map(f => f.detalhe)
+    const M = '_modelo/.claude/settings.json'
+    gravar('.claude/settings.json', {})
+    gravar(M, { permissions: PERMISSOES_DO_KIT })
+    assert.deepEqual(doNove(M), [], 'canario: a lista certa passa')
+    gravar(M, {})
+    const sem = doNove(M)
+    assert.ok(sem.some(d => d.includes('permissions.ask sem a regra Edit(/_contexto/autonomia.md)')), sem.join(' | '))
+    assert.equal(sem.filter(d => d.startsWith('permissions.allow sem a regra')).length, PERMISSOES_DO_KIT.allow.length)
+    gravar(M, { permissions: { ...PERMISSOES_DO_KIT, allow: PERMISSOES_DO_KIT.allow.slice(1) } })
+    assert.deepEqual(doNove(M), [`permissions.allow sem a regra ${PERMISSOES_DO_KIT.allow[0]} da lista fechada`])
+    for (const regra of ['Bash', 'Bash(*)', 'PowerShell(*)', 'mcp__playwright__browser_click', 'Bash(node *)']) {
+      gravar(M, { permissions: { ...PERMISSOES_DO_KIT, allow: [...PERMISSOES_DO_KIT.allow, regra] } })
+      const d = doNove(M)
+      assert.ok(d.some(x => x === `permissions.allow com regra fora da lista fechada: ${regra}`), regra + ': ' + d.join(' | '))
+      if (regra !== 'Bash(node *)') assert.equal(d.length, 2, regra + ': fora da lista e a recusa propria: ' + d.join(' | '))
+    }
+    gravar(M, { permissions: { ...PERMISSOES_DO_KIT, defaultMode: 'bypassPermissions' } })
+    assert.deepEqual(doNove(M), ['settings.json liga o modo bypassPermissions; o kit nunca desliga as perguntas'])
+    gravar(M, { permissions: { ...PERMISSOES_DO_KIT, allow: 'Bash(npm ci)' } })
+    assert.deepEqual(doNove(M), ['permissions.allow existe mas nao e uma lista'])
+    // a pasta-mae sem allow; o Bash(*) e o bypass reprovam la tambem
+    gravar(M, { permissions: PERMISSOES_DO_KIT })
+    gravar('.claude/settings.json', { permissions: { allow: ['Bash(*)'] } })
+    const mae = doNove('.claude/settings.json')
+    assert.ok(mae.some(d => d.startsWith('permissions.allow solta todo comando (Bash(*))')), mae.join(' | '))
+    assert.ok(mae.some(d => d.startsWith('permissions.allow na pasta-mae')), mae.join(' | '))
+    gravar('.claude/settings.json', { permissions: { defaultMode: 'bypassPermissions' } })
+    assert.deepEqual(doNove('.claude/settings.json'), ['settings.json liga o modo bypassPermissions; o kit nunca desliga as perguntas'])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
   }
 })
 
@@ -1018,13 +1079,56 @@ test('gate 9 acusa credito avulso do Codex sem o "pode ir", e os textos novos pa
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
+// 5.52 (chat 3, decisao 1): o "todo gasto" isentava o bloco inteiro e deixava passar o orcamento como autorizacao
+test('gate 9 (5.52): vazamento do "todo gasto" fechado, o orcamento segue sem autorizar', () => {
+  assert.deepEqual(podeIrSoAcimaDoTeto('Antes de todo gasto, o "pode ir". Dentro do orçamento roda sem pedir.\n'), [1], 'o "todo gasto" no mesmo bloco nao solta o orcamento como autorizacao')
+  assert.deepEqual(podeIrSoAcimaDoTeto('Antes de todo gasto, esperar o "pode ir". Gasto acima do teto deve ser bloqueado.\n'), [], 'canario: o teto como trava a mais segue passando')
+})
+
+// 5.52 (chat 3, decisao 1): gasto "sem pedir" so com a permissao escrita (ou a assinatura, decisao 16) no mesmo trecho
+test('gate 9 (5.52): gasto sem pedir, sem perguntar ou avisando depois tem de citar o autonomia.md ou a permissao', () => {
+  assert.deepEqual(gastoSemPedirSemPermissao('# Custo\n\nO Gemini gasta sem pedir e avisa depois.\n'), [3], 'canario: gasto sem pedir sem a permissao reprova')
+  assert.deepEqual(gastoSemPedirSemPermissao('A IA gera a imagem paga e avisa depois quanto foi.\n'), [1])
+  assert.deepEqual(gastoSemPedirSemPermissao('Dentro da permissão do `_contexto/autonomia.md`, a IA gasta sem perguntar e avisa logo depois.\n'), [])
+  assert.deepEqual(gastoSemPedirSemPermissao('Uso dentro da cota do plano roda sem pedir; o crédito avulso gasta dinheiro e pede o "pode ir".\n'), [], 'a excecao da assinatura passa')
+  assert.deepEqual(gastoSemPedirSemPermissao('O pode ir ja citou o valor do gasto: junte o --acima-do-teto, sem perguntar de novo.\n'), [], '"sem perguntar de novo" e o sim ja dado')
+  assert.deepEqual(gastoSemPedirSemPermissao('Sem pedir, a IA renomeia a pasta.\n'), [], 'trecho sem gasto passa')
+  assert.deepEqual(gastoSemPedirSemPermissao('O Gemini gasta sem pedir.\n\nA permissão fica no autonomia.md.\n'), [1], 'a permissao de outro paragrafo nao vale')
+  // 5.52 (chat 3, conserto da interna): frases comuns de gasto sem permissao que passavam
+  for (const frase of ['A imagem custa US$ 0,04: gera sem pedir e avisa depois.', 'O Gemini gasta e avisa logo depois.', 'O Gemini gasta sem pedir, mesmo sem permissão.',
+    'O Gemini gasta e não precisa pedir.', 'Gaste sem pedir.', 'A chamada paga roda sem esperar o pode ir.', 'O crédito do Gemini vai sem perguntar.', 'Sem a permissão, o Gemini gasta sem pedir.',
+    // Codex comum (5.52, chat 3): citar o autonomia.md negando a permissao nao isenta
+    'Sem a permissão do autonomia.md, o Gemini gasta sem pedir.', 'Sem o `_contexto/autonomia.md`, o Gemini gasta sem pedir.',
+    // segunda volta: a negacao vale a qualquer distancia dentro da frase
+    'Sem a permissao definida no arquivo autonomia.md, o Gemini gasta sem pedir.', 'Não vale o autonomia.md: o Gemini gasta sem pedir.',
+    // Codex final (5.52, chat 3): a assinatura e a cota negadas tambem nao isentam
+    'Sem assinatura e sem permissao, o Gemini gasta sem pedir.', 'Fora da cota do plano, o Gemini gasta sem perguntar.'])
+    assert.deepEqual(gastoSemPedirSemPermissao(frase + '\n'), [1], frase)
+  assert.deepEqual(gastoSemPedirSemPermissao('Dentro da assinatura, o Claude gasta sem pedir.\n'), [], 'a assinatura afirmada isenta')
+  assert.deepEqual(gastoSemPedirSemPermissao('Codex: sem cobrança por imagem dentro da cota do plano, que roda sem pedir; o crédito avulso gasta e pede o "pode ir".\n'), [], 'o "sem cobranca" da gerar-imagens nao nega a cota')
+  assert.deepEqual(gastoSemPedirSemPermissao('Nada gasta dinheiro sem o "pode ir" da pessoa naquele momento.\n'), [], 'a proibicao "sem o pode ir" passa')
+  assert.deepEqual(gastoSemPedirSemPermissao('Com a permissão de gasto, o Gemini gasta e avisa logo depois.\n'), [], 'a permissao afirmada isenta')
+  assert.deepEqual(gastoSemPedirSemPermissao('O Gemini gasta sem pedir pela permissão do autonomia.md.\n'), [], 'o autonomia.md afirmado depois do sem pedir isenta')
+  assert.deepEqual(gastoSemPedirSemPermissao('Nada vai pro ar sem o pode ir.\n'), [], 'a proibicao do pode ir passa')
+  const agents = readFileSync(fileURLToPath(new URL('../_modelo/AGENTS.md', import.meta.url)), 'utf8')
+  assert.match(agents, /rodam sem pedir/, 'canario: a regra 4 do molde tem a excecao')
+  assert.deepEqual(gastoSemPedirSemPermissao(agents), [])
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo/.claude/skills/x'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/.claude/skills/x/SKILL.md'), '---\nname: x\ndescription: x\n---\n\nO Gemini gasta sem pedir.\n')
+    const { falhas } = rodarGates(dir, { proibidos: [] })
+    assert.ok(falhas.some(f => f.gate === 9 && f.arquivo === '_modelo/.claude/skills/x/SKILL.md' && /linha 6:.*autonomia\.md/.test(f.detalhe)), JSON.stringify(falhas.filter(f => f.gate === 9)))
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
 test('gate 9 aceita o _modelo completo, com as duas travas', () => {
   const dir = kitFalso()
   try {
     mkdirSync(join(dir, '_modelo/.claude/hooks'), { recursive: true })
     writeFileSync(join(dir, '_modelo/.claude/hooks/barrar-perigoso.mjs'), 'export function ehPerigoso() { return null }\n')
     writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify({
-      hooks: { PreToolUse: [BLOCO_PERIGOSO, BLOCO_MCP] },
+      permissions: PERMISSOES_DO_KIT, hooks: { PreToolUse: [BLOCO_PERIGOSO, BLOCO_MCP] },
     }))
     const { falhas } = rodarGates(dir)
     const doModelo =falhas.filter(f => f.gate === 9 && f.arquivo === '_modelo/.claude/settings.json')

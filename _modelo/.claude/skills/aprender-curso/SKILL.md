@@ -179,8 +179,11 @@ de memoria, e perguntar:
 
 So com o "pode ir". Uma aula por vez, no modo barato:
 ```
-node .claude/skills/assistir-video/ver-video.mjs "<link da aula>" --barato > "inteligencia/cursos/<nome>/fontes/<id>.gemini.md"
+node .claude/skills/assistir-video/ver-video.mjs "<link da aula>" --barato --usd <estimativa da aula em dolar> --autorizado > "inteligencia/cursos/<nome>/fontes/<id>.gemini.md"
 ```
+O `--usd` passa pela trava do gasto (orcamento do mes ou limite por vez) antes de chamar o Gemini. Com a
+permissao de gasto do `_contexto/autonomia.md`, sem o `--autorizado`: a linha `[permissao]` diz quanto
+resta, e a pessoa fica sabendo logo depois. Saida 3: parou antes de gastar, repassar o motivo.
 O script anota o custo de cada aula em `dados/custos.jsonl` e imprime no fim. Se o gasto real passar
 50% da estimativa, parar e avisar. Se a linha de custo nao aparecer no arquivo, anotar a mao com o que
 o script imprimiu.

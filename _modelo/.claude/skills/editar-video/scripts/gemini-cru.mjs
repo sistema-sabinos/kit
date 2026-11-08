@@ -4,9 +4,11 @@
 // Modelo fixo, o da tabela de preco da custo.mjs: com --model a API recusa nome que nao existe, sem cobrar e sem
 // trocar por outro (o --barato do ver-video troca). Resolucao baixa (cerca de 100 tokens por segundo de video).
 //
-// uso: node gemini-cru.mjs <bruto> <trab/cru/bordas.md> <trab/cru/gemini.md> [--preco-usd N --autorizado] [--video slug]
-// Sem --autorizado so estima o custo e sai 3 ("parou"), sem rede. Com ele, passa pela trava do gasto
-// (liberar-gasto-cli), chama o ver-video e grava a resposta e uma linha de custo (registrar-custo-cli).
+// uso: node gemini-cru.mjs <bruto> <trab/cru/bordas.md> <trab/cru/gemini.md> [--preco-usd N [--autorizado]] [--video slug]
+// Sem --preco-usd, ou sem --autorizado e sem permissao de gasto no _contexto/autonomia.md, so estima o custo e sai 3
+// ("parou"), sem rede. Com o sim ou com a permissao, passa pela trava do gasto (liberar-gasto-cli, que confere a
+// permissao de novo sob a trava), chama o ver-video e grava a resposta e uma linha de custo (registrar-custo-cli).
+// 5.52 (chat 3): sem --autorizado a trava vai sem ele, e o gasto que foi pela permissao sai numa linha [permissao].
 // Saida: 0 gravou, 3 parou antes de gastar, 1 o ver-video falhou (pode ter cobrado: a mensagem diz o que conferir) ou
 // o custo nao foi anotado (a resposta fica gravada e a mensagem diz o valor a anotar a mao).
 import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
@@ -16,6 +18,8 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { PRECOS, dataLocal } from '../../assistir-video/custo.mjs'
+import { permissaoDeGasto, avisoDaPermissao } from '../../conectar/scripts/lib/orcamento.mjs'
+import { RAIZ } from '../../conectar/scripts/lib/raiz.mjs'
 
 const SKILLS = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 export const MODELO = 'gemini-3.8-flash'
@@ -59,8 +63,9 @@ function main() {
   if (!existsSync(bruto) || !existsSync(bordas)) { console.error(`nao achei ${existsSync(bruto) ? bordas : bruto}: rode o assistir-cru.py antes`); return 2 }
   const seg = segundos(bruto)
   const estimativa = estimarUsd(seg)
-  if (!o.autorizado || o['preco-usd'] === undefined) {
-    console.log(`parou: o Gemini no cru e pago. Estimativa de hoje: US$ ${estimativa} (${MODELO}, ${Math.round(seg)} s, resolucao baixa, preco conferido em ${PRECOS[MODELO].conferido_em}). Confira o preco na pagina oficial do Gemini, mostre a conta e, com o sim, rode de novo com --preco-usd ${estimativa} --autorizado.`)
+  // sem o sim, so segue quem tem a permissao escrita; a conferencia de verdade e a da trava, depois da copia leve
+  if (o['preco-usd'] === undefined || (!o.autorizado && !permissaoDeGasto({ raiz: o['raiz-custo'] || RAIZ }))) {
+    console.log(`parou: o Gemini no cru e pago. Estimativa de hoje: US$ ${estimativa} (${MODELO}, ${Math.round(seg)} s, resolucao baixa, preco conferido em ${PRECOS[MODELO].conferido_em}). Confira o preco na pagina oficial do Gemini, mostre a conta e, com o sim, rode de novo com --preco-usd ${estimativa} --autorizado (com a permissao de gasto do _contexto/autonomia.md, sem o --autorizado).`)
     return 3
   }
   const raiz = o['raiz-custo'] ? ['--raiz', o['raiz-custo']] : []
@@ -74,10 +79,13 @@ function main() {
     const f = spawnSync('ffmpeg', ['-y', '-v', 'error', '-i', bruto, '-vf', 'fps=10,scale=-2:480', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '30',
       '-c:a', 'aac', '-b:a', '96k', leve], { encoding: 'utf8' })
     if (f.status !== 0) { console.error(`nao consegui fazer a copia leve do cru (nada foi cobrado nem reservado): ${(f.stderr || '').slice(-500)}`); return 1 }
-    const lib = spawnSync('node', [o['liberar-gasto'], '--usd', o['preco-usd'], '--autorizado', '--pid', String(process.pid), '--contexto', ctx, ...raiz], { encoding: 'utf8' })
+    const lib = spawnSync('node', [o['liberar-gasto'], '--usd', o['preco-usd'], ...(o.autorizado ? ['--autorizado'] : []), '--pid', String(process.pid), '--contexto', ctx, ...raiz], { encoding: 'utf8' })
     try { trava = JSON.parse(lib.stdout.trim().split(/\r?\n/).pop()) } catch { trava = { codigo: 3, parou: 'a trava de gasto nao respondeu: ' + (lib.stderr || '').slice(0, 200) } }
-    if (trava.codigo !== 0) { console.log(`parou: ${trava.parou ?? 'a trava de gasto nao liberou'}`); return 3 }
-    r = spawnSync('node', [o['ver-video'], leve, '--model', MODELO, '--lowres', '--sem-registro', '--pergunta', pergunta(readFileSync(bordas, 'utf8'))],
+    if (trava.codigo !== 0) { console.log(`parou: ${trava.parou ?? 'a trava de gasto nao liberou'}${trava.fora_da_permissao ? ` (fora da permissao: ${trava.fora_da_permissao})` : ''}`); return 3 }
+    // com orcamento do mes, a reserva da trava (o ver-video confere que e deste processo); no teto por lote, sem
+    // reserva, o ver-video passa pela trava com o mesmo sim e so nao anota o custo (a linha e a daqui de baixo)
+    const prova = trava.reserva ? ['--reserva', trava.reserva] : ['--usd', o['preco-usd'], '--autorizado', '--sem-registro']
+    r = spawnSync('node', [o['ver-video'], leve, '--model', MODELO, '--lowres', ...prova, '--pergunta', pergunta(readFileSync(bordas, 'utf8')), ...(o['raiz-custo'] ? ['--raiz', o['raiz-custo']] : [])],
       { encoding: 'utf8', maxBuffer: 1 << 24 })
   } finally {
     rmSync(tmp, { recursive: true, force: true })
@@ -108,6 +116,8 @@ function main() {
     return 1
   }
   console.log(`gemini-cru: resposta em ${saida}, US$ ${usd} anotado${medido ? ' (medido pelos tokens)' : ' (estimativa, o ver-video nao mediu)'}`)
+  const permissao = avisoDaPermissao(trava)
+  if (permissao) console.log(permissao)
   return 0
 }
 

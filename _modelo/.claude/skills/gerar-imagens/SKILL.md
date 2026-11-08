@@ -75,15 +75,18 @@ as imagens finais em `anuncios/<slug>/imagens/NN-papel.jpg`, na ordem do mapa.
 3. **Cenários** (só degrau `codex` ou `gemini`): um `anuncios/<slug>/cenarios/cenas.json`
    com todas as fotos de clima do mapa, cada uma com a descrição do lugar nas
    cores do estilo, e UMA chamada só (em lote gasta menos cota).
-   Codex, só depois do "pode ir" desta rodada: antes do lote, a pessoa ouve
-   quantas imagens vão e "o Codex não cobra por imagem dentro da cota do seu
-   plano; se você comprou créditos avulsos do Codex, passar do limite do plano
-   gasta esses créditos", e diz o "pode ir". Na `/mercado-livre`, quem pergunta
-   é a conversa principal, antes do despacho, que traz "Codex autorizado"; sem
-   essa linha, seguir no `zero-ia`.
+   Codex: antes do lote, a pessoa ouve quantas imagens vão, dentro da cota do
+   seu plano, e o lote roda sem pedir (regra 4). Com `codex_credito_avulso: sim`
+   no `_contexto/ferramentas.md`, passar do limite do plano gasta os créditos
+   avulsos do Codex que ela comprou, e o lote espera o "pode ir" desta rodada;
+   sem a linha, pergunte uma vez se ela comprou e grave `sim` ou `não` lá. Na
+   `/mercado-livre`, quem pergunta é a conversa principal, antes do despacho,
+   que traz "Codex autorizado"; sem essa linha, seguir no `zero-ia`.
    `node .claude/skills/gerar-imagens/scripts/gerar-cenario.mjs --degrau codex --cenas anuncios/<slug>/cenarios/cenas.json`
    Gemini, só depois do "pode ir" desta rodada (sem ele, nunca `--autorizado`):
    `--degrau gemini --preco-usd <preço do dia> --contexto "designer <slug>" --autorizado`.
+   Fora a permissão de gasto do `_contexto/autonomia.md`, em que o script roda sem o
+   `--autorizado` e a IA avisa logo depois quanto gastou (a linha da permissão diz quanto resta).
    Quando dá errado:
    - Saída diferente de 0, 1, 2 e 3 depois de gerar: conferir
      `dados/custos.jsonl` e `anuncios/<slug>/cenarios/` antes de rodar de novo,
@@ -153,9 +156,10 @@ Abrir cada imagem (Read) e conferir, refazendo sozinho o que falhar:
 
 ## Custo
 
-Codex: sem cobrança por imagem dentro da cota do plano; se você comprou
-créditos avulsos do Codex, passar do limite do plano gasta esses créditos, e
-por isso o lote pelo Codex também espera o "pode ir". O
+Codex: sem cobrança por imagem dentro da cota do plano, que roda sem pedir; se
+você comprou créditos avulsos do Codex (`codex_credito_avulso: sim` no
+`_contexto/ferramentas.md`), passar do limite do plano gasta esses créditos, e
+por isso aí o lote pelo Codex espera o "pode ir". O
 recibo diz quantos cenários foram pelo Codex. Gemini: cada imagem vira
 uma linha em `dados/custos.jsonl` (o script grava sozinho) e o total aparece na
 prancha. Recorte, composição, peça e prancha: sempre zero.

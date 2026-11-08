@@ -17,7 +17,7 @@ import { dirname, relative, resolve, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from '../../conectar/scripts/lib/raiz.mjs'
 import { lerEnv } from '../../conectar/scripts/lib/env.mjs'
-import { liberarGasto, fecharReserva, registrarCusto as registrarComum } from '../../conectar/scripts/lib/orcamento.mjs'
+import { liberarGasto, fecharReserva, registrarCusto as registrarComum, avisoDaPermissao } from '../../conectar/scripts/lib/orcamento.mjs'
 import { fetchComTimeout } from '../../conectar/scripts/lib/fetch-timeout.mjs'
 import { lerArgs, numero } from './lib/args.mjs'
 
@@ -170,7 +170,13 @@ export async function viaGemini(cenas, {
       const corpo = { contents: [{ parts: [{ text: montarPrompt([c], { uso }) }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: uso === 'video' ? '9:16' : '1:1' } } }
       let json = null
       for (let tentativa = 1; tentativa <= 3; tentativa++) {
-        const r = await buscar(`${API}/models/${modelo}:generateContent?key=${chave}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) }, { timeoutMs: PRAZO_GERAR_MS })
+        // Codex comum (5.52, chat 3): erro do proprio POST (ECONNRESET, prazo) pode vir depois do pedido sair e ser
+        // cobrado: conta como cobranca incerta, que segura a reserva aberta e nunca devolve o teto da permissao
+        let r
+        try { r = await buscar(`${API}/models/${modelo}:generateContent?key=${chave}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) }, { timeoutMs: PRAZO_GERAR_MS }) } catch (e) {
+          incertas++
+          throw new Error(`a chamada de geracao caiu depois de sair e pode ter sido cobrada: ${e.message}`)
+        }
         if (r.status === 429 && tentativa < 3) { await esperar(20000 * tentativa); continue }
         if (r.status === 200) {
           // 200 cujo corpo nao chegou inteiro pode ter sido cobrado: sem linha, a reserva fica aberta
@@ -244,11 +250,19 @@ export async function main(argv = process.argv.slice(2), { raiz = RAIZ, ler = le
     const acimaDoTetoUsd = a['acima-do-teto'] === undefined ? undefined : Number(String(a['acima-do-teto']).replace(',', '.'))
     const lib = liberarGasto({ estimativaUsd: estimativa, autorizado: a.autorizado === true, acimaDoTetoUsd }, { raiz, contexto })
     if (lib.aviso) console.error(`[aviso] ${lib.aviso}`)
-    if (lib.codigo !== 0) { console.log(JSON.stringify({ parou: lib.parou, estimativa_usd: estimativa, imagens: cenas.length })); process.exitCode = 3; return }
+    if (lib.codigo !== 0) { console.log(JSON.stringify({ parou: lib.parou, estimativa_usd: estimativa, imagens: cenas.length, ...(lib.fora_da_permissao ? { fora_da_permissao: lib.fora_da_permissao } : {}) })); process.exitCode = 3; return }
+    // 5.52 (chat 3): sem o --autorizado, o que passou foi pela permissao escrita; a pessoa fica sabendo logo depois
+    const permissao = avisoDaPermissao(lib)
+    if (permissao) console.error(permissao)
     let r = null
+    // Codex comum (5.52, chat 3): parou antes do Gemini (sem chave) ou ele voltou com toda cobranca anotada: o fechar
+    // devolve o teto da permissao do que nao cobrou. Caiu no meio do viaGemini: fecha sem devolver. POST que lancou
+    // volta com cobranca_incerta e cai no aviso de reserva aberta acima, sem fechar nem devolver
+    let chamou = false
     try {
       const chave = ler().GEMINI_API_KEY
       if (!chave) { console.error('falta GEMINI_API_KEY no .env (o /conectar ensina a pegar)'); process.exitCode = 2; return }
+      chamou = true
       r = await viaGemini(cenas, { chave, precoUsd, contexto, uso: a.uso, video: typeof a.video === 'string' ? a.video : undefined, reserva: lib.reserva, raiz, ...(buscar ? { buscar } : {}) })
       console.log(JSON.stringify(r, null, 2))
       process.exitCode = codigoDeSaida(r)
@@ -256,7 +270,7 @@ export async function main(argv = process.argv.slice(2), { raiz = RAIZ, ler = le
       // cobranca sem linha ou incerta: a reserva fica contando no orcamento ate a pessoa anotar a linha e fechar pelo --saldo
       if (r?.cobradas_sem_registro && lib.reserva) console.error(`[orcamento] a reserva ${lib.reserva} ficou aberta e conta no orcamento do mes: anote a linha que faltou e feche pelo --saldo do /configurar-video`)
       else if (r?.cobranca_incerta && lib.reserva) console.error(`[orcamento] a reserva ${lib.reserva} ficou aberta e conta no orcamento do mes: o Google respondeu e a resposta caiu no meio, entao a imagem pode ter sido cobrada; confira no painel de faturamento, anote a linha se foi e feche pelo --saldo do /configurar-video`)
-      else fecharReserva(lib.reserva, { raiz })
+      else fecharReserva(lib.reserva, { raiz, devolver: !chamou || r !== null })
     }
   } catch (e) { console.error(e.message); process.exitCode = 1 }
 }

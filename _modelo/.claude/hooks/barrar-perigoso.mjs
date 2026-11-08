@@ -24,6 +24,12 @@
 // ferramentas, e a pasta temporaria apaga calada (bloco 5, perguntaDeApagar). Sairam o
 // baixar-e-executar (bloco 8), o chmod 777 e o texto entre aspas lido como comando (bloco 9), o git
 // que a trava nao le (bloco 6, fica so no estrito da bancada) e a leitura de segredo (bloco 11).
+// 5.52 (chat 2, Task 2e, 2026-11-05): a pasta da lista fechada (PASTAS_REFAZIVEIS: node_modules, dist, build,
+// .next, __pycache__) dentro do projeto tambem apaga calada; a pergunta traz a contagem, o fora do backup e o
+// nome sensivel.
+// 5.52 (chat 2, Task 2f, 2026-11-05): o script rodado por bash, sh, source, ., .ps1, -File, bat, .cmd e call e lido
+// e julgado como digitado; o que a trava nao le pergunta pela regra script-nao-lido (ver scriptsRodados).
+// 5.52 (chat 3, Task 3c): gravar no _contexto/autonomia.md pelo shell pergunta pela regra grava-autonomia (ver gravaAutonomia).
 // 5.49 (D-embrulho e D-apelido, 2026-11-03): o trecho entre aspas de quem executa comando (bash -c, cmd
 // /c, powershell -Command, Invoke-Expression, eval) e o comando do apelido do git com ! voltam a ser lidos.
 // Le o JSON do hook na entrada padrao, olha tool_input.command, e sai com codigo 2
@@ -43,10 +49,11 @@
 // roda shell). A doc nao mostra o tool_input do Monitor no hook; o campo vem do schema dela.
 // rodada 5.20 (N6, N10): o git le o cwd que o Claude Code manda na entrada (campo cwd), pra
 // saber se o alvo do checkout e do restore e uma pasta
-import { lstatSync, readdirSync, realpathSync, statSync } from 'node:fs'
+import { lstatSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { spawnSync } from 'node:child_process'
 
 // correcao 5 (terceira revisao): as duas correcoes anteriores tentaram listar quem E
 // executor de shell (bash -c, ssh, powershell -Command...) e tratar o resto como
@@ -186,7 +193,9 @@ function leitorDeEscritores(comando) {
 //    npx, [IO.Directory]::Delete com $true, [IO.File]::Delete, .Delete($true), .Delete() no
 //    bloco do ForEach e Clear-Content com curinga, -Recurse ou pipe). Passam perl, ruby, bun,
 //    deno, o pathlib do Python (.unlink(), .rmdir()), script gravado em arquivo e rodado
-//    depois, codigo mandado pela entrada (`python3 - <<EOF`, `node <<EOF`), o rm dentro de
+//    depois pelo ./x.sh direto, pela entrada (`bash < x.sh`, `cat x.sh | bash`) ou por node e python
+//    (5.52, chat 2, Task 2f, 2026-11-05: o rodado por bash, sh, source, ., .ps1, -File, bat, .cmd e
+//    call e lido, ver scriptsRodados), codigo mandado pela entrada (`python3 - <<EOF`, `node <<EOF`), o rm dentro de
 //    outro shell no find (`find . -exec sh -c 'rm "$1"' _ {} \;`), o .Delete() fora do pipe
 //    (`foreach ($f in ...) { $f.Delete() }`, `.ForEach({ $_.Delete() })`, `ForEach-Object
 //    Delete`), `rsync --delete`, `robocopy /MOV` e `/MOVE` (movem, a copia fica no destino) e
@@ -204,9 +213,12 @@ function leitorDeEscritores(comando) {
 //    por grep, rg, echo ou outro git. Barra a prosa de heredoc com verbo julgado antes de
 //    parentese, crase ou chaves (`git push (desde ...)` num `commit -F - <<EOF`). Passam
 //    o verbo por crase, chaves ou parentese (git `x` --hard), porque o mesmo desenho pega
-//    prosa de heredoc, o apelido gravado no config do git e `git branch -D`, `git reflog
-//    expire`, `git gc --prune=now`, `git update-ref -d`, `git checkout-index -a -f` e o alvo
-//    lido de arquivo (`--pathspec-from-file`). A palavra "git"
+//    prosa de heredoc, o apelido gravado no config do git, `git checkout-index -a -f` e o alvo
+//    lido de arquivo (`--pathspec-from-file`). 5.52 (chat 2, Task 2d, 2026-11-05): `git reflog
+//    expire`, `git branch -f`, `-D`, `-M` e `-C`, `git worktree remove` e `git update-ref -d`, junto de
+//    `wsl --unregister` e `Clear-RecycleBin`, perguntam pela regra apaga-de-vez (apagaDeVez), fora
+//    deste item e do ehGitPerigoso; seguem passando `git checkout -B`, `git switch -C`, `git gc
+//    --prune=now` sozinho, `git prune`, `git update-ref --stdin` e `wslconfig /unregister`. A palavra "git"
 //    solta no meio dos argumentos de outro git abre a leitura de um git novo (`git reset git
 //    --hard` passa), e o cd so muda a pasta do git que vem depois dele no mesmo nivel (o cd de
 //    fora de um ( ) nao chega no git de dentro).
@@ -568,7 +580,7 @@ function mudarPasta(conta, dir, alvo) {
 // sairam o naoLe (variavel, substituicao, crase, chaves), o xargs e a troca do -I, com o
 // commitAntesDoTraco e o argumentosLidos, que so ele usava
 const JULGADOS = new Set(['push', 'reset', 'clean', 'checkout', 'restore', 'switch', 'stash'])
-const MOTIVO_NAO_LE = 'usa um apelido do git, que a trava nao le com certeza, e pode jogar trabalho fora'
+export const MOTIVO_NAO_LE = 'usa um apelido do git, que a trava nao le com certeza, e pode jogar trabalho fora'
 const BARRA = String.fromCharCode(92)
 function semBarra(a) { return a.replace(/\\([\s\S])/g, '$1') }
 const ehGit = p => nomeDoPrograma(p) === 'git' || (p.includes(BARRA) && nomeDoPrograma(semBarra(p)) === 'git')
@@ -1283,7 +1295,9 @@ function argumentosRemontados(desaspado) {
     // o trecho entre aspas deixou de ser lido como comando e ela passava calada. 5.49 (Codex comum, terceira,
     // 2026-11-04): so quando o programa executa comando (cmd, shell, git, lancador): pro notepad o texto e
     // nome de arquivo (`Start-Process notepad -ArgumentList "git reset --hard"` barrava a toa)
-    if (/[,(]/.test(trecho)) { remontados.push(trecho.replace(/@\(|[,()]/g, ' ')); return }
+    // 5.52 (chat 2, Task 2c, 2026-11-05, revisao interna): a lista tambem sai sem os nomes das opcoes, senao o
+    // -ArgumentList ficava no lugar do /c e o cmd da lista nao era lido (`-ArgumentList '/c','@git ...'` passava)
+    if (/[,(]/.test(trecho)) { remontados.push(trecho.replace(/@\(|[,()]/g, ' ').replace(RE_OPCAO_DO_START, ' ')); return }
     const resto = trecho.replace(RE_OPCAO_DO_START, ' ')
     const programa = nomeDoPrograma((resto.match(/[^\s]+/) || [''])[0])
     if (ehExecutor(programa) || LANCADORES.has(programa) || LANCADORES_DO_EMBRULHO.has(programa) || PREFIXOS_DO_SHELL.has(programa)) remontados.push(resto)
@@ -1560,6 +1574,21 @@ const RE_BARRA_NA_ASPA = /(?<=[^\s\\])\\(["'])(?=[\s;&|)]|$)/g
 const semBarraNaAspa = texto => texto.includes('\\') ? texto.replace(RE_BARRA_NA_ASPA, '\\ $1') : texto
 const leiturasAMais = (comando, comBarra = true) =>
   [...new Set([cmdComChavesSeparadas(comando), ...(comBarra ? [semBarraNaAspa(comando)] : [])])].filter(t => t !== comando)
+// 5.52 (chat 2, Task 2c, 2026-11-05): no cmd o @ na frente do comando so tira o eco, e o comando roda igual
+// (`cmd /c "@git reset --hard"`, `cmd /c "echo a & @git ..."`, `(@git ...)`, `@@git`, passavam calados). No
+// trecho que o cmd roda, o @ do comeco e o de depois de &, &&, || e ( saem numa leitura a mais (T55); fora do
+// cmd o @ fica (`bash -c "@git reset --hard"` nao acha o programa @git). O texto fica mais curto, entao a
+// recursao termina. 5.52 (chat 2, Task 2c, 2026-11-05, revisao interna): o cmd pula tambem ; , = antes do
+// comando (`cmd /c ";@git ..."`, `echo a & ,@git ...`), que saem junto do @, e no trecho com if ou for o @ de depois do espaco sai
+// (`for %i in (1) do @git ...`, `if 1==1 @git ...`, `else @git ...`); sem if nem for, `echo @git` segue calado
+const RE_ARROBA_DO_CMD = /(^|[&|(])([\s;,=]*)@+/g
+// 5.52 (chat 2, Task 2c, Codex comum): o cmd aceita o if e o for grudados no ( e na / (`if(1)==(1) @git ...`, `for/l`)
+const RE_IF_FOR_DO_CMD = /(^|[\s&|(;,=@])(if|for)(?=[\s(/])/i
+const semArrobaDoCmd = (comando, shell) => {
+  if (shell !== 'cmd' || !comando.includes('@')) return comando
+  const texto = comando.replace(RE_ARROBA_DO_CMD, '$1 ')
+  return RE_IF_FOR_DO_CMD.test(texto) ? texto.replace(/(\s)@+/g, '$1') : texto
+}
 const RE_APELIDO_QUE_RODA = /^alias\.[^=]*=!([\s\S]*)$/i
 // 5.49 (D-embrulho, 2026-11-03, revisao interna): quem lanca outro programa na frente do executor
 // (`timeout 60 bash -c`, `nice -n 5 bash -c`, `xargs -0 bash -c`, `wsl -d Ubuntu bash -c`). Depois dele
@@ -1743,11 +1772,24 @@ export function ehPerigoso(comando, opcoes = {}) {
   // apagador sem aspas (5.43) foi pra perguntaDeApagar, junto com as regras de apagar. 5.49 (Codex comum,
   // 2026-11-04): o comando com as chaves do cmd separadas, que e mais comprido, mas a volta dele devolve o
   // mesmo texto e nao entra de novo; e a da barra dobrada antes da aspa (ver semBarraNaAspa), idem
-  for (const trecho of new Set([...embrulhados(comando).map(e => e.texto), ...argumentosRemontados(desaspado), ...leiturasAMais(comando)])) {
-    const motivoTrecho = ehPerigoso(trecho, { cwd })
+  // 5.52 (chat 2, Task 2c, 2026-11-05): cada trecho leva o shell que o roda, e no do cmd o @ sai (ver semArrobaDoCmd)
+  for (const [trecho, shell] of trechosComShell(comando, desaspado, opcoes.shell)) {
+    const motivoTrecho = ehPerigoso(trecho, { cwd, shell })
     if (motivoTrecho) return motivoTrecho
   }
   return null
+}
+// os trechos que o ehPerigoso e o ehGitPerigoso leem de novo, cada um com o shell dele, sem repetir
+function trechosComShell(comando, desaspado, shell, antes = []) {
+  const vistos = new Map()
+  const poe = (texto, sh) => { const chave = (sh || '') + ' ' + texto; if (!vistos.has(chave)) vistos.set(chave, [texto, sh]) }
+  for (const t of antes) poe(t, null)
+  for (const e of embrulhados(comando)) poe(e.texto, e.shell)
+  for (const t of argumentosRemontados(desaspado)) poe(t, null)
+  for (const t of leiturasAMais(comando)) poe(t, shell)
+  const semArroba = semArrobaDoCmd(comando, shell)
+  if (semArroba !== comando) poe(semArroba, shell)
+  return vistos.values()
 }
 
 // rodada 5.23 (1b): so a leitura de git, com a mesma leitura do ehPerigoso (marcado, cwd, -C e
@@ -1767,9 +1809,97 @@ export function ehGitPerigoso(comando, opcoes = {}) {
   if (motivo) return motivo
   // 5.49 (D-apelido, 2026-11-03, revisao interna): o estrito le tambem o embrulho, pro comando do
   // `git config alias.x '!git reset --hard'`, que o suspeito com o ! na frente nao le
-  const trechos = [...(estrito ? suspeitos : []), ...embrulhados(comando).map(e => e.texto), ...argumentosRemontados(desaspado), ...leiturasAMais(comando)]
-  for (const trecho of new Set(trechos)) {
-    const motivoTrecho = ehGitPerigoso(trecho, { cwd, estrito })
+  for (const [trecho, shell] of trechosComShell(comando, desaspado, opcoes.shell, estrito ? suspeitos : [])) {
+    const motivoTrecho = ehGitPerigoso(trecho, { cwd, estrito, shell })
+    if (motivoTrecho) return motivoTrecho
+  }
+  return null
+}
+
+// 5.52 (chat 2, Task 2d, 2026-11-05): decisao 13. Os seis que apagam de vez e passavam calados (git reflog
+// expire, git branch -f, -D, -M e -C, git worktree remove, git update-ref -d, wsl --unregister e Clear-RecycleBin)
+// perguntam, pela regra apaga-de-vez. Ficam fora do ehGitPerigoso porque o porteiro destrutivo da bancada o
+// importa no estrito e travaria a propria limpeza de worktree. Le o git em qualquer palavra, como o gitPerigoso
+// (ver deVezNoTexto), e desce nos mesmos embrulhados do ehGitPerigoso (trechosComShell, com o @ do cmd). Devolve
+// o que a IA quer fazer, pra pergunta, ou null. Passam: git branch -d (o git confere se a branch ja foi juntada),
+// git branch -m e -c, git worktree list, add e prune, e os furos do T46 (checkout -B, switch -C, gc --prune=now
+// sozinho, git prune, wslconfig /unregister, update-ref --stdin). O git citado sem aspas (echo git branch -D x)
+// pergunta a toa
+export const REGRA_APAGA_DE_VEZ = 'apaga-de-vez'
+const DE_VEZ_REFLOG = 'apagar o reflog do git, o historico que deixa recuperar commit perdido'
+const DE_VEZ_BRANCH = 'apagar, sobrescrever ou renomear por cima uma branch do git sem conferir se o trabalho dela ja foi juntado'
+const DE_VEZ_WORKTREE = 'apagar uma copia de trabalho do git (worktree) junto com a pasta dela'
+const DE_VEZ_UPDATE_REF = 'apagar uma referencia do git (branch ou tag) direto, sem conferencia'
+const DE_VEZ_WSL = 'apagar uma distribuicao Linux do WSL inteira, com todos os arquivos dela'
+const DE_VEZ_LIXEIRA = 'esvaziar a lixeira do Windows'
+const WSL_COM_VALOR = new Set(['-d', '--distribution', '-u', '--user', '--cd', '--distribution-id'])
+function gitDeVez(args) {
+  let i = 0
+  while (i < args.length && args[i].startsWith('-')) i += GIT_COM_VALOR.has(args[i]) ? 2 : 1
+  const verbo = args[i]
+  const resto = args.slice(i + 1)
+  const sub = resto.find(a => !a.startsWith('-'))
+  if (verbo === 'reflog') return sub === 'expire' ? DE_VEZ_REFLOG : null
+  if (verbo === 'worktree') return sub === 'remove' ? DE_VEZ_WORKTREE : null
+  if (verbo !== 'branch' && verbo !== 'update-ref') return null
+  // 5.52 (chat 2, Task 2d, Codex comum): o -f e o --force com --list, -l ou --show-current so consultam
+  const soConsulta = verbo === 'branch' && resto.some(a => a === '--list' || a === '-l' || a === '--show-current')
+  for (let j = 0; j < resto.length; j++) {
+    const a = resto[j]
+    if (a === '--') break
+    if (verbo === 'update-ref') {
+      if (a === '-m') { j++; continue }
+      if (!a.startsWith('--') && letrasCurtas(a, 'm').letras.includes('d')) return DE_VEZ_UPDATE_REF
+      continue
+    }
+    if (longa(a, '--force')) { if (!soConsulta) return DE_VEZ_BRANCH; continue }
+    // 5.52 (chat 2, Task 2d, revisao interna, 2026-11-05): o -C copia por cima, como o --copy --force
+    const letras = a.startsWith('--') ? '' : letrasCurtas(a, 'u').letras
+    if (/[DMC]/.test(letras) || (!soConsulta && letras.includes('f'))) return DE_VEZ_BRANCH
+  }
+  return null
+}
+// 5.52 (chat 2, Task 2d, revisao interna, 2026-11-05): le como o gitPerigoso, o git em qualquer palavra do
+// comando simples ate o git seguinte, e nao so no lugar de programa: timeout 5, nice -n 5, env -C, stdbuf, sudo -u,
+// ssh host, watch, do, then, !, find -exec e cmd /c ou powershell -c sem aspas deixavam o programa fora da
+// leitura. O wsl e o Clear-RecycleBin tambem, menos quando o programa do pedaco so cita o nome (echo, grep, Get-Help)
+const SO_NOMEIAM = new Set([...CITAM, 'get-help', 'help', 'man', 'get-command', 'gcm'])
+function deVezNoTexto(texto) {
+  for (const seg of comandosDoTexto(texto)) {
+    const p = (seg.match(/\S+/g) || []).map(a => a.split(ASPA).join(''))
+    const cita = p.length > 0 && SO_NOMEIAM.has(nomeDoPrograma(p[0]))
+    let i = 0
+    while (i < p.length) {
+      const nome = nomeDoPrograma(p[i])
+      if (!cita && nome === 'clear-recyclebin') return DE_VEZ_LIXEIRA
+      if (!cita && nome === 'wsl') {
+        for (let k = i + 1; k < p.length && p[k].startsWith('-'); k += WSL_COM_VALOR.has(p[k]) ? 2 : 1) {
+          if (p[k].toLowerCase() === '--unregister') return DE_VEZ_WSL
+          if (p[k] === '--' || p[k] === '-e' || p[k] === '--exec') break
+        }
+      }
+      if (!ehGit(p[i])) { i++; continue }
+      let fim = i + 1
+      while (fim < p.length && !ehGit(p[fim])) fim++
+      const args = p.slice(i + 1, fim)
+      const motivo = gitDeVez(args) || (args.some(a => a.includes(BARRA)) ? gitDeVez(args.map(semBarra)) : null)
+      if (motivo) return motivo
+      i = fim
+    }
+  }
+  return null
+}
+export function apagaDeVez(comando, opcoes = {}) {
+  if (typeof comando !== 'string' || comando.length === 0) return null
+  const { desaspado, marcado } = classificarTrechosEntreAspas(comando)
+  // 5.52 (chat 2, Task 2d, Codex comum): o PowerShell continua a linha depois da crase no fim (`wsl `+quebra+
+  // `--unregister`) e a crase dentro da palavra so escapa a letra (Clear-Recycle`Bin): as duas leituras a mais
+  // so podem perguntar a mais
+  const juntado = marcado.replace(/`\r?\n\s*/g, ' ')
+  const motivo = deVezNoTexto(marcado) || deVezNoTexto(juntado) || deVezNoTexto(juntado.replace(/`(?=\S)/g, ''))
+  if (motivo) return motivo
+  for (const [trecho, shell] of trechosComShell(comando, desaspado, opcoes.shell)) {
+    const motivoTrecho = apagaDeVez(trecho, { shell })
     if (motivoTrecho) return motivoTrecho
   }
   return null
@@ -1798,17 +1928,38 @@ const RE_CHAVES_DO_CMD = /^(?:\/\/?(?:[cksqdaur]|[tefv]:\w+))+$/i
 const RE_CHAVE_QUE_RODA = /\/[ckr](?![:\w])/i
 // o rm recursivo do bash (-r, -R, --recursive, agrupado como -rf) ou do PowerShell (-r ate -recurse)
 const rmRecursivo = a => RE_OPCAO_R_PS.test(a) || a === '--recursive' || (RE_LETRAS_DO_RM.test(a) && /r/i.test(a))
+// 5.52 (chat 2, Task 2e, revisao interna, 2026-11-05): a opcao de quem vem antes do apagador que troca a pasta
+// (o -C e o --chdir do env, o -D, o -R e o --chdir do sudo, o -C, o --dir, o --cwd e o --prefix do lancador de
+// pacote, o -w e o --filter da area de trabalho), grudada no valor ou nao: o alvo relativo e de outra pasta, como
+// depois do cd (`env -C.. rm -rf dist` apaga o dist de fora do projeto). Pega a mais, so pergunta a mais
+const RE_OPCAO_DE_PASTA = /^(?:-[A-Za-z]*[CDRFrw]|--(?:c|dir|prefix|workspace|filter|recursive))/
+// 5.52 (chat 2, Task 2e, revisao interna, 2026-11-05): o redirecionamento nao e alvo (`rm -rf dist 2>/dev/null`,
+// `2>$null` do PowerShell, `2>nul` do cmd); o operador sozinho leva a palavra seguinte, o destino dele
+const RE_REDIRECAO = /^(?:\d+|[&*])?(?:>>?|<)/
+const RE_SO_REDIRECAO = /^(?:\d+|[&*])?(?:>>?|<)(?:&\d*)?$/
+function semRedirecao(args) {
+  const saida = []
+  for (let j = 0; j < args.length; j++) {
+    if (!RE_REDIRECAO.test(args[j])) saida.push(args[j])
+    else if (RE_SO_REDIRECAO.test(args[j])) j++
+  }
+  return saida
+}
 // alvos de um pedaco do marcado, ou null quando o programa dele nao e um apagador lido aqui
 function alvosDoPedaco(seg) {
   // o espaco depois da marca SUB e do comandosDoTexto: `$(pwd)/x` e uma palavra so
   const palavras = (seg.split(SUB + ' ').join(SUB).replace(RE_ATRIBUICAO, '').match(/\S+/g) || []).map(p => p.split('^').join(''))
   let k = 0
+  let outraPasta = false
   // 5.49 (autonomia, 2026-11-04): o cmd com /c, /k ou /r sem aspas roda o resto da linha, e o alvo do rd e
   // do del se le dali (`cmd /c rd /s /q dist`, `cmd //c` do Git Bash, chaves antes, como /d /q, ou juntas).
   // Em laco, sem recursao: `cmd /c cmd /c ...` gigante segue linear
   for (;;) {
     const ini = k
-    while (k < palavras.length - 1 && pulaAntesDoApagador(palavras[k], k - ini)) k++
+    while (k < palavras.length - 1 && pulaAntesDoApagador(palavras[k], k - ini)) {
+      if (k > ini && RE_OPCAO_DE_PASTA.test(palavras[k])) outraPasta = true
+      k++
+    }
     if (!palavras[k]) return null
     if (nomeDoPrograma(palavras[k]) !== 'cmd') break
     let j = k + 1
@@ -1818,7 +1969,12 @@ function alvosDoPedaco(seg) {
   }
   const colado = RE_COLADO_NO_CMD.exec(palavras[k])
   const nome = colado ? colado[1].toLowerCase() : nomeDoPrograma(palavras[k]).replace(/@[^@\/]*$/, '')
-  const args = palavras.slice(k + 1)
+  const args = semRedirecao(palavras.slice(k + 1))
+  const lista = alvosDoApagador(nome, colado, args)
+  if (lista && outraPasta) lista.outraPasta = true
+  return lista
+}
+function alvosDoApagador(nome, colado, args) {
   if (nome === 'rm') return args.some(rmRecursivo) ? alvosDosArgs(args) : null
   if (nome === 'rimraf' || nome === 'del-cli') return alvosDosArgs(args)
   if (!APAGADORES_PS.has(nome)) return null
@@ -1871,7 +2027,7 @@ function lerApagar(comando, alvos, mudouPasta = false, shell = null, literal = t
     // desde a 5.49 barra com a regra erro-interno (revisao interna)
     if (doPedaco) {
       if (!doPedaco.length) alvos.push(null)
-      for (const a of doPedaco) { const t = alvoLegivel(a, mudouPasta); alvos.push(foraDoShell(t, shell) ? null : t) }
+      for (const a of doPedaco) { const t = alvoLegivel(a, mudouPasta || !!doPedaco.outraPasta); alvos.push(foraDoShell(t, shell) ? null : t) }
     }
     else if (juntos && APAGAR_COM_ALVO.some(p => p.teste(pedacosDoLimpo[i]))) alvos.push(null)
     else return
@@ -1901,6 +2057,9 @@ function lerApagar(comando, alvos, mudouPasta = false, shell = null, literal = t
   // 5.49 (Codex comum, 2026-11-04): as chaves do cmd separadas, como no ehPerigoso. A barra dobrada so
   // a perguntaDeApagar le, e so fora do bash
   for (const trecho of leiturasAMais(comando, false)) lerApagar(trecho, alvos, mudouPasta, shell, literal, powershell, bash)
+  // 5.52 (chat 2, Task 2c, 2026-11-05): no trecho do cmd, o @ do comeco e de depois de &, &&, || e ( sai (ver semArrobaDoCmd)
+  const semArroba = semArrobaDoCmd(comando, shell)
+  if (semArroba !== comando) lerApagar(semArroba, alvos, mudouPasta, shell, literal, powershell, bash)
 }
 // 5.49 (autonomia, 2026-11-04): o corpo do heredoc com o delimitador entre aspas (o shell nao troca nada
 // nele) que o cat ou o tee grava em arquivo e texto, como o do echo: gravar no licoes.md uma linha que
@@ -2017,37 +2176,104 @@ export function perguntaDeApagar(comando, opcoes = {}) {
   // revisao interna da comum (2026-11-04): fora do bash a barra antes da aspa e caractere (ver semBarraNaAspa)
   const semBarra = opcoes.ferramenta === 'Bash' || opcoes.ferramenta === 'Monitor' ? texto : semBarraNaAspa(texto)
   if (semBarra !== texto) lerApagar(semBarra, achados, false, null, true, doPowershell, doBash)
+  // 5.52 (chat 2, Task 2e, Codex comum): a duplicacao de saida (`2>&1`, `>&2`, `&>`, `>&arquivo`) parte o comando no
+  // & e o alvo de depois (`rm -rf dist 2>&1 src`) caia num pedaco sem apagador; a leitura sem ela soma os alvos
+  const semDuplica = texto.replace(/\d*>&(?=[\d-])\S*/g, ' ').replace(/>&|&>/g, '>')
+  if (semDuplica !== texto) lerApagar(semDuplica, achados, false, null, true, doPowershell, doBash)
   if (!achados.length) return null
-  const leitura = leituraDasVariaveis(texto, env, opcoes.ferramenta)
+  const daqui = leituraDasVariaveis(texto, env, opcoes.ferramenta)
+  // 5.52 (chat 2, Task 2f, comum, 2026-11-06): opcoes.confia e a do comando que roda o script (scriptsRodados): a
+  // variavel da temporaria que o comando muda (`TMPDIR=x bash x.sh`, export, env, set, $env:) nao libera o de dentro
+  const leitura = typeof opcoes.confia === 'function'
+    ? { ...daqui, confia: (nome, shell) => daqui.confia(nome, shell) && opcoes.confia(nome, shell) } : daqui
   const alvos = [...new Set(achados)].map(a => ({ a, caminho: a === null ? null : caminhoDoAlvo(a, cwd, leitura) }))
   const bases = basesTemporarias()
-  if (alvos.every(x => x.caminho !== null && dentroDaTemporaria(x.caminho, bases))) return null
+  const projeto = pastaDoProjeto(env, cwd)
+  if (alvos.every(x => x.caminho !== null && (dentroDaTemporaria(x.caminho, bases) || pastaRefazivel(x.a, x.caminho, projeto, opcoes.ferramenta)))) return null
   return alvos.map(x => x.caminho === null ? null : x.a)
+}
+
+// 5.52 (chat 2, Task 2e, 2026-11-05): decisao 11, lista fechada. A pasta que o projeto refaz sozinho (npm install,
+// build, o Python) apaga calada, so com o caminho real dentro do projeto (CLAUDE_PROJECT_DIR, senao o cwd) e nunca o
+// projeto inteiro. So a pasta da lista inteira: o nome dela e o ultimo pedaco do alvo (`./dist`, `sub/node_modules`);
+// arquivo dentro dela (`dist/a.txt`) pergunta, porque o nome do arquivo nao diz se ele e refeito. Sem curinga, sem
+// expansao (chaves, variavel, aspas que sobraram), sem `..` no alvo e sem caractere fora do ASCII visivel (as marcas
+// da leitura sao de controle). A pasta mae pelo caminho real (atalho ou juncao no meio do caminho que leva pra fora
+// do projeto pergunta) e a propria pasta pelo lstat: atalho ou juncao com o nome da lista pergunta, porque o
+// Remove-Item do Windows PowerShell desce na pasta de destino. A barra invertida so separa na ferramenta PowerShell
+// no Windows; no Bash ela escapa a letra seguinte (`.\dist` apaga `.dist`). O dados/navegador-saida fica fora (guarda
+// o download do robo) e o .gitignore nunca serve de criterio pra soltar
+// 5.52 (chat 2, Task 2e, revisao interna, 2026-11-05): o til no comeco do alvo tambem pergunta: o do Bash com
+// usuario ou com o OLDPWD (`~root/build`, `~-/dist`) e outra pasta, que a trava lia como pasta dentro do projeto.
+// So no comeco, onde o shell o troca: no meio ele e letra do nome curto do Windows (`PROGRA~1`)
+export const PASTAS_REFAZIVEIS = ['node_modules', 'dist', 'build', '.next', '__pycache__']
+const naLista = nome => PASTAS_REFAZIVEIS.includes(nome)
+const RE_ALVO_VISIVEL = /^[ -~]+$/
+const RE_CURINGA_OU_EXPANSAO = /[*?[\]{}$`%"'<>|;&!]|^~/
+function pastaDoProjeto(env, cwd) {
+  const p = typeof env.CLAUDE_PROJECT_DIR === 'string' && env.CLAUDE_PROJECT_DIR ? env.CLAUDE_PROJECT_DIR : cwd
+  return semCaixa(caminhoReal(resolve(cwd, p)))
+}
+function pastaRefazivel(alvo, caminho, projeto, ferramenta) {
+  try {
+    const invertida = process.platform === 'win32' && ferramenta === 'PowerShell'
+    if (!RE_ALVO_VISIVEL.test(alvo) || RE_CURINGA_OU_EXPANSAO.test(alvo) || (!invertida && alvo.includes(BARRA_DO_HEREDOC))) return false
+    const partes = alvo.split(invertida ? /[\\\/]+/ : /\/+/).filter(p => p && p !== '.')
+    const nome = partes[partes.length - 1]
+    if (!nome || partes.includes('..') || !naLista(nome) || basename(caminho) !== nome) return false
+    const real = semCaixa(join(caminhoReal(dirname(caminho)), nome))
+    const rel = relative(projeto, real)
+    if (rel === '' || rel.split(sep)[0] === '..' || isAbsolute(rel)) return false
+    const info = lstatSync(caminho, { throwIfNoEntry: false })
+    return !info || (info.isDirectory() && !info.isSymbolicLink())
+  } catch { return false }
 }
 
 // a variavel da temporaria no comeco do alvo vira o valor do ambiente do hook, e so entao o .. se
 // resolve ($env:TEMP/../Documentos pergunta). Outra variavel, ou a temporaria sem valor, a trava nao le.
 // 5.49 (bloco 5, revisao interna): cada forma vale so no shell dela. Na ferramenta PowerShell o $TMPDIR
-// e variavel do proprio PowerShell (vazia: o alvo vira a raiz do disco), e no bash o $env:TEMP e o $env
-// vazio. O %TEMP% e do cmd, que roda de dentro das duas. O nome do bash diferencia caixa ($tmpdir e
-// outra variavel); o do PowerShell e o do cmd nao, no Windows. E o comando que mexe na variavel antes de
+// (e, desde a 5.52, o $TEMP e o $TMP) e variavel do proprio PowerShell (vazia: o alvo vira a raiz do
+// disco), e no bash o $env:TEMP e o $env vazio. O %TEMP% e do cmd, que roda de dentro das duas. O nome
+// do bash diferencia caixa ($tmpdir e outra variavel); o do PowerShell e o do cmd nao, no Windows. E o comando que mexe na variavel antes de
 // apagar (`$env:TEMP = 'E:/'`, `export TMPDIR=~`, `TMPDIR=x;`, `Set-Item env:TEMP`) tira a confianca nela:
 // o nome dela fora da forma de ler, ou a forma de ler seguida de =, e a trava nao le o alvo
+// 5.52 (chat 2, Task 2b, 2026-11-05): o $TEMP e o $TMP do Bash (e o ${TEMP} e o ${TMP}), com caixa ($temp
+// e outra variavel), so no Windows: o Git Bash os copia do ambiente do Windows (o /etc/profile so troca a
+// barra), a mesma pasta do TEMP e do TMP do ambiente do hook. Sem valor no ambiente do hook a trava nao le
+// (sem a queda no os.tmpdir() do $TMPDIR: no Git Bash sem eles o alvo vira a raiz dele), e fora do Windows
+// o Bash nao tem essas duas por padrao, entao segue perguntando
+// 5.52 (chat 2, Task 2b, revisao interna, 2026-11-05): na forma do Bash so a barra normal fecha o nome. A
+// invertida fora de aspas escapa a letra seguinte e cola nela (`$TEMP\x` apaga a pasta `...\Tempx`, vizinha
+// da temporaria), entao ela cai no $ de baixo e pergunta; vale tambem pro $TMPDIR
 const VARIAVEIS_DA_TEMPORARIA = [
   { re: /^\$env:(TEMP|TMP)(?=[\\\/]|$)/i, shell: 'PowerShell', semCaixa: true },
   { re: /^%(TEMP|TMP)%(?=[\\\/]|$)/i, shell: 'cmd', semCaixa: true },
-  { re: /^\$(TMPDIR)(?=[\\\/]|$)/, shell: 'Bash', semCaixa: false },
+  { re: /^\$(TMPDIR)(?=\/|$)/, shell: 'Bash', semCaixa: false },
+  { re: /^\$(TEMP|TMP)(?=\/|$)/, shell: 'Bash', semCaixa: false, soNoWindows: true },
 ]
-const RE_LER_VARIAVEL = /\$env:(?:TEMP|TMP)(?!\w)|%(?:TEMP|TMP)%|\$TMPDIR(?!\w)/gi
-const RE_LER_E_ATRIBUIR = /(?:\$env:(?:TEMP|TMP)|\$TMPDIR)\s*[-+*\/?]?=(?!=)/i
+const RE_LER_VARIAVEL = /\$env:(?:TEMP|TMP)(?!\w)|%(?:TEMP|TMP)%|\$(?:TMPDIR|TEMP|TMP)(?!\w)/gi
+const RE_LER_E_ATRIBUIR = /(?:\$env:(?:TEMP|TMP)|\$(?:TMPDIR|TEMP|TMP))\s*[-+*\/?]?=(?!=)/i
 const RE_NOME_DA_VARIAVEL = /(?<![A-Za-z0-9_])(?:TEMP|TMP|TMPDIR)(?![A-Za-z0-9_])/gi
-// o ${TMPDIR} e o $TMPDIR do shell; o marcado partiria as chaves
-const semChavesNoTmpdir = comando => comando.replace(/\$\{TMPDIR\}/g, () => '$TMPDIR')
+// o ${TMPDIR} e o $TMPDIR do shell; o marcado partiria as chaves. 5.52 (chat 2, Task 2b): o ${TEMP} e o
+// ${TMP} tambem
+const semChavesNoTmpdir = comando => comando.replace(/\$\{(TMPDIR|TEMP|TMP)\}/g, (_, nome) => '$' + nome)
+// 5.52 (chat 2, Task 2b, revisao interna, 2026-11-05): o IFS mexido parte o valor da variavel sem aspas do
+// Bash (`IFS=:; rm -rf $TEMP/x` apaga a pasta `C` do cwd, pelo : da letra de disco; `IFS=/` parte o
+// $TMPDIR), e a trava nao sabe se o alvo veio entre aspas: o nome IFS no comando tira a confianca nas
+// formas do Bash. E o `env -i` (`-`, `--ignore-environment` ou o comeco unico dele) esvazia o ambiente de
+// quem roda depois (`env -i bash -c 'rm -rf $TEMP/x'` apaga o /x da raiz do Git Bash): tira a confianca em
+// todas as formas. 5.52 (chat 2, Task 2b, Codex comum, 2026-11-06): o nome sem caixa (o Windows roda `ENV
+// -i`), e o `-S`/`--split-string` tira a confianca tambem, porque monta as opcoes de dentro de uma string
+// (`env --split-string='-i bash' -c ...` esvazia o ambiente) que a trava nao le
+const RE_IFS = /(?<![A-Za-z0-9_])IFS(?![A-Za-z0-9_])/
+const RE_ENV_VAZIO = /(?<![A-Za-z0-9_.-])env(?:\.exe)?["']?\s(?:[^;&|\n]*?\s)?["']?(?:-[A-Za-z0-9]*i[A-Za-z0-9]*|--i[a-z-]*|-)(?=["']?(?:\s|$))/i
+const RE_ENV_PARTE = /(?<![A-Za-z0-9_.-])env(?:\.exe)?["']?\s(?:[^;&|\n]*?\s)?["']?(?:-[A-Za-z0-9]*S|--s[a-z-]*(?=[=\s]))/i
 function leituraDasVariaveis(texto, env, ferramenta) {
   const mexidas = new Set((texto.replace(RE_LER_VARIAVEL, ' ').match(RE_NOME_DA_VARIAVEL) || []).map(n => n.toUpperCase()))
-  const atribui = RE_LER_E_ATRIBUIR.test(texto)
+  const atribui = RE_LER_E_ATRIBUIR.test(texto) || RE_ENV_VAZIO.test(texto) || RE_ENV_PARTE.test(texto)
+  const ifs = RE_IFS.test(texto)
   const shells = ferramenta === 'PowerShell' ? ['PowerShell', 'cmd'] : ferramenta === 'Bash' || ferramenta === 'Monitor' ? ['Bash', 'cmd'] : ['PowerShell', 'cmd', 'Bash']
-  return { env, shells, confia: nome => !atribui && !mexidas.has(nome.toUpperCase()) }
+  return { env, shells, confia: (nome, shell) => !atribui && !mexidas.has(nome.toUpperCase()) && !(ifs && shell === 'Bash') }
 }
 function valorDoAmbiente(env, nome, semCaixa) {
   if (typeof env[nome] === 'string') return env[nome]
@@ -2064,11 +2290,12 @@ function caminhoDoAlvo(alvo, cwd, leitura) {
   for (const forma of VARIAVEIS_DA_TEMPORARIA) {
     const v = forma.re.exec(a)
     if (!v) continue
-    if (!leitura.shells.includes(forma.shell) || !leitura.confia(v[1])) return null
+    if (!leitura.shells.includes(forma.shell) || !leitura.confia(v[1], forma.shell)) return null
+    if (forma.soNoWindows && process.platform !== 'win32') return null
     let valor = valorDoAmbiente(leitura.env, v[1], forma.semCaixa)
     // 5.49 (autonomia, 2026-11-04): sem TMPDIR no ambiente do hook, no Windows, o /etc/profile do Git Bash
     // poe nele o TMP do Windows (quando o TMPDIR nao e pasta), a mesma temporaria que o os.tmpdir() le
-    if (!valor && forma.shell === 'Bash' && process.platform === 'win32') valor = tmpdir()
+    if (!valor && v[1] === 'TMPDIR' && process.platform === 'win32') valor = tmpdir()
     if (typeof valor !== 'string' || !valor) return null
     // 5.49 (Codex final, 2026-11-04): no Bash e no cmd a variavel sem aspas se parte no espaco do valor
     // (`rm -rf $TMPDIR/x` com a temporaria em `.../pasta com espaco` apaga `com` e `espaco/x` na pasta de
@@ -2129,22 +2356,52 @@ function dentroDaTemporaria(caminho, bases) {
 const MAX_COMANDO_NA_PERGUNTA = 300
 const MAX_NOMES_NA_PERGUNTA = 10
 const MAX_ARQUIVOS_CONTADOS = 1000
-function contarArquivos(pasta) {
-  let n = 0
-  const pilha = [pasta]
-  while (pilha.length) {
-    const dir = pilha.pop()
+// 5.52 (chat 2, Task 2e, 2026-11-05): decisao 11. A pergunta traz a avaliacao que o codigo sabe fazer: quantos
+// arquivos, quantos fora do backup (o git check-ignore, so com a pasta num repositorio; sem rede) e o nome sensivel
+// (.env e dados/sessao). So roda quando a trava ja vai perguntar. Teto de 1000 arquivos e de 2 segundos pra pergunta
+// inteira: estourado, diz "mais de N" e "pelo menos N"
+const MAX_MS_DA_AVALIACAO = 2000
+const SENHA = 'senha no .env'
+const SESSAO = 'login salvo em dados/sessao'
+const ehSessao = dir => basename(dir) === 'sessao' && basename(dirname(dir)) === 'dados'
+export function avaliarPasta(pasta, prazo) {
+  const arquivos = []
+  const sensiveis = new Set(ehSessao(pasta) ? [SESSAO] : [])
+  let estourou = false
+  const pilha = [[pasta, '']]
+  while (pilha.length && !estourou) {
+    const [dir, rel] = pilha.pop()
+    // Codex comum: o prazo vale tambem a cada pasta, senao uma arvore de pastas vazias passava dele
+    if (Date.now() > prazo) { estourou = true; break }
     for (const e of readdirSync(dir, { withFileTypes: true })) {
-      if (e.isDirectory()) pilha.push(join(dir, e.name))
-      else if (++n > MAX_ARQUIVOS_CONTADOS) return n
+      const r = rel ? rel + '/' + e.name : e.name
+      if (e.isDirectory()) {
+        pilha.push([join(dir, e.name), r])
+        if (e.name === 'sessao' && basename(dir) === 'dados') sensiveis.add(SESSAO)
+        continue
+      }
+      if (e.name === '.env') sensiveis.add(SENHA)
+      if (arquivos.length >= MAX_ARQUIVOS_CONTADOS || Date.now() > prazo) { estourou = true; break }
+      arquivos.push(r)
     }
   }
-  return n
+  return { arquivos, estourou, sensiveis }
+}
+// quantos dos arquivos o git ignora (nao vao pro backup), ou null fora de repositorio, sem git ou sem tempo
+function foraDoBackup(pasta, arquivos, prazo) {
+  const resta = prazo - Date.now()
+  if (!arquivos.length || resta <= 0) return null
+  const r = spawnSync('git', ['-C', pasta, 'check-ignore', '--stdin', '-z'], {
+    input: arquivos.join(NUL), encoding: 'utf8', timeout: resta, windowsHide: true,
+  })
+  if (r.status === 1) return 0
+  if (r.status !== 0 || typeof r.stdout !== 'string') return null
+  return r.stdout.split(NUL).filter(Boolean).length
 }
 // 5.49 (autonomia, 2026-11-04): o alvo que a trava nao le (find -delete, pipe pro Remove-Item, node -e,
 // python -c) saia como "uma pasta inteira", que assustava sem ser verdade; agora diz o que se sabe
 const ALVO_DESCONHECIDO = 'arquivos que o comando escolhe, a trava nao sabe quais'
-function descreverAlvo(alvo, cwd, leitura) {
+function descreverAlvo(alvo, cwd, leitura, prazo) {
   if (alvo === null) return ALVO_DESCONHECIDO
   // 5.49 (autonomia, revisao interna, 2026-11-04): o curinga (`rm -rf *`, `del /s /q *.*`) saia como
   // "a pasta * (que nao existe)", que parecia inofensivo; agora diz que apaga tudo o que casa com ele
@@ -2154,27 +2411,475 @@ function descreverAlvo(alvo, cwd, leitura) {
     if (caminho !== null) {
       const info = lstatSync(caminho, { throwIfNoEntry: false })
       if (!info) return `a pasta ${alvo} (que nao existe)`
-      if (!info.isDirectory()) return `o arquivo ${alvo}`
-      const n = contarArquivos(caminho)
-      const quantos = n > MAX_ARQUIVOS_CONTADOS ? `mais de ${MAX_ARQUIVOS_CONTADOS} arquivos` : n === 1 ? '1 arquivo' : `${n} arquivos`
-      return `a pasta ${alvo} inteira (${quantos})`
+      const ehPasta = info.isDirectory()
+      const nome = basename(caminho)
+      const av = ehPasta ? avaliarPasta(caminho, prazo) : { arquivos: [nome], estourou: false, sensiveis: new Set(nome === '.env' ? [SENHA] : []) }
+      const fora = foraDoBackup(ehPasta ? caminho : dirname(caminho), av.arquivos, prazo)
+      const n = av.arquivos.length
+      const partes = !ehPasta ? [] : [av.estourou ? `mais de ${n} arquivos` : n === 1 ? '1 arquivo' : `${n} arquivos`]
+      if (fora) partes.push(!ehPasta ? 'fora do backup' : `${av.estourou ? 'pelo menos ' : ''}${fora} fora do backup`)
+      const sensiveis = [SENHA, SESSAO].filter(s => av.sensiveis.has(s))
+      if (sensiveis.length) partes.push('com ' + sensiveis.join(' e '))
+      if (!ehPasta) return `o arquivo ${alvo}` + (partes.length ? ` (${partes.join(', ')})` : '')
+      return `a pasta ${alvo} inteira (${partes.join(', ')})`
     }
   } catch { /* sem a contagem, o nome sai do mesmo jeito */ }
   return `a pasta ${alvo} inteira`
 }
+// 5.52 (chat 2, Task 2d, 2026-11-05): opcoes.deVez (o que o apagaDeVez devolveu) entra na mesma pergunta, com
+// as duas regras; sem alvo de apagar pasta, a pergunta e so da regra apaga-de-vez
 export function textoDaPergunta(alvos, comando, opcoes = {}) {
   const cwd = typeof opcoes.cwd === 'string' && opcoes.cwd ? opcoes.cwd : process.cwd()
   const env = opcoes.env && typeof opcoes.env === 'object' ? opcoes.env : process.env
   const leitura = leituraDasVariaveis(semChavesNoTmpdir(comando), env, opcoes.ferramenta)
-  const nomes = alvos.slice(0, MAX_NOMES_NA_PERGUNTA).map(a => descreverAlvo(a, cwd, leitura))
+  const prazo = Date.now() + MAX_MS_DA_AVALIACAO
+  const nomes = alvos.slice(0, MAX_NOMES_NA_PERGUNTA).map(a => descreverAlvo(a, cwd, leitura, prazo))
   if (alvos.length > MAX_NOMES_NA_PERGUNTA) nomes.push(`mais ${alvos.length - MAX_NOMES_NA_PERGUNTA} pastas`)
   const quais = nomes.length === 1 ? nomes[0] : `${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]}`
   const linha = comando.replace(/\s+/g, ' ').trim()
   const mostrado = linha.length > MAX_COMANDO_NA_PERGUNTA
     ? linha.slice(0, MAX_COMANDO_NA_PERGUNTA) + ' ... (comando cortado: pede pra IA mostrar ele inteiro antes de responder)'
     : linha
-  return `Pergunta da trava barrar-perigoso, regra ${REGRA_APAGAR}: A IA quer apagar ${quais}, sem volta. Pode? Comando: ${mostrado}`
+  const deVez = typeof opcoes.deVez === 'string' && opcoes.deVez ? opcoes.deVez : null
+  // 5.52 (chat 2, Task 2f, 2026-11-05): opcoes.naoLidos (o script que a trava nao leu, regra script-nao-lido) e
+  // opcoes.scripts (o script lido de onde veio o apagar) entram na mesma pergunta; as regras se juntam por " e "
+  const naoLidos = Array.isArray(opcoes.naoLidos) ? opcoes.naoLidos : []
+  const scripts = Array.isArray(opcoes.scripts) ? [...new Set(opcoes.scripts)] : []
+  // 5.52 (chat 3, Task 3c): opcoes.autonomia (o comando grava no _contexto/autonomia.md) entra na mesma pergunta
+  const autonomia = opcoes.autonomia === true
+  // 5.52 (chat 3, Task 3c, revisao interna): opcoes.foraDoAllow (o que o allow solta mas sai dele) tambem entra
+  const foraDoAllow = Array.isArray(opcoes.foraDoAllow) ? opcoes.foraDoAllow : []
+  const regras = [...(alvos.length ? [REGRA_APAGAR] : []), ...(deVez ? [REGRA_APAGA_DE_VEZ] : []), ...(naoLidos.length ? [REGRA_SCRIPT_NAO_LIDO] : []),
+    ...(autonomia ? [REGRA_GRAVA_AUTONOMIA] : []), ...(foraDoAllow.length ? [REGRA_FORA_DO_ALLOW] : [])]
+  const regra = regras.length ? regras.join(' e ') : REGRA_APAGA_DE_VEZ
+  const apaga = [alvos.length ? `apagar ${quais}` : '', deVez || ''].filter(Boolean).join(' e tambem ')
+  const deOnde = apaga && scripts.length ? ` (de dentro do script ${scripts.slice(0, MAX_NOMES_NA_PERGUNTA).join(', ')})` : ''
+  const roda = naoLidos.slice(0, MAX_NOMES_NA_PERGUNTA).map(s => `rodar o script ${s.nome} (a trava nao leu o script: ${s.porque})`).join(', ')
+  const grava = autonomia ? 'mudar pelo terminal o _contexto/autonomia.md, o arquivo que diz o que a IA pode fazer sem perguntar' : ''
+  const fora = foraDoAllow.slice(0, MAX_NOMES_NA_PERGUNTA).join(', ')
+  const quer = [apaga ? apaga + deOnde + ', sem volta' : '', roda, grava, fora].filter(Boolean).join(', e tambem ')
+  return `Pergunta da trava barrar-perigoso, regra ${regra}: A IA quer ${quer}. Pode? Comando: ${mostrado}`
 }
+
+// 5.52 (chat 2, Task 2f, 2026-11-05): decisao 2 das pendentes, script lido. O script que o comando manda rodar por
+// bash, sh, source, . (ponto), & x.ps1 (e o .ps1, o bat e o .cmd na posicao de programa), powershell -File, pwsh
+// -File (e o pwsh com o .ps1 solto), call e cmd /c com o bat ou o .cmd, e lido e julgado como se fosse digitado,
+// com o shell dele (bash, sh, source e . = Bash, o .ps1 e o -File = PowerShell, o bat, o .cmd e o call = cmd): o
+// ehPerigoso barra, a perguntaDeApagar (com o alvo relativo a pasta do comando, a temporaria e a lista fechada
+// valendo) e o apagaDeVez perguntam. O corpo do heredoc que o cat ou o tee grava num arquivo e o mesmo comando roda
+// vale no lugar do arquivo do disco (com >> ou tee -a, os dois). Um nivel so: o script de dentro do script nao e
+// lido. Teto de 256 KB; o BOM do UTF-8, o UTF-16 (com BOM, ou sem BOM com NUL entre as letras) e o CRLF se
+// decodificam, como leitura a mais da leitura crua (T55). O script que a trava nao acha, nao abre, maior que o teto,
+// com variavel ou curinga no caminho, ou com o caminho relativo depois de o comando mudar de pasta (cd, env -C,
+// pwsh -WorkingDirectory) pergunta pela regra script-nao-lido. Excecao: o caminho real dentro de
+// realpath(CLAUDE_PROJECT_DIR, senao o cwd)/.claude/skills nao e lido (o /otimizar-pc nao pergunta de novo o que a
+// pessoa aprovou por bloco); o .. e o atalho ou juncao que leva pra fora dela sao lidos, e o arquivo que o heredoc
+// grava ali tambem. Fora do projeto (source ~/.bashrc) le igual: so pergunta se nao conseguir ler. So abre arquivo
+// quando o comando tem uma dessas formas. Furos nomeados no T53: o ./x.sh direto, o bash < x.sh, o cat x.sh | bash,
+// o bash <(...), o node e o python rodando arquivo, o here-string do PowerShell gravando .ps1 e o heredoc gravado
+// depois de rodado no mesmo comando (vale o corpo, nao o disco)
+export const REGRA_SCRIPT_NAO_LIDO = 'script-nao-lido'
+export const MAX_BYTES_DO_SCRIPT = 256 * 1024
+const NAO_ACHOU = 'nao achou o arquivo'
+const NAO_ABRE = 'nao conseguiu abrir o arquivo'
+const GRANDE = 'arquivo maior que 256 KB'
+const ESCONDIDO = 'o caminho tem variavel ou curinga'
+const MUDOU_PASTA = 'o comando muda de pasta antes'
+const REGRAVADO = 'o comando grava por cima do script'
+const MAX_NOME_DO_SCRIPT = 120
+// 5.52 (chat 2, Task 2f, revisao interna): quem grava arquivo (cp, mv, tee, sed -i, Copy-Item, Set-Content...); a
+// palavra solta dele, ou o destino do > e do >>, que e o script rodado faz o script nao ser lido (o disco e o velho)
+const GRAVAM = new Set(['cp', 'mv', 'install', 'ln', 'tee', 'dd', 'copy', 'move', 'xcopy', 'copy-item', 'cpi',
+  'move-item', 'mi', 'set-content', 'sc', 'add-content', 'ac', 'out-file', 'rename-item', 'ren', 'rni'])
+// cmd e PowerShell rodam o script chamado sem a extensao (`call deploy`, `& ./deploy`): as que a trava procura
+const EXTENSOES_SEM_NOME = { cmd: ['bat', 'cmd'], PowerShell: ['ps1', 'bat', 'cmd'] }
+const RE_EXTENSAO_DE_SCRIPT = /\.(ps1|bat|cmd)$/i
+const shellDaExtensao = (t, padrao) => {
+  const m = RE_EXTENSAO_DE_SCRIPT.exec(t)
+  return !m ? padrao : m[1].toLowerCase() === 'ps1' ? 'PowerShell' : 'cmd'
+}
+// as opcoes do powershell e do pwsh que pedem valor (o valor nao e o script)
+const PS_COM_VALOR = ['executionpolicy', 'windowstyle', 'configurationname', 'outputformat', 'inputformat', 'version',
+  'psconsolefile', 'settingsfile', 'custompipename']
+const PS_COM_VALOR_CURTA = new Set(['ep', 'ex', 'w', 'o', 'of', 'i', 'if', 'v', 'config'])
+const RE_CURINGA_NO_SCRIPT = /[*?[\]{}`]/
+// o script de um comando simples (palavras do comandosSimples), ou nada; achados.mudou liga com a troca de pasta
+// o nome que roda script, que o pulo de quem vem antes nunca come (`sudo -E bash x.sh`)
+const RODA_SCRIPT = new Set(['bash', 'sh', 'source', 'powershell', 'pwsh', 'cmd', 'call'])
+// 5.52 (chat 2, Codex final, 2026-11-07): a palavra de controle do bash que abre comando (`if true; then bash x.sh;
+// fi`, `for ...; do bash x.sh; done`, `! bash x.sh`) vem antes do programa e se pula, so no comeco do comando ou
+// depois de outra (`if ! bash x.sh`); antes o then e o do paravam a procura e o script nem era lido
+const CONTROLE_DO_BASH = new Set(['if', 'then', 'do', 'else', 'elif', 'while', 'until', '!', '{', 'coproc'])
+// pula quem vem antes do programa nas palavras p desde a k e devolve onde o programa esta. Depois de quem lanca outro
+// programa (sudo, env, timeout, nice...), o numero e o valor da opcao tambem se pulam (`sudo -u root bash x.sh`,
+// `timeout 5 sh x.sh`), como no lerEmbrulho. para(t, nome) diz o programa procurado, que o pulo nunca come;
+// aoPular(t, k) ve cada palavra pulada. Lancado diz se passou por quem lanca (LANCADORES, LANCADORES_DO_EMBRULHO, builtin)
+// 5.52 (chat 2, Task 2f, comum, 2026-11-06): a atribuicao com aspas no valor (`A='b' bash x.sh`, `env
+// TMPDIR="..." bash x.sh`) tambem se pula; antes a aspa parava a procura e o script nem era lido
+// 5.52 (chat 3, Task 3c, Codex comum): saiu do scriptDoComando pra o escapaDoAllow pular o mesmo embrulho
+// 5.52 (chat 3, Task 3c, segunda Codex comum): o argumento do lancador entre aspas se le como o shell o le (`timeout
+// "30"`, `nice "-n" '5'`): o comandosSimples ja tirou as aspas do t. A palavra que a trava nao le com certeza (com $ ou
+// crase fora da aspa simples, o $ escapado na dupla, o pedaco entre aspas emendado em outro), fora a atribuicao, depois
+// de um lancador liga o pulados.incerto, pro escapaDoAllow perguntar; o pulo dela segue a regra de antes
+const palavraIncerta = w => w.aspas === 'escapada' || (w.aspas !== "'" && /[$`]/.test(w.t)) || (!!w.aspas && !!w.ps && w.ps.length > 1)
+function pularEmbrulho(p, k, para, aoPular, pulados = []) {
+  let lancado = false
+  while (k < p.length && p[k].t !== '.') {
+    const t = p[k].t
+    const atribuicao = /^\w+=/.test(t)
+    if (lancado && !atribuicao && palavraIncerta(p[k])) pulados.incerto = true
+    if (p[k].aspas && !atribuicao && !(lancado && !palavraIncerta(p[k]))) break
+    const nome = nomeDoPrograma(t)
+    if (para(t, nome)) break
+    // 5.52 (chat 2, Task 2f, revisao interna): o `builtin source x.sh` do bash roda o script
+    if (LANCADORES.has(nome) || LANCADORES_DO_EMBRULHO.has(nome) || nome === 'builtin') lancado = true
+    else if (!pulaAntesDoApagador(t, k) && !(lancado && k > 0 && (/^\d[\d.]*[smhd]?$/.test(t) || p[k - 1].t.startsWith('-')))) break
+    if (aoPular) aoPular(t, k)
+    pulados.push(nome)
+    k++
+  }
+  return k
+}
+function scriptDoComando(p, padrao, achados) {
+  let k = 0
+  // o cabecalho do heredoc (`cat > x.sh <<'EOF'`) fica com o heredocsGravados, que le o corpo
+  const doHeredoc = p.some(w => w.t.startsWith('<<') && !w.t.startsWith('<<<'))
+  if (!doHeredoc) {
+    for (let i = 0; i < p.length; i++) {
+      const r = p[i].aspas ? null : /^\d*&?>>?(.*)$/.exec(p[i].t)
+      const destino = r && (r[1] || (p[i + 1] && p[i + 1].t))
+      if (destino && !destino.startsWith('&')) achados.gravam.push(destino)
+    }
+  }
+  let noCmd = false
+  while (padrao === 'Bash' && k < p.length && !p[k].aspas && CONTROLE_DO_BASH.has(p[k].t)) k++
+  for (;;) {
+    k = pularEmbrulho(p, k, (t, nome) => RODA_SCRIPT.has(nome) || RE_EXTENSAO_DE_SCRIPT.test(t), (t, j) => {
+      if (j > 0 && RE_OPCAO_DE_PASTA.test(t)) achados.mudou = true
+    })
+    if (!p[k]) return
+    const t = p[k].t
+    const nome = nomeDoPrograma(t)
+    if (CDS_DO_APAGAR.has(nome)) { achados.mudou = true; return }
+    if (!doHeredoc && (GRAVAM.has(nome) || (nome === 'sed' && p.some(w => /^-[a-zA-Z]*i|^--in-place/.test(w.t))))) {
+      for (const w of p.slice(k + 1)) if (!/^[-<>]/.test(w.t)) achados.gravam.push(w.t.replace(/^of=/, ''))
+      return
+    }
+    // 5.52 (chat 2, Task 2f, comum, 2026-11-06): o script dado ao bash, ao sh, ao source e ao . do bash, e ao
+    // powershell e ao pwsh, e lido no shell de quem o roda (fixo); a extensao so decide no chamado direto, no call e
+    // no cmd /c (antes o `bash x.ps1` com `rm -rf .\dist` se lia como PowerShell e o dist calava)
+    const poe = (w, shell, fixo) => { if (w && !w.t.startsWith('<')) achados.lista.push({ t: w.t, shell: fixo ? shell : shellDaExtensao(w.t, shell), mudou: achados.mudou }) }
+    // o chamado sem a extensao (`call deploy`, `& ./deploy`): a trava procura o arquivo com cada extensao que o
+    // shell tenta; sem nenhum, e programa e segue calado
+    const semExtensao = (w, shell) => {
+      if (w && !w.t.startsWith('<') && !/\.[^\\\/.]+$/.test(w.t)) achados.lista.push({ t: w.t, shell, mudou: achados.mudou, exts: EXTENSOES_SEM_NOME[shell] })
+    }
+    // no PowerShell o ponto tambem chama comando (`. rm -r pasta`, da 5.40): la so o .ps1 e script
+    if (t === '.' || nome === 'source') {
+      const w = p[k + 1] && p[k + 1].t === '--' ? p[k + 2] : p[k + 1]
+      if (padrao === 'Bash' || (w && RE_EXTENSAO_DE_SCRIPT.test(w.t))) poe(w, padrao, padrao === 'Bash')
+      else if (w && /[\\\/]/.test(w.t)) semExtensao(w, 'PowerShell')
+      return
+    }
+    if (nome === 'bash' || nome === 'sh') {
+      for (let j = k + 1; j < p.length; j++) {
+        const a = p[j].t
+        if (!p[j].aspas && a === '--') { poe(p[j + 1], 'Bash', true); return }
+        // 5.52 (chat 2, Task 2f, revisao interna): o -o e o -O pedem valor (`bash -o pipefail x.sh`), tambem no fim
+        // do grupo de letras (`bash -euo pipefail x.sh`); antes o valor virava o nome do script
+        if (!p[j].aspas && OPCAO_DO_SHELL_COM_VALOR.has(a)) { j++; continue }
+        if (!p[j].aspas && /^-[a-zA-Z]+$/.test(a)) { if (/[cs]/.test(a)) return; if (/[oO]$/.test(a)) j++; continue }
+        if (!p[j].aspas && /^[-+]/.test(a)) continue
+        poe(p[j], 'Bash', true)
+        return
+      }
+      return
+    }
+    if (nome === 'powershell' || nome === 'pwsh') {
+      for (let j = k + 1; j < p.length; j++) {
+        const a = p[j].t
+        const o = p[j].aspas ? null : RE_OPCAO.exec(a.startsWith('--') ? a.slice(1) : a)
+        if (!o) { if (nome === 'pwsh' || RE_EXTENSAO_DE_SCRIPT.test(a)) poe(p[j], 'PowerShell', true); return }
+        const n = o[1].toLowerCase()
+        if ('command'.startsWith(n) || 'encodedcommand'.startsWith(n) || n === 'ec') return
+        if ('file'.startsWith(n)) { poe(p[j + 1], 'PowerShell', true); return }
+        if (n === 'wd' || (n.length >= 2 && 'workingdirectory'.startsWith(n))) { achados.mudou = true; j++; continue }
+        if (PS_COM_VALOR_CURTA.has(n) || (n.length >= 2 && PS_COM_VALOR.some(v => v.startsWith(n)))) j++
+      }
+      return
+    }
+    if (nome === 'call') {
+      if (p[k + 1] && RE_EXTENSAO_DE_SCRIPT.test(p[k + 1].t)) poe(p[k + 1], 'cmd')
+      else semExtensao(p[k + 1], 'cmd')
+      return
+    }
+    if (nome === 'cmd') {
+      let j = k + 1
+      while (j < p.length && !p[j].aspas && RE_CHAVES_DO_CMD.test(p[j].t) && !RE_CHAVE_QUE_RODA.test(p[j].t)) j++
+      if (!p[j] || p[j].aspas || !RE_CHAVES_DO_CMD.test(p[j].t)) return
+      k = j + 1
+      noCmd = true
+      continue
+    }
+    if (RE_EXTENSAO_DE_SCRIPT.test(t)) poe(p[k], padrao)
+    else if (noCmd || padrao === 'cmd') semExtensao(p[k], 'cmd')
+    else if (padrao === 'PowerShell' && /[\\\/]/.test(t)) semExtensao(p[k], 'PowerShell')
+    return
+  }
+}
+// os scripts do comando e dos embrulhados dele (bash -c "bash x.sh"), cada um com o shell que o roda
+function procurarScripts(comando, padrao, achados, vistos) {
+  const chave = padrao + ' ' + comando
+  if (vistos.has(chave)) return
+  vistos.add(chave)
+  // 5.52 (chat 2, Task 2f, comum, 2026-11-06): o corpo do heredoc de texto (cat ou tee gravando, delimitador entre
+  // aspas, a mesma leitura do perguntaDeApagar) nao e comando: o `bash exemplo.sh` de dentro de uma nota nao pergunta.
+  // O heredoc dado ao bash (`bash <<'EOF'`) segue varrido, e o corpo gravado segue no heredocsGravados
+  const texto = padrao === 'Bash' ? semCorpoDeHeredocDeTexto(comando) : comando
+  for (const p of comandosSimples(texto, padrao === 'Bash')) scriptDoComando(p, padrao, achados)
+  const { desaspado } = classificarTrechosEntreAspas(texto)
+  for (const [trecho, shell] of trechosComShell(texto, desaspado, padrao)) procurarScripts(trecho, shell || padrao, achados, vistos)
+}
+// o arquivo que o heredoc grava (cat > x, cat <<'EOF' > x, tee x, com >> ou tee -a juntando), pelo caminho sem caixa
+const RE_CABECALHO_QUE_GRAVA = /(?:^|[;&(])\s*(cat|tee)((?:\s[^\n]*?)?)<<(-?)[ \t]*(['"]?)([^\s'"<>|;&()]+)\4(.*)$/
+function heredocsGravados(comando, cwd, leitura) {
+  const gravados = new Map()
+  if (!comando.includes('<<')) return gravados
+  const linhas = comando.split(LF_DO_HEREDOC).map(l => l.replace(/\r$/, ''))
+  for (let i = 0; i < linhas.length; i++) {
+    const m = RE_CABECALHO_QUE_GRAVA.exec(linhas[i])
+    if (!m || linhas[i].includes('<<<')) continue
+    const resto = (m[2] + ' ' + m[6]).trim()
+    let destino = null
+    let junta = false
+    if (m[1] === 'cat') {
+      const r = /(>>?)\s*([^\s>]+)/.exec(resto)
+      if (r) { destino = r[2]; junta = r[1] === '>>' }
+    } else {
+      const palavras = resto.split(/\s+/).filter(Boolean)
+      junta = palavras.some(w => w === '--append' || /^-[a-z]*a/.test(w))
+      destino = palavras.find((w, j) => !/^[-<>]|^\d*>/.test(w) && !(j > 0 && /^\d*>>?$/.test(palavras[j - 1]))) || null
+    }
+    const tira = l => m[3] ? l.replace(/^\t+/, '') : l
+    const corpo = []
+    let fim = i + 1
+    for (; fim < linhas.length && tira(linhas[fim]) !== m[5]; fim++) corpo.push(tira(linhas[fim]))
+    const caminho = destino ? caminhoDoAlvo(destino.replace(/^['"]|['"]$/g, ''), cwd, leitura) : null
+    // 5.52 (chat 2, Task 2f, comum, 2026-11-06): o segundo heredoc no mesmo arquivo soma ao primeiro em vez de
+    // trocar (antes o `cat >> x.sh` de depois apagava o `rm -rf` do `cat > x.sh`); com o > tambem soma, leitura a mais
+    const antes = caminho ? gravados.get(semCaixa(caminho)) : null
+    if (caminho) gravados.set(semCaixa(caminho), antes
+      ? { corpo: antes.corpo + LF_DO_HEREDOC + corpo.join(LF_DO_HEREDOC), junta: antes.junta || junta }
+      : { corpo: corpo.join(LF_DO_HEREDOC), junta })
+    i = fim
+  }
+  return gravados
+}
+// UTF-8 (com ou sem BOM) ou UTF-16 (com BOM, ou sem BOM com NUL entre as letras); devolve as leituras
+function decodificar(buf) {
+  const par = b => Buffer.from(b.subarray(0, b.length - (b.length % 2)))
+  if (buf[0] === 0xff && buf[1] === 0xfe) return [buf.subarray(2).toString('utf16le')]
+  if (buf[0] === 0xfe && buf[1] === 0xff) return [par(buf.subarray(2)).swap16().toString('utf16le')]
+  if (buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf) return [buf.subarray(3).toString('utf8')]
+  if (!buf.includes(0)) return [buf.toString('utf8')]
+  let nosPares = 0
+  let nosImpares = 0
+  for (let i = 0; i < buf.length; i++) if (buf[i] === 0) { if (i % 2) nosImpares++; else nosPares++ }
+  // 5.52 (chat 2, Task 2f, revisao interna): o NUL solto num script UTF-8 (o bash roda o resto) nao faz a trava
+  // perder a leitura UTF-8: o UTF-16 sem BOM e leitura a mais, nunca no lugar dela (T55)
+  return [buf.toString('utf8'), nosImpares >= nosPares ? par(buf).toString('utf16le') : par(buf).swap16().toString('utf16le')]
+}
+function lerArquivoDeScript(caminho) {
+  let info
+  try { info = statSync(caminho) } catch { return { porque: NAO_ACHOU } }
+  if (!info.isFile()) return { porque: NAO_ABRE }
+  if (info.size > MAX_BYTES_DO_SCRIPT) return { porque: GRANDE }
+  try { return { textos: decodificar(readFileSync(caminho)) } } catch { return { porque: NAO_ABRE } }
+}
+// o arquivo que existe com cada extensao que o shell tenta (`call deploy` acha o deploy com a do cmd)
+function comExtensao(s, cwd, leitura) {
+  const base = s.mudou && !RE_CAMINHO_ABSOLUTO.test(s.t) ? null : caminhoDoAlvo(s.t, cwd, leitura)
+  if (base === null) return []
+  return s.exts.filter(e => { try { return statSync(base + '.' + e).isFile() } catch { return false } })
+    .map(e => ({ t: s.t + '.' + e, shell: shellDaExtensao('.' + e, s.shell), mudou: s.mudou }))
+}
+function dentroDasSkills(caminho, projeto) {
+  try {
+    const rel = relative(join(projeto, '.claude', 'skills'), semCaixa(realpathSync.native(caminho)))
+    return rel !== '' && rel.split(sep)[0] !== '..' && !isAbsolute(rel)
+  } catch { return false }
+}
+const RE_CAMINHO_ABSOLUTO = /^(?:[a-zA-Z]:|[\\\/~]|\$HOME|\$env:USERPROFILE|%USERPROFILE%)/i
+// devolve { lidos: [{ nome, texto, shell }], naoLidos: [{ nome, porque }] }; cada lido sai cru e, quando muda,
+// tambem com o CRLF trocado por LF e, no cmd, sem o @ do comeco da linha (leituras a mais)
+export function scriptsRodados(comando, opcoes = {}) {
+  const lidos = []
+  const naoLidos = []
+  if (typeof comando !== 'string' || comando.length === 0) return { lidos, naoLidos }
+  const cwd = typeof opcoes.cwd === 'string' && opcoes.cwd ? opcoes.cwd : process.cwd()
+  const env = opcoes.env && typeof opcoes.env === 'object' ? opcoes.env : process.env
+  const padrao = opcoes.ferramenta === 'PowerShell' ? 'PowerShell' : 'Bash'
+  const achados = { lista: [], mudou: false, gravam: [] }
+  procurarScripts(comando, padrao, achados, new Set())
+  if (!achados.lista.length) return { lidos, naoLidos }
+  const leitura = leituraDasVariaveis(comando, env, opcoes.ferramenta)
+  const gravados = padrao === 'Bash' ? heredocsGravados(comando, cwd, leitura) : new Map()
+  const projeto = pastaDoProjeto(env, cwd)
+  const regravados = new Set()
+  for (const g of achados.gravam) {
+    const c = RE_CURINGA_NO_SCRIPT.test(g) ? null : caminhoDoAlvo(g.replace(/^['"]|['"]$/g, ''), cwd, leitura)
+    if (c !== null) regravados.add(semCaixa(c))
+  }
+  const vistos = new Set()
+  for (const s of achados.lista.flatMap(s => s.exts ? comExtensao(s, cwd, leitura) : [s])) {
+    const nome = s.t.length > MAX_NOME_DO_SCRIPT ? s.t.slice(0, MAX_NOME_DO_SCRIPT) + '...' : s.t
+    const caminho = RE_CURINGA_NO_SCRIPT.test(s.t) ? null : caminhoDoAlvo(s.t, cwd, leitura)
+    if (caminho === null) { naoLidos.push({ nome, porque: ESCONDIDO }); continue }
+    // 5.52 (chat 2, Task 2f, revisao interna): so o cd que vem antes do script conta (s.mudou); o de depois nao
+    if (s.mudou && !RE_CAMINHO_ABSOLUTO.test(s.t)) { naoLidos.push({ nome, porque: MUDOU_PASTA }); continue }
+    // 5.52 (chat 2, Codex final, 2026-11-07): o mudou entra na chave; antes o mesmo script rodado de novo depois do
+    // cd (`bash /p/x.sh; cd ..; bash /p/x.sh`) caia como repetido e o alvo relativo de outra pasta calava
+    const chave = s.shell + ' ' + (s.mudou ? 'mudou ' : '') + semCaixa(caminho)
+    if (vistos.has(chave)) continue
+    vistos.add(chave)
+    // o cp, o mv, o > e o sed -i por cima do script no mesmo comando: o disco ainda e o velho
+    if (regravados.has(semCaixa(caminho))) { naoLidos.push({ nome, porque: REGRAVADO }); continue }
+    const textos = []
+    const gravado = gravados.get(semCaixa(caminho))
+    if (!gravado || gravado.junta) {
+      if (!gravado && dentroDasSkills(caminho, projeto)) continue
+      const lido = lerArquivoDeScript(caminho)
+      if (lido.porque && !(gravado && lido.porque === NAO_ACHOU)) { naoLidos.push({ nome, porque: lido.porque }); continue }
+      if (lido.textos) textos.push(...lido.textos)
+    }
+    if (gravado) textos.push(gravado.corpo)
+    // depois de mudar de pasta, o alvo relativo de dentro e de outra pasta: o cd na frente faz a trava nao le-lo
+    const antes = s.mudou ? 'cd .' + LF_DO_HEREDOC : ''
+    for (const cru of textos) {
+      const lf = cru.replace(/\r\n/g, LF_DO_HEREDOC)
+      const leituras = [cru, lf, ...(s.shell === 'cmd' ? [lf.replace(/^([ \t]*)@+/gm, '$1')] : [])]
+      for (const texto of new Set(leituras)) lidos.push({ nome, texto: antes + texto, shell: s.shell, confia: leitura.confia })
+    }
+  }
+  return { lidos, naoLidos }
+}
+
+// 5.52 (chat 3, Task 3c, decisao 2): o _contexto/autonomia.md guarda a permissao do que a IA faz sozinha. Pela Edit e
+// pela Write quem pergunta e a regra permissions.ask do settings; pelo shell ela nao pega, entao a trava pergunta
+// quando o comando grava num arquivo com esse nome (em qualquer pasta): o destino do > e do >>, o arquivo que tee,
+// mv, Set-Content, Add-Content, Out-File, sed -i e companhia recebem, e o destino do cp, Copy-Item e companhia (a
+// ultima palavra ou a do -Destination e do -t). So ler (cat, grep, o add do git, cp dele pra outro) passa calado. Furos
+// nomeados no T53: node e python gravando, o nome por variavel ou curinga, e o script que grava por la
+// 5.52 (chat 3, Task 3c, revisao interna): tambem perguntam o Tee-Object, o New-Item, o Clear-Content, o truncate, o
+// rsync, o ffmpeg (qualquer palavra dele: o allow solta o ffmpeg e o -y grava por cima), o --output e o -o do git (o
+// allow solta o git diff e o git log), o >| do bash, o [IO.File]::Write...( do PowerShell e a copia de um autonomia.md
+// pra dentro de uma pasta (`cp ../irmao/_contexto/autonomia.md _contexto/`: a ultima palavra sem extensao ou com barra)
+export const REGRA_GRAVA_AUTONOMIA = 'grava-autonomia'
+const COPIAM = new Set(['cp', 'copy', 'xcopy', 'install', 'ln', 'copy-item', 'cpi', 'rsync'])
+const GRAVAM_A_AUTONOMIA = new Set([...GRAVAM, 'tee-object', 'new-item', 'ni', 'clear-content', 'clc', 'truncate', 'rsync', 'ffmpeg', 'ffprobe'])
+const RE_DESTINO_DO_COPIA = /^(?:-destination|-t|--target-directory)$/i
+const RE_EDITA_NO_LUGAR = /^(?:-[a-zA-Z]*i\S*|--in-place\S*)$/
+const RE_IO_FILE_GRAVA = /\[\s*(?:system\.)?io\.file\s*\]\s*::\s*(?:write|append|copy|move|replace|create|open)\w*\s*\([^)]*autonomia\.md/i
+const ehAutonomia = t => /(?:^|[\\\/=:])autonomia\.md$/i.test(t.replace(/^['"]+|['"]+$/g, ''))
+// a pasta de destino da copia: termina em barra, ou o nome nao tem extensao (`_contexto`, `.`, `..`)
+const ehPastaDeDestino = t => /[\\\/]$/.test(t) || !/\.[^\\\/.]+$/.test(t)
+const nomeDoGravador = t => t.replace(/^.*[\\\/]/, '').replace(/\.exe$/i, '').toLowerCase()
+function gravaAutonomiaNoComando(p) {
+  // o > fora de aspas em qualquer pedaco da palavra (`echo x>a.md`, `echo "x">a.md`): o destino e o que vem depois
+  for (let i = 0; i < p.length; i++) {
+    const ps = p[i].ps || [p[i]]
+    for (let j = 0; j < ps.length; j++) {
+      if (ps[j].aspas || !ps[j].t.includes('>')) continue
+      const depois = ps[j].t.slice(ps[j].t.lastIndexOf('>') + 1) + ps.slice(j + 1).map(x => x.t).join('')
+      const destino = depois || (p[i + 1] && p[i + 1].t)
+      if (destino && !destino.startsWith('&') && ehAutonomia(destino)) return true
+    }
+  }
+  for (let k = 0; k < p.length; k++) {
+    const nome = nomeDoGravador(p[k].t)
+    const editaNoLugar = (nome === 'sed' || nome === 'perl') && p.slice(k + 1).some(w => RE_EDITA_NO_LUGAR.test(w.t))
+    const resto = p.slice(k + 1)
+    if (nome === 'git' && resto.some((w, j) => ehAutonomia(w.t) && (/^--output=/i.test(w.t) || (j > 0 && /^(?:--output|-o)$/.test(resto[j - 1].t))))) return true
+    // 5.52 (chat 3, Task 3c, Codex comum): o -o do ffprobe grava, e grudado no nome tambem (`-oautonomia.md`)
+    if (nome === 'ffprobe' && resto.some(w => /^-o./.test(w.t) && ehAutonomia(w.t.slice(2)))) return true
+    if (!GRAVAM_A_AUTONOMIA.has(nome) && !editaNoLugar) continue
+    if (!COPIAM.has(nome)) { if (resto.some(w => ehAutonomia(w.t))) return true; continue }
+    const soltas = resto.filter(w => !/^-/.test(w.t))
+    if (soltas.length && ehAutonomia(soltas[soltas.length - 1].t)) return true
+    if (soltas.length > 1 && ehPastaDeDestino(soltas[soltas.length - 1].t) && soltas.slice(0, -1).some(w => ehAutonomia(w.t))) return true
+    if (resto.some((w, j) => j > 0 && RE_DESTINO_DO_COPIA.test(resto[j - 1].t) && ehAutonomia(w.t))) return true
+    if (resto.some(w => /^(?:-destination:|--target-directory=)/i.test(w.t) && ehAutonomia(w.t))) return true
+  }
+  return false
+}
+// o comando e os embrulhados dele (bash -c "...", powershell -Command "..."), como o procurarScripts
+function lerGravaAutonomia(comando, padrao, vistos) {
+  const chave = padrao + ' ' + comando
+  if (vistos.has(chave)) return false
+  vistos.add(chave)
+  const texto = padrao === 'Bash' ? semCorpoDeHeredocDeTexto(comando) : comando
+  if (RE_IO_FILE_GRAVA.test(texto)) return true
+  // o >| do bash grava por cima mesmo com o noclobber; sem a troca o | partia o comando e o destino sumia
+  if (comandosSimples(padrao === 'Bash' ? texto.replace(/>\|/g, '> ') : texto, padrao === 'Bash').some(gravaAutonomiaNoComando)) return true
+  const { desaspado } = classificarTrechosEntreAspas(texto)
+  for (const [trecho, shell] of trechosComShell(texto, desaspado, padrao)) if (lerGravaAutonomia(trecho, shell || padrao, vistos)) return true
+  return false
+}
+export function gravaAutonomia(comando, opcoes = {}) {
+  if (typeof comando !== 'string' || !/autonomia\.md/i.test(comando)) return false
+  return lerGravaAutonomia(comando, opcoes.ferramenta === 'PowerShell' ? 'PowerShell' : 'Bash', new Set())
+}
+
+// 5.52 (chat 3, Task 3c, revisao interna): o permissions.allow do settings do _modelo (PERMISSOES_DO_KIT do
+// atualizar-projeto) casa o comando da Bash pelo comeco do texto, sem olhar o .. nem o que vem depois. Entao a trava
+// pergunta quando o node, o python ou o python3 roda um caminho de .claude/skills/ ou _ferramentas/ que sai dali pelo
+// .. (`node .claude/skills/../../apaga.mjs`), e quando o npm install ou ci --prefix .claude/skills/ traz .. no caminho
+// ou outra palavra solta depois dele (o pacote de fora, com o postinstall dele). So na ferramenta Bash, a unica que o
+// allow solta. Furo nomeado no T53: o script gravado dentro de .claude/skills/ ou _ferramentas/ roda calado
+export const REGRA_FORA_DO_ALLOW = 'fora-do-allow'
+const RE_PASTA_DO_ALLOW = /^(?:\.\/)?(?:\.claude\/skills|_ferramentas)\//
+const RE_PASTA_DO_NPM = /^(?:\.\/)?\.claude\/skills\//
+const RODA_PELO_ALLOW = new Set(['node', 'python', 'python3'])
+const temPontoPonto = t => /(?:^|[\\\/])\.\.(?:[\\\/]|$)/.test(t)
+// 5.52 (chat 3, Task 3c, Codex comum): o npm install e o npm ci com --prefix .claude/skills/ so passam calados no
+// formato exato do allow: o --prefix e uma pasta de um nivel so, sem .., e nenhuma palavra depois. O segundo --prefix
+// (`--prefix=../fora` ganha do primeiro), a opcao e o pacote perguntam
+const RE_PASTA_DE_UMA_SKILL = /^(?:\.\/)?\.claude\/skills\/(?!\.\.?\/?$)[^\\\/\s]+\/?$/
+// 5.52 (chat 3, Task 3c, Codex comum): o Claude Code tira embrulhos antes de casar o allow (code.claude.com/docs/en/
+// permissions, "Wrappers", conferido em 2026-11-07: timeout, time, nice, nohup, stdbuf, command, builtin, o noglob do
+// zsh, o xargs sem opcao e a atribuicao de variavel conhecida). A trava pula os mesmos pelo pularEmbrulho; o noglob,
+// que ela nao conhece, e o xargs, que traz palavra que ela nao le, perguntam quando vem antes do node, do python ou do npm
+const EMBRULHOS_QUE_A_TRAVA_NAO_LE = new Set(['noglob', 'xargs'])
+const ehDoAllow = t => RODA_PELO_ALLOW.has(t) || t === 'npm'
+export function escapaDoAllow(comando, opcoes = {}) {
+  if (typeof comando !== 'string' || (opcoes.ferramenta && opcoes.ferramenta !== 'Bash')) return []
+  const achados = []
+  const texto = semCorpoDeHeredocDeTexto(comando)
+  // a substituicao parte o comando no comandosSimples (`timeout $(echo 30) node ...`, com crase tambem): o embrulho que
+  // fica sem programa, ou acaba no $, deixa incerto o comando simples seguinte
+  const temSubstituicao = /[$][(]|`/.test(texto)
+  let depoisDaSubstituicao = false
+  for (const p of comandosSimples(texto, true)) {
+    const pulados = []
+    let k = pularEmbrulho(p, 0, ehDoAllow, null, pulados)
+    if (p[k] && nomeDoPrograma(p[k].t) === 'noglob') { pulados.push('noglob'); k = pularEmbrulho(p, k + 1, ehDoAllow, null, pulados) }
+    const w = p.slice(k).map(x => x.t)
+    if (depoisDaSubstituicao && ehDoAllow(w[0])) pulados.incerto = true
+    if (temSubstituicao && pulados.length && (k >= p.length || /[$]$/.test(p[p.length - 1].t))) depoisDaSubstituicao = true
+    if (pulados.incerto && w.some(ehDoAllow)) { achados.push(`rodar ${p.map(x => x.t).join(' ')} (a trava nao le com certeza o que vem antes do programa)`); continue }
+    if (!ehDoAllow(w[0])) continue
+    const naoLe = pulados.find(n => EMBRULHOS_QUE_A_TRAVA_NAO_LE.has(n))
+    if (naoLe) { achados.push(`rodar ${p.map(x => x.t).join(' ')} (depois do ${naoLe} a trava nao le o comando inteiro)`); continue }
+    if (RODA_PELO_ALLOW.has(w[0]) && w[1] && RE_PASTA_DO_ALLOW.test(w[1]) && temPontoPonto(w[1])) {
+      achados.push(`rodar ${w[0]} ${w[1]} (o caminho sai da pasta do kit pelo ..)`)
+    } else if (w[0] === 'npm' && (w[1] === 'install' || w[1] === 'ci') && w[2] === '--prefix' && w[3] && RE_PASTA_DO_NPM.test(w[3]) &&
+      (w.length > 4 || !RE_PASTA_DE_UMA_SKILL.test(w[3]) || temPontoPonto(w[3]))) {
+      achados.push(`rodar ${w.join(' ')} (instala fora do que a skill pede: caminho com .. ou mais fundo, outro --prefix, opcao ou pacote a mais)`)
+    }
+  }
+  return achados
+}
+const FERRAMENTA_DO_SHELL = { Bash: 'Bash', PowerShell: 'PowerShell', cmd: undefined }
 
 // rodada 5.20 (decisao 9, N37): o Node entrega o import.meta.url com o atalho resolvido e o
 // argv[1] do jeito que veio. Com o projeto aberto por uma juncao ou um link, as duas formas
@@ -2202,8 +2907,22 @@ if (chamadoDireto()) {
     // rodar o que o hook nao barrou com 2. A trava leu a entrada e nao conseguiu julgar o
     // comando, entao barra: o recado diz que foi a trava que falhou
     const cwd = entrada && entrada.cwd
+    const ferramenta = entrada && entrada.tool_name
     let motivo
-    try { motivo = ehPerigoso(comando, { cwd }) } catch { motivo = MOTIVO_ERRO_INTERNO }
+    // 5.52 (chat 2, Task 2f, 2026-11-05): o script rodado (ver scriptsRodados) se julga depois do comando como veio,
+    // pelas mesmas funcoes: barrar ganha de perguntar, e a barrada diz de qual script veio
+    let scripts = { lidos: [], naoLidos: [] }
+    let doScript = null
+    try {
+      motivo = ehPerigoso(comando, { cwd })
+      if (!motivo) {
+        scripts = scriptsRodados(comando, { cwd, ferramenta })
+        for (const s of scripts.lidos) {
+          motivo = ehPerigoso(s.texto, { cwd, shell: s.shell })
+          if (motivo) { doScript = s.nome; break }
+        }
+      }
+    } catch { motivo = MOTIVO_ERRO_INTERNO }
     if (!motivo) {
       // rodada 5.40: barrar ganha de perguntar (o ehPerigoso vem antes). Apagar pasta pergunta pelo
       // permissionDecision "ask" (doc conferida em 2026-11-01, code.claude.com/docs/en/hooks,
@@ -2213,11 +2932,30 @@ if (chamadoDireto()) {
       // 5.49 (bloco 5, 2026-11-03): a pergunta vale nas tres ferramentas, nao so na PowerShell, e
       // a ferramenta diz qual shell le a variavel da temporaria. Erro dentro dela barra com a regra
       // erro-interno, como no ehPerigoso (bloco 4, revisao interna: antes virava a pergunta)
-      const ferramenta = entrada && entrada.tool_name
+      // 5.52 (chat 2, Task 2d, 2026-11-05): o apaga de vez entra na mesma pergunta do apagar pasta (uma so)
+      // 5.52 (chat 2, Task 2f, 2026-11-05): o script lido soma os alvos e o apaga de vez dele, e o que a trava nao
+      // leu entra na mesma pergunta pela regra script-nao-lido
       let razao = null
       try {
-        const alvos = perguntaDeApagar(comando, { cwd, ferramenta })
-        if (alvos) razao = textoDaPergunta(alvos, comando, { cwd, ferramenta })
+        const alvos = [...(perguntaDeApagar(comando, { cwd, ferramenta }) || [])]
+        let deVez = apagaDeVez(comando)
+        const deScripts = []
+        // 5.52 (chat 3, Task 3c): gravar no _contexto/autonomia.md pelo shell pergunta, no comando e no script lido
+        let autonomia = gravaAutonomia(comando, { ferramenta })
+        for (const s of scripts.lidos) {
+          const doScript = perguntaDeApagar(s.texto, { cwd, ferramenta: FERRAMENTA_DO_SHELL[s.shell], confia: s.confia })
+          const deVezDoScript = apagaDeVez(s.texto, { shell: s.shell })
+          const gravaDoScript = gravaAutonomia(s.texto, { ferramenta: FERRAMENTA_DO_SHELL[s.shell] })
+          if (doScript) alvos.push(...doScript)
+          if (deVezDoScript && !deVez) deVez = deVezDoScript
+          if (gravaDoScript) autonomia = true
+          if (doScript || deVezDoScript || gravaDoScript) deScripts.push(s.nome)
+        }
+        // 5.52 (chat 3, Task 3c, revisao interna): o comando que o allow solta mas sai dele pelo .. ou pelo pacote a mais
+        const foraDoAllow = escapaDoAllow(comando, { ferramenta })
+        if (alvos.length || deVez || scripts.naoLidos.length || autonomia || foraDoAllow.length) {
+          razao = textoDaPergunta([...new Set(alvos)], comando, { cwd, ferramenta, deVez, naoLidos: scripts.naoLidos, scripts: deScripts, autonomia, foraDoAllow })
+        }
       } catch { motivo = MOTIVO_ERRO_INTERNO }
       if (razao) {
         process.stdout.write(JSON.stringify({ hookSpecificOutput: {
@@ -2237,7 +2975,8 @@ if (chamadoDireto()) {
       ? 'Diga ao usuario o nome da trava e da regra. A trava so nao conseguiu ler o comando: pode reescrever ele ' +
         'mais simples ou seguir por uma ferramenta equivalente, e avise o usuario do que fez.'
       : 'Diga ao usuario o nome da trava e da regra e decida o proximo passo; nao refaca esta acao por outro caminho.'
-    process.stderr.write(`Barrada pela trava barrar-perigoso, regra ${regra}: ${motivo}. ${fim}\n`)
+    const dito = doScript ? `${motivo} (no script ${doScript})` : motivo
+    process.stderr.write(`Barrada pela trava barrar-perigoso, regra ${regra}: ${dito}. ${fim}\n`)
     process.exit(2)
   })
 }

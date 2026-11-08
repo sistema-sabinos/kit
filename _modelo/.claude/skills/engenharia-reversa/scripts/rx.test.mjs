@@ -210,6 +210,17 @@ test('passoVer com --sim dentro do limite chama o Gemini com o modelo descoberto
   assert.deepEqual(p.t.fechadas, [])
 })
 
+// 5.52 (chat 3, decisao 1): sem o --sim, o que a trava liberou pela permissao sai na linha "foi pela permissao, resta"
+test('passoVer sem --sim liberado pela permissao: chama o Gemini e avisa quanto resta', async () => {
+  const linhas = []
+  const porAnuncio = [{ id: 'A', titulo: 't', fotos: Array(160).fill('f.jpg') }]
+  const r = await passoVer({ porAnuncio, chave: 'k', hoje: '2026-10-04', sim: false, descobrir: async () => 'gemini-3.8-flash', log: (m) => linhas.push(m),
+    liberar: (p) => ({ codigo: 0, estimativa_usd: p.estimativaUsd, reserva: 'res-1', permissao: { resta_usd: 3.97, teto_usd: 5, periodo: 'mes' } }),
+    fechar: () => {}, ver: async () => ({ fichas: { A: [] }, gasto_usd: 0, parou: false, incertas: 0 }) })
+  assert.equal(r.codigo, 0)
+  assert.ok(linhas.some(l => /\[permissao\] foi pela permissao .*resta US\$ 3\.97 de US\$ 5\.00 no mes/.test(l)), linhas.join(' | '))
+})
+
 test('passoVer liberado pelo orcamento do mes: teto e a propria reserva, que fecha no fim', async () => {
   const p = portao({ sim: true, t: trava({ tipo: 'mes', saldo: 10 }) })
   const r = await p.rodar()

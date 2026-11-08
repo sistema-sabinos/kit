@@ -51,8 +51,9 @@ e sobre os projetos que já existem:
    anterior, e o `~/.claude/contexto/projetos.md`, se existir (uma linha por
    projeto já criado).
 2. O `AGENTS.md` (o `CLAUDE.md` de cada projeto é só o ponteiro `@AGENTS.md`,
-   o conteúdo real está no `AGENTS.md`) e o `_contexto/empresa.md` de CADA
-   pasta de projeto que já existe na raiz. Pasta de projeto é a que tem
+   o conteúdo real está no `AGENTS.md`), o `_contexto/empresa.md` e o
+   `_contexto/preferencias.md` (de onde sai a linha `Modo:` do "Quanto eu posso
+   fazer sozinho?") de CADA pasta de projeto que já existe na raiz. Pasta de projeto é a que tem
    `_contexto/` dentro: as que começam com `_` ou com `.` e a `docs/` da
    própria pasta-mãe não são projeto e ficam de fora (a `docs/` vem no kit e
    passa por projeto num filtro só de nome).
@@ -264,6 +265,43 @@ Explicar em uma frase e perguntar:
 > nos outros projetos?"
 
 Guardar a escolha para aplicar na cópia do `settings.json` abaixo.
+
+### Quanto eu posso fazer sozinho? (logo depois do auto-sync)
+
+Pergunta de botão, cabeçalho `Sozinho`, gêmea da do `/setup` (Passo 5). O porquê numa linha
+antes: "Pergunto pra saber quando eu paro pra te consultar e quando eu sigo. Dá pra mudar
+quando quiser, é só falar."
+
+> "Quanto eu posso fazer sozinho?"
+
+Opções, nesta ordem, com o Colaborativo como padrão:
+
+1. **Consultivo:** te pergunto tudo, até escolha de gosto (cor, título, qual das opções).
+2. **Colaborativo (padrão):** pergunto o que muda o trabalho e sigo no resto. Gastar,
+   publicar e mandar mensagem pra fora eu sempre te pergunto antes.
+3. **Delegado:** o colaborativo, e o gasto pequeno com IA paga (imagem, vídeo) eu faço
+   sozinho até um limite que você diz, e te aviso logo depois quanto foi. Essa permissão
+   fica escrita no `_contexto/autonomia.md` e só liga depois que você disser o valor.
+4. **Executivo:** o delegado, e escolha de gosto eu faço sem parar pra perguntar e te digo
+   qual foi.
+
+O projeto novo copia o modo do projeto irmão: com a linha `Modo:` no `preferencias.md` do
+irmão (lido no Passo 0), a opção dele vem primeiro, com "(sugerido)", no lugar do padrão.
+Com dois ou mais irmãos em modos diferentes, o "(sugerido)" vai pro modo que aparece em mais
+projetos. Empate entre eles: nenhum leva "(sugerido)" e a pergunta sai com o Colaborativo
+como padrão. Irmão sem a linha `Modo:` não conta.
+A permissão de gasto do irmão nunca se copia: cada projeto tem o seu limite, gravado só
+quando a pessoa disser o valor.
+
+Em todo modo, publicar, mandar mensagem pra fora e mexer em conta de terceiro (anúncio,
+tráfego pago) seguem com o seu "pode ir". Resposta fora das opções ou "não sei" fica no
+Colaborativo. Guardar a escolha para o `preferencias.md` ("O que copiar", abaixo).
+
+O limite do gasto sozinho entra só pelo passo do orçamento do mês do `/configurar-video`,
+porque a permissão de gasto só vale com o orçamento do mês definido. No Delegado e no
+Executivo, com o pacote de vídeo instalado, uma linha no `tarefas.md`: "dizer até quanto a
+IA pode gastar sozinha com IA paga: o `/configurar-video` pergunta no passo do orçamento do
+mês". Sem o pacote de vídeo, contar em uma frase que o gasto sozinho liga junto com ele.
 
 ### Anúncio pago (antes de escolher as skills)
 
@@ -545,7 +583,11 @@ perguntar outro nome antes de seguir.
   e, sem GitHub, manda lembrar o `/syncar` uma vez) precisa ser reescrita: dizer que não existe backup
   automático configurado e que o assistente deve sugerir `/syncar` ao fim das
   sessões de trabalho. Caminho padrão (auto-sync aceito) mantém a regra 5 como
-  está no `_modelo/AGENTS.md`.
+  está no `_modelo/AGENTS.md`. O `settings.json` traz uma lista curta de comandos
+  do kit que rodam sem pedir licença (o `permissions.allow`). Diga isso à pessoa
+  numa linha: a lista só passa a valer depois que ela responde que sim quando o
+  Claude Code pergunta se ela confia na pasta, e com as perguntas desligadas ela
+  não muda nada.
 - `.claude/hooks/barrar-perigoso.mjs`, só o script (nunca o `.claude/hooks/barrar-perigoso.test.mjs`,
   que é teste de desenvolvimento e não serve de nada no projeto do aluno). É a trava de
   segurança dos comandos; o que ela segura está na regra 12 do `.claude/detalhe-regras.md`,
@@ -572,12 +614,19 @@ perguntar outro nome antes de seguir.
   com o que já se sabe da pessoa pelas leituras do Passo 0 (nome, tom,
   ferramentas que já valem pra ela em qualquer projeto) mais o que é
   específico deste projeto novo (respostas do Passo 1), nunca deixando o
-  aviso `NOT CONFIGURED` no projeto final. No `ferramentas.md`, uma linha pra
+  aviso `NOT CONFIGURED` no projeto final. O `orcamento.md` e o `autonomia.md` também
+  vão, mas nascem em branco, como estão no `_modelo`. No `ferramentas.md`, uma linha pra
   cada um dos sete assuntos, como o `/setup` faz (Passo 5): o que já vale pra
   pessoa em qualquer projeto vem do `ferramentas.md` do projeto irmão; o que
   for só deste projeto, perguntar numa mensagem. No `preferencias.md`, o
   parágrafo do nível (o que o molde marca com `<!-- nível: iniciante ... -->`)
   segue o do projeto irmão: se lá ele já virou a versão direta, aqui também.
+  No fim da seção Formato do `preferencias.md`, a linha do modo do "Quanto eu posso fazer
+  sozinho?": `Modo: consultivo. Escolha de gosto (cor, título, qual das opções) também se
+  pergunta antes.`, `Modo: colaborativo.`, `Modo: delegado.` ou `Modo: executivo.`; no
+  Executivo, mais a linha `Só faz: escolhas de gosto (cor, título, qual das opções).`. O
+  `autonomia.md` nasce em branco em todo modo: a permissão de gasto do Delegado e do
+  Executivo se grava só quando a pessoa disser o valor.
 - `marca/design-guide.md`: perguntar rapidamente se este projeto muda algo do
   visual já usado nos outros projetos da pessoa. Identidade própria, preencher
   com ela. Mesma identidade dos outros, copiar o `design-guide.md` já
@@ -804,7 +853,7 @@ qual é o próximo passo ao terminar cada etapa)".
 
 - Gerar tudo do Passo 3 em diante de uma vez só, depois de fechados os
   Passos 0 a 2. Nunca criar arquivo por arquivo durante a conversa. As
-  confirmações do Passo 3 (auto-sync, identidade visual e a estrutura de pastas
+  confirmações do Passo 3 (auto-sync, quanto posso fazer sozinho, identidade visual e a estrutura de pastas
   proposta) vêm antes de gerar, cada uma no seu bloco, uma por vez, e não contam
   como quebrar essa regra. Quando a conversa já deu a resposta, a opção
   correspondente vem primeiro, com "(sugerido)". O anúncio pago e as ofertas de

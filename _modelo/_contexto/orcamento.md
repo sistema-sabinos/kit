@@ -11,6 +11,10 @@ Como funciona:
 - Antes de cada gasto a IA continua pedindo o seu "pode ir". O orçamento é um limite
   a mais: quando um gasto não cabe no que sobrou do mês, o sistema para antes de gastar
   e explica por quê.
+- Quer que a IA gaste sozinha até um limite menor, sem te perguntar a cada vez? Isso é
+  a permissão de gasto, no `_contexto/autonomia.md` (o /configurar-video pergunta). Com
+  ela, a IA te avisa logo depois de cada gasto quanto foi e quanto sobra; o orçamento
+  do mês segue valendo por cima.
 - O mês é o do calendário do seu computador.
 - Enquanto o valor estiver vazio, vale o limite por rodada de antes: o padrão do kit,
   ou o `limite_gasto_usd` do `_contexto/mercado-livre.md`, se você vende no Mercado Livre.

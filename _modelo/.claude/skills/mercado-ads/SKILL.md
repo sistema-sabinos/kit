@@ -76,6 +76,11 @@ o limite sem vender: essa pausa na hora.
 
 ### Executar uma ação
 
+Cofrinho da verba: se o `_contexto/autonomia.md` tem a área `verba-ml-ads`, o valor dela,
+em reais, é o teto do que a fila pode propor de verba nova no Mercado Ads; recomendação
+que passa dele sai da fila, com o motivo. O cofrinho nunca solta nada sozinho: cada ação
+segue pedindo o sim da pessoa.
+
 Uma por vez, com o "pode ir": dizer exatamente o que clicar no painel do
 Mercado Ads (campanha, campo, valor antigo, valor novo). O painel fala em ROAS
 objetivo: ROAS é 1 dividido pelo ACOS (ACOS 12% é ROAS 8,3). Editar orçamento

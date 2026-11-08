@@ -3,10 +3,10 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { estimarUsd, MODELO, pergunta } from './gemini-cru.mjs'
 
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'gemini-cru.mjs')
@@ -47,12 +47,96 @@ test('5.48: a pergunta leva um trecho por linha do bordas.md, com o texto do whi
   assert.doesNotMatch(p, /\| n \| trecho/)
 })
 
-test('5.48: sem --autorizado so estima, sai 3 e nao chama trava, Gemini nem registro', () => comTemp((d) => {
+// 5.52 (chat 3): sem permissao, igual a antes; com a permissao de gasto, a trava e chamada sem o --autorizado
+const autonomia = (d) => {
+  mkdirSync(join(d, '_contexto'), { recursive: true })
+  writeFileSync(join(d, '_contexto', 'autonomia.md'), '```autonomia\narea: gasto-ia\npode: gastar\nteto: 1 USD mes\n```\n')
+}
+test('5.52: sem --autorizado e sem permissao so estima, sai 3 e nao chama trava, Gemini nem registro', () => comTemp((d) => {
   const c = cenario(d)
-  const r = rodar([c.bruto, join(d, 'bordas.md'), join(d, 'gemini.md'), ...c.args])
-  assert.equal(r.status, 3, r.stderr)
-  assert.match(r.stdout, /parou: .*US\$ 0[.]0\d+ \(gemini-3[.]8-flash, 2 s/)
-  for (const f of ['trava.log', 'ver.log', 'custo.log', 'gemini.md']) assert.equal(existsSync(join(d, f)), false, f)
+  for (const extra of [[], ['--preco-usd', '0.02']]) {
+    const r = rodar([c.bruto, join(d, 'bordas.md'), join(d, 'gemini.md'), ...extra, '--raiz-custo', d, ...c.args])
+    assert.equal(r.status, 3, r.stderr)
+    assert.match(r.stdout, /parou: .*US\$ 0[.]0\d+ \(gemini-3[.]8-flash, 2 s/)
+    for (const f of ['trava.log', 'ver.log', 'custo.log', 'gemini.md']) assert.equal(existsSync(join(d, f)), false, f)
+  }
+}))
+
+test('5.52: sem --autorizado e com a permissao de gasto, chama a trava sem o sim e avisa que foi pela permissao', () => comTemp((d) => {
+  autonomia(d)
+  const c = cenario(d, { trava: '{"codigo":0,"reserva":"r9","permissao":{"resta_usd":0.98,"teto_usd":1,"periodo":"mes"}}' })
+  const r = rodar([c.bruto, join(d, 'bordas.md'), join(d, 'gemini.md'), '--preco-usd', '0.02', '--raiz-custo', d, ...c.args])
+  assert.equal(r.status, 0, r.stderr)
+  const trava = JSON.parse(readFileSync(join(d, 'trava.log'), 'utf8'))
+  assert.equal(trava.includes('--autorizado'), false, 'sem o sim a trava vai sem o --autorizado')
+  assert.ok(existsSync(join(d, 'ver.log')), 'o Gemini foi chamado')
+  assert.match(r.stdout, /\[permissao\] foi pela permissao .*resta US\$ 0[.]98 de US\$ 1[.]00 no mes/)
+}))
+
+// 5.52 (chat 3): o fluxo com os filhos reais (trava, ver-video e registro; so a rede e falsa), com o orcamento do mes
+// igual a estimativa: a reserva e uma so, porque o ver-video com --sem-registro nao confere de novo
+const REDE_FALSA = `
+import https from 'node:https'
+import { EventEmitter } from 'node:events'
+const resposta = (corpo, cab = {}) => ({ status: 200, ok: true, headers: new Headers(cab), json: async () => corpo, text: async () => JSON.stringify(corpo) })
+globalThis.fetch = async (url, op = {}) => {
+  const u = String(url)
+  if (op.method === 'DELETE') return resposta({})
+  if (u.includes('/upload/')) return resposta({}, { 'x-goog-upload-url': 'https://falso.invalido/subir' })
+  if (u.startsWith('https://falso.invalido/subir')) return resposta({ file: { name: 'files/abc' } })
+  return resposta({ state: 'ACTIVE', uri: 'https://falso.invalido/files/abc', name: 'files/abc', mimeType: 'video/mp4' })
+}
+https.request = (url, op, responder) => {
+  const req = new EventEmitter()
+  req.setTimeout = () => req
+  req.end = () => setImmediate(() => {
+    const res = new EventEmitter()
+    res.statusCode = 200
+    res.setEncoding = () => {}
+    responder(res)
+    res.emit('data', JSON.stringify({ candidates: [{ content: { parts: [{ text: 'TRECHO | 1 | ok | bem dito' }] } }], usageMetadata: { promptTokenCount: 1000, candidatesTokenCount: 100 } }))
+    res.emit('end')
+  })
+  return req
+}
+`
+test('5.52: filhos reais, com permissao e com o sim, saldo igual a estimativa: uma reserva so, que fecha', () => comTemp((d) => {
+  const c = cenario(d)
+  const falsa = join(d, 'rede-falsa.mjs')
+  writeFileSync(falsa, REDE_FALSA)
+  for (const [nome, sim] of [['permissao', []], ['sim', ['--autorizado']]]) {
+    const raiz = join(d, nome)
+    mkdirSync(join(raiz, '_contexto'), { recursive: true })
+    writeFileSync(join(raiz, '_contexto', 'orcamento.md'), '```orcamento\norcamento_mes_usd: 0.02\n```\n')
+    if (nome === 'permissao') autonomia(raiz)
+    const r = spawnSync('node', [SCRIPT, c.bruto, join(d, 'bordas.md'), join(raiz, 'gemini.md'), '--preco-usd', '0.02', ...sim, '--raiz-custo', raiz],
+      { encoding: 'utf8', env: { ...process.env, GEMINI_API_KEY: 'falsa', NODE_OPTIONS: `--import ${pathToFileURL(falsa).href}` } })
+    assert.equal(r.status, 0, `${nome}: ${r.stdout}${r.stderr}`)
+    assert.match(readFileSync(join(raiz, 'gemini.md'), 'utf8'), /bem dito/)
+    const custos = readFileSync(join(raiz, 'dados', 'custos.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l))
+    assert.equal(custos.length, 1, nome)
+    assert.ok(custos[0].reserva, `${nome}: a linha leva a reserva`)
+    assert.deepEqual(JSON.parse(readFileSync(join(raiz, 'dados', 'orcamento-reservas.json'), 'utf8')), [], `${nome}: a reserva fechou`)
+    assert.equal(existsSync(join(raiz, 'dados', 'permissao-gastos.jsonl')), nome === 'permissao', `${nome}: so o gasto pela permissao entra na conta dela`)
+  }
+  // 5.52 (conserto da interna): no teto por lote (sem orcamento do mes) nao ha reserva; o ver-video passa pela trava
+  // com o mesmo sim e o --sem-registro so tira a linha dele: uma linha de custo, a do gemini-cru
+  const lote = join(d, 'lote')
+  mkdirSync(lote)
+  const r = spawnSync('node', [SCRIPT, c.bruto, join(d, 'bordas.md'), join(lote, 'gemini.md'), '--preco-usd', '0.02', '--autorizado', '--raiz-custo', lote],
+    { encoding: 'utf8', env: { ...process.env, GEMINI_API_KEY: 'falsa', NODE_OPTIONS: `--import ${pathToFileURL(falsa).href}` } })
+  assert.equal(r.status, 0, `lote: ${r.stdout}${r.stderr}`)
+  const custos = readFileSync(join(lote, 'dados', 'custos.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l))
+  assert.deepEqual(custos.map((l) => l.servico), ['gemini-cru'], 'lote: uma linha so')
+}))
+
+test('5.52 (conserto da interna): no teto por lote, sem reserva, o ver-video vai com o sim e o --sem-registro', () => comTemp((d) => {
+  const c = cenario(d, { trava: '{"codigo":0,"reserva":null}' })
+  const r = rodar([c.bruto, join(d, 'bordas.md'), join(d, 'gemini.md'), '--preco-usd', '0.02', '--autorizado', ...c.args])
+  assert.equal(r.status, 0, r.stderr)
+  const ver = JSON.parse(readFileSync(join(d, 'ver.log'), 'utf8'))
+  assert.deepEqual(ver.slice(4, 8), ['--usd', '0.02', '--autorizado', '--sem-registro'])
+  assert.equal(ver.includes('--reserva'), false)
 }))
 
 test('5.48: com a trava barrando, o ver-video nao e chamado', () => comTemp((d) => {
@@ -69,7 +153,9 @@ test('5.48: liberado, chama o ver-video com o modelo fixo e baixa resolucao, gra
   const r = rodar([c.bruto, join(d, 'bordas.md'), join(d, 'gemini.md'), '--preco-usd', '0.02', '--autorizado', '--video', 'teste', ...c.args])
   assert.equal(r.status, 0, r.stderr)
   const ver = JSON.parse(readFileSync(join(d, 'ver.log'), 'utf8'))
-  assert.deepEqual(ver.slice(1, 5), ['--model', 'gemini-3.8-flash', '--lowres', '--sem-registro'])
+  // 5.52 (conserto da interna): vai a reserva da trava, que o ver-video confere; nunca um pulo sem prova
+  assert.deepEqual(ver.slice(1, 6), ['--model', 'gemini-3.8-flash', '--lowres', '--reserva', 'r9'])
+  assert.equal(ver.includes('--sem-registro'), false)
   assert.equal(ver.includes('--barato'), false)
   // vai a copia leve (480 de altura, o mesmo tempo), nunca o cru do celular, e ela some depois
   assert.notEqual(ver[0], c.bruto)

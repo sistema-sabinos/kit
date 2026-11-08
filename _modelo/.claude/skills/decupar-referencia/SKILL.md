@@ -64,9 +64,12 @@ buraco:
 So roda com o "pode ir" naquele momento. Usar o prompt inteiro de
 `.claude/skills/decupar-referencia/prompt-decupagem.md`:
 ```
-node .claude/skills/assistir-video/ver-video.mjs "<video>" --pergunta "<prompt inteiro>"
+node .claude/skills/assistir-video/ver-video.mjs "<video>" --pergunta "<prompt inteiro>" --usd <estimativa em dolar> --autorizado
 ```
-O `ver-video.mjs` anota o custo sozinho em `dados/custos.jsonl`: nao registrar de novo.
+O `--usd` passa pela trava do gasto antes de chamar o Gemini; com a permissao de gasto do
+`_contexto/autonomia.md`, vai sem o `--autorizado` e a linha `[permissao]` diz quanto resta. Saida 3:
+parou antes de gastar, repassar o motivo. O `ver-video.mjs` anota o custo sozinho em
+`dados/custos.jsonl`: nao registrar de novo.
 
 ## Antes de comecar
 

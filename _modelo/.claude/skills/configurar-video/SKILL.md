@@ -128,8 +128,9 @@ Qualquer uso pago da chave só acontece com preço e autorização avisados na h
 
 Só com a chave (`tem` no passo 4). O orçamento é quanto a pessoa topa gastar por mês com
 IA paga: imagem feita por IA, olho final do vídeo e vídeo do produto. Ele é um limite a
-mais. Antes de todo gasto, o "pode ir" da pessoa continua valendo; quando um gasto não
-cabe no que sobrou do mês, o sistema para antes de gastar e explica.
+mais. Antes de todo gasto, o "pode ir" da pessoa continua valendo, fora a permissão de
+gasto do item 5; quando um gasto não cabe no que sobrou do mês, o sistema para antes de
+gastar e explica.
 
 1. Pergunte quanto ela topa gastar por mês, em reais, quanto dura o vídeo dela de costume
    (se não souber, 60 segundos) e quantas imagens por IA ela usa por vídeo (se não souber,
@@ -145,6 +146,16 @@ cabe no que sobrou do mês, o sistema para antes de gastar e explica.
    `historico`, diga também a média dos vídeos que ela já fez, que é mais fiel. Fale o
    câmbio e a data que usou. Se vier `copia_do_texto_antigo`, o arquivo estava quebrado e
    foi montado de novo: diga que o texto antigo dela ficou guardado nesse arquivo.
+5. Uma pergunta a mais, opcional: "Quer que eu gaste sozinho até um limite, sem te
+   perguntar a cada vez? Eu te aviso logo depois de cada gasto quanto foi e quanto sobra."
+   Opções: "não, pergunta sempre" (o padrão), ou um valor em reais por dia, por semana ou
+   por mês, menor ou igual ao orçamento, e, se ela quiser, um máximo por vez. Com o sim e
+   o valor, converta pra dólar no câmbio do item 2 e grave dentro do bloco `autonomia` do
+   `_contexto/autonomia.md` uma área nova, uma linha por campo: `area: gasto-ia`,
+   `pode: gastar`, `teto: <dólar> USD <dia, semana ou mes>`, `por_vez: <dólar>` (só se ela
+   deu), `definido_em: <data de hoje>`, `definido_por: <o .origem da raiz, ou dono>` e
+   `frase: <o sim dela, com o valor em reais>`. Mostre o que entrou. Tirar é só ela dizer:
+   grave a área de novo com `pode:` vazio. Sem resposta clara, fica sem permissão.
 
 O saldo só aparece quando a pessoa pergunta quanto já gastou. Aí rode
 `node .claude/skills/configurar-video/scripts/orcamento.mjs --saldo` e diga o orçamento,

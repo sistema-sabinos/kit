@@ -1733,3 +1733,22 @@ for (const fase of [2, 3]) {
     assert.match(j.parou, /orcamento do mes .* acabou/)
   }))
 }
+
+// 5.52 (chat 3, decisao 1): sem o --autorizado, a permissao de gasto escrita libera a rodada e o script diz quanto resta
+test('fase 3 sem --autorizado e com a permissao de gasto: libera e imprime "foi pela permissao, resta"', async () => {
+  const raizGasto = fs.mkdtempSync(path.join(os.tmpdir(), 'video-produto-permissao-'))
+  try {
+    fs.mkdirSync(path.join(raizGasto, '_contexto'))
+    fs.writeFileSync(path.join(raizGasto, '_contexto', 'orcamento.md'), ['```orcamento', 'orcamento_mes_usd: 10', '```', ''].join('\n'))
+    fs.writeFileSync(path.join(raizGasto, '_contexto', 'autonomia.md'), ['```autonomia', 'area: gasto-ia', 'pode: gastar', 'teto: 2 USD mes', '```', ''].join('\n'))
+    preparar(carimbado(roteiroValido()), { comMusica: false })
+    const chamadas = []
+    const paga = (nome) => async () => { chamadas.push(nome); throw new Error('parada do teste depois da liberacao') }
+    const r = await chamar([`--mlb=${MLB}`, '--fase=3', ...PRECOS], {
+      raizGasto, carregarConfiguracao: () => ({ limite_gasto_usd: 4 }),
+      gerarClipe: paga('clipe'), narrar: paga('narrar'), transcrever: paga('transcrever'), gerarMusica: paga('musica'),
+    })
+    assert.match(r.stderr, /\[permissao\] foi pela permissao do _contexto\/autonomia\.md, resta US\$ 1\.99 de US\$ 2\.00 no mes/, r.stderr)
+    assert.equal(fs.readFileSync(path.join(raizGasto, 'dados', 'permissao-gastos.jsonl'), 'utf8').trim().split('\n').length, 1)
+  } finally { fs.rmSync(raizGasto, { recursive: true, force: true }) }
+})

@@ -63,7 +63,10 @@ quê, e como sabe que ficou bom**.
 ## Regras que valem aqui também
 
 - "Só faz": parar de perguntar até o fim da sessão e seguir pela suposição mais segura,
-  dizendo qual foi em uma linha
+  dizendo qual foi em uma linha. Perguntar uma vez se vale pra sempre; com o sim, gravar
+  `Só faz: <assunto>` no fim da seção Formato do `_contexto/preferencias.md`. Vale pra
+  pergunta de gosto e pedido vago; gasto, publicação e envio seguem pedindo o "pode ir",
+  fora da permissão escrita no `_contexto/autonomia.md`. Para desfazer, "me pergunta de novo sobre <assunto>" tira essa linha `Só faz:`; trocar o modo reescreve a linha `Modo:` e tira o `Só faz:` que o modo novo não tem; ir pra modo sem gasto sozinho (Colaborativo ou Consultivo) revoga o `gasto-ia` (registro novo `area: gasto-ia`, `pode:` vazio, `frase` do pedido, pela caixa de sempre) e diz em uma linha
 - Sem gente na frente (rotina, subagente): nunca perguntar, a `AskUserQuestion` nem
   existe ali. Seguir pela suposição mais segura e declará-la no recado ou na resposta
 - Duas correções sem acertar: resumir o pedido certo num bloco e sugerir colar numa

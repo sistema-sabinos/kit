@@ -126,6 +126,8 @@ A estrutura do teste (quantas campanhas, quantos conjuntos de anúncio e quantos
 
 Propor a lista e esperar o "pode ir". Nenhuma pausa, nenhuma mudança de verba e nenhuma campanha nova acontece antes disso, e aprovação de ontem não vale pra rodada de hoje.
 
+Cofrinho da verba: se o `_contexto/autonomia.md` tem a área `verba-meta` (Facebook e Instagram) ou `verba-google`, o valor dela, em reais, é o teto do que a lista pode propor de verba nova naquela plataforma. Proposta que passa do cofrinho sai da lista, com o motivo. O cofrinho nunca solta nada sozinho: cada item da lista segue pedindo o sim da pessoa.
+
 Com o "pode ir" dado, aplicar pelo MCP um por um, dizendo o que fez a cada passo, e registrar cada ação em `dados/trafego/decisoes.jsonl`, uma linha por ação. Sem MCP: passar uma ação por vez o que clicar no Gerenciador de Anúncios (anúncio, campo, valor antigo, valor novo), esperar a pessoa dizer "feito" e só então gravar a linha da ata, com `"via":"manual"`:
 
 ```json

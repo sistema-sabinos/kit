@@ -7,7 +7,7 @@ import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { hashArquivo, montarPlano, aplicarPlano, desfazer, registrarMudanca, mesclarSettings, resumo, TIRADAS_DO_KIT, compararMae } from './atualizar-projeto.mjs'
+import { hashArquivo, montarPlano, aplicarPlano, desfazer, registrarMudanca, mesclarSettings, resumo, TIRADAS_DO_KIT, compararMae, PERMISSOES_DO_KIT } from './atualizar-projeto.mjs'
 
 // fileURLToPath, e nao URL.pathname: no Windows o pathname vem com barra sobrando.
 const MOTOR = fileURLToPath(new URL('./atualizar-projeto.mjs', import.meta.url))
@@ -477,17 +477,27 @@ const SETTINGS_DA_PESSOA = {
   },
 }
 
+// 5.52 (chat 3, Task 3c): o kit voltou a ter permissions, so o ask da permissao escrita e o allow da lista fechada
+const FALTA_DO_KIT = [...PERMISSOES_DO_KIT.ask.map(r => `ask ${r}`), ...PERMISSOES_DO_KIT.allow.map(r => `allow ${r}`)]
 test('mesclarSettings junta a trava do mcp sem tirar nada da pessoa e e idempotente', () => {
-  assert.equal(SETTINGS_DO_KIT.permissions, undefined, 'canario: o kit tirou o permissions (5.49)')
+  assert.deepEqual(SETTINGS_DO_KIT.permissions, PERMISSOES_DO_KIT, 'canario: o settings do kit traz a lista fechada exportada (5.52)')
+  assert.ok(PERMISSOES_DO_KIT.allow.length > 0 && PERMISSOES_DO_KIT.ask.length > 0, 'canario: a lista fechada nao veio vazia')
   const { settings, faltava, tirou } = mesclarSettings(structuredClone(SETTINGS_DA_PESSOA), SETTINGS_DO_KIT)
-  assert.deepEqual(settings.permissions, SETTINGS_DA_PESSOA.permissions, 'allow, ask e deny da pessoa ficam')
+  // 5.52 (chat 3, Task 3c): allow, ask e deny da pessoa ficam, na frente, e o do kit entra depois
+  assert.deepEqual(settings.permissions, {
+    allow: [...SETTINGS_DA_PESSOA.permissions.allow, ...PERMISSOES_DO_KIT.allow],
+    ask: [...SETTINGS_DA_PESSOA.permissions.ask, ...PERMISSOES_DO_KIT.ask],
+    deny: SETTINGS_DA_PESSOA.permissions.deny,
+  })
   assert.ok(settings.hooks.PreToolUse.some(b => b.matcher === 'Write'), 'o hook da pessoa fica')
   assert.equal(settings.hooks.PreToolUse.filter(ehBlocoMcp).length, 1)
   assert.deepEqual(settings.hooks.PreToolUse.find(ehBlocoMcp), SETTINGS_DO_KIT.hooks.PreToolUse.find(ehBlocoMcp))
   assert.deepEqual(settings.hooks.Stop, SETTINGS_DA_PESSOA.hooks.Stop, 'o Stop sem auto-sync fica como a pessoa deixou')
-  // 5.49 (bloco B): so a trava do mcp falta; o deny e a anotacao do navegador sairam do kit
-  assert.deepEqual(faltava, ['trava do MCP (barrar-mcp)'])
+  // 5.49 (bloco B): o deny e a anotacao do navegador sairam do kit; 5.52 (chat 3): o ask e o allow do kit faltam
+  assert.deepEqual(faltava, [...FALTA_DO_KIT, 'trava do MCP (barrar-mcp)'])
   assert.deepEqual(tirou, [])
+  // sem permissions da pessoa, o permissions nasce so com o do kit
+  assert.deepEqual(mesclarSettings({}, SETTINGS_DO_KIT).settings.permissions, { ask: PERMISSOES_DO_KIT.ask, allow: PERMISSOES_DO_KIT.allow })
   const segunda = mesclarSettings(structuredClone(settings), SETTINGS_DO_KIT)
   assert.deepEqual(segunda.settings, settings, 'a segunda passada nao muda nada')
   assert.deepEqual(segunda.faltava, [])
@@ -545,8 +555,9 @@ const SETTINGS_DA_539 = {
 test('mesclarSettings tira o que o kit tirou e deixa o que e da pessoa', () => {
   assert.ok(TIRADAS_DO_KIT.deny.length >= 16 && TIRADAS_DO_KIT.ask.length === 2, 'canario: a lista das tiradas nao veio vazia')
   const { settings, faltava, tirou } = mesclarSettings(structuredClone(SETTINGS_DA_539), SETTINGS_DO_KIT)
-  assert.deepEqual(faltava, [])
-  assert.deepEqual(settings.permissions, { allow: ['Bash(npm test)'], ask: ['Bash(git push)'], deny: ['Read(./meu/**)'] })
+  // 5.52 (chat 3, Task 3c): o ask e o allow do kit entram junto do que fica da pessoa
+  assert.deepEqual(faltava, FALTA_DO_KIT)
+  assert.deepEqual(settings.permissions, { allow: ['Bash(npm test)', ...PERMISSOES_DO_KIT.allow], ask: ['Bash(git push)', ...PERMISSOES_DO_KIT.ask], deny: ['Read(./meu/**)'] })
   assert.deepEqual(settings.hooks.SessionStart, [
     { matcher: 'startup', hooks: [{ type: 'command', command: 'node boas-vindas.mjs' }] },
     { hooks: [{ type: 'command', command: 'node lembrete.mjs' }] },
@@ -555,19 +566,26 @@ test('mesclarSettings tira o que o kit tirou e deixa o que e da pessoa', () => {
   assert.ok(tirou.includes('ask Read(./.env.*)') && tirou.includes('anotação do navegador (barrar-mcp)'), tirou.join(', '))
   const segunda = mesclarSettings(structuredClone(settings), SETTINGS_DO_KIT)
   assert.deepEqual([segunda.settings, segunda.faltava, segunda.tirou], [settings, [], []], 'a segunda passada nao muda nada')
-  // so as tiradas: o permissions e o SessionStart somem inteiros
+  // so as tiradas: o deny e o SessionStart somem inteiros, e o permissions fica so com o do kit (5.52)
   const soDoKit = mesclarSettings({ permissions: { deny: [...TIRADAS_DO_KIT.deny] }, hooks: { SessionStart: [SETTINGS_DA_539.hooks.SessionStart[2]] } }, SETTINGS_DO_KIT).settings
-  assert.equal(soDoKit.permissions, undefined)
+  assert.deepEqual(soDoKit.permissions, { ask: PERMISSOES_DO_KIT.ask, allow: PERMISSOES_DO_KIT.allow })
   assert.equal(soDoKit.hooks.SessionStart, undefined)
+  // sem nada do kit em permissions, o permissions some inteiro
+  const semKit = mesclarSettings({ permissions: { deny: [...TIRADAS_DO_KIT.deny] } }, { hooks: SETTINGS_DO_KIT.hooks }).settings
+  assert.equal(semKit.permissions, undefined)
   // regra que o kit voltar a pedir nao sai
   const pede = mesclarSettings(structuredClone(SETTINGS_DA_539), { ...SETTINGS_DO_KIT, permissions: { deny: ['Read(./.env)'] } })
   assert.ok(pede.settings.permissions.deny.includes('Read(./.env)'))
+  // 5.52 (chat 3, Task 3c): o TIRADAS_DO_KIT.allow nasce vazio, entao nenhum allow da pessoa sai
+  assert.deepEqual(TIRADAS_DO_KIT.allow, [])
 })
 
 test('plano avisa settings.json sem as travas do kit e com o que o kit tirou', () => comPasta(raiz => {
   const kit = montarKit(raiz, { [INICIAR]: 'novo\n', '.claude/settings.json': JSON.stringify(SETTINGS_DO_KIT) })
   const projeto = montarProjeto(raiz, { [INICIAR]: 'novo\n', '.claude/settings.json': JSON.stringify(SETTINGS_DA_PESSOA) })
-  assert.ok(resumo(montarPlano({ kit, projeto })).split('\n').includes('settings.json: faltam 1 regra(s) ou trava(s) do kit; rodar o passo settings'))
+  // 5.52 (chat 3, Task 3c): faltam a trava do mcp, o ask e o allow do kit
+  const faltam = 1 + FALTA_DO_KIT.length
+  assert.ok(resumo(montarPlano({ kit, projeto })).split('\n').includes(`settings.json: faltam ${faltam} regra(s) ou trava(s) do kit; rodar o passo settings`))
   writeFileSync(join(projeto, '.claude/settings.json'), JSON.stringify(SETTINGS_DO_KIT))
   assert.ok(!/settings\.json: (faltam|sobram)/.test(resumo(montarPlano({ kit, projeto }))), 'com tudo junto, o aviso some')
   writeFileSync(join(projeto, '.claude/settings.json'), JSON.stringify(SETTINGS_DA_539))
@@ -583,6 +601,11 @@ test('CLI settings mostra antes e depois, so grava com --gravar, e recusa gravar
   assert.equal(mostra.codigo, 0, mostra.saida)
   assert.match(mostra.saida, /antes/)
   assert.match(mostra.saida, /depois/)
+  // 5.52 (chat 3, Task 3c): o antes e o depois mostram o allow, e o depois traz o do kit
+  const depois = mostra.saida.split('\n').find(l => l.startsWith('depois: '))
+  assert.ok(depois, 'canario: a linha do depois saiu')
+  assert.deepEqual(JSON.parse(depois.slice('depois: '.length)).allow, [...SETTINGS_DA_PESSOA.permissions.allow, ...PERMISSOES_DO_KIT.allow])
+  assert.match(mostra.saida, /^antes: \{.*"allow":\["Bash\(npm test\)"\]/m)
   assert.equal(ler(projeto, '.claude/settings.json'), original, 'sem --gravar o arquivo fica igual')
   const sem = rodar(['settings', projeto, '--kit', kit, '--gravar'])
   assert.equal(sem.codigo, 1)

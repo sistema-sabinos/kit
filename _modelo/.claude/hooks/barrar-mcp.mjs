@@ -6,7 +6,8 @@
 // Saiu o resto (decisoes de 2026-11-03, blocos 1 a 3): a barra de
 // codigo e login no navegador, a lista de ferramenta conhecida, o print fora da pasta de saida, o
 // upload de fora do projeto, a conferencia do Chrome dedicado e a pergunta da acao de conta.
-// Com { estrito: true } (so a bancada passa, T45) valem as regras de antes, inteiras.
+// Com { estrito: true } (so a bancada passa, T45) valem as regras de antes, inteiras, menos rodar codigo
+// na pagina, que passa desde a 5.52 (decisao 20 da carta, 2026-11-05).
 // O QUE ELA NAO E: uma garantia. Ela julga pelo nome da ferramenta e pelos campos que conhece, e
 // nao enxerga o que o servidor faz por dentro nem o que roda por fora do assistente.
 // Diferente da trava de comando (barrar-perigoso.mjs), aqui o que a trava nao entende barra:
@@ -28,11 +29,23 @@ import { fileURLToPath } from 'node:url'
 // sonda C1d da 5.28: nenhum modo deixou o ask passar calado; modo que entrar aqui troca o pede por barra
 export const MODOS_ASK_CALADO = []
 
-export const BARRA_NAVEGADOR = /run_code|evaluate|javascript|network_request|cookie|localstorage|sessionstorage|storage_state|webmcp/i
+// 5.52 (decisao 20 da carta de delegacao, 2026-11-05): a barra de antes (run_code, evaluate,
+// javascript e o grupo de sessao numa regex so) se separou em dois. Ler a sessao da pagina (cookie,
+// armazenamento, rede, webmcp) segue barrando no estrito; rodar codigo passa, logado ou nao,
+// na grafia que cada servidor tem na sonda C1 (classe rce). Nome novo com as mesmas palavras cai no
+// navegador-desconhecida, e o filename de quem grava segue julgado como o das outras.
+// Furo aceito (decisao confirmada em 2026-11-05): o browser_run_code_unsafe passa junto, e ele roda no
+// processo do servidor do Playwright, nao na pagina (a doc dele diz que equivale a rodar codigo na
+// maquina): por ali alcanca o cookie HttpOnly, o storageState, o upload e a gravacao em qualquer pasta,
+// que esta trava nao ve. O filename dele e de entrada (de onde ler o codigo).
+export const SESSAO_NAVEGADOR = /network_request|cookie|localstorage|sessionstorage|storage_state|webmcp/i
+export const CODIGO_PLAYWRIGHT = ['browser_evaluate', 'browser_run_code_unsafe']
+export const CODIGO_CHROME_IA = ['javascript_tool']
 
 // Playwright MCP: as de capability core da versao fixada (sobe sem --caps, entao o opt-in nem aparece);
-// Claude in Chrome: as que a sonda listou. As duas listas sem o que o BARRA_NAVEGADOR pega. Cada servidor
-// so usa a sua (5.35): juntas, o browser_file_upload do Claude in Chrome herdava a regra do Playwright MCP.
+// Claude in Chrome: as que a sonda listou. As duas listas sem as de sessao e sem as de codigo, que vem
+// das listas acima. Cada servidor so usa a sua (5.35): juntas, o browser_file_upload do Claude in Chrome
+// herdava a regra do Playwright MCP.
 export const LIBERADAS_PLAYWRIGHT = [
   'browser_click', 'browser_close', 'browser_console_messages', 'browser_drag', 'browser_drop', 'browser_emulate_media',
   'browser_file_upload', 'browser_fill_form', 'browser_find', 'browser_handle_dialog', 'browser_hover', 'browser_navigate',
@@ -45,7 +58,7 @@ export const LIBERADAS_CHROME_IA = [
   'switch_browser', 'tabs_close_mcp', 'tabs_context_mcp', 'tabs_create_mcp', 'upload_image',
 ]
 const CHROME_IA = 'claude-in-chrome'
-const liberadasDo = servidor => servidor === CHROME_IA ? LIBERADAS_CHROME_IA : LIBERADAS_PLAYWRIGHT
+const liberadasDo = servidor => servidor === CHROME_IA ? [...LIBERADAS_CHROME_IA, ...CODIGO_CHROME_IA] : [...LIBERADAS_PLAYWRIGHT, ...CODIGO_PLAYWRIGHT]
 
 // campo com a lista de caminhos de cada ferramenta que sobe arquivo do disco pra pagina. O browser_drop
 // tambem le arquivo local ("as if dragged from outside the page", sonda C1a). O campo do Claude in Chrome
@@ -168,7 +181,7 @@ function acoesDoBatch(servidor, entrada, estrito) {
   for (const a of actions) {
     if (!objeto(a) || !soAsChaves(a, ['input', 'name'])) return null
     if (typeof a.name !== 'string' || !a.name || a.name === 'browser_batch') return null
-    if (estrito && !LIBERADAS_CHROME_IA.includes(a.name)) return null
+    if (estrito && !liberadasDo(CHROME_IA).includes(a.name)) return null
     if (!objeto(a.input)) return null
     acoes.push({ nome: a.name, entrada: a.input })
   }
@@ -200,7 +213,7 @@ function julgar(tool_name, tool_input, cwd, estrito) {
     if (!estrito) {
       return (UPLOAD.has(sufixo) && sobeSenha(cwd, sufixo, tool_input)) || passa()
     }
-    if (BARRA_NAVEGADOR.test(sufixo)) return barra('navegador-login-codigo', 'ferramenta do navegador que lê o login da página ou roda código nela')
+    if (SESSAO_NAVEGADOR.test(sufixo)) return barra('navegador-sessao', 'ferramenta do navegador que lê o login ou a sessão da página (cookie, armazenamento, rede)')
     if (!liberadasDo(servidor).includes(sufixo)) return barra('navegador-desconhecida', 'ferramenta do navegador que a trava não conhece')
     if (tool_input && 'filename' in tool_input && !dentroDaSaida(cwd, tool_input.filename))
       return barra('filename-fora-saida', 'arquivo do navegador fora de dados/navegador-saida/ (print de app vai nas pastas de print do app)')

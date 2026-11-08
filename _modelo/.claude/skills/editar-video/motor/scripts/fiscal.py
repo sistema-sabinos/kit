@@ -14,10 +14,10 @@ Como enxerga as camadas: renderiza a composicao de novo com a prop `fiscal` = no
 preto, a meia resolucao), e o efeito sonoro vira um quadrado no canto (`Efeitos` do kit). Tudo local e gratis.
 Limite conhecido: dois elementos da MESMA camada encostados nao sao medidos (a camada e uma mascara so).
 
-  7. olho final (Gemini, PAGO): so roda com --roteiro, --preco-usd e --autorizado juntos, e so se 1 a 6 passaram.
-     Assiste o video inteiro contra o roteiro e julga o que script nao julga. Sem preco ou sem autorizacao, avisa e
-     pula. Antes de chamar, passa pela trava do gasto (liberar-gasto-cli.mjs do conectar: orcamento do mes ou teto
-     por lote); sem liberacao, avisa e pula. Acima do teto por lote, so passa com --acima-do-teto <o valor que a
+  7. olho final (Gemini, PAGO): so roda com --roteiro e --preco-usd, com o --autorizado ou com a permissao de gasto
+     do _contexto/autonomia.md, e so se 1 a 6 passaram. Assiste o video inteiro contra o roteiro e julga o que script
+     nao julga. Sem preco, avisa e pula. Antes de chamar, passa pela trava do gasto (liberar-gasto-cli.mjs do conectar:
+     orcamento do mes ou teto por lote; sem o --autorizado, so a permissao libera, 5.52); sem liberacao, avisa e pula. Acima do teto por lote, so passa com --acima-do-teto <o valor que a
      pessoa ouviu no pode ir>, igual ou maior que o --preco-usd (5.49, bloco C, 2026-11-03). O custo vai pro dados/custos.jsonl, uma linha, pelo
      registrar-custo-cli.mjs, com a reserva da liberacao, o --video e os segundos do final.
 
@@ -26,7 +26,7 @@ Teste do portao pago: `--so-olho-final` pula render e gates e roda so o passo 7 
 Uso: fiscal.py <Composicao> <final.mp4> <bruto.mp4> <pasta-saida> --remotion <remotion-cli.js> --public-dir <public da peca>
              --props-base <props.json> [--props-verificar <props.json>] [--transcrever <transcrever.mjs> [--modelo small|medium]]
              [--midia <_video>/midia]
-             [--roteiro <roteiro.md> --preco-usd <US$ do olho final, preco do dia> --autorizado [--acima-do-teto <US$>]
+             [--roteiro <roteiro.md> --preco-usd <US$ do olho final, preco do dia> [--autorizado] [--acima-do-teto <US$>]
               --ver-video <ver-video.mjs> --registrar-custo <registrar-custo-cli.mjs> [--video <slug>]]
 
 Quem chama e o orquestrador do kit, que escolhe o Python da maquina e passa os caminhos; nenhum caminho de ferramenta
@@ -156,7 +156,8 @@ def liberar_gasto():
     cli = Path(LIBERAR_GASTO) if LIBERAR_GASTO else None
     if not cli or not cli.exists():
         return {"codigo": 3, "parou": f"nao achei a trava de gasto ({cli})"}
-    cmd = ["node", str(cli), "--usd", str(ARGS.preco_usd), "--autorizado", "--pid", str(os.getpid()),
+    # 5.52 (chat 3): sem o --autorizado a trava vai sem ele, e so a permissao de gasto escrita libera
+    cmd = ["node", str(cli), "--usd", str(ARGS.preco_usd)] + (["--autorizado"] if ARGS.autorizado else []) + ["--pid", str(os.getpid()),
            "--contexto", f"olho final do fiscal: {FINAL.name}"] + (["--raiz", ARGS.raiz_custo] if ARGS.raiz_custo else []) \
         + (["--acima-do-teto", ARGS.acima_do_teto] if ARGS.acima_do_teto is not None else [])
     r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
@@ -176,17 +177,27 @@ def segundos_do_video(p):
 
 
 def olho_final(falhas, avisos):
-    """Olho final (Gemini, PAGO): so roda com --roteiro, --preco-usd, --autorizado e --ver-video, e so se a conferencia por
-    script passou, pra nao pagar por video que ja ia voltar. So problema GRAVE reprova; o leve vai como aviso."""
+    """Olho final (Gemini, PAGO): so roda com --roteiro, --preco-usd e --ver-video, com o --autorizado ou a permissao de
+    gasto, e so se a conferencia por script passou, pra nao pagar por video que ja ia voltar. So problema GRAVE reprova;
+    o leve vai como aviso."""
     ROTEIRO = Path(ARGS.roteiro).resolve() if ARGS.roteiro else None
-    if ROTEIRO and (ARGS.preco_usd is None or not ARGS.autorizado or not ARGS.ver_video):
-        faltou = [n for n, ok in (("--preco-usd (preco do dia)", ARGS.preco_usd is not None), ("--autorizado (o sim da pessoa)", ARGS.autorizado), ("--ver-video", bool(ARGS.ver_video))) if not ok]
+    if ROTEIRO and (ARGS.preco_usd is None or not ARGS.ver_video):
+        faltou = [n for n, ok in (("--preco-usd (preco do dia)", ARGS.preco_usd is not None), ("--ver-video", bool(ARGS.ver_video))) if not ok]
         avisos.append({"tipo": "olho final", "seg": 0, "texto": "olho final pulado (e pago): falta " + ", ".join(faltou), "etapa": ETAPA["render"]})
     elif ROTEIRO and not falhas:
         lib = liberar_gasto()
         if lib.get("codigo") != 0:
-            avisos.append({"tipo": "olho final", "seg": 0, "texto": "olho final pulado (e pago): " + str(lib.get("parou", "a trava de gasto nao liberou")), "etapa": ETAPA["render"]})
+            # fora da permissao, o recado de antes: falta o sim da pessoa
+            pede_sim = not ARGS.autorizado and "regra pode-ir: precisa do pode ir" in str(lib.get("parou", ""))
+            motivo = "falta --autorizado (o sim da pessoa)" if pede_sim else str(lib.get("parou", "a trava de gasto nao liberou"))
+            if pede_sim and lib.get("fora_da_permissao"):
+                motivo += f" (fora da permissao: {lib['fora_da_permissao']})"
+            avisos.append({"tipo": "olho final", "seg": 0, "texto": "olho final pulado (e pago): " + motivo, "etapa": ETAPA["render"]})
             return
+        perm = lib.get("permissao")
+        if perm:
+            nome = {"dia": "no dia", "semana": "na semana", "mes": "no mes"}.get(perm.get("periodo"), "")
+            avisos.append({"tipo": "custo", "seg": 0, "texto": f"o olho final (US$ {ARGS.preco_usd}) foi pela permissao do _contexto/autonomia.md, resta US$ {perm.get('resta_usd', 0):.2f} de US$ {perm.get('teto_usd', 0):.2f} {nome}: avise a pessoa agora quanto gastou", "etapa": ETAPA["render"]})
         pergunta = (
             "Voce e o revisor final de um Reel vertical em portugues antes de ir pra quem pediu. Assista e ouca o video "
             "inteiro e compare com o roteiro abaixo (colunas Fala, Na tela, Som). Aponte so o que um espectador perceberia: "
@@ -199,8 +210,15 @@ def olho_final(falhas, avisos):
             "Grave e o que faria a pessoa recusar o video, e so e grave o que voce confirma em mais de um quadro seguido (animacao de "
             "entrada, giro ou transicao de 0,3 s nao conta). Sem problema grave, o veredito e APROVADO.\n\nROTEIRO:\n"
             + ROTEIRO.read_text(encoding="utf-8"))
-        # --sem-registro: o ver-video anotaria o custo dele tambem, e a linha abaixo ja anota uma vez
-        r = subprocess.run(["node", VER_VIDEO, str(FINAL), "--pergunta", pergunta, "--sem-registro"],
+        # a linha abaixo anota o custo uma vez. Com orcamento do mes vai a reserva da liberacao acima (o ver-video
+        # confere que e deste processo e nao reserva de novo); no teto por lote, sem reserva, o ver-video passa pela
+        # trava com o mesmo sim e o --sem-registro so tira a linha dele (5.52, conserto da interna)
+        if lib.get("reserva"):
+            prova = ["--reserva", lib["reserva"]]
+        else:
+            prova = ["--usd", str(ARGS.preco_usd), "--autorizado", "--sem-registro"] \
+                + (["--acima-do-teto", ARGS.acima_do_teto] if ARGS.acima_do_teto is not None else [])
+        r = subprocess.run(["node", VER_VIDEO, str(FINAL), "--pergunta", pergunta] + prova + (["--raiz", ARGS.raiz_custo] if ARGS.raiz_custo else []),
                            capture_output=True, text=True, errors="replace", encoding="utf-8")
         (SAIDA / "olho-final.md").write_text(r.stdout, encoding="utf-8")
         if r.returncode != 0:
@@ -431,7 +449,7 @@ for chave, lista in exemplos.items():
             falha(chave, t[0][1], f"de {t[0][1]:.2f} a {t[-1][1]:.2f} s, até {pior[2]:.0f}% do rosto coberto; quadro em quadros/", "rosto")
 
 
-# ---------- 5) olho final (Gemini, PAGO): so roda com --roteiro, --preco-usd e --autorizado, e so se a conferencia por
+# ---------- 5) olho final (Gemini, PAGO): so roda com --roteiro, --preco-usd e o sim ou a permissao, e so se a conferencia por
 # script passou, pra nao pagar por video que ja ia voltar. Ve e ouve o video inteiro contra o roteiro e julga o que
 # script nao julga. So problema GRAVE reprova; o leve vai como aviso.
 olho_final(falhas, avisos)

@@ -1,9 +1,9 @@
 import { test } from 'node:test'
 import assert from 'node:assert'
-import { ehPerigoso, ehGitPerigoso, perguntaDeApagar as perguntaDeApagarDoHook, textoDaPergunta } from './barrar-perigoso.mjs'
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
+import { ehPerigoso, ehGitPerigoso, perguntaDeApagar as perguntaDeApagarDoHook, textoDaPergunta, apagaDeVez, avaliarPasta, gravaAutonomia, escapaDoAllow } from './barrar-perigoso.mjs'
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmdirSync, rmSync, statSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, join, parse, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { spawnSync } from 'node:child_process'
 
@@ -11,7 +11,12 @@ import { spawnSync } from 'node:child_process'
 // do comando. O mutante.mjs roda este teste numa copia dentro da temporaria, entao a pasta do comando
 // e sempre uma de fora dela: a casa do usuario (a temporaria fica dentro dela, nunca o contrario)
 const FORA = homedir()
-const perguntaDeApagar = (comando, opcoes = {}) => perguntaDeApagarDoHook(comando, { cwd: FORA, ...opcoes })
+// 5.52 (chat 2, Task 2e, 2026-11-05): o projeto (CLAUDE_PROJECT_DIR) fica numa pasta que nao existe, fora da pasta
+// do comando: o dist e o node_modules da lista fechada so passam calados dentro do projeto, e assim nenhum teste de
+// antes depende de quem roda ter ou nao a variavel. Os testes da lista (Task 2e) poem o projeto de mentira deles
+const PROJETO_DE_FORA = join(FORA, 'sabinos-teste-projeto-que-nao-existe')
+const comProjetoDeFora = () => ({ ...process.env, CLAUDE_PROJECT_DIR: PROJETO_DE_FORA })
+const perguntaDeApagar = (comando, opcoes = {}) => perguntaDeApagarDoHook(comando, { cwd: FORA, env: comProjetoDeFora(), ...opcoes })
 
 // 5.49 (2026-11-03): o que saiu da barra. Apagar pasta pergunta (bloco 5): nao barra e a
 // perguntaDeApagar devolve alvo. As regras soltas (blocos 6, 8, 9 e 11) passam caladas: nem barra
@@ -105,7 +110,9 @@ test('correcao 1: continua deixando passar as variantes seguras, inclusive --for
 test('correcao 1: variantes reais imaginadas alem das listadas na revisao', () => {
   // 5.49 (bloco 5, 2026-11-03): os dois de apagar perguntam em vez de barrar
   // rm -rf encadeado com && (jeito comum de limpar duas pastas de uma vez)
-  assert.ok(pergunta('rm -rf ./node_modules && rm -rf ./dist'), 'deveria perguntar: rm -rf encadeado com &&')
+  // 5.52 (chat 2, Task 2e, 2026-11-05): node_modules e dist estao na lista fechada (passam no projeto); o
+  // encadeado segue perguntando com nomes fora dela
+  assert.ok(pergunta('rm -rf ./pacotes && rm -rf ./saida'), 'deveria perguntar: rm -rf encadeado com &&')
   // rm -rf escondido dentro de um find -exec, forma comum de apagar em lote
   assert.ok(pergunta('find . -type f -name "*.tmp" -exec rm -rf {} \\;'), 'deveria perguntar: rm -rf dentro de find -exec')
   // 5.49 (bloco 8, 2026-11-03): curl pro bash passa
@@ -1372,16 +1379,16 @@ test('5.20 (N9): apagar por outro programa, nas formas comuns', () => {
     'node -e "require(\'fs\').rmSync(process.env.HOME,{recursive:true,force:true})"',
     'node --eval "fs.rmdirSync(p, { recursive: true })"', 'node -e "fs.unlinkSync(\'a\')"',
     'python -c "import shutil; shutil.rmtree(\'Users/a/Documentos\')"', 'python3 -c "import os; os.remove(\'a\')"',
-    'py -c "import os; os.rmdir(\'x\')"', 'npx rimraf ~/projeto', 'rimraf dist', 'npx -y del-cli dist', 'pnpm dlx rimraf dist',
+    'py -c "import os; os.rmdir(\'x\')"', 'npx rimraf ~/projeto', 'rimraf saida', 'npx -y del-cli saida', 'pnpm dlx rimraf saida',
     "[System.IO.Directory]::Delete('x', $true)", "[IO.Directory]::Delete('x', 1)", "[IO.File]::Delete('a.txt')",
     '(Get-Item x).Delete($true)', 'gci x -Recurse -File | % { $_.Delete() }', 'Clear-Content -Path ./*.md',
     'Get-ChildItem -Recurse -File | Clear-Content', 'clc pasta/*',
     // revisao interna: codigo em varias linhas, opcao agrupada ou colada, caminho entre aspas,
     // versao no npx, variavel antes, separador colado no -delete, xargs rodando o rm
-    "python -c \"\nimport shutil\nshutil.rmtree('build')\n\"", "node -e \"\nconst fs = require('fs')\nfs.rmSync('dist', { recursive: true })\n\"",
-    'node -pe "require(\'fs\').rmSync(\'dist\',{recursive:true})"', 'python -c"import shutil;shutil.rmtree(\'x\')"',
-    'python -Bc "import shutil;shutil.rmtree(\'x\')"', 'Clear-Content "C:' + barra + 'logs' + barra + '*.log"', 'npx rimraf@5 dist',
-    'npx del-cli@6 dist', 'NODE_ENV=x npx rimraf dist', "find . -name '*.tmp' -delete; echo ok", 'find . -delete&& echo ok',
+    "python -c \"\nimport shutil\nshutil.rmtree('obra')\n\"", "node -e \"\nconst fs = require('fs')\nfs.rmSync('saida', { recursive: true })\n\"",
+    'node -pe "require(\'fs\').rmSync(\'saida\',{recursive:true})"', 'python -c"import shutil;shutil.rmtree(\'x\')"',
+    'python -Bc "import shutil;shutil.rmtree(\'x\')"', 'Clear-Content "C:' + barra + 'logs' + barra + '*.log"', 'npx rimraf@5 saida',
+    'npx del-cli@6 saida', 'NODE_ENV=x npx rimraf saida', "find . -name '*.tmp' -delete; echo ok", 'find . -delete&& echo ok',
     'find . -name "*.log" | xargs -I {} rm {}',
   ])
   // usos legitimos do kit: o rmSync sem recursive (checar/SKILL.md tira o link .agents/skills)
@@ -2140,11 +2147,101 @@ test('5.43: a troca do nome entre aspas com a entrada gigante termina em tempo l
 
 const HOOK_549 = fileURLToPath(new URL('./barrar-perigoso.mjs', import.meta.url))
 const rodar549 = (tool_name, command, { cwd = FORA, env, args = [] } = {}) => spawnSync(process.execPath, [...args, HOOK_549], {
-  input: JSON.stringify({ tool_name, cwd, tool_input: { command } }), encoding: 'utf8', env: env || process.env, timeout: 30000,
+  input: JSON.stringify({ tool_name, cwd, tool_input: { command } }), encoding: 'utf8', env: env || comProjetoDeFora(), timeout: 30000,
 })
 const FIM_DA_BARRA = 'Diga ao usuario o nome da trava e da regra e decida o proximo passo; nao refaca esta acao por outro caminho.'
 const FERRAMENTAS = ['Bash', 'PowerShell', 'Monitor']
 const TEMP = tmpdir()
+// 5.52 (chat 2, Task 2a, 2026-11-05): a temporaria de quem roda pode ter espaco no caminho (o nome do
+// usuario, quando o Windows nao poe nela o nome curto 8.3). No Bash e no cmd a variavel dela ($TMPDIR,
+// ${TMPDIR}, %TEMP%, %TMP% e, desde a Task 2b, $TEMP, $TMP e as chaves deles) entao pergunta, pela regra do 5.49 (Codex final) no hook; o $env: do PowerShell
+// e o caminho entre aspas seguem calados. Os casos de variavel rodam nos dois lados pelo nosDoisLados (passa
+// sem espaco, pergunta com espaco); o TEMP_COM_ESPACO fica so pro que le o os.tmpdir() de quem roda
+const TEMP_COM_ESPACO = /\s/.test(TEMP)
+// 5.52 (chat 2, Task 2b, 2026-11-05): o $TEMP e o $TMP do Bash (e as chaves deles) entram, e fora do
+// Windows eles perguntam sempre (la o Bash nao tem essas duas por padrao); o nome do Bash tem caixa
+const SE_PARTE_NO_ESPACO = /\$\{?(?:TMPDIR|TEMP|TMP)(?![A-Za-z0-9_])|%(?:TEMP|TMP)%/i
+const SO_NO_WINDOWS = /\$\{?(?:TEMP|TMP)(?![A-Za-z0-9_])/
+const perguntaPeloEspaco = (comando, comEspaco) => (comEspaco && SE_PARTE_NO_ESPACO.test(comando)) ||
+  (process.platform !== 'win32' && SO_NO_WINDOWS.test(comando))
+// 5.52 (chat 2, Task 2a, revisao interna, 2026-11-05): o lado vem sempre explicito, e cada caso de variavel
+// conta no ramo que rodou, pro canario do nosDoisLados
+const VISTOS = { passa: 0, pergunta: 0 }
+function ladoDoCaso(comando, comEspaco) {
+  assert.strictEqual(typeof comEspaco, 'boolean', 'o lado da temporaria (com ou sem espaco) vem explicito')
+  if (SE_PARTE_NO_ESPACO.test(comando)) VISTOS[comEspaco ? 'pergunta' : 'passa']++
+}
+// o que a perguntaDeApagar devolve num alvo da temporaria
+function esperaDaTemporaria(comando, alvos, msg, comEspaco) {
+  ladoDoCaso(comando, comEspaco)
+  if (perguntaPeloEspaco(comando, comEspaco)) assert.ok(alvos, msg + ' (temporaria com espaco: deveria perguntar)')
+  else assert.strictEqual(alvos, null, msg + ' (deveria passar calado)')
+}
+// o mesmo pelo hook de verdade
+function esperaDoHookNaTemporaria(r, comando, msg, comEspaco) {
+  ladoDoCaso(comando, comEspaco)
+  if (perguntaPeloEspaco(comando, comEspaco)) {
+    assert.ok(r.stdout.length > 0, msg + ': saida vazia')
+    assert.ok((perguntaDoHook(r) || '').startsWith(COMECO_DA_PERGUNTA), msg + ' (temporaria com espaco: deveria perguntar): ' + r.status + ' ' + r.stdout + r.stderr)
+  } else assert.strictEqual(r.status + r.stdout + r.stderr, '0', msg + ': deveria passar calado: ' + r.stdout)
+}
+// a temporaria do processo do teste (a que o os.tmpdir() le) apontada pra outra pasta durante o corpo
+function naTemporaria(pasta, corpo) {
+  const antes = { TEMP: process.env.TEMP, TMP: process.env.TMP, TMPDIR: process.env.TMPDIR }
+  try {
+    for (const k of Object.keys(antes)) process.env[k] = pasta
+    corpo()
+  } finally {
+    for (const [k, v] of Object.entries(antes)) { if (v === undefined) delete process.env[k]; else process.env[k] = v }
+  }
+}
+// 5.52 (chat 2, Task 2a, revisao interna, 2026-11-05): os dois lados montados aqui, com a temporaria do
+// processo do teste e a do env do hook numa pasta sem espaco e numa com espaco, pra nao depender da
+// temporaria de quem roda (a desta maquina pode sair pelo nome curto 8.3, sem espaco, ou pelo nome longo, com
+// espaco). O lado sem espaco nasce na temporaria quando ela nao tem espaco, senao na pasta deste teste. O
+// corpo recebe { temp, env, comEspaco }, e cada lado tem de passar por um caso de variavel no ramo dele
+// 5.52 (chat 2, Task 2a, Codex comum, 2026-11-06): com a temporaria e o kit numa pasta com espaco e sem nome
+// curto 8.3 (usuario com espaco no nome), nenhuma das duas servia; a raiz do disco da temporaria entra por
+// ultimo, e quem nao deixa criar pasta passa pro seguinte
+function pastaSemEspaco(candidatos, criar = mkdtempSync) {
+  for (const p of candidatos) {
+    if (/\s/.test(p)) continue
+    try { return criar(join(p, 'trava-552-sem-espaco-')) } catch {}
+  }
+  assert.fail('sem pasta sem espaco pra montar o lado sem espaco: ' + candidatos.join(' e '))
+}
+test('5.52: o lado sem espaco cai na raiz do disco quando a temporaria e o kit tem espaco', () => {
+  const tentou = []
+  const trancada = join('raiz', 'trancada')
+  const disco = join('raiz')
+  const criar = p => { tentou.push(p); if (p.startsWith(trancada)) throw new Error('sem permissao'); return p + 'X' }
+  const r = pastaSemEspaco([join('raiz', 'usuario com espaco', 'Temp'), join('raiz', 'usuario com espaco', 'kit'), trancada, disco], criar)
+  assert.ok(tentou.length > 0, 'canario: tentou criar')
+  assert.strictEqual(r, join(disco, 'trava-552-sem-espaco-') + 'X')
+  assert.deepStrictEqual(tentou, [join(trancada, 'trava-552-sem-espaco-'), join(disco, 'trava-552-sem-espaco-')])
+  assert.throws(() => pastaSemEspaco([join('a b'), join('c d')], criar), /sem pasta sem espaco/)
+})
+function nosDoisLados(corpo) {
+  const pastas = []
+  const rodou = { sem: 0, com: 0 }
+  try {
+    const comEspaco = mkdtempSync(join(TEMP, 'trava 552 com espaco-'))
+    pastas.push(comEspaco)
+    const semEspaco = pastaSemEspaco([TEMP, dirname(HOOK_549), parse(TEMP).root])
+    pastas.push(semEspaco)
+    assert.ok(/\s/.test(comEspaco) && !/\s/.test(semEspaco), 'canario: cada lado tem o espaco que diz')
+    for (const [lado, temp] of [['sem', semEspaco], ['com', comEspaco]]) {
+      const ramo = lado === 'com' ? 'pergunta' : 'passa'
+      const antes = VISTOS[ramo]
+      naTemporaria(temp, () => corpo({ temp, env: { ...process.env, TEMP: temp, TMP: temp, TMPDIR: temp }, comEspaco: lado === 'com' }))
+      assert.ok(VISTOS[ramo] > antes, 'canario: o lado ' + lado + ' espaco rodou caso de variavel no ramo ' + ramo)
+      rodou[lado]++
+    }
+    assert.deepStrictEqual(rodou, { sem: 1, com: 1 }, 'canario: os dois lados rodaram')
+  } finally {
+    for (const p of pastas) rmSync(p, { recursive: true, force: true })
+  }
+}
 
 test('5.49: o que barra comeca pela trava e pela regra, nas tres ferramentas', () => {
   const casos = [
@@ -2218,7 +2315,7 @@ function comProjeto(corpo) {
     mkdirSync(join(proj, 'sub'), { recursive: true })
     mkdirSync(falsa)
     for (const n of ['a.txt', 'b.txt', join('sub', 'c.txt')]) writeFileSync(join(proj, n), 'x')
-    corpo({ proj, env: { ...process.env, TEMP: falsa, TMP: falsa, TMPDIR: falsa } })
+    corpo({ proj, env: { ...comProjetoDeFora(), TEMP: falsa, TMP: falsa, TMPDIR: falsa } })
   } finally { rmSync(base, { recursive: true, force: true }) }
 }
 
@@ -2280,75 +2377,100 @@ test('5.49: erro na contagem nao derruba a pergunta', () => {
 })
 
 test('5.49: a pasta temporaria apaga calada nas tres ferramentas', () => {
-  const real = realpathSync.native(TEMP)
   // canario: a busca casa no que sabidamente pergunta
   assert.ok(perguntaDeApagar('rm -rf pasta'), 'canario: rm -rf pasta pergunta')
-  const env = { ...process.env, TEMP, TMP: TEMP, TMPDIR: TEMP }
-  // o caminho vai entre aspas: o da temporaria pode ter espaco (o nome do usuario)
-  const q = p => '"' + p + '"'
-  // revisao interna do bloco A (2026-11-03): a variavel vale so na ferramenta do shell dela ($env: no
-  // PowerShell, $TMPDIR no Bash e no Monitor, %TEMP% nas tres); na outra ela pergunta (teste de baixo)
-  const soDoShell = {
-    PowerShell: ['rm -rf $env:TEMP/x', 'Remove-Item -Recurse $env:TMP' + B + 'y'],
-    Bash: ['rm -rf $TMPDIR/z', 'rm -rf "${TMPDIR}/w"'],
-  }
-  soDoShell.Monitor = soDoShell.Bash
-  const casos = ['rm -rf ' + q(join(TEMP, 'skill-x')), 'Remove-Item -Recurse -Force ' + q(join(TEMP, 'a', 'b')), 'rd /s /q ' + q(join(TEMP, 'c')),
-    'rm -rf ' + q(join(real, 'd')), 'rd /s /q %TEMP%' + B + 'v', 'rm -rf ' + q(join(TEMP, 'a')) + ' ' + q(join(TEMP, 'b')), 'npx rimraf ' + q(join(TEMP, 'r'))]
-  if (process.platform === 'win32') {
-    // o caminho do Git Bash (/c/Users/...) e o maiusculo/minusculo do Windows
-    casos.push('rm -rf ' + q('/' + real[0].toLowerCase() + real.slice(2).split(B).join('/') + '/gb'), 'rm -rf ' + q(join(real.toUpperCase(), 'caixa')))
-  }
-  // canario do nome curto 8.3: aqui a temporaria do sistema e o caminho real dela diferem (ou sao o mesmo)
-  if (TEMP !== real) assert.ok(casos.some(c => c.includes(TEMP)) && casos.some(c => c.includes(real)), 'canario: as duas formas entram')
-  for (const ferramenta of FERRAMENTAS) {
-    for (const command of [...casos, ...soDoShell[ferramenta]]) {
-      // sem a ferramenta, a perguntaDeApagar le as formas dos tres shells
-      assert.strictEqual(perguntaDeApagar(command, { env }), null, 'deveria passar calado: ' + command)
-      assert.strictEqual(perguntaDeApagar(command, { env, ferramenta }), null, ferramenta + ' deveria passar calado: ' + command)
-      const r = rodar549(ferramenta, command, { env })
-      assert.strictEqual(r.status, 0, ferramenta + ' ' + command + ': saida ' + r.status)
-      assert.strictEqual(r.stdout + r.stderr, '', ferramenta + ' ' + command + ': deveria passar calado')
+  // 5.52 (chat 2, Task 2a, revisao interna, 2026-11-05): nos dois lados, sem e com espaco na temporaria
+  nosDoisLados(({ temp: TEMP, env, comEspaco }) => {
+    const real = realpathSync.native(TEMP)
+    // o caminho vai entre aspas: o da temporaria pode ter espaco (o nome do usuario)
+    const q = p => '"' + p + '"'
+    // revisao interna do bloco A (2026-11-03): a variavel vale so na ferramenta do shell dela ($env: no
+    // PowerShell, $TMPDIR no Bash e no Monitor, %TEMP% nas tres); na outra ela pergunta (teste de baixo)
+    const soDoShell = {
+      PowerShell: ['rm -rf $env:TEMP/x', 'Remove-Item -Recurse $env:TMP' + B + 'y'],
+      Bash: ['rm -rf $TMPDIR/z', 'rm -rf "${TMPDIR}/w"',
+        // 5.52 (chat 2, Task 2b, 2026-11-05): o $TEMP e o $TMP do Bash, que no Git Bash vem do Windows
+        'rm -rf $TEMP/t', 'rm -rf "$TMP/t"', 'rm -rf "${TEMP}/t"', 'rm -rf ${TMP}/t'],
     }
-  }
-  // a propria temporaria inteira nao esta dentro dela: pergunta
-  assert.ok(perguntaDeApagar('rm -rf "' + TEMP + '"', { env }), 'apagar a temporaria inteira pergunta')
+    soDoShell.Monitor = soDoShell.Bash
+    const casos = ['rm -rf ' + q(join(TEMP, 'skill-x')), 'Remove-Item -Recurse -Force ' + q(join(TEMP, 'a', 'b')), 'rd /s /q ' + q(join(TEMP, 'c')),
+      'rm -rf ' + q(join(real, 'd')), 'rd /s /q %TEMP%' + B + 'v', 'rm -rf ' + q(join(TEMP, 'a')) + ' ' + q(join(TEMP, 'b')), 'npx rimraf ' + q(join(TEMP, 'r'))]
+    if (process.platform === 'win32') {
+      // o caminho do Git Bash (/c/Users/...) e o maiusculo/minusculo do Windows
+      casos.push('rm -rf ' + q('/' + real[0].toLowerCase() + real.slice(2).split(B).join('/') + '/gb'), 'rm -rf ' + q(join(real.toUpperCase(), 'caixa')))
+    }
+    // canario do nome curto 8.3: aqui a temporaria do sistema e o caminho real dela diferem (ou sao o mesmo)
+    if (TEMP !== real) assert.ok(casos.some(c => c.includes(TEMP)) && casos.some(c => c.includes(real)), 'canario: as duas formas entram')
+    for (const ferramenta of FERRAMENTAS) {
+      for (const command of [...casos, ...soDoShell[ferramenta]]) {
+        // sem a ferramenta, a perguntaDeApagar le as formas dos tres shells. 5.52 (chat 2, Task 2a, 2026-11-05):
+        // a variavel do Bash e do cmd pergunta quando a temporaria tem espaco
+        esperaDaTemporaria(command, perguntaDeApagar(command, { env }), command, comEspaco)
+        esperaDaTemporaria(command, perguntaDeApagar(command, { env, ferramenta }), ferramenta + ' ' + command, comEspaco)
+        esperaDoHookNaTemporaria(rodar549(ferramenta, command, { env }), command, ferramenta + ' ' + command, comEspaco)
+      }
+    }
+    // a propria temporaria inteira nao esta dentro dela: pergunta
+    assert.ok(perguntaDeApagar('rm -rf "' + TEMP + '"', { env }), 'apagar a temporaria inteira pergunta')
+  })
 })
 
 // 5.49 (Codex final, 2026-11-04): no Bash e no cmd a variavel sem aspas se parte no espaco do valor, entao a
 // temporaria com espaco no caminho nao conta como temporaria nesses dois; no PowerShell segue calada
+// 5.52 (chat 2, Task 2a, 2026-11-05): os dois lados se montam no nosDoisLados, pra nao depender da
+// temporaria de quem roda
 test('5.49 (Codex final): a temporaria com espaco no caminho pergunta no Bash e no cmd', () => {
-  const comEspaco = join(TEMP, 'pasta com espaco')
-  const env = { ...process.env, TEMP: comEspaco, TMP: comEspaco, TMPDIR: comEspaco }
-  // canario: sem espaco no valor, o mesmo comando passa calado
-  assert.strictEqual(perguntaDeApagar('rm -rf $TMPDIR/x', { env: { ...process.env, TMPDIR: TEMP }, ferramenta: 'Bash' }), null, 'canario: sem espaco passa')
-  for (const ferramenta of ['Bash', 'Monitor']) {
-    assert.ok(perguntaDeApagar('rm -rf $TMPDIR/x', { env, ferramenta }), ferramenta + ': $TMPDIR com espaco deveria perguntar')
-  }
-  assert.ok(perguntaDeApagar('rd /s /q %TEMP%' + B + 'v', { env, ferramenta: 'PowerShell' }), '%TEMP% com espaco deveria perguntar')
-  assert.strictEqual(perguntaDeApagar('Remove-Item -Recurse $env:TEMP/x', { env, ferramenta: 'PowerShell' }), null, 'no PowerShell a variavel nao se parte')
+  // canario: a busca dos casos de variavel casa no que sabidamente casa, e so nisso
+  assert.ok(['rm -rf $TMPDIR/x', 'rm -rf "${TMPDIR}/w"', 'rd /s /q %temp%/v', 'rd /s /q %TMP%/v', 'rm -rf $TEMP/x', 'rm -rf ${TMP}/x'].every(c => SE_PARTE_NO_ESPACO.test(c)), 'canario: a busca casa')
+  assert.ok(!['Remove-Item $env:TEMP/x', 'rm -rf $TMPDIRX/x', 'rm -rf "/tmp/a b"', 'rm -rf $TEMPO/x', 'Remove-Item ${env:TMP}/x'].some(c => SE_PARTE_NO_ESPACO.test(c)), 'canario: a busca nao casa a mais')
+  assert.ok(SO_NO_WINDOWS.test('rm -rf "${TEMP}/x"') && !['rm -rf $temp/x', 'rm -rf $TMPDIR/x', 'rd /s /q %TEMP%/x'].some(c => SO_NO_WINDOWS.test(c)), 'canario: so o $TEMP e o $TMP do Bash, com caixa')
+  // 5.52 (chat 2, Task 2b, 2026-11-05): o $TEMP e o $TMP do Bash tambem se partem no espaco
+  const casos = [['Bash', 'rm -rf $TMPDIR/x'], ['Monitor', 'rm -rf $TMPDIR/x'], ['Bash', 'rm -rf "${TMPDIR}/w"'],
+    ['PowerShell', 'rd /s /q %TEMP%' + B + 'v'], ['Bash', 'rd /s /q %TMP%/v'], ['Bash', 'rm -rf $TEMP/x'], ['Monitor', 'rm -rf "${TMP}/x"']]
+  const rodou = { sem: 0, com: 0 }
+  nosDoisLados(({ temp, env, comEspaco }) => {
+    const lado = comEspaco ? 'com' : 'sem'
+    for (const [ferramenta, command] of casos) {
+      const msg = lado + ' espaco, ' + ferramenta + ' ' + command
+      esperaDaTemporaria(command, perguntaDeApagar(command, { env, ferramenta }), msg, comEspaco)
+      esperaDoHookNaTemporaria(rodar549(ferramenta, command, { env }), command, msg, comEspaco)
+      rodou[lado]++
+    }
+    // no PowerShell a variavel nao se parte, e o caminho entre aspas tambem nao: calados nos dois lados
+    for (const [ferramenta, command] of [['PowerShell', 'Remove-Item -Recurse $env:TEMP/x'], ['Bash', 'rm -rf "' + join(temp, 'x') + '"']]) {
+      assert.strictEqual(perguntaDeApagar(command, { env, ferramenta }), null, lado + ' espaco, ' + ferramenta + ' deveria passar calado: ' + command)
+      const r = rodar549(ferramenta, command, { env })
+      assert.strictEqual(r.status + r.stdout + r.stderr, '0', lado + ' espaco, ' + ferramenta + ' deveria passar calado: ' + command)
+    }
+  })
+  assert.deepStrictEqual(rodou, { sem: casos.length, com: casos.length }, 'canario: os dois lados rodaram')
 })
 
 test('5.49: variavel, .. e caminho real que saem da temporaria perguntam', () => {
   const env = { ...process.env, TEMP, TMP: TEMP, TMPDIR: TEMP }
   for (const [command, alvos] of [
     ['rm -rf $env:TEMP/../Documentos', ['$env:TEMP/../Documentos']], ['rm -rf "' + join(TEMP, '..', 'x') + '"', [join(TEMP, '..', 'x')]],
-    ['rm -rf $TMPDIR/../../y', ['$TMPDIR/../../y']], ['rm -r $X/pasta', [null]], ['rm -r $(pwd)/x', [null]],
+    // 5.52 (chat 2, Task 2a, 2026-11-05): com espaco na temporaria o $TMPDIR a trava nao le e vira "uma pasta"
+    ['rm -rf $TMPDIR/../../y', [TEMP_COM_ESPACO ? null : '$TMPDIR/../../y']], ['rm -r $X/pasta', [null]], ['rm -r $(pwd)/x', [null]],
     ['rm -r ""', [null]], ['rm -rf "' + join(TEMP, 'a') + '" pasta', [join(TEMP, 'a'), 'pasta']],
     ['node -e "require(\'fs\').rmSync(\'' + join(TEMP, 'n').split(B).join('/') + '\',{recursive:true})"', [null]],
   ]) assert.deepStrictEqual(perguntaDeApagar(command, { env }), alvos, command)
   // a variavel da temporaria sem valor no ambiente a trava nao le. 5.49 (autonomia, 2026-11-04): menos o
   // $TMPDIR no Windows, que cai no os.tmpdir() (o /etc/profile do Git Bash poe o TMP nele)
-  assert.deepStrictEqual(perguntaDeApagar('rm -rf $TMPDIR/z', { env: { PATH: '' } }), process.platform === 'win32' ? null : [null])
+  assert.deepStrictEqual(perguntaDeApagar('rm -rf $TMPDIR/z', { env: { PATH: '' } }), process.platform === 'win32' && !TEMP_COM_ESPACO ? null : [null])
   assert.deepStrictEqual(perguntaDeApagar('rm -rf $env:TEMP/z', { env: { PATH: '' } }), [null])
+  // 5.52 (chat 2, Task 2b, 2026-11-05): o $TEMP e o $TMP do Bash sem valor nao caem no os.tmpdir(): o Git
+  // Bash os copia do Windows, e sem eles o alvo vira a raiz do Git Bash
+  for (const c of ['rm -rf $TEMP/z', 'rm -rf "${TMP}/z"']) assert.deepStrictEqual(perguntaDeApagar(c, { env: { PATH: '' }, ferramenta: 'Bash' }), [null], c)
   // a juncao (ou o link) de dentro da temporaria pra fora dela pergunta, pelo caminho real
   const dir = mkdtempSync(join(TEMP, 'trava-549-ponte-'))
   const ponte = join(dir, 'ponte')
   try {
     // a ponte vai pra casa do usuario, que fica fora da temporaria de onde quer que o teste rode
     symlinkSync(FORA, ponte, 'junction')
-    assert.ok(perguntaDeApagar('rm -rf ' + join(ponte, 'x'), { env }), 'pela ponte o alvo sai da temporaria e pergunta')
-    assert.strictEqual(perguntaDeApagar('rm -rf ' + join(dir, 'x'), { env }), null, 'canario: ao lado da ponte passa calado')
+    // 5.52 (chat 2, Task 2a, 2026-11-05): entre aspas, porque a temporaria de quem roda pode ter espaco
+    assert.ok(perguntaDeApagar('rm -rf "' + join(ponte, 'x') + '"', { env }), 'pela ponte o alvo sai da temporaria e pergunta')
+    assert.strictEqual(perguntaDeApagar('rm -rf "' + join(dir, 'x') + '"', { env }), null, 'canario: ao lado da ponte passa calado')
   } finally {
     // revisao interna do bloco A (2026-11-03): a ponte sai sempre, por unlink, antes da pasta (o assert
     // que reprovava deixava a juncao pra casa do usuario na temporaria); nunca a remocao que segue a ponte
@@ -2374,8 +2496,8 @@ test('5.49: barrar ganha de perguntar, e o apagar entre aspas de outro programa 
       const motivo = perguntaDoHook(p) || ''
       assert.ok(motivo.startsWith(COMECO_DA_PERGUNTA + 'a pasta pasta '), ferramenta + ' ' + command + ': deveria perguntar pela pasta: ' + p.stdout)
     }
-    for (const command of ['gh issue create --title x --body "depois rode rm -rf node_modules"', 'node build.js "rm -rf dist"',
-      'claude -p "rode rm -rf dist"', 'echo "rm -rf dist"', 'git commit -m "bash -c ' + "'rm -rf dist'" + '"']) {
+    for (const command of ['gh issue create --title x --body "depois rode rm -rf pacotes"', 'node build.js "rm -rf saida"',
+      'claude -p "rode rm -rf saida"', 'echo "rm -rf saida"', 'git commit -m "bash -c ' + "'rm -rf saida'" + '"']) {
       const p = rodar549(ferramenta, command)
       assert.strictEqual(p.status + p.stdout + p.stderr, '0', ferramenta + ' ' + command + ': deveria passar calado: ' + p.stdout)
     }
@@ -2388,42 +2510,70 @@ test('5.49: barrar ganha de perguntar, e o apagar entre aspas de outro programa 
 
 // revisao interna do bloco A (2026-11-03): os furos da primeira versao da perguntaDeApagar
 test('5.49: a variavel da temporaria vale so no shell dela e so se o comando nao mexe nela', () => {
-  const env = { ...process.env, TEMP, TMP: TEMP, TMPDIR: TEMP }
-  // canario: no shell certo e sem mexer, passa calado
-  assert.strictEqual(perguntaDeApagar('Remove-Item -Recurse -Force $env:TEMP/x', { env, ferramenta: 'PowerShell' }), null)
-  assert.strictEqual(perguntaDeApagar('rm -rf $TMPDIR/x', { env, ferramenta: 'Bash' }), null)
-  for (const [ferramenta, command] of [
-    // no PowerShell o $TMPDIR e variavel dele, vazia: o alvo vira a raiz do disco
-    ['PowerShell', 'Remove-Item -Recurse -Force $TMPDIR/*'], ['PowerShell', 'Remove-Item -Recurse -Force "${TMPDIR}/*"'],
-    ['PowerShell', 'Remove-Item -Recurse -Force $TMPDIR' + B + 'projeto'],
-    // no bash o $env:TEMP e o $env vazio
-    ['Bash', 'rm -rf $env:TEMP/x'], ['Monitor', 'rm -rf $env:TEMP/x'],
-    // o comando que mexe na variavel antes de apagar
-    ['PowerShell', "$env:TEMP = 'E:" + B + "Company'; Remove-Item -Recurse -Force $env:TEMP" + B + '_kits'],
-    ['PowerShell', 'Set-Item env:TEMP E:' + B + 'Company; Remove-Item -Recurse $env:TEMP' + B + '_kits'],
-    ['PowerShell', '$env:TEMP = $HOME; Remove-Item -Recurse -Force $env:TEMP/Documents'],
-    // 5.49 (consolidacao, 2026-11-03): o drive montado em duas partes, senao o Gate 6 acusa
-    ['PowerShell', "$env:TMP = 'C" + ":/Users'; Remove-Item -Recurse -Force $env:TMP/Public"],
-    ['Bash', 'TMPDIR=/e/Company; rm -rf $TMPDIR/_kits'], ['Bash', 'export TMPDIR=/e/Company && rm -rf "$TMPDIR/_kits"'],
-    ['Bash', 'export TMPDIR=$HOME; rm -rf $TMPDIR/Documents'],
-    // no bash $tmpdir e outra variavel, que a trava nao le
-    ['Bash', 'tmpdir=~/Documents; rm -rf $tmpdir/x'], ['Bash', 'rm -rf $tmpdir/x'],
-  ]) {
-    assert.ok(perguntaDeApagar(command, { env, ferramenta }), ferramenta + ' deveria perguntar: ' + command)
-    const r = rodar549(ferramenta, command, { env })
-    assert.ok((perguntaDoHook(r) || '').startsWith(COMECO_DA_PERGUNTA), ferramenta + ' ' + command + ': ' + r.status + ' ' + r.stdout + r.stderr)
-  }
+  // 5.52 (chat 2, Task 2a, revisao interna, 2026-11-05): nos dois lados, sem e com espaco na temporaria
+  nosDoisLados(({ env, comEspaco }) => {
+    // canario: no shell certo e sem mexer, passa calado
+    assert.strictEqual(perguntaDeApagar('Remove-Item -Recurse -Force $env:TEMP/x', { env, ferramenta: 'PowerShell' }), null)
+    esperaDaTemporaria('rm -rf $TMPDIR/x', perguntaDeApagar('rm -rf $TMPDIR/x', { env, ferramenta: 'Bash' }), 'Bash rm -rf $TMPDIR/x', comEspaco)
+    // 5.52 (chat 2, Task 2b, revisao interna, 2026-11-05): canario dos casos de barra, IFS e env -i de baixo
+    for (const c of ['rm -rf $TEMP/x', 'rm -rf "$TMP"/cache', "env FOO=1 bash -c 'rm -rf $TEMP/x'", "env bash -c 'rm -rf $TMPDIR/x'"]) {
+      esperaDaTemporaria(c, perguntaDeApagar(c, { env, ferramenta: 'Bash' }), 'Bash ' + c, comEspaco)
+    }
+    for (const [ferramenta, command] of [
+      // no PowerShell o $TMPDIR e variavel dele, vazia: o alvo vira a raiz do disco
+      ['PowerShell', 'Remove-Item -Recurse -Force $TMPDIR/*'], ['PowerShell', 'Remove-Item -Recurse -Force "${TMPDIR}/*"'],
+      ['PowerShell', 'Remove-Item -Recurse -Force $TMPDIR' + B + 'projeto'],
+      // no bash o $env:TEMP e o $env vazio
+      ['Bash', 'rm -rf $env:TEMP/x'], ['Monitor', 'rm -rf $env:TEMP/x'],
+      // o comando que mexe na variavel antes de apagar
+      ['PowerShell', "$env:TEMP = 'E:" + B + "Company'; Remove-Item -Recurse -Force $env:TEMP" + B + '_kits'],
+      ['PowerShell', 'Set-Item env:TEMP E:' + B + 'Company; Remove-Item -Recurse $env:TEMP' + B + '_kits'],
+      ['PowerShell', '$env:TEMP = $HOME; Remove-Item -Recurse -Force $env:TEMP/Documents'],
+      // 5.49 (consolidacao, 2026-11-03): o drive montado em duas partes, senao o Gate 6 acusa
+      ['PowerShell', "$env:TMP = 'C" + ":/Users'; Remove-Item -Recurse -Force $env:TMP/Public"],
+      ['Bash', 'TMPDIR=/e/Company; rm -rf $TMPDIR/_kits'], ['Bash', 'export TMPDIR=/e/Company && rm -rf "$TMPDIR/_kits"'],
+      ['Bash', 'export TMPDIR=$HOME; rm -rf $TMPDIR/Documents'],
+      // no bash $tmpdir e outra variavel, que a trava nao le
+      ['Bash', 'tmpdir=~/Documents; rm -rf $tmpdir/x'], ['Bash', 'rm -rf $tmpdir/x'],
+      // 5.52 (chat 2, Task 2b, 2026-11-05): o mesmo com o $TEMP e o $TMP do Bash. No PowerShell o $TEMP e
+      // variavel dele (vazia), no bash o $temp e outra variavel, e mexer neles antes tira a confianca
+      ['PowerShell', 'Remove-Item -Recurse -Force $TEMP/x'], ['PowerShell', 'Remove-Item -Recurse -Force "${TMP}/x"'],
+      ['Bash', 'rm -rf $temp/x'], ['Bash', 'rm -rf ${tmp}/x'], ['Monitor', 'rm -rf $Temp/x'],
+      ['Bash', 'TEMP=/e/Company; rm -rf $TEMP/_kits'], ['Bash', 'export TMP=~ && rm -rf "$TMP/Documents"'],
+      ['Bash', 'export TEMP=$HOME; rm -rf ${TEMP}/Documents'], ['Bash', 'temp=x; TMP=/e/Company rm -rf $TMP/_kits'],
+      ['Bash', "powershell -c 'Remove-Item -Recurse $TEMP/x'"], ['Bash', "cmd /c 'rd /s /q $TMP/x'"],
+      // 5.52 (chat 2, Task 2b, revisao interna, 2026-11-05): a barra invertida depois da variavel do Bash
+      // escapa a letra e cola nela (a pasta vizinha da temporaria), o IFS mexido parte o valor e o env -i
+      // esvazia o ambiente de quem roda depois
+      ['Bash', 'rm -rf $TEMP' + B + 'x'], ['Monitor', 'rm -rf $TMP' + B + 'cache'], ['Bash', 'rm -rf "$TEMP"' + B + 'x'],
+      ['Bash', 'rm -rf ${TEMP}' + B + 'x'], ['Bash', 'rm -rf $TMPDIR' + B + 'x'],
+      ['Bash', 'IFS=:; rm -rf $TEMP/x'], ['Monitor', 'IFS=: ; rm -rf $TMP/x'], ['Bash', 'IFS=/; rm -rf $TMPDIR/x'],
+      ['Bash', "env -i /usr/bin/bash -c 'rm -rf $TEMP/x'"], ['Bash', "env -i bash -c 'rm -rf $TMPDIR/x'"],
+      ['Bash', "env --ignore-environment bash -c 'rm -rf $TMP/x'"], ['Monitor', "env - bash -c 'rm -rf ${TEMP}/x'"],
+      ['PowerShell', "env -i pwsh -c 'Remove-Item -Recurse $env:TEMP/x'"],
+      // 5.52 (chat 2, Task 2b, Codex comum, 2026-11-06): o Windows roda o ENV em maiuscula, e o -S monta
+      // as opcoes de dentro de uma string que a trava nao le
+      ['Bash', "ENV -i /usr/bin/bash -c 'rm -rf $TEMP/x'"], ['Bash', "Env.exe -i bash -c 'rm -rf $TMP/x'"],
+      ['Bash', "env --split-string='-i /usr/bin/bash' -c 'rm -rf $TEMP/x'"], ['Bash', "env -S -i bash -c 'rm -rf $TMP/x'"],
+    ]) {
+      assert.ok(perguntaDeApagar(command, { env, ferramenta }), ferramenta + ' deveria perguntar: ' + command)
+      const r = rodar549(ferramenta, command, { env })
+      assert.ok((perguntaDoHook(r) || '').startsWith(COMECO_DA_PERGUNTA), ferramenta + ' ' + command + ': ' + r.status + ' ' + r.stdout + r.stderr)
+    }
+  })
 })
 
 test('5.49: opcao desconhecida, troca de pasta e caminho do PowerShell que a trava nao le perguntam', () => {
   const dentro = p => join(TEMP, p)
+  // 5.52 (chat 2, Task 2a, 2026-11-05): entre aspas, porque a temporaria de quem roda pode ter espaco
+  const qDentro = p => '"' + dentro(p) + '"'
   const env = { ...process.env, TEMP, TMP: TEMP, TMPDIR: TEMP }
   // canario: o mesmo comando sem a opcao, sem a troca de pasta e com o caminho comum
-  assert.deepStrictEqual(perguntaDeApagar('rm -rf /opt/x ' + dentro('x'), { env }), ['/opt/x', dentro('x')])
+  assert.deepStrictEqual(perguntaDeApagar('rm -rf /opt/x ' + qDentro('x'), { env }), ['/opt/x', dentro('x')])
   assert.strictEqual(perguntaDeApagar('Remove-Item -Recurse _kits', { env, cwd: TEMP }), null, 'canario: relativo na temporaria passa')
   for (const [command, cwd] of [
     // a opcao que a trava nao conhece pode vir antes do alvo: o -x do rm do Mac e o -G e -g do rimraf
-    ['rm -rf -x /opt/x ' + dentro('x'), FORA], ['npx rimraf -G /opt/x ' + dentro('x'), FORA], ['npx rimraf -g /opt/x ' + dentro('x'), FORA],
+    ['rm -rf -x /opt/x ' + qDentro('x'), FORA], ['npx rimraf -G /opt/x ' + qDentro('x'), FORA], ['npx rimraf -g /opt/x ' + qDentro('x'), FORA],
     // a troca de pasta que nao e cd, com a pasta do comando dentro da temporaria
     ['Push-Location E:' + B + 'Company; Remove-Item -Recurse _kits', TEMP], ['popd && rm -rf Documents', TEMP],
     ['builtin cd /e/Company && rm -rf _kits', TEMP], ['command cd /e/Company && rm -rf _kits', TEMP],
@@ -2434,7 +2584,7 @@ test('5.49: opcao desconhecida, troca de pasta e caminho do PowerShell que a tra
   ]) assert.ok(perguntaDeApagar(command, { env, cwd }), 'deveria perguntar: ' + command)
   // o valor das opcoes que pedem valor nao vira alvo (5.40), e o provedor aponta a pasta de verdade
   assert.deepStrictEqual(perguntaDeApagar('rm -r -ErrorAction SilentlyContinue -ea 0 pasta'), ['pasta'])
-  assert.strictEqual(perguntaDeApagar('Remove-Item -Recurse FileSystem::' + dentro('x'), { env }), null, 'o provedor dentro da temporaria passa')
+  assert.strictEqual(perguntaDeApagar('Remove-Item -Recurse "FileSystem::' + dentro('x') + '"', { env }), null, 'o provedor dentro da temporaria passa')
   // a lista comprida depois do -- termina sem estourar a pilha
   assert.strictEqual(perguntaDeApagar('rm -rf -- ' + 'a '.repeat(200000)).length, 1)
 })
@@ -2547,7 +2697,8 @@ test('5.49 (D-embrulho): o alvo de dentro passa pela conta da temporaria, e o -W
   assert.strictEqual(perguntaDeApagar("bash -c 'rm -rf \"" + dentro + "\"'", { env }), null)
   assert.strictEqual(perguntaDeApagar('powershell -c "Remove-Item -Recurse $env:TEMP/x"', { env, ferramenta: 'PowerShell' }), null)
   // com um alvo de fora, a pergunta nomeia todos, como fora do embrulho
-  assert.deepStrictEqual(perguntaDeApagar('bash -c "rm -rf /opt/x ' + dentro + '"', { env }), ['/opt/x', dentro])
+  // 5.52 (chat 2, Task 2a, 2026-11-05): o de dentro entre aspas, porque a temporaria de quem roda pode ter espaco
+  assert.deepStrictEqual(perguntaDeApagar('bash -c "rm -rf /opt/x ' + "'" + dentro + "'" + '"', { env }), ['/opt/x', dentro])
   // a pasta do comando muda: o alvo relativo de dentro a trava nao le
   // 5.49 (D-embrulho, 2026-11-03): pasta ../w no lugar de letra de drive, que o Gate 6 reprova no kit
   assert.deepStrictEqual(perguntaDeApagar('pwsh -wd ../w -c "Remove-Item -Recurse pasta"'), [null])
@@ -2618,7 +2769,7 @@ test('5.49 (D-embrulho, revisao interna): os furos da primeira leitura do embrul
   assert.deepStrictEqual(perguntaDeApagar("git config alias.r '!rm -rf pasta'"), [null])
   assert.ok(passa("git config alias.s 'status'"), 'apelido sem ! passa')
   // texto citado por quem roda dentro do cmd /c e do powershell -c segue calado; o executor de dentro e lido
-  for (const c of ['cmd /c git commit -m "rm -rf dist"', 'pwsh -c Write-Output "rm -rf dist"', 'cmd /c echo "git reset --hard"']) {
+  for (const c of ['cmd /c git commit -m "rm -rf saida"', 'pwsh -c Write-Output "rm -rf saida"', 'cmd /c echo "git reset --hard"']) {
     assert.ok(passa(c), 'deveria passar: ' + c)
   }
   assert.ok(ehPerigoso('cmd /c bash -c "git reset --hard"'), 'executor dentro do cmd /c barra')
@@ -2657,8 +2808,8 @@ test('5.49 (D-embrulho, frente A): lancador fora da lista na frente do executor'
   // falso positivo pesado: texto citado entre aspas segue sem leitura, o executor que nao executa passa,
   // o programa que comeca pelo git le so o git, e o eval e o iex ficam so no comeco
   for (const c of ['gh issue create --body "chrt 5 bash -c rm -rf x"', 'node x.mjs "chrt 5 bash -c rm -rf x"', 'echo "bash -c" "rm -rf x"',
-    'echo bash "rm -rf x"', 'echo bash is "rm -rf x"', 'git commit -m bash -c "rm -rf dist"', 'echo eval "rm -rf x"', 'echo pwsh "rm -rf x"',
-    'chrt 5 bash script.sh "rm -rf x"', 'cmd /c git commit -m bash -c "rm -rf dist"']) {
+    'echo bash "rm -rf x"', 'echo bash is "rm -rf x"', 'git commit -m bash -c "rm -rf saida"', 'echo eval "rm -rf x"', 'echo pwsh "rm -rf x"',
+    'chrt 5 bash script.sh "rm -rf x"', 'cmd /c git commit -m bash -c "rm -rf saida"']) {
     assert.ok(passa(c), 'deveria passar: ' + c)
   }
 })
@@ -2706,7 +2857,7 @@ test('5.49 (D-embrulho, frente A, revisao interna): o nome de executor ou do git
   assert.ok(ehPerigoso("chrt 5 git -c alias.f='!git reset --hard' f"), 'apelido do git atras do lancador barra')
   assert.deepStrictEqual(perguntaDeApagar("chrt 5 git -c alias.f='!rm -rf pasta' f"), [null], 'apelido que apaga atras do lancador pergunta')
   // o git do comeco do comando segue lendo so o git, e o texto citado segue calado
-  for (const c of ['git commit -m bash -c "rm -rf dist"', 'cmd /c git commit -m bash -c "rm -rf dist"', 'sudo git commit -m "rm -rf x"',
+  for (const c of ['git commit -m bash -c "rm -rf saida"', 'cmd /c git commit -m bash -c "rm -rf saida"', 'sudo git commit -m "rm -rf x"',
     'gh issue create --body "sudo -u git bash -c rm -rf x"', 'chrt 5 bash script.sh "rm -rf x"']) {
     assert.ok(passa(c), 'deveria passar: ' + c)
   }
@@ -2731,13 +2882,19 @@ test('5.49 (D-embrulho, frente A, revisao interna): nome no meio repetido termin
 })
 
 test('5.49 (D-embrulho, revisao interna): a temporaria de dentro do embrulho e contada pelo shell de dentro', () => {
-  const env = { ...process.env, TEMP, TMP: TEMP, TMPDIR: TEMP }
-  // canario: no shell certo a temporaria passa calada
-  assert.strictEqual(perguntaDeApagar("bash -c 'rm -rf $TMPDIR/x'", { env, ferramenta: 'Bash' }), null)
-  assert.strictEqual(perguntaDeApagar("powershell -c 'Remove-Item -Recurse $env:TEMP/x'", { env, ferramenta: 'PowerShell' }), null)
-  // no PowerShell o $TMPDIR e vazio, e no bash o $env:TEMP tambem: a trava nao le o alvo
-  assert.deepStrictEqual(perguntaDeApagar("powershell -c 'Remove-Item -Recurse $TMPDIR/x'", { env, ferramenta: 'Bash' }), [null])
-  assert.deepStrictEqual(perguntaDeApagar("bash -c 'rm -rf $env:TEMP/x'", { env, ferramenta: 'PowerShell' }), [null])
+  // 5.52 (chat 2, Task 2a, revisao interna, 2026-11-05): nos dois lados, sem e com espaco na temporaria
+  nosDoisLados(({ env, comEspaco }) => {
+    // canario: no shell certo a temporaria passa calada
+    esperaDaTemporaria("bash -c 'rm -rf $TMPDIR/x'", perguntaDeApagar("bash -c 'rm -rf $TMPDIR/x'", { env, ferramenta: 'Bash' }), 'Bash: o $TMPDIR de dentro', comEspaco)
+    assert.strictEqual(perguntaDeApagar("powershell -c 'Remove-Item -Recurse $env:TEMP/x'", { env, ferramenta: 'PowerShell' }), null)
+    // no PowerShell o $TMPDIR e vazio, e no bash o $env:TEMP tambem: a trava nao le o alvo
+    assert.deepStrictEqual(perguntaDeApagar("powershell -c 'Remove-Item -Recurse $TMPDIR/x'", { env, ferramenta: 'Bash' }), [null])
+    assert.deepStrictEqual(perguntaDeApagar("bash -c 'rm -rf $env:TEMP/x'", { env, ferramenta: 'PowerShell' }), [null])
+    // 5.52 (chat 2, Task 2b, 2026-11-05): o $TEMP do bash de dentro passa como o $TMPDIR, e no PowerShell de
+    // dentro ele e variavel do PowerShell, vazia
+    esperaDaTemporaria("bash -c 'rm -rf $TEMP/x'", perguntaDeApagar("bash -c 'rm -rf $TEMP/x'", { env, ferramenta: 'Bash' }), 'Bash: o $TEMP de dentro', comEspaco)
+    assert.deepStrictEqual(perguntaDeApagar("pwsh -c 'Remove-Item -Recurse ${TMP}/x'", { env, ferramenta: 'Bash' }), [null])
+  })
 })
 
 test('5.49 (D-embrulho, revisao interna): os furos pelo hook de verdade, nas tres ferramentas', () => {
@@ -2801,8 +2958,9 @@ test('5.49 (D-embrulho, quarta leva): quem roda o comando inteiro num shell tem 
   for (const c of ['nohup bash -c "git reset --hard"', 'time bash -c "git reset --hard"', 'env X=1 bash -c "git reset --hard"']) assert.ok(ehPerigoso(c), c)
   // a temporaria: no ssh o alvo e da outra maquina e pergunta mesmo quando parece a temporaria daqui
   const TMP = tmpdir().split(String.fromCharCode(92)).join('/')
-  assert.strictEqual(perguntaDeApagar('watch "rm -rf ' + TMP + '/x"'), null, 'canario: a temporaria local passa calada')
-  for (const c of ['ssh host "rm -rf ' + TMP + '/x"', 'ssh host bash -c "rm -rf ' + TMP + '/x"']) {
+  // 5.52 (chat 2, Task 2a, 2026-11-05): o caminho entre aspas, porque a temporaria de quem roda pode ter espaco
+  assert.strictEqual(perguntaDeApagar('watch "rm -rf ' + "'" + TMP + "/x'" + '"'), null, 'canario: a temporaria local passa calada')
+  for (const c of ['ssh host "rm -rf ' + "'" + TMP + "/x'" + '"', 'ssh host bash -c "rm -rf ' + "'" + TMP + "/x'" + '"']) {
     assert.deepStrictEqual(perguntaDeApagar(c), [null], 'alvo remoto pergunta: ' + c)
   }
 })
@@ -2958,33 +3116,35 @@ test('5.49 (Codex comum): as chaves do cmd com entrada gigante terminam em tempo
 // 5.49 (Codex comum, 2026-11-04): no bash e no PowerShell a variavel entre aspas simples nao expande, e no cmd a
 // aspa simples e parte do nome: '$TMPDIR/x' e uma pasta com esse nome, relativa a pasta do comando, e pergunta
 test('5.49 (Codex comum): a variavel da temporaria entre aspas simples e literal e pergunta', () => {
-  const env = { ...process.env, TEMP, TMP: TEMP, TMPDIR: TEMP }
-  const literais = {
-    Bash: ["rm -rf '$TMPDIR/x'", "rm -rf '${TMPDIR}/x'", "rm -rf '$TMPDIR'/x", "rm -rf '$TMPDIR'", "rm -rf '%TEMP%/x'",
-      "rm -rf $'$TMPDIR/x'", 'cmd /c "rd /s /q ' + "'%TEMP%" + B + "x'" + '"', 'bash -c "rm -rf ' + "'" + B + "$TMPDIR/x'" + '"'],
-    PowerShell: ["Remove-Item -Recurse '$env:TEMP/x'", "Remove-Item -Recurse '$env:TMP" + B + "x'", "rm -r '$env:TEMP'/x",
-      "Remove-Item -Recurse -LiteralPath '$env:TEMP/x'", 'cmd /c "rd /s /q ' + "'%TEMP%" + B + "x'" + '"'],
-  }
-  literais.Monitor = literais.Bash
-  // canario: as mesmas formas sem aspas e em aspas duplas passam caladas
-  const legitimos = { Bash: ['rm -rf "$TMPDIR/x"', 'rm -rf $TMPDIR/x', 'rm -rf "$TMPDIR"/x', "bash -c 'rm -rf \"$TMPDIR/x\"'"],
-    PowerShell: ['Remove-Item -Recurse "$env:TEMP/x"', 'Remove-Item -Recurse $env:TEMP/x', 'Remove-Item -Recurse "$env:TEMP"/x'] }
-  legitimos.Monitor = legitimos.Bash
-  for (const ferramenta of FERRAMENTAS) {
-    for (const command of legitimos[ferramenta]) {
-      assert.strictEqual(perguntaDeApagar(command, { env, ferramenta }), null, ferramenta + ' deveria passar calado: ' + command)
-      const r = rodar549(ferramenta, command, { env })
-      assert.strictEqual(r.status + r.stdout + r.stderr, '0', ferramenta + ' ' + command + ': deveria passar calado')
+  // 5.52 (chat 2, Task 2a, revisao interna, 2026-11-05): nos dois lados, sem e com espaco na temporaria
+  nosDoisLados(({ env, comEspaco }) => {
+    const literais = {
+      Bash: ["rm -rf '$TMPDIR/x'", "rm -rf '${TMPDIR}/x'", "rm -rf '$TMPDIR'/x", "rm -rf '$TMPDIR'", "rm -rf '%TEMP%/x'",
+        "rm -rf $'$TMPDIR/x'", 'cmd /c "rd /s /q ' + "'%TEMP%" + B + "x'" + '"', 'bash -c "rm -rf ' + "'" + B + "$TMPDIR/x'" + '"'],
+      PowerShell: ["Remove-Item -Recurse '$env:TEMP/x'", "Remove-Item -Recurse '$env:TMP" + B + "x'", "rm -r '$env:TEMP'/x",
+        "Remove-Item -Recurse -LiteralPath '$env:TEMP/x'", 'cmd /c "rd /s /q ' + "'%TEMP%" + B + "x'" + '"'],
     }
-    for (const command of literais[ferramenta]) {
-      const alvos = perguntaDeApagar(command, { env, ferramenta })
-      assert.ok(alvos && alvos.includes(null), ferramenta + ' deveria perguntar "uma pasta": ' + command + ' deu ' + JSON.stringify(alvos))
-      assert.strictEqual(ehPerigoso(command), null, ferramenta + ' pergunta, nao barra: ' + command)
-      const r = rodar549(ferramenta, command, { env })
-      assert.ok(r.stdout.length > 0, ferramenta + ': saida vazia: ' + command)
-      assert.ok((perguntaDoHook(r) || '').startsWith(COMECO_DA_PERGUNTA), ferramenta + ' ' + command + ': ' + r.status + ' ' + r.stdout + r.stderr)
+    literais.Monitor = literais.Bash
+    // canario: as mesmas formas sem aspas e em aspas duplas passam caladas
+    const legitimos = { Bash: ['rm -rf "$TMPDIR/x"', 'rm -rf $TMPDIR/x', 'rm -rf "$TMPDIR"/x', "bash -c 'rm -rf \"$TMPDIR/x\"'"],
+      PowerShell: ['Remove-Item -Recurse "$env:TEMP/x"', 'Remove-Item -Recurse $env:TEMP/x', 'Remove-Item -Recurse "$env:TEMP"/x'] }
+    legitimos.Monitor = legitimos.Bash
+    for (const ferramenta of FERRAMENTAS) {
+      // 5.52 (chat 2, Task 2a, 2026-11-05): a do Bash pergunta quando a temporaria tem espaco
+      for (const command of legitimos[ferramenta]) {
+        esperaDaTemporaria(command, perguntaDeApagar(command, { env, ferramenta }), ferramenta + ' ' + command, comEspaco)
+        esperaDoHookNaTemporaria(rodar549(ferramenta, command, { env }), command, ferramenta + ' ' + command, comEspaco)
+      }
+      for (const command of literais[ferramenta]) {
+        const alvos = perguntaDeApagar(command, { env, ferramenta })
+        assert.ok(alvos && alvos.includes(null), ferramenta + ' deveria perguntar "uma pasta": ' + command + ' deu ' + JSON.stringify(alvos))
+        assert.strictEqual(ehPerigoso(command), null, ferramenta + ' pergunta, nao barra: ' + command)
+        const r = rodar549(ferramenta, command, { env })
+        assert.ok(r.stdout.length > 0, ferramenta + ': saida vazia: ' + command)
+        assert.ok((perguntaDoHook(r) || '').startsWith(COMECO_DA_PERGUNTA), ferramenta + ' ' + command + ': ' + r.status + ' ' + r.stdout + r.stderr)
+      }
     }
-  }
+  })
 })
 
 // 5.49 (Codex comum, revisao interna, 2026-11-04): o nome do cmd entre aspas (`"cmd" /c"..."`, o caminho do
@@ -3017,28 +3177,31 @@ test('5.49 (Codex comum, revisao interna): o nome do cmd entre aspas, o @ depois
     assert.ok((perguntaDeApagar(c, { ferramenta: 'PowerShell' }) || []).includes(alvo), 'PowerShell deveria perguntar por ' + alvo + ': ' + c)
     assert.strictEqual(ehPerigoso(c), null, 'pergunta, nao barra: ' + c)
   }
-  const env = { ...process.env, TEMP, TMP: TEMP, TMPDIR: TEMP }
-  // no bash a barra antes da aspa escapa: a leitura fora do bash nao entra, e o apagar legitimo segue calado
-  assert.strictEqual(perguntaDeApagar('bash -c "rm -rf ' + B + '"$TMPDIR/x' + B + '" && ls"', { env, ferramenta: 'Bash' }), null,
-    'Bash: a aspa escapada segue lida como no bash')
-  // o cmd como pedaco de caminho segue pasta: a temporaria passa calada e fora dela pergunta so pelo alvo
-  for (const [c, ferramenta] of [['rm -rf $TMPDIR/cmd/cache', 'Bash'], ['rm -rf "$TMPDIR"/cmd/cache', 'Bash'],
-    ['rm -rf $TMPDIR/cmd/rust', 'Bash'], ['rm -rf $TMPDIR/build/cmd/k', 'Bash'], ['Remove-Item -Recurse $env:TEMP/cmd/cache', 'PowerShell']]) {
-    assert.strictEqual(perguntaDeApagar(c, { env, ferramenta }), null, ferramenta + ' deveria passar calado: ' + c)
-  }
+  // 5.52 (chat 2, Task 2a, revisao interna, 2026-11-05): o que le a temporaria roda nos dois lados, sem e com
+  // espaco nela; a variavel do Bash pergunta com espaco
+  nosDoisLados(({ env, comEspaco }) => {
+    // no bash a barra antes da aspa escapa: a leitura fora do bash nao entra, e o apagar legitimo segue calado
+    const escapada = 'bash -c "rm -rf ' + B + '"$TMPDIR/x' + B + '" && ls"'
+    esperaDaTemporaria(escapada, perguntaDeApagar(escapada, { env, ferramenta: 'Bash' }), 'Bash: a aspa escapada segue lida como no bash', comEspaco)
+    // o cmd como pedaco de caminho segue pasta: a temporaria passa calada e fora dela pergunta so pelo alvo
+    for (const [c, ferramenta] of [['rm -rf $TMPDIR/cmd/cache', 'Bash'], ['rm -rf "$TMPDIR"/cmd/cache', 'Bash'],
+      ['rm -rf $TMPDIR/cmd/rust', 'Bash'], ['rm -rf $TMPDIR/build/cmd/k', 'Bash'], ['Remove-Item -Recurse $env:TEMP/cmd/cache', 'PowerShell']]) {
+      esperaDaTemporaria(c, perguntaDeApagar(c, { env, ferramenta }), ferramenta + ' ' + c, comEspaco)
+    }
+    // o trecho entre aspas duplas de quem executa ja vem com a variavel trocada pelo shell de fora: passa
+    // calado; com o $ escapado, no cmd ou com o shell de fora que nao le aquela variavel, segue perguntando
+    for (const [c, ferramenta] of [['bash -c "rm -rf ' + "'$TMPDIR/x'" + '"', 'Bash'], ['bash -c "rm -rf ' + "'$TMPDIR'/x" + '"', 'Bash'],
+      ['powershell -c "Remove-Item -Recurse ' + "'$env:TEMP/x'" + '"', 'PowerShell']]) {
+      esperaDaTemporaria(c, perguntaDeApagar(c, { env, ferramenta }), ferramenta + ' ' + c, comEspaco)
+    }
+    for (const [c, ferramenta] of [['bash -c "rm -rf ' + "'" + B + "$TMPDIR/x'" + '"', 'Bash'], ['cmd /c "rd /s /q ' + "'%TEMP%/x'" + '"', 'PowerShell'],
+      ['powershell -c "Remove-Item -Recurse ' + "'$env:TEMP/x'" + '"', 'Bash']]) {
+      assert.ok((perguntaDeApagar(c, { env, ferramenta }) || []).includes(null), ferramenta + ' deveria perguntar "uma pasta": ' + c)
+    }
+  })
   assert.deepStrictEqual(perguntaDeApagar('rm -rf cmd/cache'), ['cmd/cache'])
   assert.deepStrictEqual(perguntaDeApagar('rm -r cmd/rust'), ['cmd/rust'])
   assert.deepStrictEqual(perguntaDeApagar('Remove-Item -Recurse "cmd/cache"', { ferramenta: 'PowerShell' }), ['cmd/cache'])
-  // o trecho entre aspas duplas de quem executa ja vem com a variavel trocada pelo shell de fora: passa
-  // calado; com o $ escapado, no cmd ou com o shell de fora que nao le aquela variavel, segue perguntando
-  for (const [c, ferramenta] of [['bash -c "rm -rf ' + "'$TMPDIR/x'" + '"', 'Bash'], ['bash -c "rm -rf ' + "'$TMPDIR'/x" + '"', 'Bash'],
-    ['powershell -c "Remove-Item -Recurse ' + "'$env:TEMP/x'" + '"', 'PowerShell']]) {
-    assert.strictEqual(perguntaDeApagar(c, { env, ferramenta }), null, ferramenta + ' deveria passar calado: ' + c)
-  }
-  for (const [c, ferramenta] of [['bash -c "rm -rf ' + "'" + B + "$TMPDIR/x'" + '"', 'Bash'], ['cmd /c "rd /s /q ' + "'%TEMP%/x'" + '"', 'PowerShell'],
-    ['powershell -c "Remove-Item -Recurse ' + "'$env:TEMP/x'" + '"', 'Bash']]) {
-    assert.ok((perguntaDeApagar(c, { env, ferramenta }) || []).includes(null), ferramenta + ' deveria perguntar "uma pasta": ' + c)
-  }
   // falso positivo segue calado
   for (const c of ['git commit -m "cmd /c=rm -rf x"', 'git commit -m "cmd/crm -rf x"', 'ls cmd/cache', 'git add cmd/rust',
     'git commit -m "say ' + B + '"hi' + B + '" now"']) {
@@ -3047,7 +3210,6 @@ test('5.49 (Codex comum, revisao interna): o nome do cmd entre aspas, o @ depois
 })
 
 test('5.49 (Codex comum, revisao interna): pelo hook de verdade, nas tres ferramentas', () => {
-  const env = { ...process.env, TEMP, TMP: TEMP, TMPDIR: TEMP }
   const calados = { Bash: ['rm -rf $TMPDIR/cmd/cache', 'bash -c "rm -rf ' + "'$TMPDIR/x'" + '"', 'bash -c "rm -rf ' + B + '"$TMPDIR/x' + B + '" && ls"'],
     PowerShell: ['Remove-Item -Recurse $env:TEMP/cmd/cache', 'powershell -c "Remove-Item -Recurse ' + "'$env:TEMP/x'" + '"'] }
   calados.Monitor = calados.Bash
@@ -3060,11 +3222,14 @@ test('5.49 (Codex comum, revisao interna): pelo hook de verdade, nas tres ferram
     const p = rodar549(ferramenta, '"' + CMD_EXE + '" /c"rd /s /q pasta"')
     assert.ok(p.stdout.length > 0, ferramenta + ': saida vazia')
     assert.ok(perguntaDe(p), ferramenta + ': deveria perguntar pelo cmd entre aspas')
-    for (const c of calados[ferramenta]) {
-      const r = rodar549(ferramenta, c, { env })
-      assert.strictEqual(r.status + r.stdout + r.stderr, '0', ferramenta + ' ' + c + ': deveria passar calado')
-    }
   }
+  // 5.52 (chat 2, Task 2a, 2026-11-05): a variavel do Bash pergunta quando a temporaria tem espaco, e os
+  // dois lados (sem e com espaco) se montam no nosDoisLados
+  nosDoisLados(({ env, comEspaco }) => {
+    for (const ferramenta of FERRAMENTAS) {
+      for (const c of calados[ferramenta]) esperaDoHookNaTemporaria(rodar549(ferramenta, c, { env }), c, ferramenta + ' ' + c, comEspaco)
+    }
+  })
   const r = rodar549('PowerShell', 'cmd /c "rd /s /q C:' + B + '"')
   assert.ok(r.stdout.length > 0, 'PowerShell: saida vazia')
   assert.ok((perguntaDoHook(r) || '').startsWith(COMECO_DA_PERGUNTA), 'PowerShell: a raiz do disco pergunta: ' + r.status + ' ' + r.stdout + r.stderr)
@@ -3123,24 +3288,26 @@ test('5.49 (Codex comum, aspas emendadas): a palavra emendada e lida como uma so
   // o iex recusa o pedaco a mais e o x' grudado no git muda o programa: nos dois shells nada roda
   for (const c of ['iex ' + S + G + S + D + 'x' + D, 'bash -c x' + S + G + S]) assert.strictEqual(ehPerigoso(c), null, 'nao roda o git: ' + c)
   // o tipo de aspas segue valendo pra temporaria: a parte literal pergunta, a expandida passa calada
-  const env = { ...process.env, TEMP, TMP: TEMP, TMPDIR: TEMP }
-  for (const ferramenta of ['Bash', 'Monitor']) {
-    for (const c of ['rm -rf ' + S + '$TMPDIR' + S + D + '/x' + D, 'bash -c ' + S + 'rm -rf ' + S + D + S + B + '$TMPDIR' + S + D + S + D + '/x' + D + S]) {
-      const alvos = perguntaDeApagar(c, { env, ferramenta })
-      assert.ok(alvos && alvos.includes(null), ferramenta + ' deveria perguntar "uma pasta": ' + c + ' deu ' + JSON.stringify(alvos))
+  // 5.52 (chat 2, Task 2a, revisao interna, 2026-11-05): nos dois lados, sem e com espaco na temporaria
+  nosDoisLados(({ env, comEspaco }) => {
+    for (const ferramenta of ['Bash', 'Monitor']) {
+      for (const c of ['rm -rf ' + S + '$TMPDIR' + S + D + '/x' + D, 'bash -c ' + S + 'rm -rf ' + S + D + S + B + '$TMPDIR' + S + D + S + D + '/x' + D + S]) {
+        const alvos = perguntaDeApagar(c, { env, ferramenta })
+        assert.ok(alvos && alvos.includes(null), ferramenta + ' deveria perguntar "uma pasta": ' + c + ' deu ' + JSON.stringify(alvos))
+      }
+      for (const c of ['rm -rf ' + D + '$TMPDIR' + D + S + '/x' + S, 'bash -c ' + S + 'rm -rf ' + D + '$TMPDIR' + D + S + D + S + '/x' + S + D,
+        'bash -c ' + S + 'rm -rf $TMPDIR' + S + D + '/x' + D, 'bash -c ' + S + 'rm -rf ' + S + D + '$TMPDIR/x' + D]) {
+        // 5.52 (chat 2, Task 2a, 2026-11-05): pergunta quando a temporaria tem espaco
+        esperaDaTemporaria(c, perguntaDeApagar(c, { env, ferramenta }), ferramenta + ' ' + c, comEspaco)
+      }
     }
-    for (const c of ['rm -rf ' + D + '$TMPDIR' + D + S + '/x' + S, 'bash -c ' + S + 'rm -rf ' + D + '$TMPDIR' + D + S + D + S + '/x' + S + D,
-      'bash -c ' + S + 'rm -rf $TMPDIR' + S + D + '/x' + D, 'bash -c ' + S + 'rm -rf ' + S + D + '$TMPDIR/x' + D]) {
-      assert.strictEqual(perguntaDeApagar(c, { env, ferramenta }), null, ferramenta + ' deveria passar calado: ' + c)
-    }
-  }
+  })
   // falso positivo segue calado
   for (const c of ['git commit -m ' + S + 'rm -rf ' + S + D + 'pasta' + D, 'echo ' + S + 'git reset ' + S + D + '--hard' + D,
     'gh issue create --body ' + S + 'rode ' + S + D + G + D]) assert.ok(passa(c), 'deveria passar: ' + c)
 })
 
 test('5.49 (Codex comum, aspas emendadas): pelo hook de verdade, nas tres ferramentas', () => {
-  const env = { ...process.env, TEMP, TMP: TEMP, TMPDIR: TEMP }
   const calados = { Bash: ['rm -rf ' + D + '$TMPDIR' + D + S + '/x' + S, 'bash -c ' + S + 'rm -rf $TMPDIR' + S + D + '/x' + D], PowerShell: [] }
   calados.Monitor = calados.Bash
   for (const ferramenta of FERRAMENTAS) {
@@ -3154,11 +3321,16 @@ test('5.49 (Codex comum, aspas emendadas): pelo hook de verdade, nas tres ferram
       assert.ok(p.stdout.length > 0, ferramenta + ': saida vazia: ' + c)
       assert.ok(perguntaDe(p), ferramenta + ': deveria perguntar: ' + c)
     }
-    for (const c of ['git commit -m ' + S + 'rm -rf ' + S + D + 'pasta' + D, ...calados[ferramenta]]) {
-      const r = rodar549(ferramenta, c, { env })
-      assert.strictEqual(r.status + r.stdout + r.stderr, '0', ferramenta + ' ' + c + ': deveria passar calado')
-    }
   }
+  // 5.52 (chat 2, Task 2a, 2026-11-05): a variavel do Bash pergunta quando a temporaria tem espaco, e os
+  // dois lados (sem e com espaco) se montam no nosDoisLados
+  nosDoisLados(({ env, comEspaco }) => {
+    for (const ferramenta of FERRAMENTAS) {
+      for (const c of ['git commit -m ' + S + 'rm -rf ' + S + D + 'pasta' + D, ...calados[ferramenta]]) {
+        esperaDoHookNaTemporaria(rodar549(ferramenta, c, { env }), c, ferramenta + ' ' + c, comEspaco)
+      }
+    }
+  })
 })
 
 test('5.49 (Codex comum, aspas emendadas): entrada gigante termina em tempo linear', () => {
@@ -3204,13 +3376,16 @@ test('5.49 (Codex comum, aspas emendadas): $' + S + '...' + S + ', barra inverti
   // na ferramenta PowerShell o cmd //c nao roda nada
   for (const c of BARRAS_QUE_PERGUNTAM.slice(3)) assert.strictEqual(perguntaDeApagar(c, { ferramenta: 'PowerShell' }), null, 'PowerShell: ' + c)
   // o $'...' e literal: a temporaria dele so o shell de dentro expande
-  const env = { ...process.env, TEMP, TMP: TEMP, TMPDIR: TEMP }
-  for (const ferramenta of ['Bash', 'Monitor']) {
-    assert.ok(perguntaDeApagar('rm -rf $' + S + '$TMPDIR/x' + S, { env, ferramenta }).includes(null), ferramenta + ': $' + S + '$TMPDIR' + S + ' e literal')
-    for (const c of ['bash -c $' + S + 'rm -rf $TMPDIR/x' + S, 'bash -c rm' + B + ' -rf' + B + ' ' + B + '$TMPDIR/x']) {
-      assert.strictEqual(perguntaDeApagar(c, { env, ferramenta }), null, ferramenta + ' deveria passar calado: ' + c)
+  // 5.52 (chat 2, Task 2a, revisao interna, 2026-11-05): nos dois lados, sem e com espaco na temporaria
+  nosDoisLados(({ env, comEspaco }) => {
+    for (const ferramenta of ['Bash', 'Monitor']) {
+      assert.ok(perguntaDeApagar('rm -rf $' + S + '$TMPDIR/x' + S, { env, ferramenta }).includes(null), ferramenta + ': $' + S + '$TMPDIR' + S + ' e literal')
+      for (const c of ['bash -c $' + S + 'rm -rf $TMPDIR/x' + S, 'bash -c rm' + B + ' -rf' + B + ' ' + B + '$TMPDIR/x']) {
+        // 5.52 (chat 2, Task 2a, 2026-11-05): pergunta quando a temporaria tem espaco
+        esperaDaTemporaria(c, perguntaDeApagar(c, { env, ferramenta }), ferramenta + ' ' + c, comEspaco)
+      }
     }
-  }
+  })
   // falso positivo segue calado
   for (const c of ['echo $' + S + G + S, 'bash -c $' + S + 'echo ok' + S, 'echo git' + B + ' reset' + B + ' --hard', 'cmd //c ' + D + 'echo ok' + D,
     'ls //c', 'bash -c ' + S + 'echo a' + S + B + S + S + 'b' + S]) assert.ok(passa(c), 'deveria passar: ' + c)
@@ -3255,15 +3430,24 @@ test('5.49 (autonomia): sem TMPDIR, o /tmp e o $TMPDIR da Bash e do Monitor no W
   assert.ok(!Object.keys(semTmpdir).some(k => k.toUpperCase() === 'TMPDIR') && Object.keys(semTmpdir).length > 0, 'canario: o ambiente saiu sem TMPDIR')
   const calados = ['rm -rf /tmp/x', 'rm -rf "/tmp/a b"', 'rm -rf $TMPDIR/x', 'rm -rf "${TMPDIR}/y"', 'npx rimraf /tmp/r']
   const perguntam = ['rm -rf /tmp', 'rm -rf /tmp/../x', 'rm -rf /tmpx/y', 'powershell -c "Remove-Item -Recurse /tmp/x"', 'cmd //c "rd /s /q /tmp/x"']
+  // 5.52 (chat 2, Task 2a, 2026-11-05): no Windows o $TMPDIR cai na temporaria do hook (a do TEMP do env), e
+  // pergunta se ela tem espaco; os dois lados (sem e com espaco) se montam no nosDoisLados
+  if (process.platform === 'win32') {
+    nosDoisLados(({ env, comEspaco }) => {
+      const semTmpdirDoLado = Object.fromEntries(Object.entries(env).filter(([k]) => k.toUpperCase() !== 'TMPDIR'))
+      for (const ferramenta of ['Bash', 'Monitor']) {
+        for (const command of calados) {
+          esperaDoHookNaTemporaria(rodar549(ferramenta, command, { env: semTmpdirDoLado }), command, ferramenta + ' ' + command, comEspaco)
+        }
+      }
+    })
+  }
   for (const ferramenta of ['Bash', 'Monitor']) {
     for (const command of calados) {
+      if (process.platform === 'win32' || !command.includes('TMPDIR')) continue
+      // fora do Windows, sem TMPDIR, o shell troca a variavel por nada: a trava nao le e pergunta
       const r = rodar549(ferramenta, command, { env: semTmpdir })
-      if (process.platform === 'win32') {
-        assert.strictEqual(r.status + r.stdout + r.stderr, '0', ferramenta + ' ' + command + ': deveria passar calado: ' + r.stdout)
-      } else if (command.includes('TMPDIR')) {
-        // fora do Windows, sem TMPDIR, o shell troca a variavel por nada: a trava nao le e pergunta
-        assert.ok(perguntaDoHook(r), ferramenta + ' ' + command + ': fora do Windows deveria perguntar')
-      }
+      assert.ok(perguntaDoHook(r), ferramenta + ' ' + command + ': fora do Windows deveria perguntar')
     }
     for (const command of perguntam) {
       const r = rodar549(ferramenta, command, { env: semTmpdir })
@@ -3284,7 +3468,7 @@ test('5.49 (autonomia): sem TMPDIR, o /tmp e o $TMPDIR da Bash e do Monitor no W
 test('5.49 (autonomia): heredoc com delimitador entre aspas gravando arquivo conta como texto, como o echo', () => {
   const TAB = String.fromCharCode(9)
   const CR = String.fromCharCode(13)
-  const corpo = '- 2026-11-04: nunca rode rm -rf pasta nem Remove-Item -Recurse dados' + LF + 'rd /s /q build'
+  const corpo = '- 2026-11-04: nunca rode rm -rf pasta nem Remove-Item -Recurse dados' + LF + 'rd /s /q obra'
   const calados = [
     'cat >> licoes.md <<' + S + 'EOF' + S + LF + corpo + LF + 'EOF',
     'cat >> licoes.md <<' + D + 'EOF' + D + LF + corpo + LF + 'EOF',
@@ -3351,25 +3535,25 @@ test('5.49 (autonomia): heredoc gigante termina em tempo linear', () => {
 // P7.4: o alvo que a trava nao le diz que e desconhecido, e o rd dentro do cmd /c sem aspas tem o alvo lido
 test('5.49 (autonomia): alvo desconhecido sai honesto, e o rd do cmd /c sem aspas tem o alvo lido', () => {
   for (const [ferramenta, command] of [['Bash', 'find . -name "*.pyc" -delete'], ['PowerShell', 'Get-ChildItem -Recurse *.log | Remove-Item'],
-    ['Bash', 'node -e "require(' + S + 'fs' + S + ').rmSync(' + S + 'dist' + S + ',{recursive:true})"'],
-    ['Bash', 'python -c "import shutil; shutil.rmtree(' + S + 'dist' + S + ')"']]) {
+    ['Bash', 'node -e "require(' + S + 'fs' + S + ').rmSync(' + S + 'saida' + S + ',{recursive:true})"'],
+    ['Bash', 'python -c "import shutil; shutil.rmtree(' + S + 'saida' + S + ')"']]) {
     const motivo = perguntaDoHook(rodar549(ferramenta, command)) || ''
     assert.ok(motivo.startsWith(COMECO_DA_PERGUNTA + ALVO_DESCONHECIDO + ', sem volta. Pode?'), ferramenta + ' ' + command + ': ' + motivo)
     assert.ok(!motivo.includes('uma pasta inteira'), command + ': ainda diz uma pasta inteira')
   }
   const dentro = join(TEMP, 'trava-549-cmd')
-  for (const [ferramenta, command] of [['PowerShell', 'cmd /c rd /s /q dist'], ['PowerShell', 'cmd /d /c rd /s /q dist'], ['PowerShell', 'cmd /d/c rd /s /q dist'],
-    ['PowerShell', 'cmd.exe /c rd /s /q dist'], ['PowerShell', 'cmd /c del /s /q dist'], ['Bash', 'cmd //c rd /s /q dist'], ['Bash', 'cmd /c rd /s /q dist']]) {
-    assert.deepStrictEqual(perguntaDeApagar(command, { ferramenta, cwd: FORA }), ['dist'], ferramenta + ' ' + command)
+  for (const [ferramenta, command] of [['PowerShell', 'cmd /c rd /s /q saida'], ['PowerShell', 'cmd /d /c rd /s /q saida'], ['PowerShell', 'cmd /d/c rd /s /q saida'],
+    ['PowerShell', 'cmd.exe /c rd /s /q saida'], ['PowerShell', 'cmd /c del /s /q saida'], ['Bash', 'cmd //c rd /s /q saida'], ['Bash', 'cmd /c rd /s /q saida']]) {
+    assert.deepStrictEqual(perguntaDeApagar(command, { ferramenta, cwd: FORA }), ['saida'], ferramenta + ' ' + command)
     const motivo = perguntaDoHook(rodar549(ferramenta, command)) || ''
-    assert.ok(motivo.startsWith(COMECO_DA_PERGUNTA + 'a pasta dist '), ferramenta + ' ' + command + ': ' + motivo)
+    assert.ok(motivo.startsWith(COMECO_DA_PERGUNTA + 'a pasta saida '), ferramenta + ' ' + command + ': ' + motivo)
   }
   // o alvo lido dentro da temporaria passa calado, e o cmd que roda outro cmd tambem se le
   assert.strictEqual(perguntaDeApagar('cmd /c rd /s /q "' + dentro + '"', { ferramenta: 'PowerShell' }), null)
-  assert.deepStrictEqual(perguntaDeApagar('cmd /c cmd /c rd /s /q dist', { ferramenta: 'PowerShell', cwd: FORA }), ['dist'])
+  assert.deepStrictEqual(perguntaDeApagar('cmd /c cmd /c rd /s /q saida', { ferramenta: 'PowerShell', cwd: FORA }), ['saida'])
   // canario: o cmd sem /c (so abre o prompt) e o cmd /c de outro programa nao viram alvo
-  assert.strictEqual((perguntaDeApagar('cmd /q rd /s /q dist', { ferramenta: 'PowerShell', cwd: FORA }) || []).includes('dist'), false)
-  assert.strictEqual(perguntaDeApagar('cmd /c dir dist', { ferramenta: 'PowerShell', cwd: FORA }), null)
+  assert.strictEqual((perguntaDeApagar('cmd /q rd /s /q saida', { ferramenta: 'PowerShell', cwd: FORA }) || []).includes('saida'), false)
+  assert.strictEqual(perguntaDeApagar('cmd /c dir saida', { ferramenta: 'PowerShell', cwd: FORA }), null)
   // revisao interna: o curinga diz que apaga tudo o que casa com ele, nunca "a pasta * (que nao existe)"
   for (const [ferramenta, command, alvo] of [['Bash', 'cmd /c del /s /q *.*', '*.*'], ['Bash', 'cmd /c rd /s /q *', '*'], ['Bash', 'rm -rf *', '*'], ['PowerShell', 'del /s /q *.*', '*.*']]) {
     const motivo = perguntaDoHook(rodar549(ferramenta, command)) || ''
@@ -3532,4 +3716,684 @@ test('5.49 (Codex comum, revisao interna): o CR no meio do delimitador e o $env:
     assert.ok(p.stdout.length > 0, ferramenta + ': saida vazia no ComSpec')
     assert.ok(perguntaDe(p), ferramenta + ': deveria perguntar: ' + COMSPEC_PERGUNTAM[0])
   }
+})
+
+// 5.52 (chat 2, Task 2c, 2026-11-05): no cmd o @ na frente do comando so tira o eco, e o comando roda igual.
+// Os 6 formatos da sonda (passavam calados no main 3268d43e e no 43cf55c6), o @@, o &@, o && e o || barram;
+// fora do cmd o @ fica como esta (o bash e o PowerShell nao acham o programa @git)
+const ARROBA_BARRAM = ['cmd /c "@' + G + '"', 'cmd /c "echo a & @' + G + '"', 'cmd /c "(@' + G + ')"', 'cmd /k "@' + G + '"',
+  'cmd.exe /c "@' + G + '"', 'cmd /c "@git clean -fdx"', 'cmd /c "@@' + G + '"', 'cmd /c "echo a &@' + G + '"',
+  'cmd /c "echo a && @' + G + '"', 'cmd /c "echo a || @' + G + '"', 'cmd /c"@' + G + '"', "powershell -c 'cmd /c \"@" + G + "\"'",
+  // revisao interna: o @ depois do do, do if e do else, depois de ; , = e na lista do Start-Process
+  'cmd /c "for %i in (1) do @' + G + '"', 'cmd /c "if 1==1 @' + G + '"', 'cmd /c "if 1==2 (echo a) else @' + G + '"',
+  'cmd /c ";@' + G + '"', 'cmd /c ",@' + G + '"', 'cmd /c "=@' + G + '"', 'cmd /c "echo a & ,@' + G + '"',
+  "Start-Process cmd -ArgumentList '/c','@" + G + "'",
+  // Codex comum: o if e o for grudados no ( e na /
+  'cmd /c "if(1)==(1) @' + G + '"', 'cmd /c "for/l %i in (1,1,1) do @' + G + '"']
+const ARROBA_PASSAM = ['echo @' + G, '@' + G, 'bash -c "@' + G + '"', 'cmd /c "echo @' + G + '"', 'cmd /c "echo eu@' + G + '"',
+  'cmd /c "echo a=@' + G + '"', 'bash -c "for i in 1; do @' + G + '; done"']
+test('5.52 (Task 2c): o @ do comeco e depois de &, &&, || e ( sai no que o cmd roda', () => {
+  for (const c of ARROBA_BARRAM) {
+    assert.ok(ehPerigoso(c), 'deveria barrar: ' + c)
+    assert.ok(ehGitPerigoso(c), 'o ehGitPerigoso deveria barrar: ' + c)
+  }
+  for (const c of ARROBA_PASSAM) {
+    assert.strictEqual(ehPerigoso(c), null, 'deveria passar: ' + c)
+    assert.strictEqual(ehGitPerigoso(c), null, 'o ehGitPerigoso deveria passar: ' + c)
+  }
+  // o apagar com @ segue perguntando, e dentro do cmd o alvo agora se le, junto do "uma pasta" da leitura como veio
+  for (const ferramenta of FERRAMENTAS) {
+    assert.ok(perguntaDeApagar('@rd /s /q src', { ferramenta }), ferramenta + ': @rd deveria perguntar')
+    for (const c of ['cmd /c "@rd /s /q src"', 'cmd /c "echo a & @rd /s /q src"']) assert.deepStrictEqual(perguntaDeApagar(c, { ferramenta }), [null, 'src'], ferramenta + ': ' + c)
+  }
+})
+test('5.52 (Task 2c): o @ no cmd pelo hook de verdade, nas tres ferramentas', () => {
+  for (const ferramenta of FERRAMENTAS) {
+    for (const c of ARROBA_BARRAM) {
+      const r = rodar549(ferramenta, c)
+      assert.strictEqual(r.status, 2, ferramenta + ' ' + c + ': saida ' + r.status)
+      assert.ok(r.stderr.length > 0, 'canario: a barra escreveu no stderr')
+      assert.match(r.stderr, /^Barrada pela trava barrar-perigoso, regra git-joga-fora: /, ferramenta + ' ' + c)
+    }
+    for (const c of ARROBA_PASSAM) {
+      const r = rodar549(ferramenta, c)
+      assert.strictEqual(r.status + r.stdout + r.stderr, '0', ferramenta + ' ' + c + ': deveria passar calado: ' + r.stdout + r.stderr)
+    }
+    const p = rodar549(ferramenta, 'cmd /c "@rd /s /q src"')
+    assert.ok(p.stdout.length > 0, ferramenta + ': saida vazia no @rd')
+    assert.ok((perguntaDoHook(p) || '').startsWith(COMECO_DA_PERGUNTA), ferramenta + ': @rd deveria perguntar: ' + p.stdout)
+  }
+})
+
+// 5.52 (chat 2, Task 2d, 2026-11-05): decisao 13. Os seis que apagam de vez (reflog expire, branch -f, -D e -M,
+// worktree remove, update-ref -d, wsl --unregister e Clear-RecycleBin) passavam calados: 120 de 120 na sonda (as
+// 8 formas, como vieram e dentro de bash -c, cmd /c, cmd /c com @ e powershell -c, nas tres ferramentas, no
+// 9a18d07b). Agora perguntam, pela regra apaga-de-vez, e nao barram; o ehGitPerigoso fica de fora, entao o
+// porteiro destrutivo da bancada segue soltando a limpeza de worktree
+const SEIS = ['git reflog expire --expire=now --all', 'git branch -f main HEAD~3', 'git branch -D feature', 'git branch -M novo',
+  'git worktree remove ../wt', 'git update-ref -d refs/heads/main', 'wsl --unregister Ubuntu', 'Clear-RecycleBin -Force']
+const DE_VEZ = [...SEIS, 'git branch --delete --force feature', 'git branch -Df feature', 'git branch --forc main HEAD~1',
+  'git -C sub branch -D feature', 'git worktree remove --force ../wt', 'git update-ref -m x -d refs/heads/main', 'wsl.exe --unregister Ubuntu',
+  'Clear-RecycleBin -DriveLetter C -Force', 'cd sub && git branch -D feature', 'sudo git branch -D feature', 'echo a | xargs git branch -D',
+  'Invoke-Command { Clear-RecycleBin -Force }', 'wsl -d Ubuntu git branch -D feature', 'g' + String.fromCharCode(92) + 'it branch -D feature',
+  "Start-Process git -ArgumentList 'branch','-D','feature'", "Start-Process wsl -ArgumentList '--unregister','Ubuntu'"]
+const EMBRULHOS_DE_VEZ = [c => c, c => 'bash -c "' + c + '"', c => 'cmd /c "' + c + '"', c => 'cmd /c "@' + c + '"', c => 'powershell -c "' + c + '"']
+const DE_VEZ_CALADOS = ['git branch -d feature', 'git branch', 'git branch --list', 'git branch -vv', 'git branch -m novo', 'git branch --format=x',
+  'git worktree list', 'git worktree add ../x -b x', 'git worktree prune', 'git reflog', 'git reflog show', 'git update-ref refs/heads/x HEAD',
+  'wsl -l -v', 'wsl --shutdown', 'wsl -d Ubuntu ls', 'echo "git branch -D x" >> licoes.md', 'git commit -m "git branch -D x"',
+  'Get-Help Clear-RecycleBin', 'git log --grep=unregister', 'bash -c "git branch -d feature"', 'cmd /c "@git worktree list"']
+const COMECO_DE_VEZ = 'Pergunta da trava barrar-perigoso, regra apaga-de-vez: A IA quer '
+test('5.52 (Task 2d): os seis que apagam de vez perguntam, tambem embrulhados, e nao barram', () => {
+  assert.ok(DE_VEZ.length >= SEIS.length && DE_VEZ_CALADOS.length > 0, 'canario: as listas tem casos')
+  for (const c0 of DE_VEZ) for (const embrulho of EMBRULHOS_DE_VEZ) {
+    const c = embrulho(c0)
+    // o Start-Process ja vem com aspas simples e nao se embrulha de novo
+    if (c !== c0 && c0.startsWith('Start-Process')) continue
+    assert.ok(apagaDeVez(c), 'deveria perguntar: ' + c)
+    assert.strictEqual(ehPerigoso(c), null, 'nao deveria barrar: ' + c)
+    assert.strictEqual(ehGitPerigoso(c), null, 'o ehGitPerigoso (o porteiro da bancada) deveria soltar: ' + c)
+    assert.strictEqual(ehGitPerigoso(c, { estrito: true }), null, 'o estrito da bancada deveria soltar: ' + c)
+  }
+  for (const c of DE_VEZ_CALADOS) assert.strictEqual(apagaDeVez(c), null, 'deveria passar calado: ' + c)
+})
+test('5.52 (Task 2d): os seis pelo hook de verdade, nas tres ferramentas, e a pergunta junta com apagar pasta', () => {
+  for (const ferramenta of FERRAMENTAS) {
+    for (const c0 of SEIS) for (const embrulho of EMBRULHOS_DE_VEZ) {
+      const c = embrulho(c0)
+      const r = rodar549(ferramenta, c)
+      assert.ok(r.stdout.length > 0, ferramenta + ' ' + c + ': saida vazia ' + r.status + r.stderr)
+      assert.strictEqual(r.status, 0, ferramenta + ' ' + c)
+      const razao = perguntaDe(r) || ''
+      assert.ok(razao.startsWith(COMECO_DE_VEZ), ferramenta + ' ' + c + ': ' + r.stdout)
+      assert.ok(razao.endsWith('Comando: ' + c), ferramenta + ' ' + c + ': a pergunta mostra o comando: ' + razao)
+    }
+    for (const c of DE_VEZ_CALADOS) {
+      const r = rodar549(ferramenta, c)
+      assert.strictEqual(r.status + r.stdout + r.stderr, '0', ferramenta + ' ' + c + ': deveria passar calado: ' + r.stdout + r.stderr)
+    }
+    // apagar pasta e apaga de vez no mesmo comando viram uma pergunta so, com as duas regras
+    const junto = rodar549(ferramenta, 'rm -rf sabinos-2d-nao-existe && git branch -D feature')
+    const razao = perguntaDe(junto) || ''
+    assert.ok(razao.startsWith('Pergunta da trava barrar-perigoso, regra apagar-pasta e apaga-de-vez: A IA quer apagar '), ferramenta + ': ' + junto.stdout)
+    assert.ok(razao.includes('sabinos-2d-nao-existe') && razao.includes('branch'), ferramenta + ': as duas partes na pergunta: ' + razao)
+    // barrar ganha de perguntar
+    const barra = rodar549(ferramenta, 'git branch -D feature && ' + G)
+    assert.strictEqual(barra.status, 2, ferramenta + ': deveria barrar: ' + barra.stdout)
+    assert.match(barra.stderr, /^Barrada pela trava barrar-perigoso, regra git-joga-fora: /, ferramenta)
+  }
+})
+// 5.52 (chat 2, Task 2d, revisao interna, 2026-11-05): o programa depois de prefixo com valor, palavra de controle,
+// find -exec, cmd /c ou powershell -c sem aspas e atribuicao do PowerShell passava calado (24 de 26 na sonda);
+// o ehGitPerigoso le todos esses moldes com o git reset --hard. E o git branch -C (copia por cima) passava
+const DE_VEZ_MOLDES = ['cmd /c git branch -D x', 'cmd /k git branch -D x', 'cmd /c @git branch -D x', 'cmd /c git worktree remove --force ../x',
+  'powershell -c git branch -D x', 'timeout 60 git worktree remove --force ../x', 'nice -n 5 git reflog expire --expire=now --all',
+  'env -C .. git branch -D x', 'stdbuf -o0 git branch -D x', 'sudo -u root git branch -D x', 'ssh host git branch -D x', 'watch -n 5 git branch -D x',
+  'for b in a c; do git branch -D $b; done', 'if true; then git update-ref -d refs/heads/x; fi', '! git branch -D x',
+  'find . -maxdepth 0 -exec git branch -D x ' + String.fromCharCode(92) + ';', '$null = Clear-RecycleBin -Force', '$r = wsl --unregister Ubuntu',
+  'cmd /c wsl --unregister Ubuntu', 'timeout 5 wsl --unregister Ubuntu', 'powershell -c Clear-RecycleBin -Force', 'git branch -C a b',
+  // Codex comum: a crase do PowerShell no fim da linha continua o comando, e dentro da palavra so escapa a letra
+  'wsl `' + String.fromCharCode(10) + '--unregister Ubuntu', 'Clear-Recycle`Bin -Force', 'git branch -l -D x']
+const DE_VEZ_MOLDES_CALADOS = ['git branch -c a b', 'man wsl', 'help Clear-RecycleBin', 'Get-Command Clear-RecycleBin', 'timeout 5 git branch -d x',
+  'cmd /c git worktree list',
+  // Codex comum: o -f com --list, -l ou --show-current so consulta
+  'git branch --list -f', 'git branch -f --show-current', 'git branch -l -f']
+test('5.52 (Task 2d): apaga de vez le o programa depois de prefixo, palavra de controle e embrulho sem aspas', () => {
+  assert.ok(DE_VEZ_MOLDES.length > 0 && DE_VEZ_MOLDES_CALADOS.length > 0, 'canario: as listas tem casos')
+  for (const c of DE_VEZ_MOLDES) {
+    assert.ok(apagaDeVez(c), 'deveria perguntar: ' + c)
+    assert.strictEqual(ehPerigoso(c), null, 'nao deveria barrar: ' + c)
+  }
+  for (const c of DE_VEZ_MOLDES_CALADOS) assert.strictEqual(apagaDeVez(c), null, 'deveria passar calado: ' + c)
+  for (const ferramenta of FERRAMENTAS) {
+    for (const c of DE_VEZ_MOLDES) {
+      const r = rodar549(ferramenta, c)
+      assert.ok(r.stdout.length > 0, ferramenta + ' ' + c + ': saida vazia ' + r.status + r.stderr)
+      assert.ok((perguntaDe(r) || '').startsWith(COMECO_DE_VEZ), ferramenta + ' ' + c + ': ' + r.stdout)
+    }
+    for (const c of DE_VEZ_MOLDES_CALADOS) {
+      const r = rodar549(ferramenta, c)
+      assert.strictEqual(r.status + r.stdout + r.stderr, '0', ferramenta + ' ' + c + ': deveria passar calado: ' + r.stdout + r.stderr)
+    }
+  }
+})
+
+// 5.52 (chat 2, Task 2e, 2026-11-05): decisao 11, lista fechada. node_modules, dist, build, .next e __pycache__
+// apagam calados so com o caminho real dentro do projeto (CLAUDE_PROJECT_DIR, senao o cwd), sem curinga, sem
+// atalho nem juncao e nunca o projeto inteiro; so a pasta da lista inteira, nunca arquivo dentro dela. Fora
+// disso pergunta. O projeto de mentira mora fora da temporaria do hook (TEMP, TMP e TMPDIR numa pasta nova)
+const REFAZIVEIS = ['node_modules', 'dist', 'build', '.next', '__pycache__']
+function comProjetoDaLista(corpo) {
+  const base = mkdtempSync(join(TEMP, 'trava-552-lista-'))
+  try {
+    const proj = join(base, 'proj')
+    const falsa = join(base, 'falsa-temp')
+    mkdirSync(falsa)
+    for (const p of [...REFAZIVEIS, join('sub', 'node_modules'), 'src', join('dados', 'navegador-saida'), 'pacote']) mkdirSync(join(proj, p), { recursive: true })
+    for (const n of [join('dist', 'a.txt'), join('src', 'a.txt'), join('node_modules', 'a.js')]) writeFileSync(join(proj, n), 'x')
+    mkdirSync(join(base, 'outro', 'dist'), { recursive: true })
+    writeFileSync(join(base, 'outro', 'dist', 'importante.txt'), 'x')
+    // a juncao chamada dist dentro do projeto aponta pra fora dele (no Windows a juncao nao pede administrador)
+    symlinkSync(join(base, 'outro', 'dist'), join(proj, 'pacote', 'dist'), 'junction')
+    const env = { ...process.env, TEMP: falsa, TMP: falsa, TMPDIR: falsa, CLAUDE_PROJECT_DIR: proj }
+    corpo({ base, proj, env, barra: p => p.split(sep).join('/') })
+  } finally { rmSync(base, { recursive: true, force: true }) }
+}
+const COMECO_APAGAR = 'Pergunta da trava barrar-perigoso, regra apagar-pasta'
+const calado = r => r.status + r.stdout + r.stderr === '0'
+test('5.52 (Task 2e): a lista fechada apaga calada dentro do projeto, nas tres ferramentas', () => {
+  comProjetoDaLista(({ proj, env, barra }) => {
+    const B = String.fromCharCode(92)
+    const doBash = ['rm -rf ./node_modules && rm -rf ./dist', 'rm -rf build .next __pycache__', 'rm -rf sub/node_modules/',
+      'rm -rf "' + barra(proj) + '/dist"', 'npx rimraf node_modules']
+    const doPowershell = ['Remove-Item -Recurse -Force dist', 'rd /s /q build', 'cmd /c rd /s /q dist', 'rm -rf ./node_modules && rm -rf ./dist',
+      ...(process.platform === 'win32' ? ['Remove-Item -Recurse -Force .' + B + 'node_modules', 'Remove-Item -Recurse "' + proj + B + 'dist"'] : [])]
+    for (const ferramenta of FERRAMENTAS) {
+      const casos = ferramenta === 'PowerShell' ? doPowershell : doBash
+      assert.ok(casos.length >= 4, 'canario: a lista tem casos')
+      for (const c of casos) {
+        const r = rodar549(ferramenta, c, { env, cwd: proj })
+        assert.ok(calado(r), ferramenta + ' ' + c + ': deveria passar calado: ' + r.status + ' ' + r.stdout + r.stderr)
+      }
+    }
+    // sem a variavel do projeto vale o cwd
+    const semProjeto = Object.fromEntries(Object.entries(env).filter(([k]) => k !== 'CLAUDE_PROJECT_DIR'))
+    assert.ok(calado(rodar549('Bash', 'rm -rf dist', { env: semProjeto, cwd: proj })), 'sem CLAUDE_PROJECT_DIR o cwd e o projeto')
+  })
+})
+test('5.52 (Task 2e): fora da lista, fora do projeto, curinga, juncao, arquivo dentro e o projeto inteiro perguntam', () => {
+  comProjetoDaLista(({ base, proj, env, barra }) => {
+    const perguntam = ['rm -rf src', 'rm -rf dist src', 'rm -rf dist/../src', 'rm -rf dist*', 'rm -rf ./dist/a.txt', 'rm -rf pacote/dist',
+      'rm -rf ../outro/dist', 'rm -rf "' + barra(join(base, 'outro', 'dist')) + '"', 'rm -rf dados/navegador-saida', 'cd sub; rm -rf node_modules',
+      'rm -rf {dist,src}', 'rm -rf DIST/..', 'Remove-Item -Recurse pacote/dist']
+    for (const ferramenta of FERRAMENTAS) {
+      for (const c of perguntam) {
+        const r = rodar549(ferramenta, c, { env, cwd: proj })
+        assert.strictEqual(r.status, 0, ferramenta + ' ' + c + ': saida ' + r.status + ' ' + r.stderr)
+        assert.ok(r.stdout.length > 0, ferramenta + ' ' + c + ': saida vazia')
+        assert.ok((perguntaDoHook(r) || '').startsWith(COMECO_APAGAR + ': '), ferramenta + ' ' + c + ': ' + r.stdout)
+      }
+      // um alvo fora da lista leva a pergunta com os dois nomes
+      const dois = perguntaDoHook(rodar549(ferramenta, 'rm -rf dist src', { env, cwd: proj })) || ''
+      assert.ok(dois.includes('a pasta dist ') && dois.includes('a pasta src '), ferramenta + ': ' + dois)
+    }
+    // o projeto inteiro nunca: com o CLAUDE_PROJECT_DIR sendo ele mesmo um dist
+    const ehDist = { ...env, CLAUDE_PROJECT_DIR: join(proj, 'dist') }
+    for (const [c, cwd] of [['rm -rf dist', proj], ['rm -rf "' + barra(join(proj, 'dist')) + '"', join(proj, 'dist')]]) {
+      assert.ok((perguntaDoHook(rodar549('Bash', c, { env: ehDist, cwd })) || '').startsWith(COMECO_APAGAR), 'o projeto inteiro pergunta: ' + c)
+    }
+    // o CLAUDE_PROJECT_DIR ganha do cwd: com o cwd na pasta de cima, o dist do projeto passa e o de fora pergunta
+    assert.ok(calado(rodar549('Bash', 'rm -rf proj/dist', { env, cwd: base })), 'o dist do projeto passa com o cwd fora dele')
+    assert.ok(perguntaDoHook(rodar549('Bash', 'rm -rf outro/dist', { env, cwd: base })), 'o dist de fora do projeto pergunta')
+    // com o apaga de vez junto: alvo todo da lista deixa so a regra apaga-de-vez; alvo fora junta as duas
+    const deVez = perguntaDoHook(rodar549('Bash', 'rm -rf dist && git branch -D feature', { env, cwd: proj })) || ''
+    assert.ok(deVez.startsWith('Pergunta da trava barrar-perigoso, regra apaga-de-vez: '), deVez)
+    const juntas = perguntaDoHook(rodar549('Bash', 'rm -rf src && git branch -D feature', { env, cwd: proj })) || ''
+    assert.ok(juntas.startsWith('Pergunta da trava barrar-perigoso, regra apagar-pasta e apaga-de-vez: '), juntas)
+  })
+})
+// 5.52 (chat 2, Task 2e, revisao interna, 2026-11-05): a troca de pasta grudada no env, no sudo e no lancador de
+// pacote (`env -C..`, `--chdir=..`, `pnpm -C..`) e o til de outro usuario ou do OLDPWD (`~-/dist`, `~root/build`)
+// levam o alvo pra fora do projeto e perguntam; o redirecionamento (`2>/dev/null`, `2>$null`, `2>nul`) nao e alvo
+test('5.52 (Task 2e): troca de pasta grudada e til de outro lugar perguntam, e o redirecionamento nao vira alvo', () => {
+  comProjetoDaLista(({ proj, env }) => {
+    const perguntam = ['env --chdir=.. rm -rf dist', 'env -C.. rm -rf dist', 'sudo --chdir=.. rm -rf dist',
+      'sudo -D.. rm -rf dist', 'bash -c "env --chdir=.. rm -rf dist"', 'pnpm -C.. exec rm -rf dist', 'yarn --cwd=.. exec rm -rf dist',
+      'rm -rf ~-/dist', 'rm -rf ~root/build', 'Remove-Item -Recurse -Force ~-/dist']
+    const caladoBash = ['rm -rf node_modules 2>/dev/null', 'rm -rf dist 2> /dev/null', 'rm -rf dist >/dev/null 2>&1', 'rm -rf build 2>>erro.log']
+    const caladoPowershell = ['Remove-Item -Recurse -Force dist 2>$null', 'rd /s /q build 2>nul', 'Remove-Item -Recurse dist *> $null']
+    for (const ferramenta of FERRAMENTAS) {
+      for (const c of perguntam) {
+        const r = rodar549(ferramenta, c, { env, cwd: proj })
+        assert.ok(r.stdout.length > 0, ferramenta + ' ' + c + ': saida vazia')
+        assert.ok((perguntaDoHook(r) || '').startsWith(COMECO_APAGAR + ': '), ferramenta + ' ' + c + ': ' + r.stdout)
+      }
+      for (const c of ferramenta === 'PowerShell' ? caladoPowershell : caladoBash) {
+        const r = rodar549(ferramenta, c, { env, cwd: proj })
+        assert.ok(calado(r), ferramenta + ' ' + c + ': deveria passar calado: ' + r.status + ' ' + r.stdout + r.stderr)
+      }
+    }
+    // o redirecionamento sai, mas o alvo de verdade depois dele segue lido
+    const r = rodar549('Bash', 'rm -rf dist 2>/dev/null src', { env, cwd: proj })
+    assert.ok((perguntaDoHook(r) || '').includes('a pasta src '), 'o alvo depois do redirecionamento: ' + r.stdout)
+    // Codex comum: a duplicacao de saida parte o comando no & e o alvo de depois sumia
+    for (const c of ['rm -rf dist 2>&1 src', 'rm -rf dist >&2 src', 'rm -rf dist &>erro.log src', 'rm -rf dist >&erro.log src']) {
+      const d = rodar549('Bash', c, { env, cwd: proj })
+      assert.ok((perguntaDoHook(d) || '').includes('src'), 'o alvo depois da duplicacao de saida: ' + c + ': ' + d.stdout)
+    }
+  })
+})
+// 5.52 (chat 2, Task 2e, Codex comum): o prazo vale a cada pasta; uma arvore so de pastas vazias passava dele
+test('5.52 (Task 2e): a avaliacao para no prazo mesmo numa arvore so de pastas vazias', () => {
+  const base = mkdtempSync(join(tmpdir(), 'trava-552-prazo-'))
+  try {
+    mkdirSync(join(base, 'a', 'b', 'c'), { recursive: true })
+    mkdirSync(join(base, 'd', 'e'), { recursive: true })
+    assert.strictEqual(avaliarPasta(base, Date.now() + 60000).estourou, false, 'canario: com tempo nao estoura')
+    const av = avaliarPasta(base, Date.now() - 1)
+    assert.strictEqual(av.estourou, true, 'com o prazo vencido, a arvore de pastas vazias estoura')
+    assert.strictEqual(av.arquivos.length, 0)
+  } finally { rmSync(base, { recursive: true, force: true }) }
+})
+// a pergunta traz a avaliacao que o codigo sabe fazer: quantos arquivos, quantos fora do backup (git check-ignore,
+// so dentro de repositorio, com teto) e nome sensivel (.env e dados/sessao)
+test('5.52 (Task 2e): a pergunta diz quantos arquivos, quantos fora do backup e o nome sensivel', () => {
+  const base = mkdtempSync(join(TEMP, 'trava-552-avalia-'))
+  try {
+    const repo = join(base, 'repo')
+    mkdirSync(join(repo, 'velha', 'dados', 'sessao'), { recursive: true })
+    const git = spawnSync('git', ['init', '-q', repo], { encoding: 'utf8' })
+    assert.strictEqual(git.status, 0, 'git init: ' + git.stderr)
+    writeFileSync(join(repo, '.gitignore'), ['ignorado.txt', '.env', 'grande/', ''].join(LF))
+    for (const n of ['a.txt', 'ignorado.txt', '.env', join('dados', 'sessao', 'cookie.txt')]) writeFileSync(join(repo, 'velha', n), 'x')
+    mkdirSync(join(repo, 'grande'))
+    for (let i = 0; i < 1001; i++) writeFileSync(join(repo, 'grande', i + '.txt'), '')
+    mkdirSync(join(repo, 'limpa'))
+    writeFileSync(join(repo, 'limpa', 'a.txt'), 'x')
+    mkdirSync(join(base, 'solta'))
+    writeFileSync(join(base, 'solta', '.env'), 'x')
+    const noRepo = alvos => textoDaPergunta(alvos, 'rm -rf x', { cwd: repo })
+    assert.ok(noRepo(['velha']).includes('a pasta velha inteira (4 arquivos, 2 fora do backup, com senha no .env e login salvo em dados/sessao)'), noRepo(['velha']))
+    assert.ok(noRepo(['grande']).includes('a pasta grande inteira (mais de 1000 arquivos, pelo menos 1000 fora do backup)'), noRepo(['grande']))
+    assert.ok(noRepo(['limpa']).includes('a pasta limpa inteira (1 arquivo)'), noRepo(['limpa']))
+    // fora de repositorio nao fala de backup, e o nome sensivel sai do mesmo jeito
+    const fora = textoDaPergunta(['solta'], 'rm -rf x', { cwd: base })
+    assert.ok(fora.includes('a pasta solta inteira (1 arquivo, com senha no .env)'), fora)
+    const solto = textoDaPergunta(['velha/.env'], 'rm x', { cwd: repo })
+    assert.ok(solto.includes('o arquivo velha/.env (fora do backup, com senha no .env)'), solto)
+  } finally { rmSync(base, { recursive: true, force: true }) }
+})
+
+// 5.52 (chat 2, Task 2f, 2026-11-05): decisao 2 das pendentes, script lido. O script rodado por bash, sh, source,
+// ., & x.ps1, powershell -File, pwsh -File, bat, .cmd e call (e o corpo do heredoc gravado e rodado no mesmo
+// comando) e julgado como se fosse digitado: barra, pergunta pelo apagar pasta e pelo apaga de vez. O script que a
+// trava nao acha ou nao le pergunta pela regra script-nao-lido; o de dentro de .claude/skills do projeto (caminho
+// real) nao e lido. Os scripts moram num mkdtemp e o comando roda na casa do usuario (FORA), fora da temporaria:
+// o `rm -rf src` de dentro e relativo a pasta do comando e pergunta
+const COMECO_SCRIPT = 'Pergunta da trava barrar-perigoso, regra script-nao-lido: '
+const COMECO_BARRA_GIT = 'Barrada pela trava barrar-perigoso, regra git-joga-fora: '
+// a extensao montada: o Gate 6 le a extensao escrita como dependencia de Windows, e o teste roda igual no Mac
+// (o hook so le o texto do arquivo)
+const BAT = '.b' + 'at'
+function comScripts(corpo) {
+  const base = mkdtempSync(join(TEMP, 'trava-552-script-'))
+  try {
+    const barra = p => p.split(sep).join('/')
+    const proj = join(base, 'proj')
+    const skills = join(proj, '.claude', 'skills', 's')
+    mkdirSync(skills, { recursive: true })
+    mkdirSync(join(base, 'fora'))
+    const CRLF = String.fromCharCode(13, 10)
+    const arquivos = {
+      'rm.sh': 'rm -rf src' + LF, 'git.sh': 'git reset --hard' + LF, 'devez.sh': 'git branch -D velha' + LF, 'oi.sh': 'echo oi' + LF,
+      'licoes.md': '- nunca rode rm -rf src sem conferir' + LF, 'novo.sh': 'echo inofensivo' + LF,
+      ['rm' + BAT]: '@echo off' + CRLF + 'rd /s /q src' + CRLF, 'rm.cmd': 'rd /s /q src' + CRLF,
+      ['git' + BAT]: '@echo off' + CRLF + '@git reset --hard' + CRLF, 'git.ps1': 'git reset --hard' + CRLF,
+      // um byte a mais que o teto de 256 KB, inofensivo: pergunta so por ser grande
+      'grande.sh': 'echo a' + LF + '#'.repeat(256 * 1024 - 7 + 1),
+      // revisao interna: o arquivo de 256 KB exatos ainda e lido (o teto e o > )
+      'limite.sh': 'git reset --hard' + LF + '#'.repeat(256 * 1024 - 17),
+      // revisao interna: o NUL solto depois da primeira linha (o bash roda o resto) nao vira leitura so UTF-16
+      'nul.sh': 'git reset --hard' + LF + String.fromCharCode(0) + LF,
+    }
+    for (const [n, t] of Object.entries(arquivos)) writeFileSync(join(base, n), t)
+    // o .ps1 em UTF-16 com BOM, como o Windows PowerShell 5.1 grava por padrao
+    writeFileSync(join(base, 'rm.ps1'), Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from('Remove-Item -Recurse src' + CRLF, 'utf16le')]))
+    writeFileSync(join(skills, 'ok.sh'), 'rm -rf src' + LF)
+    writeFileSync(join(skills, 'ok.ps1'), 'Remove-Item -Recurse src' + CRLF)
+    writeFileSync(join(proj, '.claude', 'x.sh'), 'rm -rf src' + LF)
+    writeFileSync(join(base, 'fora', 'x.sh'), 'rm -rf src' + LF)
+    // a juncao dentro de .claude/skills aponta pra fora dela (no Windows a juncao nao pede administrador)
+    symlinkSync(join(base, 'fora'), join(proj, '.claude', 'skills', 'atalho'), 'junction')
+    corpo({ base, B: barra(base), P: barra(proj), env: { ...process.env, CLAUDE_PROJECT_DIR: proj } })
+  } finally { rmSync(base, { recursive: true, force: true }) }
+}
+test('5.52 (Task 2f): o script rodado e lido, pergunta pelo alvo de dentro e barra o git que joga fora', () => {
+  comScripts(({ B, env }) => {
+    const perguntam = [['Bash', `bash ${B}/rm.sh`], ['Bash', `sh ${B}/rm.sh`], ['Bash', `source ${B}/rm.sh`], ['Bash', `. ${B}/rm.sh`],
+      ['Bash', `bash -x ${B}/rm.sh`], ['Monitor', `bash ${B}/rm.sh`], ['Bash', `bash -c "bash ${B}/rm.sh"`], ['Bash', `sudo bash -- ${B}/rm.sh`],
+      ['Bash', `sudo -u root bash ${B}/rm.sh`], ['Bash', `sudo -E bash ${B}/rm.sh`], ['Bash', `timeout 5 sh ${B}/rm.sh`],
+      ['PowerShell', `& ${B}/rm.ps1`], ['PowerShell', `& "${B}/rm.ps1"`], ['PowerShell', `powershell -File ${B}/rm.ps1`],
+      ['PowerShell', `pwsh -NoProfile -ExecutionPolicy Bypass -File ${B}/rm.ps1`], ['PowerShell', `pwsh ${B}/rm.ps1`],
+      ['PowerShell', `${B}/rm${BAT}`], ['PowerShell', `cmd /c call ${B}/rm${BAT}`], ['PowerShell', `& ${B}/rm.cmd`], ['Bash', `cmd //c ${B}/rm${BAT}`]]
+    for (const [f, c] of perguntam) {
+      const r = rodar549(f, c, { env })
+      assert.strictEqual(r.status, 0, f + ' ' + c + ': saida ' + r.status + ' ' + r.stderr)
+      assert.ok(r.stdout.length > 0, f + ' ' + c + ': saida vazia')
+      const p = perguntaDoHook(r) || ''
+      assert.ok(p.startsWith(COMECO_APAGAR + ': ') && p.includes('a pasta src '), f + ' ' + c + ': ' + p)
+    }
+    const barram = [['Bash', `bash ${B}/git.sh`], ['Bash', `source ${B}/git.sh`], ['Monitor', `sh ${B}/git.sh`], ['PowerShell', `& ${B}/git.ps1`],
+      ['PowerShell', `powershell -File ${B}/git.ps1`], ['PowerShell', `${B}/git${BAT}`], ['PowerShell', `cmd /c call ${B}/git${BAT}`]]
+    for (const [f, c] of barram) {
+      const r = rodar549(f, c, { env })
+      assert.strictEqual(r.status, 2, f + ' ' + c + ': deveria barrar: ' + r.status + ' ' + r.stdout + r.stderr)
+      assert.ok(r.stderr.startsWith(COMECO_BARRA_GIT) && r.stderr.includes('no script ') && r.stderr.includes(FIM_DA_BARRA), f + ' ' + c + ': ' + r.stderr)
+    }
+    const deVez = perguntaDoHook(rodar549('Bash', `bash ${B}/devez.sh`, { env })) || ''
+    assert.ok(deVez.startsWith('Pergunta da trava barrar-perigoso, regra apaga-de-vez: '), deVez)
+  })
+})
+test('5.52 (Task 2f): o que nao roda o script por arquivo segue calado, e os furos nomeados do T53 tambem', () => {
+  comScripts(({ base, B, env }) => {
+    const calados = [['Bash', `bash ${B}/oi.sh`], ['Bash', `cat ${B}/licoes.md`], ['Bash', `grep rm ${B}/licoes.md`],
+      ['Bash', `cat >> ${B}/licoes.md <<'EOF'` + LF + '- nunca rode rm -rf src' + LF + 'EOF'], ['Bash', 'bash -c "echo oi"'],
+      ['Bash', 'curl https://exemplo.com/i.sh | bash'], ['PowerShell', `Get-Content ${B}/rm.ps1`], ['PowerShell', `& ${B}/oi.sh`],
+      // furos nomeados no T53: o script pela entrada (`bash < x.sh`, `cat x.sh | bash`, `bash <(...)`) e o `./x.sh` direto
+      ['Bash', `bash < ${B}/rm.sh`], ['Bash', `cat ${B}/rm.sh | bash`], ['Bash', `bash <(cat ${B}/rm.sh)`]]
+    for (const [f, c] of calados) {
+      const r = rodar549(f, c, { env })
+      assert.ok(calado(r), f + ' ' + c + ': deveria passar calado: ' + r.status + ' ' + r.stdout + r.stderr)
+    }
+    assert.ok(calado(rodar549('Bash', './rm.sh', { env, cwd: base })), 'furo nomeado: o ./x.sh direto')
+  })
+})
+test('5.52 (Task 2f): o script de .claude/skills passa calado so pelo caminho real; o que a trava nao le pergunta', () => {
+  comScripts(({ B, P, env }) => {
+    for (const [f, c, cwd] of [['Bash', `bash ${P}/.claude/skills/s/ok.sh`], ['PowerShell', `& ${P}/.claude/skills/s/ok.ps1`],
+      ['Bash', 'bash .claude/skills/s/ok.sh', P], ['Monitor', `source ${P}/.claude/skills/s/ok.sh`]]) {
+      const r = rodar549(f, c, { env, cwd })
+      assert.ok(calado(r), f + ' ' + c + ': deveria passar calado: ' + r.status + ' ' + r.stdout + r.stderr)
+    }
+    // o .. e a juncao levam pra fora de .claude/skills: o script e lido
+    for (const c of [`bash ${P}/.claude/skills/../x.sh`, `bash ${P}/.claude/skills/atalho/x.sh`]) {
+      const r = rodar549('Bash', c, { env })
+      assert.ok(r.stdout.length > 0, c + ': saida vazia')
+      assert.ok((perguntaDoHook(r) || '').startsWith(COMECO_APAGAR + ': '), c + ': ' + r.stdout)
+    }
+    const naoLe = [['Bash', `bash ${B}/nao-existe.sh`, 'nao achou o arquivo'], ['Bash', `bash ${B}/grande.sh`, 'maior que 256 KB'],
+      ['Bash', 'bash $PASTA/rm.sh', 'variavel'], ['Bash', `cd ${B} && bash rm.sh`, 'muda de pasta'],
+      ['PowerShell', `& ${B}/nao-existe.ps1`, 'nao achou o arquivo'], ['PowerShell', `pwsh -WorkingDirectory ${B} -File rm.ps1`, 'muda de pasta']]
+    for (const [f, c, porque] of naoLe) {
+      const r = rodar549(f, c, { env })
+      assert.ok(r.stdout.length > 0, f + ' ' + c + ': saida vazia')
+      const p = perguntaDoHook(r) || ''
+      assert.ok(p.startsWith(COMECO_SCRIPT) && p.includes('a trava nao leu o script') && p.includes(porque), f + ' ' + c + ': ' + p)
+    }
+  })
+})
+test('5.52 (Task 2f): o corpo do heredoc gravado e rodado no mesmo comando e o script', () => {
+  comScripts(({ B, env }) => {
+    const grava = (corpo, cab = `cat > ${B}/novo.sh <<'EOF'`) => cab + LF + corpo + LF + 'EOF'
+    // canario: o novo.sh do disco e inofensivo, entao so o corpo do heredoc faz perguntar
+    assert.ok(calado(rodar549('Bash', `bash ${B}/novo.sh`, { env })), 'canario: o novo.sh do disco passa calado')
+    for (const c of [grava('rm -rf src') + LF + `bash ${B}/novo.sh`, grava('rm -rf src', `tee ${B}/novo.sh > /dev/null <<'EOF'`) + LF + `bash ${B}/novo.sh`,
+      grava('rm -rf src', `cat <<'EOF' > ${B}/novo.sh`) + LF + `sh ${B}/novo.sh`]) {
+      const p = perguntaDoHook(rodar549('Bash', c, { env })) || ''
+      assert.ok(p.startsWith(COMECO_APAGAR + ': ') && p.includes('a pasta src '), c + ': ' + p)
+    }
+    assert.strictEqual(rodar549('Bash', grava('git reset --hard') + LF + `bash ${B}/novo.sh`, { env }).status, 2, 'o git no heredoc rodado barra')
+    // gravado e nao rodado segue texto
+    assert.ok(calado(rodar549('Bash', grava('rm -rf src'), { env })), 'o heredoc so gravado passa calado')
+  })
+})
+// 5.52 (chat 2, Task 2f, revisao interna): o valor do -o e do -O, o NUL solto, o chamado sem extensao, o builtin, o
+// script gravado por cima no mesmo comando, o cd depois do script e o teto de 256 KB exatos
+test('5.52 (Task 2f, revisao interna): as formas que a primeira versao lia errado', () => {
+  comScripts(({ base, B, env }) => {
+    assert.strictEqual(statSync(join(base, 'grande.sh')).size, 256 * 1024 + 1, 'o grande.sh tem um byte a mais que o teto')
+    assert.strictEqual(statSync(join(base, 'limite.sh')).size, 256 * 1024, 'o limite.sh tem o teto exato')
+    const barram = [['Bash', `bash -o pipefail ${B}/git.sh`], ['Bash', `bash -euo pipefail ${B}/git.sh`], ['Bash', `sh -O extglob ${B}/git.sh`],
+      ['Bash', `bash ${B}/nul.sh`], ['Bash', `bash ${B}/limite.sh`], ['Bash', `builtin source ${B}/git.sh`],
+      ['Bash', `cmd //c "${B}/git"`], ['Bash', `cmd //c "call ${B}/git"`], ['PowerShell', `cmd /c call ${B}/git`],
+      ['PowerShell', `& '${B}/git'`], ['PowerShell', `. '${B}/git'`]]
+    for (const [f, c] of barram) {
+      const r = rodar549(f, c, { env })
+      assert.strictEqual(r.status, 2, f + ' ' + c + ': deveria barrar: ' + r.status + ' ' + r.stdout + r.stderr)
+      assert.ok(r.stderr.startsWith(COMECO_BARRA_GIT) && r.stderr.includes('no script '), f + ' ' + c + ': ' + r.stderr)
+    }
+    // o script inofensivo com o -o, o cd depois dele, a saida dele num log e o chamado sem extensao que nao existe
+    const calados = [['Bash', `bash -o pipefail ${B}/oi.sh`], ['Bash', `bash -O extglob ${B}/oi.sh`], ['Bash', `bash ${B}/oi.sh && cd ..`],
+      ['Bash', `bash ${B}/oi.sh > ${B}/saida.log 2>&1`], ['PowerShell', `& '${B}/nada'`], ['Bash', `cmd //c "call ${B}/nada"`]]
+    for (const [f, c] of calados) {
+      const r = rodar549(f, c, { env })
+      assert.ok(calado(r), f + ' ' + c + ': deveria passar calado: ' + r.status + ' ' + r.stdout + r.stderr)
+    }
+    // o relativo com o cd depois dele (o absoluto ja e lido mesmo depois do cd)
+    const depois = rodar549('Bash', 'bash oi.sh && cd ..', { env, cwd: base })
+    assert.ok(calado(depois), 'o cd depois do script relativo: ' + depois.status + ' ' + depois.stdout + depois.stderr)
+    // o comando que grava por cima do script antes de rodar: o disco e o velho, a trava nao le
+    for (const [f, c] of [['Bash', `cp ${B}/git.sh ${B}/oi.sh && bash ${B}/oi.sh`], ['Bash', `printf 'git reset --hard' > ${B}/oi.sh; bash ${B}/oi.sh`],
+      ['Bash', `sed -i 's/echo/git/' ${B}/oi.sh && bash ${B}/oi.sh`], ['PowerShell', `Copy-Item ${B}/git.ps1 ${B}/oi.ps1; & ${B}/oi.ps1`]]) {
+      const r = rodar549(f, c, { env })
+      assert.ok(r.stdout.length > 0, f + ' ' + c + ': saida vazia')
+      const p = perguntaDoHook(r) || ''
+      assert.ok(p.startsWith(COMECO_SCRIPT) && p.includes('grava por cima do script'), f + ' ' + c + ': ' + p)
+    }
+  })
+})
+// 5.52 (chat 2, Task 2f, Codex comum, 2026-11-06): os dois heredocs no mesmo arquivo somam, o shell chamado ganha da
+// extensao, a variavel da temporaria mudada pelo comando nao libera o script e o heredoc so de texto nao e varrido
+test('5.52 (Task 2f, Codex comum): heredocs somados, shell do interpretador, temporaria mudada e heredoc de texto', () => {
+  comScripts(({ base, B, env }) => {
+    const BS = String.fromCharCode(92)
+    writeFileSync(join(base, 'dist.ps1'), 'rm -rf .' + BS + 'dist' + LF)
+    writeFileSync(join(base, 'tmp.sh'), 'rm -rf "$TMPDIR/src"' + LF)
+    const pergunta = (f, c, o = { env }) => {
+      const r = rodar549(f, c, o)
+      assert.ok(r.stdout.length > 0, f + ' ' + c + ': saida vazia ' + r.status + ' ' + r.stderr)
+      return perguntaDoHook(r) || ''
+    }
+    // achado 1: o segundo heredoc (>> ou tee -a) nao apaga o corpo do primeiro
+    for (const segundo of [`cat >> ${B}/novo.sh <<'EOF'`, `tee -a ${B}/novo.sh > /dev/null <<'EOF'`]) {
+      const c = [`cat > ${B}/novo.sh <<'EOF'`, 'rm -rf src', 'EOF', segundo, 'echo oi', 'EOF', `bash ${B}/novo.sh`].join(LF)
+      const p = pergunta('Bash', c)
+      assert.ok(p.startsWith(COMECO_APAGAR + ': ') && p.includes('a pasta src '), c + ': ' + p)
+    }
+    // achado 2: o bash, o sh e o source leem o .ps1 como bash (`.\dist` e a pasta .dist, fora da lista fechada)
+    const fora = { env: comProjetoDeFora(), cwd: PROJETO_DE_FORA }
+    for (const c of [`bash ${B}/dist.ps1`, `sh ${B}/dist.ps1`, `source ${B}/dist.ps1`]) {
+      const p = pergunta('Bash', c, fora)
+      assert.ok(p.startsWith(COMECO_APAGAR + ': '), c + ': ' + p)
+    }
+    // canario do achado 2: o mesmo .ps1 chamado direto pelo PowerShell segue lido como PowerShell (dist da lista)
+    if (process.platform === 'win32') assert.ok(calado(rodar549('PowerShell', `& ${B}/dist.ps1`, fora)), 'o .ps1 direto no PowerShell')
+    // achado 3: o comando que muda a variavel da temporaria tira a liberacao dela de dentro do script
+    const casa = '"' + FORA.split(sep).join('/') + '"'
+    const comTmp = { env: { ...env, TMPDIR: TEMP } }
+    if (!TEMP_COM_ESPACO) assert.ok(calado(rodar549('Bash', `bash ${B}/tmp.sh`, comTmp)), 'canario: o $TMPDIR do ambiente libera')
+    for (const c of [`TMPDIR=${casa} bash ${B}/tmp.sh`, `export TMPDIR=${casa}; bash ${B}/tmp.sh`, `env TMPDIR=${casa} bash ${B}/tmp.sh`]) {
+      const p = pergunta('Bash', c, comTmp)
+      assert.ok(p.startsWith(COMECO_APAGAR + ': '), c + ': ' + p)
+    }
+    // revisao interna do achado 3: a atribuicao com aspas antes do script escondia o script inteiro
+    for (const c of [`A='b' bash ${B}/git.sh`, `env TMPDIR="x y" bash ${B}/git.sh`]) {
+      const r = rodar549('Bash', c, { env })
+      assert.ok(r.status === 2 && r.stderr.startsWith(COMECO_BARRA_GIT), c + ': ' + r.status + ' ' + r.stdout + r.stderr)
+    }
+    // achado 4: o heredoc de texto que so grava nao e varrido; o dado ao bash segue
+    assert.ok(calado(rodar549('Bash', [`cat >> ${B}/notas.md <<'EOF'`, 'bash exemplo-que-nao-existe.sh', 'EOF'].join(LF), { env })), 'heredoc de texto')
+    const p = pergunta('Bash', ["bash <<'EOF'", `bash ${B}/nao-existe.sh`, 'EOF'].join(LF))
+    assert.ok(p.startsWith(COMECO_SCRIPT) && p.includes('nao achou o arquivo'), 'o heredoc dado ao bash: ' + p)
+  })
+})
+// 5.52 (chat 2, Task 2f, Codex final, 2026-11-07): o script dentro do if, do for, do while, do until, do else, do elif
+// e depois do ! e achado; e o mesmo script rodado de novo depois do cd conta de novo (a primeira leitura nao cala a
+// segunda, de outra pasta)
+test('5.52 (Task 2f, Codex final): o script depois da palavra de controle e o mesmo script depois do cd', () => {
+  comScripts(({ B, P, env }) => {
+    const g = `bash ${B}/git.sh`
+    const barram = [`if true; then ${g}; fi`, `for x in 1; do ${g}; done`, `while true; do ${g}; done`, `until false; do ${g}; done`,
+      `if false; then :; else ${g}; fi`, `if false; then :; elif true; then ${g}; fi`, `! ${g}`, `if ${g}; then :; fi`,
+      `while ${g}; do :; done`, `if ! ${g}; then :; fi`, `select x in a; do ${g}; done`, `coproc ${g}`]
+    for (const c of barram) {
+      const r = rodar549('Bash', c, { env })
+      assert.ok(r.status === 2 && r.stderr.startsWith(COMECO_BARRA_GIT) && r.stderr.includes('no script '), c + ': ' + r.status + ' ' + r.stdout + r.stderr)
+    }
+    // o heredoc gravado e rodado dentro do if e do for
+    const grava = [`cat > ${B}/novo.sh <<'EOF'`, 'rm -rf src', 'EOF'].join(LF)
+    for (const c of [grava + LF + `if true; then bash ${B}/novo.sh; fi`, grava + LF + `for x in 1; do bash ${B}/novo.sh; done`]) {
+      const r = rodar549('Bash', c, { env })
+      assert.ok(r.stdout.length > 0, c + ': saida vazia ' + r.status + ' ' + r.stderr)
+      const p = perguntaDoHook(r) || ''
+      assert.ok(p.startsWith(COMECO_APAGAR + ': ') && p.includes('a pasta src '), c + ': ' + p)
+    }
+    // canario: o script inofensivo no if segue calado, e a palavra de controle como argumento nao e pulada
+    assert.ok(calado(rodar549('Bash', `if true; then bash ${B}/oi.sh; fi`, { env })), 'canario: o inofensivo no if')
+    assert.ok(calado(rodar549('Bash', `echo then bash ${B}/git.sh`, { env })), 'canario: o then de argumento do echo')
+    // o mesmo script pelo caminho inteiro antes e depois do cd: o rm -rf dist do projeto cala, o de fora pergunta
+    writeFileSync(join(P, 'dist.sh'), 'rm -rf dist' + LF)
+    const d = `bash ${P}/dist.sh`
+    const noProjeto = { env, cwd: P }
+    assert.ok(calado(rodar549('Bash', d, noProjeto)), 'canario: o dist do projeto cala')
+    for (const c of [`cd ..; ${d}`, `${d}; cd ..; ${d}`, `${d} && cd .. && ${d}`]) {
+      const r = rodar549('Bash', c, noProjeto)
+      assert.ok(r.stdout.length > 0, c + ': saida vazia ' + r.status + ' ' + r.stderr)
+      const p = perguntaDoHook(r) || ''
+      assert.ok(p.startsWith(COMECO_APAGAR + ': '), c + ': ' + p)
+    }
+  })
+})
+
+// 5.52 (chat 3, Task 3c, decisao 2): o _contexto/autonomia.md e a permissao escrita do que a IA faz sozinha. A Edit
+// e a Write passam pela regra permissions.ask do settings; pelo shell, quem pergunta e a trava (regra grava-autonomia)
+const BI = String.fromCharCode(92)
+const GRAVA_AUTONOMIA = {
+  Bash: ['echo x > _contexto/autonomia.md', 'echo x >> _contexto/autonomia.md', 'echo x>_contexto/autonomia.md', 'echo "x">_contexto/autonomia.md',
+    'printf x | tee _contexto/autonomia.md', 'tee -a ./_contexto/autonomia.md < x', 'cp novo.md _contexto/autonomia.md', 'cp -t _contexto novo.md _contexto/autonomia.md',
+    'mv novo.md _contexto/autonomia.md', 'mv _contexto/autonomia.md velho.md', "sed -i 's/a/b/' _contexto/autonomia.md", "perl -pi -e 's/a/b/' _contexto/autonomia.md",
+    'bash -c "echo x > _contexto/autonomia.md"', ["cat > _contexto/autonomia.md <<'EOF'", 'x', 'EOF'].join(LF), 'sudo tee _contexto/AUTONOMIA.md',
+    'cd _contexto && echo x > autonomia.md', 'dd if=x of=_contexto/autonomia.md', 'install -m 644 novo.md _contexto/autonomia.md'],
+  PowerShell: ['Set-Content -Path _contexto' + BI + 'autonomia.md -Value x', 'Get-Content x | Out-File _contexto' + BI + 'autonomia.md',
+    'Copy-Item novo.md -Destination _contexto' + BI + 'autonomia.md', 'Copy-Item novo.md -Destination:_contexto/autonomia.md', 'Add-Content _contexto/autonomia.md "x"',
+    '"x" > _contexto' + BI + 'autonomia.md', 'powershell -Command "Set-Content _contexto/autonomia.md x"', 'Move-Item novo.md _contexto/autonomia.md'],
+}
+// 5.52 (chat 3, Task 3c, revisao interna): os que saiam calados. O git e o ffmpeg do allow, a copia pra dentro da
+// pasta e os gravadores que faltavam (Tee-Object, New-Item, Clear-Content, [IO.File], >|, truncate, rsync)
+const GRAVA_AUTONOMIA_DA_INTERNA = {
+  Bash: ['git diff --output=_contexto/autonomia.md', 'git log -1 --output=_contexto/autonomia.md', 'git diff --output _contexto/autonomia.md',
+    'ffmpeg -y -f lavfi -i anullsrc -t 1 -f wav _contexto/autonomia.md', 'cp /tmp/autonomia.md _contexto/', 'cp ../outro/_contexto/autonomia.md _contexto/',
+    'cp ../outro/_contexto/autonomia.md _contexto', 'cp ../outro/_contexto/autonomia.md .', 'echo x >| _contexto/autonomia.md', 'truncate -s0 _contexto/autonomia.md',
+    'rsync novo.md _contexto/autonomia.md', 'rsync -a ../outro/_contexto/autonomia.md _contexto/'],
+  PowerShell: ['Copy-Item C:' + BI + 'x' + BI + 'autonomia.md _contexto', 'Copy-Item ..' + BI + 'outro' + BI + '_contexto' + BI + 'autonomia.md _contexto' + BI,
+    'Copy-Item -Path ..' + BI + 'outro' + BI + 'autonomia.md -Destination _contexto', 'Get-Content x | Tee-Object -FilePath _contexto' + BI + 'autonomia.md',
+    'New-Item -Path _contexto' + BI + 'autonomia.md -Force -Value x', 'Clear-Content _contexto/autonomia.md', '[IO.File]::WriteAllText("_contexto/autonomia.md","x")',
+    '[System.IO.File]::Copy("novo.md", "_contexto/autonomia.md", $true)'],
+}
+const LE_AUTONOMIA_DA_INTERNA = {
+  Bash: ['git log -- _contexto/autonomia.md', 'git diff --stat _contexto/autonomia.md', 'cp _contexto/autonomia.md ../backup/autonomia-velho.md',
+    'ffmpeg -i video.mp4 saida.mp4', 'cp a.md _contexto/', 'echo x >| _contexto/outro.md'],
+  PowerShell: ['[IO.File]::ReadAllText("_contexto/autonomia.md")', 'Copy-Item _contexto' + BI + 'autonomia.md copia.md', 'New-Item -Path _contexto' + BI + 'outro.md'],
+}
+test('5.52 (Task 3c, revisao interna): git --output, ffmpeg, copia pra dentro da pasta e os gravadores que faltavam perguntam', () => {
+  assert.ok(GRAVA_AUTONOMIA_DA_INTERNA.Bash.length > 10 && GRAVA_AUTONOMIA_DA_INTERNA.PowerShell.length > 6, 'canario: as listas tem casos')
+  for (const [ferramenta, lista] of Object.entries(GRAVA_AUTONOMIA_DA_INTERNA)) for (const c of lista) {
+    assert.strictEqual(gravaAutonomia(c, { ferramenta }), true, ferramenta + ' deveria perguntar: ' + c)
+  }
+  for (const [ferramenta, lista] of Object.entries(LE_AUTONOMIA_DA_INTERNA)) for (const c of lista) assert.strictEqual(gravaAutonomia(c, { ferramenta }), false, ferramenta + ' deveria passar calado: ' + c)
+})
+// o allow do settings do _modelo casa pelo comeco do texto: o .. e o pacote a mais saem dele e a trava pergunta
+const FORA_DO_ALLOW = ['node .claude/skills/../../apaga.mjs', 'node _ferramentas/../apaga.mjs', 'python .claude/skills/x/../../../apaga.py',
+  'python3 ./.claude/skills/../x.py', 'npm install --prefix .claude/skills/x pacote-qualquer', 'npm ci --prefix .claude/skills/../.. ',
+  'git status && node .claude/skills/../../apaga.mjs']
+const DENTRO_DO_ALLOW = ['node .claude/skills/mercado-livre/scripts/x.mjs --flag a', 'node _ferramentas/verificar-kit.mjs', 'python .claude/skills/x/y.py arq.txt',
+  'npm install --prefix .claude/skills/mercado-livre', 'npm ci --prefix .claude/skills/gerar-imagens', 'npm install', 'node outro/../x.mjs']
+const COMECO_FORA = 'Pergunta da trava barrar-perigoso, regra fora-do-allow: A IA quer rodar '
+test('5.52 (Task 3c, revisao interna): o comando que o allow solta e sai dele pelo .. ou pelo pacote a mais pergunta, so na Bash', () => {
+  for (const c of FORA_DO_ALLOW) assert.strictEqual(escapaDoAllow(c, { ferramenta: 'Bash' }).length, 1, 'deveria perguntar: ' + c)
+  for (const c of DENTRO_DO_ALLOW) assert.deepStrictEqual(escapaDoAllow(c, { ferramenta: 'Bash' }), [], 'deveria passar calado: ' + c)
+  assert.deepStrictEqual(escapaDoAllow(FORA_DO_ALLOW[0], { ferramenta: 'PowerShell' }), [], 'na PowerShell o allow nao solta nada')
+  assert.deepStrictEqual(escapaDoAllow(undefined), [])
+  for (const c of FORA_DO_ALLOW.slice(0, 5)) {
+    const r = rodar549('Bash', c)
+    assert.ok(r.stdout.length > 0, c + ': saida vazia ' + r.status + r.stderr)
+    assert.strictEqual(r.status, 0, c)
+    assert.ok((perguntaDe(r) || '').startsWith(COMECO_FORA), c + ': ' + r.stdout)
+  }
+  for (const c of DENTRO_DO_ALLOW.slice(0, 4)) assert.ok(calado(rodar549('Bash', c)), 'calado: ' + c)
+  const junto = perguntaDe(rodar549('Bash', 'echo x > _contexto/autonomia.md; node .claude/skills/../../apaga.mjs')) || ''
+  assert.ok(junto.startsWith('Pergunta da trava barrar-perigoso, regra grava-autonomia e fora-do-allow: '), junto)
+})
+// 5.52 (chat 3, Task 3c, Codex comum): o ffprobe do allow grava pelo -o; o segundo --prefix e a opcao do npm saiam do
+// allow; e o embrulho que o Claude Code tira antes de casar o allow (command, timeout...) escondia o ..
+const FFPROBE_GRAVA = ['ffprobe -v quiet -show_format -o _contexto/autonomia.md video.mp4', 'ffprobe -o_contexto/autonomia.md video.mp4',
+  'ffprobe -oautonomia.md video.mp4', 'ffprobe --output=_contexto/autonomia.md video.mp4', 'ffprobe -output_file _contexto/autonomia.md video.mp4']
+const FFPROBE_LE = ['ffprobe -v quiet -show_format video.mp4', 'ffprobe -o saida.json video.mp4']
+const FORA_DO_ALLOW_DA_COMUM = ['npm install --prefix .claude/skills/x --prefix=../fora', 'npm install --prefix .claude/skills/x --prefix ../fora',
+  'npm ci --prefix .claude/skills/x --ignore-scripts', 'npm install --prefix .claude/skills/x/../..', 'npm install --prefix .claude/skills/x/y',
+  'npm ci --prefix .claude/skills/gerar-imagens --no-audit',
+  'command node _ferramentas/../fora.mjs', 'timeout 30 node _ferramentas/../fora.mjs', 'builtin python .claude/skills/../x.py',
+  'exec node _ferramentas/../fora.mjs', 'time node _ferramentas/../fora.mjs', 'nice -n 5 python3 .claude/skills/../x.py',
+  'nohup node _ferramentas/../fora.mjs', 'stdbuf -oL node _ferramentas/../fora.mjs', 'env A=1 node _ferramentas/../fora.mjs',
+  'NODE_ENV=test node _ferramentas/../fora.mjs', 'timeout 30 npm install --prefix .claude/skills/x pacote',
+  'xargs node _ferramentas/x.mjs', 'noglob node _ferramentas/x.mjs', 'noglob npm install']
+const DENTRO_DO_ALLOW_DA_COMUM = ['npm install --prefix .claude/skills/gerar-imagens', 'npm ci --prefix .claude/skills/x/', 'npm ci',
+  'command node _ferramentas/verificar-kit.mjs', 'timeout 30 node _ferramentas/x.mjs', 'nohup python .claude/skills/x/y.py',
+  'echo node _ferramentas/../x.mjs', 'xargs grep node', 'noglob ls']
+test('5.52 (Task 3c, Codex comum): ffprobe -o, npm fora do formato exato e embrulho antes do node, python ou npm perguntam', () => {
+  assert.ok(FORA_DO_ALLOW_DA_COMUM.length > 15 && FFPROBE_GRAVA.length > 3, 'canario: as listas tem casos')
+  for (const c of FFPROBE_GRAVA) assert.strictEqual(gravaAutonomia(c, { ferramenta: 'Bash' }), true, 'deveria perguntar: ' + c)
+  for (const c of FFPROBE_LE) assert.strictEqual(gravaAutonomia(c, { ferramenta: 'Bash' }), false, 'deveria passar calado: ' + c)
+  for (const c of FORA_DO_ALLOW_DA_COMUM) assert.strictEqual(escapaDoAllow(c, { ferramenta: 'Bash' }).length, 1, 'deveria perguntar: ' + c)
+  for (const c of DENTRO_DO_ALLOW_DA_COMUM) assert.deepStrictEqual(escapaDoAllow(c, { ferramenta: 'Bash' }), [], 'deveria passar calado: ' + c)
+  // o que as skills do kit mandam rodar segue calado
+  for (const s of ['mercado-livre', 'midia-social', 'gerar-imagens']) assert.ok(calado(rodar549('Bash', 'npm install --prefix .claude/skills/' + s)), 'calado: ' + s)
+  for (const c of [FFPROBE_GRAVA[0], FORA_DO_ALLOW_DA_COMUM[0], FORA_DO_ALLOW_DA_COMUM[6], FORA_DO_ALLOW_DA_COMUM[17]]) {
+    const r = rodar549('Bash', c)
+    assert.ok(r.stdout.length > 0, c + ': saida vazia ' + r.status + r.stderr)
+    assert.strictEqual(r.status, 0, c)
+    const p = perguntaDe(r) || ''
+    assert.ok(p.startsWith(c === FFPROBE_GRAVA[0] ? COMECO_AUTONOMIA : COMECO_FORA), c + ': ' + r.stdout)
+  }
+})
+// 5.52 (chat 3, Task 3c, segunda Codex comum): o argumento do embrulho entre aspas parava o pulo antes do programa
+const ASPAS_NO_EMBRULHO = ['timeout "30" node _ferramentas/../fora.mjs', 'nice -n "5" node _ferramentas/../fora.mjs',
+  "timeout '30' node _ferramentas/../fora.mjs", 'nice "-n" \'5\' python .claude/skills/../x.py']
+// o que a trava nao le com certeza antes do programa pergunta, mesmo sem o ..
+const INCERTO_NO_EMBRULHO = ['timeout $T node _ferramentas/x.mjs', 'timeout "$T" node _ferramentas/x.mjs', 'timeout "3"0 node _ferramentas/x.mjs',
+  'timeout $(echo 30) node _ferramentas/x.mjs', 'timeout `echo 30` npm ci']
+const CERTO_NO_EMBRULHO = ['timeout "30" node _ferramentas/x.mjs', "timeout '$T' node _ferramentas/x.mjs", 'env A=$X node _ferramentas/x.mjs',
+  'timeout $T ls', 'node _ferramentas/x.mjs "$A"', 'node _ferramentas/x.mjs $(date)']
+test('5.52 (Task 3c, segunda Codex comum): argumento do embrulho entre aspas se le sem as aspas, e o incerto pergunta', () => {
+  assert.ok(ASPAS_NO_EMBRULHO.length === 4 && INCERTO_NO_EMBRULHO.length > 3, 'canario: as listas tem casos')
+  for (const c of [...ASPAS_NO_EMBRULHO, ...INCERTO_NO_EMBRULHO]) assert.strictEqual(escapaDoAllow(c, { ferramenta: 'Bash' }).length, 1, 'deveria perguntar: ' + c)
+  for (const c of CERTO_NO_EMBRULHO) assert.deepStrictEqual(escapaDoAllow(c, { ferramenta: 'Bash' }), [], 'deveria passar calado: ' + c)
+  for (const c of ASPAS_NO_EMBRULHO.slice(0, 3)) {
+    const r = rodar549('Bash', c)
+    assert.ok(r.stdout.length > 0, c + ': saida vazia ' + r.status + r.stderr)
+    assert.strictEqual(r.status, 0, c)
+    assert.ok((perguntaDe(r) || '').startsWith(COMECO_FORA), c + ': ' + r.stdout)
+  }
+})
+const LE_AUTONOMIA = {
+  Bash: ['cat _contexto/autonomia.md', 'grep pode _contexto/autonomia.md', 'git add _contexto/autonomia.md', 'cp _contexto/autonomia.md copia.md',
+    'git diff _contexto/autonomia.md', 'echo autonomia.md', ["cat > nota.md <<'EOF'", 'cp x _contexto/autonomia.md', 'EOF'].join(LF), 'tee nota.md',
+    'echo x > autonomia.md.bak', 'sed -n 1p _contexto/autonomia.md', 'echo x > _contexto/outro.md', 'echo "x > _contexto/autonomia.md"'],
+  PowerShell: ['Get-Content _contexto' + BI + 'autonomia.md', 'Copy-Item _contexto' + BI + 'autonomia.md -Destination copia.md', 'Select-String pode _contexto/autonomia.md'],
+}
+const COMECO_AUTONOMIA = 'Pergunta da trava barrar-perigoso, regra grava-autonomia: A IA quer mudar pelo terminal o _contexto/autonomia.md'
+test('5.52 (Task 3c): gravar no autonomia.md pelo shell pergunta, e so ler passa calado', () => {
+  assert.ok(GRAVA_AUTONOMIA.Bash.length > 10 && LE_AUTONOMIA.Bash.length > 5, 'canario: as listas tem casos')
+  for (const [ferramenta, lista] of Object.entries(GRAVA_AUTONOMIA)) for (const c of lista) {
+    assert.strictEqual(gravaAutonomia(c, { ferramenta }), true, ferramenta + ' deveria perguntar: ' + c)
+    assert.strictEqual(ehPerigoso(c), null, 'nao deveria barrar: ' + c)
+  }
+  for (const [ferramenta, lista] of Object.entries(LE_AUTONOMIA)) for (const c of lista) assert.strictEqual(gravaAutonomia(c, { ferramenta }), false, ferramenta + ' deveria passar calado: ' + c)
+  assert.strictEqual(gravaAutonomia(undefined), false)
+})
+test('5.52 (Task 3c): a pergunta do autonomia.md pelo hook de verdade, nas tres ferramentas, junta com apagar pasta e vinda do script', () => {
+  for (const ferramenta of FERRAMENTAS) {
+    const lista = ferramenta === 'PowerShell' ? GRAVA_AUTONOMIA.PowerShell : GRAVA_AUTONOMIA.Bash
+    for (const c of lista.slice(0, 4)) {
+      const r = rodar549(ferramenta, c)
+      assert.ok(r.stdout.length > 0, ferramenta + ' ' + c + ': saida vazia ' + r.status + r.stderr)
+      assert.strictEqual(r.status, 0, ferramenta + ' ' + c)
+      const razao = perguntaDe(r) || ''
+      assert.ok(razao.startsWith(COMECO_AUTONOMIA + ', o arquivo que diz o que a IA pode fazer sem perguntar. Pode? Comando: '), ferramenta + ' ' + c + ': ' + razao)
+    }
+    for (const c of ferramenta === 'PowerShell' ? LE_AUTONOMIA.PowerShell : LE_AUTONOMIA.Bash.slice(0, 4)) assert.ok(calado(rodar549(ferramenta, c)), ferramenta + ' calado: ' + c)
+    const junto = rodar549(ferramenta, 'rm -rf sabinos-3c-nao-existe; echo x > _contexto/autonomia.md')
+    const razao = perguntaDe(junto) || ''
+    assert.ok(razao.startsWith('Pergunta da trava barrar-perigoso, regra apagar-pasta e grava-autonomia: A IA quer apagar '), ferramenta + ': ' + junto.stdout)
+    assert.ok(razao.includes('sabinos-3c-nao-existe') && razao.includes('_contexto/autonomia.md'), ferramenta + ': ' + razao)
+    // barrar ganha de perguntar
+    const barra = rodar549(ferramenta, 'echo x > _contexto/autonomia.md && ' + G)
+    assert.strictEqual(barra.status, 2, ferramenta + ': deveria barrar: ' + barra.stdout)
+  }
+  comScripts(({ base, B, env }) => {
+    writeFileSync(join(base, 'grava.sh'), 'echo pode > _contexto/autonomia.md' + LF)
+    const r = rodar549('Bash', `bash ${B}/grava.sh`, { env })
+    const p = perguntaDoHook(r) || ''
+    assert.ok(p.startsWith(COMECO_AUTONOMIA), 'o script que grava pergunta: ' + p + r.stderr)
+    assert.ok(calado(rodar549('Bash', `bash ${B}/oi.sh`, { env })), 'canario: o script inofensivo segue calado')
+  })
 })

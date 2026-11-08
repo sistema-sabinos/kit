@@ -6,7 +6,7 @@ import { join, relative, dirname, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { hashArquivo, ignorado, componenteDe, vaiNaTabelaMae } from './atualizar-projeto.mjs'
+import { hashArquivo, ignorado, componenteDe, vaiNaTabelaMae, PERMISSOES_DO_KIT } from './atualizar-projeto.mjs'
 // a mesma lista de cara de chave do backup automatico do aluno: o zip nunca sai com o que
 // o backup dele seguraria
 import { caraDeChave } from '../_modelo/.claude/hooks/auto-sync.mjs'
@@ -142,15 +142,48 @@ export function contrasteNoTexto(txt, html = false) {
 // gastar calada abaixo dele (a /mercado-livre dizia isso ate a 5.19). Desde a 5.37 vale o mesmo pro
 // orcamento do mes e o saldo: "dentro do orcamento roda sem pedir" troca o "pode ir" pelo orcamento, e
 // a decisao de 2026-10-30 foi o orcamento como limite a mais. Devolve a linha de cada um.
+// 5.52 (chat 3): o "todo gasto" isenta so a primeira regra (o teto como trava a mais). Ate a 5.51 o bloco com "todo
+// gasto" passava inteiro, e "todo gasto pede o pode ir; dentro do orcamento roda sem pedir" saia limpo.
 export function podeIrSoAcimaDoTeto(txt) {
   return blocos(txt).filter(({ texto: t }) => {
     // bloco que ja diz a regra pra todo gasto pode falar do teto como trava a mais
     const todoGasto = /\btodo gasto\b|mesmo (?:[\p{L} ]+ e )?(?:dentro|abaixo) do (?:teto|or[cç]amento)/iu.test(t)
-    if (todoGasto) return false
-    if (/gastos? acima d[eo] (?:`?limite_gasto_usd`?|teto|limite|or[cç]amento|saldo)/iu.test(t) && /pode ir/i.test(t)) return true
+    if (!todoGasto && /gastos? acima d[eo] (?:`?limite_gasto_usd`?|teto|limite|or[cç]amento|saldo)/iu.test(t) && /pode ir/i.test(t)) return true
     return /(?:dentro|abaixo) d[oa] (?:or[cç]amento|saldo)|cabe no (?:or[cç]amento|saldo)|com saldo\b/iu.test(t)
       && /sem (?:pedir|perguntar|o ["“]?pode ir)|n[aã]o precisa (?:pedir|perguntar|do ["“]?pode ir)|dispensa o ["“]?pode ir/iu.test(t)
   }).map(b => b.ini)
+}
+
+// Gate 9 (permissao de gasto, 5.52, decisao 1): a unica autorizacao previa de gasto e a permissao escrita no
+// _contexto/autonomia.md. Paragrafo ou item que fala de gasto e manda gastar "sem pedir", "sem perguntar" ou
+// "avisar depois" tem de citar o autonomia.md ou a permissao ali mesmo, senao a IA gasta calada sem ela.
+// 5.52 (chat 3, conserto da interna): custa/custo, qualquer forma de gastar (gaste, gastei) e credito tambem falam de gasto
+const FALA_DE_GASTO = /\bgast\p{L}*|dinheiro|\bpag[oa]s?\b|cobran[cç]a|\bcobra\b|\bcust(?:a|am|o|os)\b|\bcr[eé]ditos?\b/iu
+// "sem perguntar de novo" e o sim que ja citou o valor (o --acima-do-teto), nao gasto sem pedir.
+// 5.52 (chat 3, conserto da interna): "avisa logo depois", "nao precisa pedir" e "sem esperar o pode ir" tambem
+const SEM_PEDIR = /\bsem (?:pedir|perguntar)\b(?! de novo)|\bavis\p{L}* (?:\p{L}+ ){0,2}depois\b|\bn[aã]o precisa (?:pedir|perguntar)\b|\bsem esperar (?:o |pelo )?["“]?pode ir/iu
+// a outra excecao escrita da regra 4 (decisao 16): uso dentro da assinatura (a cota do plano) roda sem pedir.
+// A permissao so isenta quando o trecho a afirma: "sem permissao" ou "sem a permissao" nao vale
+// Codex comum (5.52, chat 3, duas voltas): a permissao (autonomia.md ou a palavra permissao) so isenta afirmada. Na
+// mesma frase (do . ! ? ; seguido de espaco, ou do comeco da linha, ate a mencao), um "sem" ou "nao" antes dela, a
+// qualquer distancia, nega; o "sem pedir", "sem perguntar", "sem esperar" e "nao precisa pedir" da propria frase de
+// gasto nao contam como negacao.
+// Codex final (5.52, chat 3): a assinatura e a cota do plano seguem a mesma regra, e "fora da/do" tambem nega:
+// "Sem assinatura, gasta sem pedir" e "Fora da cota do plano, gasta sem perguntar" nao isentam. O "sem cobranca"
+// diz que nao custa e tambem nao conta: "sem cobranca por imagem dentro da cota do plano" isenta
+const MENCAO_PERMISSAO = /autonomia\.md|permiss[aã]o|assinatura|cota do (?:seu )?plano/giu
+const FRASE_DE_GASTO = /\bsem (?:pedir|perguntar|esperar|cobran[cç]a)(?![\p{L}])|\bn[aã]o precisa (?:pedir|perguntar)\b/giu
+const NEGACAO = /(?<![\p{L}])(?:sem|n[aã]o|fora d[ao])(?![\p{L}])/iu
+function citaPermissaoAfirmada(t) {
+  for (const frase of t.split(/[.!?;](?=\s|$)|\r?\n/)) {
+    for (const m of frase.matchAll(MENCAO_PERMISSAO)) {
+      if (!NEGACAO.test(frase.slice(0, m.index).replace(FRASE_DE_GASTO, ''))) return true
+    }
+  }
+  return false
+}
+export function gastoSemPedirSemPermissao(txt) {
+  return blocos(txt).filter(({ texto: t }) => FALA_DE_GASTO.test(t) && SEM_PEDIR.test(t) && !citaPermissaoAfirmada(t)).map(b => b.ini)
 }
 
 // Gate 9 (Codex avulso): passar da cota do plano gasta o credito avulso que a pessoa comprou, e
@@ -598,7 +631,9 @@ export function rodarGates(dirKit, opcoes = {}) {
   for (const rel of ['.claude/settings.json', '_modelo/.claude/settings.json']) {
     const settings = join(dirKit, rel)
     if (!existsSync(settings)) continue
-    const txt = readFileSync(settings, 'utf8')
+    // 5.52 (chat 3, Task 3c): so os hooks contam; o git do permissions.allow do _modelo nao e hook
+    let txt = readFileSync(settings, 'utf8')
+    try { txt = JSON.stringify(JSON.parse(txt).hooks ?? {}) } catch { /* JSON quebrado: le o texto inteiro, e o Gate 9 acusa */ }
     if (/git/.test(txt) && !/git rev-parse --git-dir/.test(txt)) {
       falhas.push({ gate: 5, arquivo: rel, detalhe: 'hook de git sem guarda de repo/remote' })
     }
@@ -719,6 +754,33 @@ export function rodarGates(dirKit, opcoes = {}) {
       tipoOk = false
     }
     if (!tipoOk) continue
+    // 5.52 (chat 3, Task 3c, decisoes 2 e 18): o _modelo traz o ask da permissao escrita e o allow da lista fechada
+    // (PERMISSOES_DO_KIT, a mesma do mesclarSettings), nada a mais nem a menos; a pasta-mae fica sem allow. Nos
+    // dois, regra que solta todo comando (Bash, Bash(*), PowerShell, PowerShell(*)), mcp__ no allow e o modo
+    // bypassPermissions reprovam
+    const allow = (cfg.permissions && cfg.permissions.allow) || []
+    if (!Array.isArray(allow)) {
+      falhas.push({ gate: 9, arquivo: rel, detalhe: 'permissions.allow existe mas nao e uma lista' })
+      continue
+    }
+    for (const regra of allow) {
+      if (typeof regra === 'string' && /^\s*(?:Bash|PowerShell)\s*(?:\(\s*\*?\s*\))?\s*$/.test(regra))
+        falhas.push({ gate: 9, arquivo: rel, detalhe: `permissions.allow solta todo comando (${regra}); so a lista fechada do kit` })
+      if (typeof regra === 'string' && /^\s*mcp__/.test(regra))
+        falhas.push({ gate: 9, arquivo: rel, detalhe: `permissions.allow solta ferramenta de fora (${regra}); mcp__ nunca entra no allow do kit` })
+    }
+    if (JSON.stringify(cfg).includes('"bypassPermissions"'))
+      falhas.push({ gate: 9, arquivo: rel, detalhe: 'settings.json liga o modo bypassPermissions; o kit nunca desliga as perguntas' })
+    if (rel.startsWith('_modelo/')) {
+      for (const regra of PERMISSOES_DO_KIT.ask) if (!ask.includes(regra))
+        falhas.push({ gate: 9, arquivo: rel, detalhe: `permissions.ask sem a regra ${regra} (a caixinha antes de mexer na permissao escrita)` })
+      for (const regra of PERMISSOES_DO_KIT.allow) if (!allow.includes(regra))
+        falhas.push({ gate: 9, arquivo: rel, detalhe: `permissions.allow sem a regra ${regra} da lista fechada` })
+      for (const regra of allow) if (!PERMISSOES_DO_KIT.allow.includes(regra))
+        falhas.push({ gate: 9, arquivo: rel, detalhe: `permissions.allow com regra fora da lista fechada: ${regra}` })
+    } else if (allow.length) {
+      falhas.push({ gate: 9, arquivo: rel, detalhe: 'permissions.allow na pasta-mae; ela nao liga o barrar-perigoso no shell e fica sem allow' })
+    }
     const blocoMcp = ((cfg.hooks && cfg.hooks.PreToolUse) || []).find(entrada =>
       (entrada.hooks || []).some(h => typeof h.command === 'string' && h.command.includes('barrar-mcp')))
     if (!blocoMcp) {
@@ -749,7 +811,9 @@ export function rodarGates(dirKit, opcoes = {}) {
     if (!rel.endsWith('.md')) continue
     const texto = readFileSync(join(dirKit, rel), 'utf8')
     for (const linha of podeIrSoAcimaDoTeto(texto))
-      falhas.push({ gate: 9, arquivo: rel, detalhe: `linha ${linha}: "pode ir" so pra gasto acima do teto; todo gasto pede o "pode ir" na hora, e o limite_gasto_usd e trava a mais` })
+      falhas.push({ gate: 9, arquivo: rel, detalhe: `linha ${linha}: "pode ir" so pra gasto acima do teto, ou orcamento e saldo no lugar dele; fora da permissao escrita no _contexto/autonomia.md o gasto pede o "pode ir" na hora, e o limite_gasto_usd e o orcamento sao trava a mais` })
+    for (const linha of gastoSemPedirSemPermissao(texto))
+      falhas.push({ gate: 9, arquivo: rel, detalhe: `linha ${linha}: gasto "sem pedir", "sem perguntar" ou "avisa depois" sem citar o _contexto/autonomia.md ou a permissao no mesmo trecho; so a permissao escrita dispensa o "pode ir"` })
     for (const linha of codexAvulsoSemPodeIr(texto))
       falhas.push({ gate: 9, arquivo: rel, detalhe: `linha ${linha}: credito avulso do Codex sem o "pode ir" no mesmo trecho; passar da cota gasta dinheiro, e o lote espera o "pode ir" na hora` })
   }
