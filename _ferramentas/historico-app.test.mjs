@@ -80,13 +80,14 @@ test('JSON quebrado sai 2 sem gravar', () => {
   }
 })
 
-test('o /setup e o /atualizar-kit chamam o script', () => {
+// 5.55: o /setup chama pelo aplicar --registro, que roda o script (a chamada direta virava duplicata)
+test('o /atualizar-kit chama o script e o /setup chama pelo aplicar --registro', () => {
   const cmd = 'node _ferramentas/historico-app.mjs'
-  for (const rel of ['.claude/skills/setup/SKILL.md', '.claude/skills/atualizar-kit/SKILL.md']) {
-    const txt = readFileSync(join(KIT, rel), 'utf8')
-    assert.ok(txt.length > 1000, `canario: ${rel} veio`)
-    assert.ok(txt.includes(cmd), `${rel} chama o ${cmd}`)
-  }
+  const kitTxt = readFileSync(join(KIT, '.claude/skills/atualizar-kit/SKILL.md'), 'utf8')
+  const setup = readFileSync(join(KIT, '.claude/skills/setup/SKILL.md'), 'utf8')
+  assert.ok(kitTxt.length > 1000 && setup.length > 1000, 'canario: as duas skills vieram')
+  assert.ok(kitTxt.includes(cmd), `o /atualizar-kit chama o ${cmd}`)
+  assert.ok(setup.includes('aplicar <pasta-do-projeto> --registro') && !setup.includes(cmd), 'o /setup chama pelo aplicar, sem a chamada direta')
 })
 
 // comum do Bloco C (5.54): o mae so compara e roda antes do sim; o Passo 2 do /atualizar-kit nao promete

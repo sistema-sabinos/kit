@@ -969,14 +969,9 @@ qual é o próximo passo ao terminar cada etapa)".
    motor guardado, que deixam o `/atualizar-sabinos` saber, na versão seguinte,
    o que veio do SabinOS e o que é da pessoa. A saída do `aplicar` pode trazer
    a linha que começa com `Historico do app:` (o prazo de 30 dias pro app guardar
-   as conversas neste computador): mostrar essa linha como veio.
-
-   Depois, ainda da pasta-mãe, rodar `node _ferramentas/historico-app.mjs`, que
-   grava no `~/.claude/settings.json` da pessoa (o do computador, fora de qualquer
-   projeto) o prazo de 30 dias pro app guardar as conversas; sem ele o app guarda
-   sem prazo. As outras configurações desse arquivo ficam como estavam. Mostrar a
-   linha que ele imprime. Saída 2 quer dizer que o arquivo tem um erro de escrita
-   e nada foi gravado: dizer isso em uma frase e seguir, sem consertar sozinho.
+   as conversas neste computador): mostrar essa linha como veio. Se ela disser
+   que o arquivo tem JSON quebrado, o arquivo tem um erro de escrita e nada foi
+   gravado: dizer isso em uma frase e seguir, sem consertar sozinho.
 5. **Teste de aceite.** Reler do disco, nunca da memória da conversa, o
    `_contexto/empresa.md`, o `_contexto/estrategia.md` e o
    `_contexto/preferencias.md` do projeto, e provar com três fatos tirados deles,
