@@ -112,7 +112,7 @@ Skills externas prontas pra instalar. Use como referencia ao criar skills com o 
 ### Context7 MCP
 **O que faz:** Busca documentacao atualizada de bibliotecas, frameworks e APIs (React, Next.js, Prisma, Tailwind, etc). Evita que o Claude use info desatualizada do treinamento.
 **Bom pra:** Qualquer skill que envolva codigo com biblioteca/framework. Setup, debug, geracao de codigo
-**Como instalar:** `claude mcp add context7 -- npx -y @upstash/context7-mcp`. Depois roda automatico
+**Como instalar:** `node .claude/skills/conectar/scripts/ligar-mcp.mjs ligar context7`. Depois roda automatico
 **Fonte:** Skill que embrulha o MCP context7
 
 ---

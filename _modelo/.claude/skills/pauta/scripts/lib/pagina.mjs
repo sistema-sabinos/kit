@@ -28,7 +28,7 @@ export async function ogDaPagina(page, url, espera = 5500) {
 export function exigirFfmpeg(spawn = spawnSync) {
   for (const bin of ['ffmpeg', 'ffprobe']) {
     const r = spawn(bin, ['-version'], { encoding: 'utf8' })
-    if (r.error || r.status !== 0) throw new Error(`${bin} nao encontrado: instalar o ffmpeg (o /conectar ou o Claude ajudam) e abrir o terminal de novo`)
+    if (r.error || r.status !== 0) throw new Error(`${bin} nao encontrado: instalar o ffmpeg (o /conectar ou o Claude ajudam), esperar terminar o que roda nas outras conversas, sair de vez do app do Claude (Windows: icone perto do relogio, botao direito, Sair; Mac: Cmd+Q) e abrir de novo; Gerenciador de Tarefas so se o Sair nao fechar`)
   }
 }
 

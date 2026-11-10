@@ -263,7 +263,7 @@ export async function conferirPerfil({ porta, perfil, fetchFn, timeoutMs } = {})
 }
 
 // O texto de religar mora so aqui: o log do pulo de porta do abrirChrome usa ele.
-export const RELIGAR = 'ligue o `navegador` de novo com a porta nova (`claude mcp remove navegador` e o passo 3 do Degrau 5) e feche e abra o Claude Code antes de usar, porque o `navegador` que já está rodando só pega a porta nova numa sessão nova'
+export const RELIGAR = 'ligue o `navegador` de novo com a porta nova (`node .claude/skills/conectar/scripts/ligar-mcp.mjs ligar navegador`, o passo 3 do Degrau 5) e, antes de usar, saia de vez do app do Claude (Windows: ícone perto do relógio, botão direito, Sair; Mac: Cmd+Q) e abra de novo, depois de esperar terminar o que roda nas outras conversas (Gerenciador de Tarefas só se o Sair não fechar), porque o `navegador` que já está rodando só pega a porta nova numa sessão nova'
 
 // soExistente: so usa perfil que ja existe e nunca pula de porta (a sonda agendada roda assim).
 // headless: tarefa sem a pessoa na frente; o login feito com janela vale sem janela (C1c, volta 4).

@@ -8,7 +8,7 @@
       ".claude/skills/humanizar/",
       ".claude/skills/pedir/",
       "_contexto/arquivo/README.md", "dados/README.md",
-      ".claude/hooks/auto-sync.mjs",
+      ".claude/hooks/auto-sync.mjs", ".claude/hooks/aviso-fechamento.mjs",
       ".claude/detalhe-regras.md"
     ] },
     "bastao": { "depende": [], "caminhos": [".claude/skills/bastao/"] },

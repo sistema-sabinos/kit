@@ -74,6 +74,10 @@ de rodar. Nunca usar outro endereço.
    > **Saiu do SabinOS:** `/setup` (sugiro tirar)
    > Nada do que é seu entra na troca. Posso seguir?"
 
+   Quando o plano imprimir a linha que começa com `Historico do app:`, mostrar
+   sempre essa parte, antes do "Posso seguir?", em palavras simples: o aplicar
+   vai deixar o app guardar as conversas por 30 dias neste computador.
+
 3. "Componentes que o projeto ainda não tem": oferecer cada um numa linha, com o
    que ele faz, e perguntar quais entram. Pergunta no formato de 4 partes (a
    pergunta, uma linha de por que está perguntando, 2 ou 3 exemplos de resposta,
@@ -113,7 +117,7 @@ registrar.
    fechar.
 2. Se o projeto tem `.claude/settings.json`, conferir que continua JSON válido:
    `node -e "JSON.parse(require('fs').readFileSync('.claude/settings.json','utf8'))"`.
-3. Anotar no diário de hoje (`_memoria/diario/AAAA-MM-DD.md`, ou `AAAA-MM-DD-<origem>.md` quando o `.origem` existe e é diferente de `dono`; criando a pasta e o arquivo com `# AAAA-MM-DD` se faltar): `- HH:MM, SabinOS atualizado pra <v>: <o que entrou em uma linha>`. Mudança do `mudancas.md` que a pessoa recusou vira linha no `_memoria/decisoes.md`, no formato do cabeçalho dele, com o motivo dela.
+3. Anotar no diário de hoje (`_memoria/diario/AAAA-MM-DD.md`, ou `AAAA-MM-DD-<origem>.md` quando o `.origem` existe e é diferente de `dono`; criando a pasta e o arquivo com `# AAAA-MM-DD` se faltar): `- HH:MM, SabinOS atualizado pra <v> [atualização do SabinOS]: <o que entrou em uma linha>` (o rótulo entre colchetes faz o aviso de sessão sem fechar ignorar a linha). Mudança do `mudancas.md` que a pessoa recusou vira linha no `_memoria/decisoes.md`, no formato do cabeçalho dele, com o motivo dela.
 4. Fechar: "Pronto, projeto na versão <v>. A pasta-mãe (de onde nascem os
    projetos novos) continua na versão dela; antes de criar outro projeto, rode
    `/atualizar-kit` lá. Se algo ficou estranho, é só pedir

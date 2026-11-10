@@ -601,6 +601,10 @@ perguntar outro nome antes de seguir.
 - `.claude/hooks/auto-sync.mjs`, só o script (nunca o `auto-sync.test.mjs`). É o
   backup automático que o bloco `Stop` do `settings.json` chama. Vai sempre, como a
   trava: sem ele o projeto nasce com o `settings.json` apontando pra um script que não existe.
+- `.claude/hooks/aviso-fechamento.mjs`, só o script (nunca o `.test.mjs`). É o aviso
+  que o `settings.json` chama no começo da conversa e antes do resumo: lembra os dias
+  do diário que ficaram sem o `/atualizar`. Vai sempre: sem ele o projeto nasce com o
+  `settings.json` apontando pra um script que não existe.
 - `.claude/detalhe-regras.md`, copiar como está. É o detalhe das regras (formato
   do diário e do recado, rotina, criação de skill, Codex) que o `AGENTS.md` manda
   ler antes de escrever; sem ele o Mapa aponta pra um arquivo que não existe.
@@ -816,7 +820,9 @@ qual é o próximo passo ao terminar cada etapa)".
    `node _ferramentas/atualizar-projeto.mjs aplicar <pasta-do-projeto> --registro`. Tudo sai
    "igual" e nada é trocado: o que fica é o recibo `.sabinos/instalado.json` e o
    motor guardado, que deixam o `/atualizar-sabinos` saber, na versão seguinte,
-   o que veio do SabinOS e o que é da pessoa.
+   o que veio do SabinOS e o que é da pessoa. A saída do `aplicar` pode trazer
+   a linha que começa com `Historico do app:` (o prazo de 30 dias pro app guardar
+   as conversas neste computador): mostrar essa linha como veio.
 5. **Teste de aceite.** Reler do disco, nunca da memória da conversa, o
    `_contexto/empresa.md`, o `_contexto/estrategia.md` e o
    `_contexto/preferencias.md` do projeto novo, e provar com três fatos tirados

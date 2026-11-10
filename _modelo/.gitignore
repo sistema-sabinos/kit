@@ -88,6 +88,8 @@ playwright-report/
 !.sabinos/instalado.json
 # ponte pro Codex, criada em tempo de uso
 .agents/
+# copia do projeto que o app do Claude cria com o Worktree ligado
+.claude/worktrees/
 # perfil do Chrome dedicado do pacote Mercado Livre: guarda o login da conta
 dados/chrome-perfil/
 # sessao de navegador (storageState, HAR, cookie exportado) e saida do Playwright MCP: guardam login

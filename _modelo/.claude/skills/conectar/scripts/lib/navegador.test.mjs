@@ -972,8 +972,8 @@ test('abrirChrome: porta viva com outro Chrome abre na porta seguinte livre e gr
     assert.equal(r.perfilConferido, true)
     assert.deepEqual(sentinela(perfilDedicado(raiz)), { porta: P + 1, guid: 'novo-1' })
     assert.equal(portaDoProjeto(raiz), P + 1)
-    // o texto de religar e o mesmo dos recados do hook (5.31), com o fechar e abrir
-    assert.ok(RELIGAR.includes('feche e abra o Claude Code'), 'canario: o texto de religar pede o fechar e abrir')
+    // o texto de religar e o mesmo dos recados do hook (5.31); 5.54 (B1): religa pelo ligar-mcp.mjs e sai de vez do app
+    assert.ok(RELIGAR.includes('ligar-mcp.mjs ligar navegador') && RELIGAR.includes('saia de vez do app do Claude'), 'canario: o texto de religar pede o script e o sair de vez do app')
     assert.ok(avisos.some(m => m.includes(`passou pra porta ${P + 1}`) && m.includes(RELIGAR)), avisos.join(' | '))
   } finally { rmSync(raiz, { recursive: true, force: true }) }
 })

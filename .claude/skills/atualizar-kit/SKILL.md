@@ -7,7 +7,8 @@ description: >
   levar as skills novas pra cada projeto. Use quando o usuário chamar /atualizar-kit,
   disser "chegou versão nova do kit", "atualiza o kit", "atualiza a pasta-mãe",
   "baixei o zip novo, e agora", ou disser onde está o zip novo. Dentro de uma pasta
-  de projeto é a /atualizar-sabinos.
+  de projeto é a /atualizar-sabinos. Fechar a sessão de trabalho é o /atualizar,
+  aberto na pasta do projeto.
 ---
 
 # /atualizar-kit, Versão nova sem perder nada
@@ -97,7 +98,7 @@ Se a pessoa pedir detalhe, mostrar o diff daquele arquivo resumido em prosa (o q
 O `.gitignore` e o `.claude/settings.json` da pasta-mãe têm parte do kit e parte da pessoa. Cada um se mostra antes e depois, e só se grava com o sim.
 
 1. **`.gitignore`:** mostrar o atual e o da versão nova, lado a lado. Trocar pelo do kit, mantendo no fim as linhas que a pessoa acrescentou por conta própria (pastas de projeto, `_kit-anterior-*`). Depois rodar `git ls-files -ci --exclude-standard`, que lista o que já está no backup e agora ficaria de fora. Se aparecer `.env` ou arquivo de chave, avisar: tirar o arquivo do backup não apaga o histórico do GitHub, a chave vazou e precisa ser trocada no serviço (gerar uma nova, guardar no `.env`, apagar a velha), e ajudar a pessoa a fazer isso. Tirar do backup (`git rm --cached`, com `-r` pra pasta) só o que for segredo ou arquivo pesado, nunca a lista inteira.
-2. **`.claude/settings.json`:** juntar ao atual o que falta dos hooks e das listas `permissions.ask` e `permissions.deny` do kit, e tirar o que o kit tirou: as regras e o bloco da lista `TIRADAS_DO_KIT` do `_ferramentas/atualizar-projeto.mjs` (a mesma do passo settings dos projetos), que hoje são o deny de leitura do `.env`, das pastas de chave e de sessão e do perfil do Chrome, o deny do `run_code_unsafe`, o ask velho do `.env` e o bloco `SessionStart` que chama o `barrar-mcp.mjs`. Sai só a regra igual, letra por letra; o resto que a pessoa tinha continua junto. Hook do kit que mudou de texto troca o antigo em vez de somar: o `Stop` do backup se reconhece pelo `auto-sync:` dentro do comando.
+2. **`.claude/settings.json`:** juntar ao atual o que falta dos hooks e das listas `permissions.ask` e `permissions.deny` do kit, e tirar o que o kit tirou: as regras e o bloco da lista `TIRADAS_DO_KIT` do `_ferramentas/atualizar-projeto.mjs` (a mesma do passo settings dos projetos), que hoje são o deny de leitura do `.env`, das pastas de chave e de sessão e do perfil do Chrome, o deny do `run_code_unsafe`, o ask velho do `.env` e o bloco `SessionStart` que chama o `barrar-mcp.mjs`. Sai só a regra igual, letra por letra; o resto que a pessoa tinha continua junto. Hook do kit que mudou de texto troca o antigo em vez de somar: o `Stop` do backup se reconhece pelo `auto-sync:` dentro do comando (o da versão velha, em `bash`) ou pelo `backup-pasta-mae.mjs` (o da versão nova), e fica só um, o do kit novo.
 
 ## Bloco global (linha do gate)
 
@@ -129,6 +130,7 @@ atualiza pelo motor, que já sabe o que é do kit e o que é da pessoa.
    - `node _ferramentas/atualizar-projeto.mjs conferir <caminho-do-projeto>`
    - JSON do settings: `node -e "JSON.parse(require('fs').readFileSync('<caminho-do-projeto>/.claude/settings.json','utf8'))"`
    - diário em `<caminho-do-projeto>/_memoria/diario/`
+   - backup: `node _modelo/.claude/hooks/auto-sync.mjs --idade <caminho-do-projeto>` e mostrar a linha como veio. Só confere, sem commit e sem envio: quem manda é o backup automático (o da pasta-mãe sobe os projetos de dentro dela no fim de cada resposta; o projeto ao lado sobe quando a pessoa abrir ele). Linha começando com `Backup vermelho`: dizer pra rodar o `/syncar` dentro daquele projeto.
 3. Projeto antigo nasceu sem o `/atualizar-sabinos`: ele vem no componente
    `nucleo`, então depois desta primeira vez o projeto se atualiza sozinho, de
    dentro dele.
@@ -136,8 +138,10 @@ atualiza pelo motor, que já sabe o que é do kit e o que é da pessoa.
 ## Passo 5, registrar e encerrar
 
 1. Cada projeto tocado já ganhou a linha no diário de hoje (`_memoria/diario/`) pelo Passo 6 da `/atualizar-sabinos`.
-2. Apagar a pasta temporária da extração.
-3. Fechar com a economia de conversa: "Kit atualizado. As pastas `_kit-anterior-*` guardam a versão de antes; pode apagar quando tiver certeza de que está tudo bem. Esse processo fechou, abre uma conversa nova."
+2. No resumo final, repetir a linha do `node _modelo/.claude/hooks/auto-sync.mjs --idade <caminho-do-projeto>` de cada projeto tocado, rodada de novo agora.
+3. Rodar `node _ferramentas/historico-app.mjs` aqui na pasta-mãe, que grava no `~/.claude/settings.json` da pessoa (o do computador, fora de qualquer projeto) o prazo de 30 dias pro app guardar as conversas, e mostrar a linha que ele imprime. As outras configurações desse arquivo ficam como estavam. Saída 2 quer dizer que o arquivo tem um erro de escrita e nada foi gravado: dizer isso em uma frase e seguir, sem consertar sozinho.
+4. Apagar a pasta temporária da extração.
+5. Fechar com a economia de conversa: "Kit atualizado. As pastas `_kit-anterior-*` guardam a versão de antes; pode apagar quando tiver certeza de que está tudo bem. Esse processo fechou, abre uma conversa nova."
 
 ## Regras
 

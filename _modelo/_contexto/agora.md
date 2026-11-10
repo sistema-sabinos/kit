@@ -8,7 +8,8 @@
 
 ## Onde paramos
 
-[a última coisa que estava em andamento, pra retomar rápido]
+[a última coisa que estava em andamento, pra retomar rápido] (AAAA-MM-DD)
+[com duas frentes abertas, uma linha pra cada, no máximo 2]
 
 ## Pendências
 

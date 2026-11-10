@@ -5,8 +5,11 @@ herança da pasta de cima: ignorar tudo daqui pra baixo e seguir o `AGENTS.md` d
 projeto. Ele é curto de propósito, porque entra em toda conversa de projeto.
 
 Esta pasta cria e gerencia projetos; o trabalho do dia a dia acontece dentro da
-pasta de cada projeto, aberta como workspace próprio no VS Code. Regra de bolso
-pro usuário: pasta-mãe é a recepção, pasta do projeto é a sua sala.
+pasta de cada projeto, com a conversa aberta escolhendo a pasta do projeto. Regra
+de bolso pro usuário: pasta-mãe é a recepção, pasta do projeto é a sua sala.
+Pedido de trabalho de projeto feito daqui (anúncio, cliente, conteúdo): avisar em
+uma linha que o `/atualizar` e a memória daquele projeto só valem numa conversa
+aberta na pasta dele, e seguir com o pedido.
 
 ## Início de conversa aqui
 
@@ -23,9 +26,11 @@ Antes de qualquer coisa, listar as pastas desta raiz. Projeto é pasta com
 - Versão nova do kit, zip novo ou atualizar pelo GitHub: skill `atualizar-kit`.
 - "Baixa o projeto <pasta> do GitHub" (segundo computador ou sócio): seção "Outro
   computador no mesmo projeto" de `_modelo/.claude/skills/syncar/SKILL.md`.
-- Existe `.backup-falhou` nesta raiz: avisar na primeira resposta, em uma linha,
-  "Seu último backup no GitHub falhou, o trabalho está só neste computador. Rode
-  `/syncar` pra resolver." e seguir com o pedido.
+- Existe `.backup-falhou` nesta raiz: ler o arquivo e avisar na primeira resposta,
+  em uma linha, o que ele conta. Envio que falhou: "Seu último backup no GitHub
+  falhou, o trabalho está só neste computador. Rode `/syncar` pra resolver."
+  Arquivo da pasta-mãe que ficou fora do backup (cara de chave, grande): dizer
+  quais e por quê, como o arquivo conta. Depois, seguir com o pedido.
 
 As skills são o roteiro: nunca improvisar o fluxo.
 

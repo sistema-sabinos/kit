@@ -45,10 +45,43 @@ test('conta os arquivos do _contexto/ que entram em toda conversa', () => {
   assert.match(saida, /\[contexto\].*agora\.md/);
 });
 
+// Merge do main na 5.54: a 5.52 pos o autonomia.md na leitura do comeco de conversa do AGENTS.md,
+// e o medidor seguia com os quatro antigos, deixando fora do total um arquivo de toda conversa.
+test('conta o autonomia.md no total, junto dos outros do começo de conversa', () => {
+  const so = medir({ contexto: { 'empresa.md': 100 } });
+  const com = medir({ contexto: { 'empresa.md': 100, 'autonomia.md': 380 } });
+  const total = (s) => Number((s.match(/Total estimado: (\d+) tokens/) || [])[1]);
+  assert.ok(total(so.saida) > 0, 'canario: o total veio');
+  assert.match(com.saida, /\[contexto\].*autonomia\.md/);
+  assert.equal(total(com.saida), total(so.saida) + 100, 'os 380 caracteres do autonomia.md (100 tokens) entram no total');
+});
+
 test('ignora arquivo do _contexto/ que não é lido em toda conversa', () => {
-  const { saida } = medir({ contexto: { 'licoes.md': 100, 'ferramentas.md': 100 } });
-  assert.doesNotMatch(saida, /licoes\.md/);
+  const { saida } = medir({ contexto: { 'empresa.md': 100, 'ferramentas.md': 100 } });
+  assert.match(saida, /empresa\.md/, 'canario: o _contexto/ foi medido');
   assert.doesNotMatch(saida, /ferramentas\.md/);
+});
+
+// 5.54 (C3): o /atualizar le o licoes.md inteiro quando entra licao nova, e ninguem media
+// (o do Projeto-02 chegou a 24042 bytes, por wc -c). Entra como [contexto], fora do total.
+test('mede o licoes.md como [contexto]: com 24042 bytes sai vermelho, fora do total', () => {
+  const so = medir({ contexto: { 'empresa.md': 100 } });
+  const com = medir({ contexto: { 'empresa.md': 100, 'licoes.md': 24042 } });
+  const linha = com.saida.split('\n').find((l) => l.includes('licoes.md')) || '';
+  assert.match(linha, /^VERMELHO.*\[contexto\]/);
+  assert.equal(com.codigo, 1);
+  const total = (s) => Number((s.match(/Total estimado: (\d+) tokens/) || [])[1]);
+  assert.ok(total(so.saida) > 0, 'canario: o total veio');
+  assert.equal(total(com.saida), total(so.saida), 'o licoes.md fica fora do total de antes da primeira palavra');
+  // Revisao interna da C3: debaixo do cabecalho de "toda conversa" a saida afirmava o falso.
+  // A linha sai depois do total, num bloco proprio que diz quando ele entra.
+  const linhas = com.saida.split('\n');
+  const iTotal = linhas.findIndex((l) => l.startsWith('Total estimado'));
+  const iLicoes = linhas.findIndex((l) => l.includes('licoes.md'));
+  const iFora = linhas.findIndex((l) => l.startsWith('Fora do total'));
+  assert.ok(iTotal > 0 && linhas.findIndex((l) => l.includes('empresa.md')) < iTotal, 'canario: o empresa.md vem antes do total');
+  assert.ok(iTotal < iFora && iFora < iLicoes, 'o licoes.md sai depois do total, debaixo do "Fora do total"');
+  assert.match(linhas[iFora], /\/atualizar/);
 });
 
 test('_contexto/ tem limiar próprio, mais apertado que o de arquivo de regra', () => {

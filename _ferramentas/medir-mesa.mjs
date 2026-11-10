@@ -2,12 +2,14 @@
 // Mede o que entra na "mesa" do Claude automaticamente, antes da primeira palavra do usuario:
 // o CLAUDE.md global (~/.claude/CLAUDE.md), a cadeia de CLAUDE.md / AGENTS.md da pasta
 // aberta ate a raiz do disco, e os arquivos do _contexto/ que o AGENTS.md manda ler em
-// toda conversa. Mostra bytes e tokens estimados por arquivo e o total.
+// toda conversa. Mostra bytes e tokens estimados por arquivo e o total. Depois do total, a
+// parte, o _contexto/licoes.md, que entra so quando o /atualizar grava licao nova.
 // Sem dependencia. A estimativa usa 3,8 caracteres por token, medido em portugues (tiktoken, 2026-09-09).
 // Uso: node _ferramentas/medir-mesa.mjs [pasta]   (padrao: pasta atual)
 // Limiares de arquivo de regra: amarelo acima de 2.000 tokens, vermelho acima de 6.000.
-// Limiares do _contexto/: mais apertados (amarelo 800, vermelho 1.500), porque os quatro
-// carregam juntos em toda conversa e crescem pra sempre se ninguem consolidar.
+// Limiares do _contexto/: mais apertados (amarelo 800, vermelho 1.500), porque os cinco
+// carregam juntos em toda conversa e crescem pra sempre se ninguem consolidar. O licoes.md
+// usa o mesmo teto.
 import { existsSync, readFileSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
 import { homedir } from 'node:os'
@@ -15,8 +17,9 @@ import { homedir } from 'node:os'
 const CHARS_POR_TOKEN = 3.8
 const AMARELO = 2000
 const VERMELHO = 6000
-// Os quatro do _contexto/ que o AGENTS.md manda ler sempre. Ordem de leitura.
-const CONTEXTO_SEMPRE = ['empresa.md', 'preferencias.md', 'estrategia.md', 'agora.md']
+// Os cinco do _contexto/ que o AGENTS.md manda ler sempre. Ordem de leitura. O autonomia.md
+// entrou na leitura do comeco de conversa pela 5.52 (merge do main na 5.54)
+const CONTEXTO_SEMPRE = ['empresa.md', 'preferencias.md', 'estrategia.md', 'agora.md', 'autonomia.md']
 const CONTEXTO_AMARELO = 800
 const CONTEXTO_VERMELHO = 1500
 
@@ -50,24 +53,34 @@ for (const nome of CONTEXTO_SEMPRE) {
   if (!existsSync(p)) continue
   arquivos.push({ camada: 'contexto', caminho: p, amarelo: CONTEXTO_AMARELO, vermelho: CONTEXTO_VERMELHO })
 }
+// O licoes.md entra inteiro quando o /atualizar grava licao nova (Passo 3.5): mesmo teto do
+// _contexto/, fora do total, porque nao chega antes da primeira palavra (5.54, C3)
+const licoes = join(inicio, '_contexto', 'licoes.md')
+if (existsSync(licoes)) arquivos.push({ camada: 'contexto', caminho: licoes, amarelo: CONTEXTO_AMARELO, vermelho: CONTEXTO_VERMELHO, foraDoTotal: true })
 
 let totalTokens = 0
 let pior = 'verde'
 let estourouContexto = false
 let estourouRegra = false
 console.log('O que entra na mesa em toda conversa desta pasta:\n')
-for (const a of arquivos) {
+function linha(a) {
   const txt = readFileSync(a.caminho, 'utf8')
   const tokens = Math.round(txt.length / CHARS_POR_TOKEN)
   const limiteAmarelo = a.amarelo ?? AMARELO
   const limiteVermelho = a.vermelho ?? VERMELHO
-  totalTokens += tokens
+  if (!a.foraDoTotal) totalTokens += tokens
   const cor = tokens > limiteVermelho ? 'VERMELHO' : tokens > limiteAmarelo ? 'amarelo' : 'verde'
   if (cor !== 'verde') { if (a.camada === 'contexto') estourouContexto = true; else estourouRegra = true }
   if (cor === 'VERMELHO' || (cor === 'amarelo' && pior === 'verde')) pior = cor
   console.log(`${cor.padEnd(8)} ${String(tokens).padStart(6)} tokens  ${String(txt.length).padStart(7)} chars  [${a.camada}] ${a.caminho}`)
 }
+for (const a of arquivos) if (!a.foraDoTotal) linha(a)
 console.log(`\nTotal estimado: ${totalTokens} tokens antes da sua primeira palavra (3,8 chars/token).`)
+const fora = arquivos.filter((a) => a.foraDoTotal)
+if (fora.length) {
+  console.log('\nFora do total (entra so quando o /atualizar grava licao nova):\n')
+  for (const a of fora) linha(a)
+}
 if (estourouRegra) {
   console.log(`\nConserto em arquivo de regra (CLAUDE.md / AGENTS.md): manter so regra; historia, lista de skills e notas de ferramenta vao pro _contexto/ (ou ~/.claude/contexto/ no global) e entram so quando a tarefa pede.`)
 }

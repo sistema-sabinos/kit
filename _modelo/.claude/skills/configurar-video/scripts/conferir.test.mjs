@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { join } from 'node:path'
+import { join, win32 } from 'node:path'
 import { tmpdir } from 'node:os'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { instalarMotor } from './instalar-motor.mjs'
@@ -20,6 +20,8 @@ test('ffmpeg sem libass conta como faltando', () => {
   const base = join(tmpdir(), 'semespaco')
   const r = conferir({ plat: 'win32', base, executar: (c, a) => c === 'ffmpeg' ? { status: 0, stdout: 'sem o filtro' } : tudoOk(c, a), existe: () => true })
   assert.equal(r.itens.find(i => i.id === 'ffmpeg').ok, false)
+  // 5.54 (B2): o programa responde, so que sem o filtro; reabrir o app nao conserta
+  assert.equal(r.itens.find(i => i.id === 'ffmpeg').estado, 'falta')
 })
 
 // piso do Node 22 (5.12), igual ao /setup: o video-produto quebra no comeco do 20
@@ -27,7 +29,92 @@ test('node abaixo de 22 conta como faltando, 22.0.0 passa', () => {
   const base = join(tmpdir(), 'v')
   const com = (v) => conferir({ plat: 'win32', base, executar: (c, a) => c === 'node' ? { status: 0, stdout: v } : tudoOk(c, a), existe: () => true })
   assert.equal(com('v20.20.2').itens.find(i => i.id === 'node').ok, false)
+  // 5.54 (B2): Node velho respondendo continua falta, mesmo com o programa no lugar conhecido
+  assert.equal(com('v20.20.2').itens.find(i => i.id === 'node').estado, 'falta')
   assert.equal(com('v22.0.0').itens.find(i => i.id === 'node').ok, true)
+  assert.equal(com('v22.0.0').itens.find(i => i.id === 'node').estado, 'ok')
+})
+
+// 5.54 (B2, achado 18): o winget instala, mas a sessao aberta antes nao ve o programa no PATH.
+// Programa que nao foi achado (erro de spawn) e esta no lugar de instalacao conhecido sai
+// "instalado, falta reabrir o app", e a skill pede pra sair de vez do app em vez de instalar de novo.
+const naoAchou = () => ({ status: null, stdout: '', error: Object.assign(new Error('spawnSync ENOENT'), { code: 'ENOENT' }) })
+const semNoPath = (...ids) => (c, a) => {
+  if (ids.includes('node') && c === 'node') return naoAchou()
+  if (ids.includes('python') && c === 'py') return naoAchou()
+  if (ids.includes('ffmpeg') && c === 'ffmpeg') return naoAchou()
+  return tudoOk(c, a)
+}
+// caminho montado pelo win32.join a partir da letra solta: o Gate 6 barra letra de drive com barra
+// chumbada dentro do _modelo, e o dado de teste nao precisa dela
+const DRIVE = 'C:'
+const LOCAL = win32.join(DRIVE, 'Users', 'Aluno', 'AppData', 'Local')
+const NO_DISCO_WIN = {
+  node: win32.join(DRIVE, 'Program Files', 'nodejs', 'node.exe'),
+  python: win32.join(LOCAL, 'Programs', 'Python', 'Python312', 'python.exe'),
+  ffmpeg: win32.join(LOCAL, 'Microsoft', 'WinGet', 'Links', 'ffmpeg.exe'),
+}
+
+test('Windows: programa fora do PATH mas no lugar do winget sai instalado, falta reabrir o app', () => {
+  const base = join(tmpdir(), 'v')
+  const env = { LOCALAPPDATA: LOCAL }
+  for (const id of ['node', 'python', 'ffmpeg']) {
+    const noDisco = conferir({ plat: 'win32', base, env, executar: semNoPath(id), existe: p => p === NO_DISCO_WIN[id] }).itens.find(i => i.id === id)
+    assert.equal(noDisco.ok, false, id)
+    assert.equal(noDisco.estado, 'reabrir', id)
+    assert.match(noDisco.detalhe, /instalado, falta reabrir o app/, id)
+    // canario do outro lado: sem o arquivo no disco o mesmo erro e falta
+    const fora = conferir({ plat: 'win32', base, env, executar: semNoPath(id), existe: () => false }).itens.find(i => i.id === id)
+    assert.equal(fora.ok, false, id)
+    assert.equal(fora.estado, 'falta', id)
+  }
+})
+
+test('Mac: programa fora do PATH mas no /opt/homebrew/bin ou no /usr/local/bin sai falta reabrir', () => {
+  const base = join(tmpdir(), 'v')
+  // nome de cada programa no PATH do Mac (o python e o python3.12 que o brew instala)
+  const NOME_MAC = { node: 'node', python: 'python3.12', ffmpeg: 'ffmpeg' }
+  for (const id of ['node', 'python', 'ffmpeg']) {
+    const semEle = (c, a) => c === NOME_MAC[id] ? naoAchou() : tudoOk(c, a)
+    for (const pasta of ['/opt/homebrew/bin', '/usr/local/bin']) {
+      const r = conferir({ plat: 'darwin', base, executar: semEle, existe: p => p === pasta + '/' + NOME_MAC[id] })
+      assert.equal(r.itens.find(i => i.id === id).estado, 'reabrir', id + ' em ' + pasta)
+    }
+    // canario do outro lado: sem o arquivo no disco o mesmo erro e falta
+    assert.equal(conferir({ plat: 'darwin', base, executar: semEle, existe: () => false }).itens.find(i => i.id === id).estado, 'falta', id)
+  }
+})
+
+test('programa que roda e sai diferente de 0 continua falta, mesmo no lugar conhecido', () => {
+  const base = join(tmpdir(), 'v')
+  const env = { LOCALAPPDATA: LOCAL }
+  // o lancador py existe, mas sem o 3.12 sai 1: reabrir nao instala o Python
+  const semPy312 = (c, a) => c === 'py' ? { status: 1, stdout: '', stderr: 'No suitable Python runtime found' } : tudoOk(c, a)
+  const r = conferir({ plat: 'win32', base, env, executar: semPy312, existe: () => true })
+  assert.equal(r.itens.find(i => i.id === 'python').estado, 'falta')
+})
+
+test('python-libs nunca vira falta reabrir: Python 3.12 no lugar conhecido sem as bibliotecas e falta', () => {
+  const base = join(tmpdir(), 'v')
+  const env = { LOCALAPPDATA: LOCAL }
+  const semLibs = (c, a) => c === 'py' && a.includes('-c') ? { status: 1, stdout: '', stderr: "ModuleNotFoundError: No module named 'numpy'" } : tudoOk(c, a)
+  const r = conferir({ plat: 'win32', base, env, executar: semLibs, existe: () => true })
+  const libs = r.itens.find(i => i.id === 'python-libs')
+  assert.equal(libs.ok, false)
+  assert.equal(libs.estado, 'falta')
+  // nem com o import dando erro de spawn: o lugar conhecido e do programa, nao das bibliotecas
+  const semPy = conferir({ plat: 'win32', base, env, executar: semNoPath('python'), existe: () => true }).itens.find(i => i.id === 'python-libs')
+  assert.equal(semPy.estado, 'falta')
+})
+
+test('todo item sai com estado ok, falta ou reabrir, e ok bate com o estado', () => {
+  const base = join(tmpdir(), 'v')
+  const r = conferir({ plat: 'win32', base, executar: tudoOk, existe: () => true })
+  assert.ok(r.itens.length > 0)
+  for (const i of r.itens) {
+    assert.ok(['ok', 'falta', 'reabrir'].includes(i.estado), i.id + ': ' + i.estado)
+    assert.equal(i.ok, i.estado === 'ok', i.id)
+  }
 })
 
 test('pasta com espaco e sinalizada com sugestao sem espaco', () => {

@@ -373,7 +373,7 @@ test('ponta a ponta: barra sai 2 com o nome da trava e da regra, passa sai 0 cal
 
 // 5.49 (bloco B, 2026-11-03): saiu o deny do run_code_unsafe (bloco 1) e o SessionStart da
 // anotacao do navegador (bloco 2); a trava segue no PreToolUse dos dois settings
-test('settings do _modelo e da pasta-mae ligam a trava pra todo mcp, com onFailure block, sem deny e sem SessionStart', () => {
+test('settings do _modelo e da pasta-mae ligam a trava pra todo mcp, com onFailure block, sem deny, e o SessionStart so do aviso no _modelo', () => {
   const ler = rel => JSON.parse(readFileSync(new URL(rel, import.meta.url), 'utf8'))
   const arquivos = { _modelo: ler('../settings.json'), mae: ler('../../../.claude/settings.json') }
   for (const [qual, settings] of Object.entries(arquivos)) {
@@ -389,7 +389,15 @@ test('settings do _modelo e da pasta-mae ligam a trava pra todo mcp, com onFailu
       assert.ok(settings.permissions.allow.length > 0, 'canario: o _modelo tem allow')
       assert.ok(!settings.permissions.allow.some(r => r.startsWith('mcp__')), `${qual}: nenhum mcp__ no allow`)
     }
-    assert.equal(settings.hooks.SessionStart, undefined, `${qual}: o SessionStart saiu`)
+    // 5.54 (C1): o SessionStart do _modelo volta com um bloco so, o do aviso-fechamento, que nao cita a trava do mcp
+    if (qual === '_modelo') {
+      const inicio = settings.hooks.SessionStart
+      assert.ok(Array.isArray(inicio) && inicio.length === 1, `${qual}: um bloco SessionStart`)
+      const comandos = inicio[0].hooks.map(h => h.command)
+      assert.ok(comandos.some(c => c.includes('/.claude/hooks/aviso-fechamento.mjs')), `${qual}: o SessionStart chama o aviso-fechamento`)
+      const citaMcp = comandos.some(c => c.includes('barrar-mcp'))
+      assert.equal(citaMcp, false, `${qual}: o SessionStart nao cita a trava do mcp`)
+    } else assert.equal(settings.hooks.SessionStart, undefined, `${qual}: o SessionStart saiu`)
     assert.ok(Array.isArray(settings.hooks.Stop) && settings.hooks.Stop.length === 1, `${qual}: o Stop do backup fica`)
     if (qual === 'mae') {
       assert.match(hook.command, /\/_modelo\/\.claude\/hooks\/barrar-mcp\.mjs/)

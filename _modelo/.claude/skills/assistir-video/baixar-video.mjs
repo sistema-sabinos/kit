@@ -68,7 +68,7 @@ function viaYtDlp(url, destino) {
       '[baixar] yt-dlp não encontrado no PATH.\n' +
       '  Quem lê esta mensagem é a IA: diga ao usuário em uma frase o que vai instalar e instale você mesma, sem esperar resposta (só pare se faltar espaço no disco), nunca passe o comando pra ele.\n' +
       '  Windows: winget install --id yt-dlp.yt-dlp -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity\n' +
-      '           (depois peça pro usuário fechar todas as janelas do VS Code e abrir de novo)\n' +
+      '           (depois peça pro usuário esperar terminar o que roda nas outras conversas, sair de vez do app do Claude (Windows: ícone perto do relógio, botão direito, Sair; Mac: Cmd+Q) e abrir de novo; Gerenciador de Tarefas só se o Sair não fechar)\n' +
       '  Mac:     brew install yt-dlp'
     );
     return { motivo: 'yt-dlp ausente' };

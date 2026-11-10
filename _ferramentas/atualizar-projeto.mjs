@@ -14,6 +14,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSy
 import { join, dirname, resolve, relative, sep } from 'node:path'
 import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
+import { spawnSync } from 'node:child_process'
 
 // data do relogio da pessoa: em UTC, 22h no Brasil ja e o dia seguinte
 const diaLocal = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -75,6 +76,15 @@ const citaMcp = b => (b?.hooks || []).some(ehHookMcp)
 const semHookMcp = lista => lista
   .map(b => (citaMcp(b) ? { ...b, hooks: b.hooks.filter(h => !ehHookMcp(h)) } : b))
   .filter(b => !Array.isArray(b.hooks) || b.hooks.length > 0)
+
+// 5.54 (C2): o aviso de fechamento, no SessionStart e no PreCompact, pela mesma regra do nome do script
+const RE_HOOK_AVISO = /^\s*node(?:\.exe)?(?:\s+--?[\w-]+(?:=\S*)?)*\s+(?:"(?:[^"]*[\\/])?aviso-fechamento\.mjs"|(?:\S*[\\/])?aviso-fechamento\.mjs)\s*$/i
+const ehHookAviso = h => typeof h?.command === 'string' && RE_HOOK_AVISO.test(h.command)
+const citaAviso = b => (b?.hooks || []).some(ehHookAviso)
+const semHookAviso = lista => lista
+  .map(b => (citaAviso(b) ? { ...b, hooks: b.hooks.filter(h => !ehHookAviso(h)) } : b))
+  .filter(b => !Array.isArray(b.hooks) || b.hooks.length > 0)
+const EVENTOS_DO_AVISO = { SessionStart: 'inicio da conversa', PreCompact: 'antes de compactar' }
 
 // 5.49 (bloco B, 2026-11-03, blocos 1, 2 e 11): o que o kit ja pos no settings e tirou. O deny de
 // leitura do .env, das pastas de chave e de sessao e do perfil do Chrome (as formas ./ do _modelo, as **/
@@ -158,6 +168,18 @@ export function mesclarSettings(daPessoa, doKit) {
     if (fica.length) settings.hooks.SessionStart = fica
     else delete settings.hooks.SessionStart
     tirou.push(TIRADAS_DO_KIT.SessionStart)
+  }
+  // 5.54 (C2): fica so o bloco do aviso igual ao do kit, uma chamada so; fora isso, toda chamada do
+  // aviso sai e o bloco do kit entra. Depois da saida do barrar-mcp, que nao pega este bloco
+  for (const [evento, nome] of Object.entries(EVENTOS_DO_AVISO)) {
+    const blocoAviso = (doKit?.hooks?.[evento] ?? []).find(citaAviso)
+    if (!blocoAviso) continue
+    settings.hooks ??= {}
+    const daLista = settings.hooks[evento] ?? []
+    const chamadas = daLista.flatMap(b => b?.hooks || []).filter(ehHookAviso).length
+    if (chamadas === 1 && daLista.some(b => JSON.stringify(b) === JSON.stringify(blocoAviso))) continue
+    settings.hooks[evento] = semHookAviso(daLista).concat(structuredClone(blocoAviso))
+    faltava.push(`aviso de fechamento (${nome})`)
   }
   return { settings, faltava, tirou }
 }
@@ -365,6 +387,8 @@ export function aplicarPlano({ kit, projeto, plano, tambem = [], registro = fals
   for (const i of iguais) arquivos[i.caminho] = hashArquivo(readFileSync(join(projeto, i.caminho)))
   writeFileSync(join(projeto, RECIBO), JSON.stringify({
     versao: plano.versaoKit, data: diaLocal(agora), arquivos, mudancas: anterior.mudancas ?? {},
+    // 5.54 (C2): corte do aviso de fechamento; o recibo se regrava inteiro, entao vem do anterior
+    avisoFechamentoDesde: anterior.avisoFechamentoDesde ?? diaLocal(agora),
   }, null, 2) + '\n')
   return { backup, copiados: copiar.map(i => i.caminho), removidos: remover.map(i => i.caminho) }
 }
@@ -501,6 +525,10 @@ function principal(argv) {
   if (!existsSync(join(projeto, '_contexto'))) throw recusa('fora-de-projeto', `nao parece projeto SabinOS (sem _contexto/): ${projeto}`)
   const kit = resolve(a.kit ?? join(dirname(fileURLToPath(import.meta.url)), '..'))
   const arqPlano = join(projeto, '.sabinos', 'plano.json')
+  // 5.54 (comum do Bloco C): os 30 dias do app entram no aplicar, depois do sim, e nunca no mae, que so
+  // compara. O /atualizar-sabinos ja instalado roda o aplicar do motor da versao nova, entao a base que
+  // ja existe pega o historico sem precisar de skill nova. Grava so no settings do usuario.
+  const historicoDe = k => join(k, '_ferramentas', 'historico-app.mjs')
 
   if (cmd === 'plano') {
     const escolhidos = a.componentes === 'todos' ? 'todos' : (a.componentes ? a.componentes.split(',') : [])
@@ -508,6 +536,7 @@ function principal(argv) {
     garantirGitignore(projeto)
     writeFileSync(arqPlano, JSON.stringify({ ...plano, kit }, null, 2) + '\n')
     console.log(resumo(plano))
+    if (existsSync(historicoDe(kit))) console.log('Historico do app: o aplicar grava 30 dias de conversas guardadas no settings do computador (~/.claude/settings.json), por cima de outro prazo')
   } else if (cmd === 'aplicar') {
     if (!existsSync(arqPlano)) throw new Error('rode "plano" antes de "aplicar"')
     const plano = lerJson(arqPlano)
@@ -519,6 +548,11 @@ function principal(argv) {
     rmSync(arqPlano)
     console.log(`Aplicado. Copiados: ${r.copiados.length}. Removidos: ${r.removidos.length}.`)
     console.log(r.backup ? `Copia de seguranca: .sabinos/${r.backup}` : 'Nada trocado; so o registro da versao.')
+    // falha no historico nao derruba o aplicar, que ja terminou
+    if (existsSync(historicoDe(plano.kit))) {
+      const h = spawnSync(process.execPath, [historicoDe(plano.kit)], { encoding: 'utf8' })
+      console.log((h.stdout || '').trim() || 'Historico do app: nao deu pra rodar')
+    }
   } else if (cmd === 'conferir') {
     const pend = montarPlano({ kit, projeto }).itens.filter(i => ['adicionar', 'trocar'].includes(i.acao))
     if (pend.length) {
@@ -551,6 +585,7 @@ function principal(argv) {
     const listas = s => JSON.stringify({
       deny: s.permissions?.deny ?? [], ask: s.permissions?.ask ?? [], allow: s.permissions?.allow ?? [],
       travaDoMcp: (s.hooks?.PreToolUse ?? []).some(citaMcp), anotacaoDoNavegador: (s.hooks?.SessionStart ?? []).some(citaMcp),
+      avisoDeFechamento: Object.keys(EVENTOS_DO_AVISO).every(ev => (s.hooks?.[ev] ?? []).some(citaAviso)),
     })
     console.log(`antes: ${listas(daPessoa)}`)
     console.log(`depois: ${listas(settings)}`)
@@ -560,6 +595,9 @@ function principal(argv) {
     if (a.gravar) {
       // com onFailure block, chamar a trava sem o arquivo barraria toda ferramenta de fora
       if (!existsSync(join(projeto, '.claude', 'hooks', 'barrar-mcp.mjs'))) throw recusa('settings-sem-trava', 'falta o .claude/hooks/barrar-mcp.mjs no projeto: rodar o aplicar antes')
+      // 5.54 (C2): hook do aviso sem o script da erro de hook em toda conversa nova e compactacao
+      const chamaAviso = Object.keys(EVENTOS_DO_AVISO).some(ev => (settings.hooks?.[ev] ?? []).some(citaAviso))
+      if (chamaAviso && !existsSync(join(projeto, '.claude', 'hooks', 'aviso-fechamento.mjs'))) throw recusa('settings-sem-trava', 'falta o .claude/hooks/aviso-fechamento.mjs no projeto: rodar o aplicar antes')
       const texto = JSON.stringify(settings, null, 2) + '\n'
       JSON.parse(texto)
       writeFileSync(arqProjeto, texto)

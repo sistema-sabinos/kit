@@ -58,7 +58,7 @@ o cenário fica parado, que também fica bom, e não prometa nenhum passo de ins
 ### 2. Conferir o que já está instalado
 
 Rode `node .claude/skills/configurar-video/scripts/conferir.mjs`. Ele só olha e não instala
-nada, e devolve cada item com `ok` ou não, o tamanho e o comando. Rode antes o passo 1: sem
+nada, e devolve cada item com `ok` ou não, o `estado` (`ok`, `falta` ou `reabrir`), o tamanho e o comando. Rode antes o passo 1: sem
 o `maquina.json` o item whisper vem `ok: false` com "rode o medir-maquina antes".
 
 Se vier `pastaComEspaco: true`, explique: o caminho da pasta do vídeo tem espaço no nome (por
@@ -93,10 +93,14 @@ deep-filter**: diga em uma frase o que é, mostre o tamanho (`mb`) e o comando
   Windows, rode cada um pela PowerShell com timeout de 600000. Quem decide se deu certo é o
   `conferir.mjs` rodado de novo; o código de saída do winget não vale (sai diferente de 0
   quando o programa já existia). No Windows, instale primeiro todos os programas do
-  computador que faltam (node, python, ffmpeg) e só então diga: "Fecha todas as janelas do
-  VS Code, abre de novo nesta pasta e me chama numa conversa nova com /configurar-video. O
-  conferir retoma de onde parou." No Mac, rode o conferir de novo; se o programa continuar
-  faltando, peça o mesmo.
+  computador que faltam (node, python, ffmpeg) e só então diga: "Espera terminar o que roda
+  nas outras conversas, sai de vez do app do Claude (Windows: ícone perto do relógio, botão
+  direito, Sair; Mac: Cmd+Q), abre de novo nesta pasta e me chama numa conversa nova com
+  /configurar-video. Gerenciador de Tarefas só se o Sair não fechar. O conferir retoma de
+  onde parou." No Mac, rode o conferir de novo; se o programa continuar faltando, peça o
+  mesmo. Item com `estado: "reabrir"` (detalhe "instalado, falta reabrir o app") já está
+  instalado, e a sessão aberta antes da instalação ainda não enxerga o programa: pule o
+  `instalar` dele e diga a mesma frase.
 - **python-libs**: as bibliotecas de imagem e som do Python (no Mac, dentro de um ambiente
   próprio em `_video/py`, porque o Python do brew não deixa instalar fora dele).
 - **motor**: duas partes, e a primeira roda **sempre**, mesmo com o motor aparecendo como ok (o conferir só vê se a biblioteca existe, e nunca checa se o motor está na versão do SabinOS atual; o script é barato e só copia o que mudou). Primeiro `node .claude/skills/configurar-video/scripts/sincronizar-motor.mjs`

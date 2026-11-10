@@ -10,7 +10,7 @@
 // Sai sempre com codigo 0: hook de Stop que falha nao pode travar a conversa.
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync, rmSync, mkdirSync, readdirSync, statSync, realpathSync } from 'node:fs'
-import { join, basename } from 'node:path'
+import { join, basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const REDE_MS = 60000
@@ -340,6 +340,63 @@ function rodada(dir, agora, limiteBytes) {
   return falhaDeEnvio(dir, agora, dia, hora, envio.err)
 }
 
+// 5.54 (A3, achado 20): quanto o backup desta pasta esta atrasado, sem rede e sem commit (o
+// /checar e o fim do /atualizar-kit mostram a linha). A idade vem do mtime mais velho do que o
+// git status lista: a data do @{u} e a do ultimo envio e fica velha mesmo com arquivo sujo de hoje.
+const IDADE_VERMELHA_MS = 24 * 60 * 60 * 1000
+
+function haQuanto(ms) {
+  const h = Math.floor(ms / 3600000)
+  if (h < 1) return 'menos de 1 hora'
+  if (h < 24) return `${h} ${h === 1 ? 'hora' : 'horas'}`
+  const d = Math.floor(h / 24)
+  return `${d} ${d === 1 ? 'dia' : 'dias'}`
+}
+
+export function idadeBackup(dir, agora = new Date()) {
+  const so = (linha) => ({ foraDoBackup: 0, semSubir: 0, vermelho: true, linha })
+  if (!git(dir, ['rev-parse', '--git-dir']).ok) return so('Backup vermelho: pasta sem git, o trabalho existe só neste computador.')
+  if (git(dir, ['rev-parse', '--show-prefix']).out !== '') return so('Backup vermelho: esta pasta está dentro de outro repositório; o backup não roda aqui.')
+  const temRemoto = git(dir, ['remote', 'get-url', 'origin']).ok
+  const st = git(dir, ['-c', 'core.quotepath=false', 'status', '--porcelain', '-z', '--untracked-files=all'], 30000, true)
+  // status que falha volta vazio: sem a guarda, viraria zero arquivos e "Backup em dia"
+  if (!st.ok) return so('Backup vermelho: não deu pra conferir o que está fora do backup (o git status falhou).')
+  const itens = st.out.split('\0').filter(Boolean)
+  let foraDoBackup = 0
+  let maisVelho = Infinity
+  for (let i = 0; i < itens.length; i++) {
+    const rel = itens[i].slice(3)
+    // renomeado e copiado trazem o nome antigo no item seguinte
+    if (/[RC]/.test(itens[i].slice(0, 2))) i++
+    foraDoBackup++
+    // apagado nao tem mtime: conta, mas a idade fica com os outros
+    try { maisVelho = Math.min(maisVelho, statSync(join(dir, rel)).mtimeMs) } catch {}
+  }
+  // so apagado fora do backup: sem mtime, a idade de reserva e a do commit do HEAD (o apagamento
+  // nao subiu desde ele, entao e no maximo isso), senao a linha dizia "menos de 1 hora" pra sempre
+  const soApagado = foraDoBackup > 0 && maisVelho === Infinity
+  if (soApagado) maisVelho = (Number(git(dir, ['log', '-1', '--format=%ct', 'HEAD']).out) || 0) * 1000 || agora.getTime()
+  const idade = maisVelho === Infinity ? 0 : Math.max(0, agora.getTime() - maisVelho)
+  const upstream = temRemoto && git(dir, ['rev-parse', '--abbrev-ref', '@{u}']).ok
+  const semSubir = upstream ? contar(dir, '@{u}..HEAD') : contar(dir, 'HEAD')
+  let envio = 'nada enviado ainda'
+  if (upstream) {
+    const t = Number(git(dir, ['log', '-1', '--format=%ct', '@{u}']).out)
+    if (t) { const c = carimbo(new Date(t * 1000)); envio = `último envio ${c.dia} ${c.hora}` }
+  }
+  const partes = []
+  const qtos = `${foraDoBackup} ${foraDoBackup === 1 ? 'arquivo' : 'arquivos'}`
+  if (soApagado) partes.push(`${qtos} ${foraDoBackup === 1 ? 'apagado' : 'apagados'} fora do backup, último commit há ${haQuanto(idade)}`)
+  else if (foraDoBackup) partes.push(`${qtos} fora do backup, o mais velho mexido há ${haQuanto(idade)}`)
+  if (semSubir) partes.push(`${semSubir} ${semSubir === 1 ? 'commit' : 'commits'} sem subir`)
+  if (!temRemoto) partes.push('sem nuvem (sem remote), o trabalho existe só neste computador')
+  else partes.push(envio)
+  // sem upstream nada subiu ainda (inclusive remoto sem nenhum commit): nunca "em dia"
+  const vermelho = !upstream || semSubir > 0 || (foraDoBackup > 0 && idade > IDADE_VERMELHA_MS)
+  const titulo = vermelho ? 'Backup vermelho' : foraDoBackup ? 'Backup pendente' : 'Backup em dia'
+  return { foraDoBackup, semSubir, vermelho, linha: `${titulo}: ${partes.join('; ')}.` }
+}
+
 // rodada 5.20 (decisao 9, N37): o Node entrega o import.meta.url com o atalho resolvido e o
 // argv[1] do jeito que veio, entao com o projeto aberto por juncao ou link a guarda velha dava
 // false e o backup nao rodava, calado. Os dois lados passam pelo realpathSync
@@ -361,11 +418,20 @@ if (chamadoDireto()) {
       console.log(JSON.stringify(r, null, 1))
       process.exitCode = r.length ? 1 : 0
     } catch (e) { console.error(`erro: ${e.message}`); process.exitCode = 2 }
+  } else if (process.argv[2] === '--idade') {
+    // /checar e /atualizar-kit (5.54, A3): uma linha com o atraso do backup, sem rede e sem commit
+    try {
+      console.log(idadeBackup(process.argv[3] ? resolve(process.argv[3]) : dir).linha)
+    } catch (e) { console.error(`erro: ${e.message}`); process.exitCode = 2 }
   } else if (process.argv[2]) {
     // o Stop do Claude Code nunca passa argumento: argumento estranho e digitacao errada,
     // e digitacao errada nunca pode virar backup de verdade
-    console.error(`opcao desconhecida: ${process.argv[2]} (a unica e --conferir)`)
+    console.error(`opcao desconhecida: ${process.argv[2]} (as opcoes sao --conferir e --idade [pasta])`)
     process.exitCode = 3
+  } else if (process.env.CLAUDE_CODE_REMOTE === 'true') {
+    // 5.54 (A2): sessao na nuvem roda numa copia do repositorio fora do computador do aluno; o
+    // backup de la commitaria e subiria pro branch da sessao, longe do /iniciar daqui
+    process.exitCode = 0
   } else {
     try { autoSync(dir) } catch {}
     process.exitCode = 0

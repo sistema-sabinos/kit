@@ -351,7 +351,8 @@ test('gate 5 (5.52): o git do permissions.allow nao cobra guarda, o git do hook 
   try {
     mkdirSync(join(dir, '.claude'), { recursive: true })
     const gravar = cfg => writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify(cfg))
-    const doCinco = () => rodarGates(dir).falhas.filter(f => f.gate === 5 && f.arquivo === '.claude/settings.json')
+    // so a guarda do git: o Stop da pasta-mae sem o backup-pasta-mae.mjs (5.54, A1) e outra cobranca do Gate 5
+    const doCinco = () => rodarGates(dir).falhas.filter(f => f.gate === 5 && f.arquivo === '.claude/settings.json' && f.detalhe === 'hook de git sem guarda de repo/remote')
     gravar({ permissions: { allow: ['Bash(git push *)'] }, hooks: { Stop: [{ hooks: [{ type: 'command', command: 'node x.mjs' }] }] } })
     assert.deepEqual(doCinco(), [])
     gravar({ permissions: { allow: ['Bash(git push *)'] }, hooks: { Stop: [{ hooks: [{ type: 'command', command: 'git push' }] }] } })
@@ -394,7 +395,8 @@ test('gate 5 so aceita o auto-sync.mjs chamado pelo Stop, nunca citado em outro 
     writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify({ hooks: { PreToolUse: [{ hooks: [{ type: 'command', command: cmd }] }] } }))
     assert.ok(rodarGates(dir).falhas.some(f => f.gate === 5 && /Stop do _modelo sem/.test(f.detalhe)))
     writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify({ hooks: { Stop: [{ hooks: [{ type: 'command', command: cmd }] }] } }))
-    assert.ok(!rodarGates(dir).falhas.some(f => f.gate === 5))
+    // 5.54 (C1): o aviso-fechamento tem teste proprio
+    assert.ok(!rodarGates(dir).falhas.some(f => f.gate === 5 && !/aviso-fechamento/.test(f.detalhe)))
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
@@ -535,6 +537,29 @@ test('gate passa quando os .gitignore ja tem a linha .agents/', () => {
   rmSync(dir, { recursive: true, force: true })
 })
 
+// 5.54 A4: o Worktree da aba Code do app grava a copia em <pasta>/.claude/worktrees/, e o
+// !*.md dos dois .gitignore levaria essa copia inteira pro backup
+test('gate 3 exige .claude/worktrees/ no .gitignore da pasta-mae e do _modelo', () => {
+  const dir = kitFalso()
+  try {
+    writeFileSync(join(dir, '.gitignore'), '.env\r\n.agents/\r\n.secrets/\r\nsecrets/\r\n')
+    mkdirSync(join(dir, '_modelo'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/.gitignore'), '.env\n.agents/\n.secrets/\nsecrets/\n')
+    const sem = rodarGates(dir).falhas.filter(f => f.gate === 3 && /\.gitignore precisa/.test(f.detalhe))
+    assert.ok(sem.length > 0, 'canario: o gate 3 achou falha de .gitignore')
+    assert.deepEqual(sem.map(f => `${f.arquivo}: ${f.detalhe}`).sort(), [
+      '.gitignore: .gitignore precisa da linha .claude/worktrees/',
+      '_modelo/.gitignore: .gitignore precisa da linha .claude/worktrees/',
+    ])
+    writeFileSync(join(dir, '.gitignore'), '.env\r\n.agents/\r\n.claude/worktrees/\r\n.secrets/\r\nsecrets/\r\n')
+    writeFileSync(join(dir, '_modelo/.gitignore'), '.env\n.agents/\n.claude/worktrees/\n.secrets/\nsecrets/\n')
+    const com = rodarGates(dir).falhas.filter(f => f.gate === 3 && /\.gitignore precisa/.test(f.detalhe))
+    assert.deepEqual(com, [], 'com a linha (CRLF e LF) o gate 3 fica quieto nos dois')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test('gate 3 exige .secrets/ e secrets/ no .gitignore do _modelo', () => {
   const dir = kitFalso()
   try {
@@ -542,11 +567,11 @@ test('gate 3 exige .secrets/ e secrets/ no .gitignore do _modelo', () => {
     writeFileSync(join(dir, '_modelo/.gitignore'), '.env\n.agents/\n')
     const sem = rodarGates(dir).falhas.filter(f => f.gate === 3 && f.arquivo === '_modelo/.gitignore')
     assert.ok(sem.some(f => /\.secrets\//.test(f.detalhe)), '_modelo/.gitignore sem .secrets/ falha')
-    writeFileSync(join(dir, '_modelo/.gitignore'), '.env\r\n.agents/\r\n.secrets/\r\n')
+    writeFileSync(join(dir, '_modelo/.gitignore'), '.env\r\n.agents/\r\n.claude/worktrees/\r\n.secrets/\r\n')
     const soPonto = rodarGates(dir).falhas.filter(f => f.gate === 3 && f.arquivo === '_modelo/.gitignore')
     assert.deepEqual(soPonto.map(f => f.detalhe), ['.gitignore precisa da linha secrets/'],
       'so com .secrets/ o gate 3 cobra a secrets/ sem ponto')
-    writeFileSync(join(dir, '_modelo/.gitignore'), '.env\r\n.agents/\r\n.secrets/\r\nsecrets/\r\n')
+    writeFileSync(join(dir, '_modelo/.gitignore'), '.env\r\n.agents/\r\n.claude/worktrees/\r\n.secrets/\r\nsecrets/\r\n')
     const com = rodarGates(dir).falhas.filter(f => f.gate === 3 && f.arquivo === '_modelo/.gitignore')
     assert.deepEqual(com, [], 'com .secrets/ e secrets/ (CRLF) o gate 3 fica quieto no _modelo/.gitignore')
   } finally {
@@ -603,7 +628,7 @@ test('entrada estilo-do-anuncio so afeta projeto com a skill gerar-imagens', () 
 test('gate 3 exige .secrets/ e secrets/ no .gitignore da pasta-mae', () => {
   const dir = kitFalso()
   try {
-    writeFileSync(join(dir, '.gitignore'), '*\r\n!*.json\r\n.agents/\r\n')
+    writeFileSync(join(dir, '.gitignore'), '*\r\n!*.json\r\n.agents/\r\n.claude/worktrees/\r\n')
     const sem = rodarGates(dir).falhas.filter(f => f.gate === 3 && f.arquivo === '.gitignore')
     assert.ok(sem.length > 0, 'canario: o gate 3 achou falha na pasta-mae')
     assert.deepEqual(sem.map(f => f.detalhe).sort(),
@@ -852,15 +877,44 @@ test('gate 9 aceita os dois settings sem deny e sem SessionStart, so com as trav
   }
 })
 
-test('gate 9 nao cobra o deny nem o SessionStart do kit de verdade', () => {
+// 5.54 (C1): o SessionStart do _modelo volta, com um bloco so, o do aviso-fechamento (sem a trava do mcp)
+test('gate 9 nao cobra o deny do kit de verdade; SessionStart so o do aviso no _modelo', () => {
   for (const rel of ['../.claude/settings.json', '../_modelo/.claude/settings.json']) {
     const cfg = JSON.parse(readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8'))
     assert.ok(cfg.hooks?.PreToolUse?.length > 0, `canario: ${rel} foi lido`)
     // 5.52 (chat 3, Task 3c): o deny segue fora; o _modelo ganhou o ask e o allow da lista fechada, a pasta-mae nada
     assert.equal(cfg.permissions?.deny, undefined, `${rel}: o deny saiu`)
     assert.deepEqual(cfg.permissions, rel.includes('_modelo') ? PERMISSOES_DO_KIT : undefined, `${rel}: permissions`)
-    assert.equal(cfg.hooks.SessionStart, undefined, `${rel}: o SessionStart saiu`)
+    if (rel.includes('_modelo')) {
+      const blocos = cfg.hooks.SessionStart
+      assert.ok(Array.isArray(blocos) && blocos.length === 1, `${rel}: um bloco SessionStart`)
+      const comandos = blocos[0].hooks.map(h => h.command)
+      assert.ok(comandos.some(c => c.includes('aviso-fechamento.mjs')), `${rel}: chama o aviso-fechamento`)
+      assert.equal(comandos.some(c => c.includes('barrar-mcp')), false, `${rel}: citaMcp falso`)
+    } else assert.equal(cfg.hooks.SessionStart, undefined, `${rel}: o SessionStart segue fora da pasta-mae`)
   }
+})
+
+// 5.54 (C1): o SessionStart e o PreCompact do _modelo chamam o aviso-fechamento, que tem de existir
+test('gate 5 cobra o aviso-fechamento.mjs no SessionStart e no PreCompact do _modelo', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo/.claude/hooks'), { recursive: true })
+    writeFileSync(join(dir, '_modelo/.claude/hooks/auto-sync.mjs'), "git(dir, ['rev-parse', '--git-dir']); git(dir, ['remote', 'get-url', 'origin'])\n")
+    const bloco = c => [{ hooks: [{ type: 'command', command: c }] }]
+    const sync = 'node "${CLAUDE_PROJECT_DIR}/.claude/hooks/auto-sync.mjs"'
+    const aviso = 'node "${CLAUDE_PROJECT_DIR}/.claude/hooks/aviso-fechamento.mjs"'
+    const gravar = hooks => writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify({ hooks }))
+    const g5 = () => rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 5).map(f => f.detalhe).sort()
+    gravar({ Stop: bloco(sync) })
+    assert.deepEqual(g5(), ['PreCompact do _modelo sem o aviso-fechamento.mjs', 'SessionStart do _modelo sem o aviso-fechamento.mjs'])
+    gravar({ Stop: bloco(sync), SessionStart: bloco(aviso), PreCompact: bloco(aviso) })
+    assert.deepEqual(g5(), ['settings.json chama o aviso-fechamento.mjs, que nao existe'])
+    writeFileSync(join(dir, '_modelo/.claude/hooks/aviso-fechamento.mjs'), 'export const MARCA = 1\n')
+    assert.deepEqual(g5(), [])
+    gravar({ Stop: bloco(sync), SessionStart: bloco(aviso), PreToolUse: bloco(aviso) })
+    assert.deepEqual(g5(), ['PreCompact do _modelo sem o aviso-fechamento.mjs'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
 // 5.52 (chat 3, Task 3c, decisoes 2 e 18): o Gate 9 cobra a lista fechada no _modelo e recusa o que solta tudo
@@ -1588,7 +1642,8 @@ test('gate 5 cobra o auto-sync.mjs com guarda no _modelo', () => {
     mkdirSync(join(dir, '_modelo/.claude/hooks'), { recursive: true })
     const settings = { hooks: { Stop: [{ hooks: [{ type: 'command', command: 'node "${CLAUDE_PROJECT_DIR}/.claude/hooks/auto-sync.mjs"' }] }] } }
     writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify(settings))
-    const g5 = () => rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 5).map(f => f.detalhe)
+    // 5.54 (C1): o aviso-fechamento tem teste proprio
+    const g5 = () => rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 5 && !/aviso-fechamento/.test(f.detalhe)).map(f => f.detalhe)
     assert.deepEqual(g5(), ['settings.json chama o auto-sync.mjs, que nao existe'])
     writeFileSync(join(dir, '_modelo/.claude/hooks/auto-sync.mjs'), "git(dir, ['push'])\n")
     assert.deepEqual(g5(), ['auto-sync.mjs sem guarda de repo/remote'])
@@ -1596,6 +1651,25 @@ test('gate 5 cobra o auto-sync.mjs com guarda no _modelo', () => {
     assert.deepEqual(g5(), [])
     writeFileSync(join(dir, '_modelo/.claude/settings.json'), JSON.stringify({ hooks: {} }))
     assert.deepEqual(g5(), ['Stop do _modelo sem o auto-sync.mjs'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// 5.54 (A1): o Stop da pasta-mae saiu do bash pro backup-pasta-mae.mjs, e a guarda do Mac mora nele
+test('gate 5 cobra o backup-pasta-mae.mjs com a guarda do Mac no Stop da pasta-mae', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '.claude'), { recursive: true })
+    mkdirSync(join(dir, '_ferramentas'), { recursive: true })
+    const settings = { hooks: { Stop: [{ hooks: [{ type: 'command', command: 'node "${CLAUDE_PROJECT_DIR}/_ferramentas/backup-pasta-mae.mjs"' }] }] } }
+    writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify(settings))
+    const g5 = () => rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 5).map(f => `${f.arquivo} ${f.detalhe}`)
+    assert.deepEqual(g5(), ['.claude/settings.json settings.json chama o backup-pasta-mae.mjs, que nao existe'])
+    writeFileSync(join(dir, '_ferramentas/backup-pasta-mae.mjs'), 'autoSync(mae)\n')
+    assert.deepEqual(g5(), ['.claude/settings.json backup-pasta-mae.mjs sem a guarda do Mac'])
+    writeFileSync(join(dir, '_ferramentas/backup-pasta-mae.mjs'), "if (plataforma !== 'darwin') return true\nspawnSync('xcode-select', ['-p'])\nautoSync(mae)\n")
+    assert.deepEqual(g5(), [])
+    writeFileSync(join(dir, '.claude/settings.json'), JSON.stringify({ hooks: {} }))
+    assert.deepEqual(g5(), ['.claude/settings.json Stop da pasta-mae sem o backup-pasta-mae.mjs'])
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
@@ -1646,6 +1720,16 @@ test('gate 14 em SKILL.md le so a fala repassada ao aluno (citacao e aspas)', ()
       '```powershell', '"digite no terminal"', '```',
     ].join('\n') + '\n')
     assert.deepEqual(linhas14(gate14(dir)), ['.claude/skills/iniciar/SKILL.md linha 7', '.claude/skills/iniciar/SKILL.md linha 8'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// 5.54 (B2, achado 26): o atalho Cmd+Q do Mac nao e o cmd do Windows. O "sai pelo Cmd+Q" sozinho
+// ja passava (sem verbo de ordem); o canario e a frase com "Rode" antes, que reprovava.
+test('gate 14 nao confunde o Cmd+Q do Mac com o cmd, e o cmd de verdade segue reprovando', () => {
+  const dir = kitFalso()
+  try {
+    writeFileSync(join(dir, 'README.md'), ['Rode o /setup de novo, saindo pelo Cmd+Q.', 'rode no cmd'].join('\n') + '\n')
+    assert.deepEqual(linhas14(gate14(dir)), ['README.md linha 2'])
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
@@ -1718,10 +1802,15 @@ test('gate 16 reprova o Playwright MCP sem versao fixa ou sem isolated nem cdp-e
     mkdirSync(join(dir, '_modelo/.claude/skills/x'), { recursive: true })
     writeFileSync(join(dir, '_modelo/.claude/skills/x/SKILL.md'), linhas.join('\n') + '\n')
     writeFileSync(join(dir, '_modelo/.claude/skills/x/y.mjs'), `// ${linhas[0]}\n`)
+    // 5.54 (B1): o ligar-mcp.mjs guarda a linha no array de args; versao solta ali reprova, a fixa passa
+    writeFileSync(join(dir, '_modelo/.claude/skills/x/ligar-mcp.mjs'), [
+      `  playwright: () => ['${pacote}', '--isolated', '--output-dir', 'dados/navegador-saida'],`,
+      `  playwright: () => ['${pacote}@0.0.83', '--isolated', '--output-dir', 'dados/navegador-saida'],`,
+    ].join('\n') + '\n')
     const do16 = rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 16)
     assert.ok(do16.length > 0, 'canario: o gate 16 acusou alguma coisa')
     assert.deepEqual(do16.map(f => `${f.arquivo} ${f.detalhe.split(':')[0]}`).sort(),
-      ['_modelo/.claude/skills/x/SKILL.md linha 1', '_modelo/.claude/skills/x/SKILL.md linha 2', '_modelo/.claude/skills/x/SKILL.md linha 3', '_modelo/.claude/skills/x/y.mjs linha 1'])
+      ['_modelo/.claude/skills/x/SKILL.md linha 1', '_modelo/.claude/skills/x/SKILL.md linha 2', '_modelo/.claude/skills/x/SKILL.md linha 3', '_modelo/.claude/skills/x/ligar-mcp.mjs linha 1', '_modelo/.claude/skills/x/y.mjs linha 1'])
     assert.ok(do16.every(f => /fixar a versao sondada na bancada e dizer qual navegador usa/.test(f.detalhe)))
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })

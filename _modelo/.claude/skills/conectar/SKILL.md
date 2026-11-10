@@ -55,10 +55,10 @@ Antes do Degrau 1, três perguntas, nesta ordem:
 
 1. Abrir o Chrome dedicado: `node .claude/skills/conectar/scripts/abrir-chrome.mjs`. Na primeira vez, você entra na conta do site nessa janela.
 2. Ler a porta deste projeto: `node .claude/skills/conectar/scripts/porta.mjs`.
-3. Ligar o servidor `navegador` com a porta que o `porta.mjs` imprimiu, no lugar de `<porta>`. Fica só neste projeto (o escopo padrão), porque a porta é dele:
-   `claude mcp add navegador -- npx @playwright/mcp@0.0.83 --cdp-endpoint http://127.0.0.1:<porta> --output-dir dados/navegador-saida --no-webmcp`
+3. Ligar o servidor `navegador` com a porta que o `porta.mjs` imprimiu, pelo script do kit, que lê a mesma porta sozinho. Fica só neste projeto (no `.mcp.json` dele), porque a porta é dele:
+   `node .claude/skills/conectar/scripts/ligar-mcp.mjs ligar navegador`
 
-Cada vez que for usar o `navegador`, rodar antes o `abrir-chrome.mjs`: o servidor entra em qualquer Chrome que estiver na porta, e é o `abrir-chrome.mjs` que confere se esse Chrome é o deste projeto. Se ele avisar que a porta mudou, ligar o `navegador` de novo com a porta nova (`claude mcp remove navegador` e o passo 3) e fechar e abrir o Claude Code antes de usar: o `navegador` que já está rodando só pega a porta nova numa sessão nova.
+Cada vez que for usar o `navegador`, rodar antes o `abrir-chrome.mjs`: o servidor entra em qualquer Chrome que estiver na porta, e é o `abrir-chrome.mjs` que confere se esse Chrome é o deste projeto. Se ele avisar que a porta mudou, ligar o `navegador` de novo com a porta nova (o passo 3 de novo, que troca a definição velha) e, antes de usar, sair de vez do app do Claude (Windows: ícone perto do relógio, botão direito, Sair; Mac: Cmd+Q) e abrir de novo, depois de esperar terminar o que roda nas outras conversas (Gerenciador de Tarefas só se o Sair não fechar): o `navegador` que já está rodando só pega a porta nova numa sessão nova.
 
 Tarefa sem você na frente (script de rotina) abre o Chrome sem janela, com `--sem-janela` no `abrir-chrome.mjs`: o login que você fez com janela vale sem janela. Com você na frente, a janela do Chrome dedicado pode ficar atrás de outra, mas minimizada trava o clique do robô. O que o robô baixa cai em `dados/navegador-saida/`, e o do script de rotina também: ele espera o arquivo pelo `baixarNaSaida` da lib do Chrome, que recebe a página onde o script clica e só aceita o download que começou nela.
 
@@ -82,7 +82,7 @@ Pra cada um, responder sempre as mesmas 4 coisas: **o que te deixa fazer**, **é
 
 - **O que te deixa fazer:** eu passo a enxergar e operar um navegador de verdade: abrir sites, ler páginas, preencher formulários, tirar prints, conferir preços de concorrentes. É a base de meia dúzia de automações futuras.
 - **Grátis ou pago:** grátis.
-- **Precisa de quê:** nada de conta. Um comando no terminal (`claude mcp add playwright -- npx @playwright/mcp@0.0.83 --isolated --output-dir dados/navegador-saida --no-webmcp`) e o download dos navegadores (`npx playwright install chromium`, uns 700 MB). Eu rodo os dois, você só aprova.
+- **Precisa de quê:** nada de conta. Um script do kit (`node .claude/skills/conectar/scripts/ligar-mcp.mjs ligar playwright`, que liga o navegador limpo na versão testada) e o download dos navegadores (`npx playwright install chromium`, uns 700 MB). Eu rodo os dois, você só aprova.
 - **Hoje ou depois:** hoje, em 2 minutos. Confirmar com `/mcp` (deve aparecer "playwright" conectado) e fazer uma demonstração na hora: abrir um site que o usuário conhece e ler algo dele.
 - **Site com a sua conta logada:** este navegador abre limpo a cada vez, sem login. Pra usar o Chrome dedicado logado, é o servidor `navegador` do Degrau 5 da escada.
 

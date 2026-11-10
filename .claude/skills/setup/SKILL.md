@@ -63,9 +63,11 @@ que a resposta deixou faltando.
 2. O que fazer com a resposta:
    - `OK`: seguir sem falar nada.
    - `REINICIAR ...` (só Windows), texto exato:
-     > "Os programas já estão instalados, só falta o VS Code enxergar. Fecha todas as janelas
-     > do VS Code, abre de novo nesta pasta e me chama numa conversa nova. A gente continua
-     > daqui."
+     > "Os programas já estão instalados, só falta o app do Claude enxergar. Até você reabrir,
+     > as ferramentas do app e as conexões ficam barradas. Espera terminar o que roda nas
+     > outras conversas, sai de vez do app do Claude (Windows: ícone perto do relógio, botão
+     > direito, Sair; Mac: Cmd+Q) e abre de novo nesta pasta, numa conversa nova. Gerenciador
+     > de Tarefas só se o Sair não fechar. A gente continua daqui."
    - `FALTA ...` com Git e Node, avisar com este texto exato e já seguir pra instalação
      abaixo, sem esperar resposta (os dois são de graça):
      > "Antes de começar, faltam 2 programas que o sistema usa: o **Git**, que guarda o
@@ -98,8 +100,10 @@ que a resposta deixou faltando.
      `curl -fsSLo "$HOME/Downloads/node.pkg" "https://nodejs.org/dist/latest-v24.x/$(curl -fsSL https://nodejs.org/dist/latest-v24.x/SHASUMS256.txt | grep -o 'node-v[0-9.]*[.]pkg')" && open "$HOME/Downloads/node.pkg"`
      e dizer: "Abriu o instalador do Node. Vai clicando em **Continuar** e **Instalar**. Se
      ele pedir a senha do Mac, é a mesma de ligar o computador."
-   - Depois, conferir de novo; continuou `FALTA`, pedir pra fechar e abrir o VS Code. Sem
-     brew, que pede senha no terminal.
+   - Depois, conferir de novo; continuou `FALTA`, pedir pra esperar terminar o que roda nas
+     outras conversas, sair de vez do app do Claude (Windows: ícone perto do relógio, botão
+     direito, Sair; Mac: Cmd+Q) e abrir de novo; Gerenciador de Tarefas só se o Sair não
+     fechar. Sem brew, que pede senha no terminal.
 5. ffmpeg, Python e yt-dlp: quem instala é a skill que usa (`/configurar-video`, `/transcribe`,
    `/assistir-video`): no Windows sempre pelo winget com as mesmas flags, no Mac pelo caminho
    que a própria skill dá.
@@ -754,6 +758,10 @@ uma pasta com esse nome na raiz, avisar e perguntar outro nome antes de seguir.
   pro GitHub ao fim de cada resposta e, se outro computador mexeu no mesmo
   arquivo, para e deixa recado em vez de forçar. Vai sempre, como a trava: com o
   auto-sync recusado ele fica no projeto sem nada chamando.
+- `.claude/hooks/aviso-fechamento.mjs`, só o script (nunca o `.test.mjs`). É o aviso
+  que o `settings.json` chama no começo da conversa e antes do resumo: lembra os dias
+  do diário que ficaram sem o `/atualizar`. Vai sempre: sem ele o projeto nasce com o
+  `settings.json` apontando pra um script que não existe.
 - `.claude/detalhe-regras.md`, copiar como está. É o detalhe das regras (formato
   do diário e do recado, rotina, criação de skill, Codex) que o `AGENTS.md` manda
   ler antes de escrever; sem ele o Mapa aponta pra um arquivo que não existe.
@@ -959,7 +967,16 @@ qual é o próximo passo ao terminar cada etapa)".
    `node _ferramentas/atualizar-projeto.mjs aplicar <pasta-do-projeto> --registro`. Tudo sai
    "igual" e nada é trocado: o que fica é o recibo `.sabinos/instalado.json` e o
    motor guardado, que deixam o `/atualizar-sabinos` saber, na versão seguinte,
-   o que veio do SabinOS e o que é da pessoa.
+   o que veio do SabinOS e o que é da pessoa. A saída do `aplicar` pode trazer
+   a linha que começa com `Historico do app:` (o prazo de 30 dias pro app guardar
+   as conversas neste computador): mostrar essa linha como veio.
+
+   Depois, ainda da pasta-mãe, rodar `node _ferramentas/historico-app.mjs`, que
+   grava no `~/.claude/settings.json` da pessoa (o do computador, fora de qualquer
+   projeto) o prazo de 30 dias pro app guardar as conversas; sem ele o app guarda
+   sem prazo. As outras configurações desse arquivo ficam como estavam. Mostrar a
+   linha que ele imprime. Saída 2 quer dizer que o arquivo tem um erro de escrita
+   e nada foi gravado: dizer isso em uma frase e seguir, sem consertar sozinho.
 5. **Teste de aceite.** Reler do disco, nunca da memória da conversa, o
    `_contexto/empresa.md`, o `_contexto/estrategia.md` e o
    `_contexto/preferencias.md` do projeto, e provar com três fatos tirados deles,

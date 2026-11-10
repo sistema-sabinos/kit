@@ -27,9 +27,12 @@
 - Servidor `navegador` do `/conectar`: cada vez que for usar, rodar antes o
   `abrir-chrome.mjs`, porque o servidor entra em qualquer Chrome que estiver na
   porta. Se ele avisar que a porta mudou, ligar o `navegador` de novo com a
-  porta nova (`claude mcp remove navegador` e o passo 3) e fechar e abrir o
-  Claude Code antes de usar: o `navegador` que já está rodando só pega a
-  porta nova numa sessão nova.
+  porta nova (`node .claude/skills/conectar/scripts/ligar-mcp.mjs ligar
+  navegador`, o passo 3) e, antes de usar, sair de vez do app do Claude
+  (Windows: ícone perto do relógio, botão direito, Sair; Mac: Cmd+Q) e abrir
+  de novo, depois de esperar terminar o que roda nas outras conversas
+  (Gerenciador de Tarefas só se o Sair não fechar): o `navegador` que já está
+  rodando só pega a porta nova numa sessão nova.
 - Tarefa sem a pessoa na frente abre o Chrome dedicado sem janela
   (`abrir-chrome.mjs --sem-janela`, ou `abrirChrome` com `headless: true` no
   script) e, se foi ela que abriu, fecha no fim (`fecharChrome` da lib), porque

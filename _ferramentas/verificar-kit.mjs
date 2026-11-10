@@ -48,7 +48,8 @@ export const RE_ENSINA = /windows.*mac|mac.*windows/i
 // comando no terminal; quem roda e o Claude, o Codex ou outra IA. Exportado pro teste dos guias
 // na bancada, como o vazamentosNoTexto. A frase so conta com verbo de ordem (digite, rode, cole,
 // execute, escreva) junto de um terminal: "digite / no chat" e "o script escreve no terminal" passam.
-const TERMINAL = '(?:terminal|power ?shell|prompt de comando|cmd|linha de comando|git bash|bash)'
+// o cmd seguido de + e o atalho do Mac (Cmd+Q), nunca o prompt do Windows (5.54, achado 26)
+const TERMINAL = '(?:terminal|power ?shell|prompt de comando|cmd(?! ?\\+)|linha de comando|git bash|bash)'
 const VERBO_TERMINAL = '(?:digit(?:e|ar)|rod(?:e|ar)|col(?:e|a|ar)|execut(?:e|ar)|escrev(?:a|er))'
 const ARTIGO_TERMINAL = '(?:um |uma |outro |outra |o |a |seu |sua )?'
 export const RES_TERMINAL = [
@@ -247,7 +248,9 @@ const OBRIGATORIOS = [
   '.claude/skills/setup/SKILL.md', '.claude/skills/novo-projeto/SKILL.md',
   '.claude/skills/find-skills/SKILL.md', '.claude/skills/syncar/SKILL.md',
   '.claude/skills/atualizar-kit/SKILL.md',
-  '_ferramentas/verificar-kit.mjs',
+  '_ferramentas/verificar-kit.mjs', '_ferramentas/backup-pasta-mae.mjs',
+  // 5.54 (C4): o /setup e o /atualizar-kit chamam no fim pro historico de 30 dias do app
+  '_ferramentas/historico-app.mjs',
   '_ferramentas/lib/README.md', '_ferramentas/lib/watchdog.mjs',
   '_ferramentas/lib/fetch-timeout.mjs', '_ferramentas/lib/boot-guard.mjs',
   '_ferramentas/lib/backup-env.mjs',
@@ -257,6 +260,8 @@ const OBRIGATORIOS = [
   '_modelo/.gitattributes',
   '_modelo/.claude/hooks/barrar-perigoso.mjs',
   '_modelo/.claude/hooks/auto-sync.mjs',
+  // 5.54 (C1): o settings chama o aviso no SessionStart e no PreCompact
+  '_modelo/.claude/hooks/aviso-fechamento.mjs',
   // 5.28: o settings chama o hook do MCP com onFailure block; sem o arquivo, toda ferramenta de fora barra
   '_modelo/.claude/hooks/barrar-mcp.mjs',
   // a regra curta do AGENTS.md do molde manda ler o detalhe aqui (5.7, D.1)
@@ -598,6 +603,10 @@ export function rodarGates(dirKit, opcoes = {}) {
     if (!/^\.agents\/\s*$/m.test(txt)) {
       falhas.push({ gate: 3, arquivo: rel, detalhe: '.gitignore precisa da linha .agents/' })
     }
+    // copia do Worktree da aba Code do app (5.54 A4): o !*.md levaria ela inteira pro backup
+    if (!/^\.claude\/worktrees\/\s*$/m.test(txt)) {
+      falhas.push({ gate: 3, arquivo: rel, detalhe: '.gitignore precisa da linha .claude/worktrees/' })
+    }
   }
   // .secrets/ e onde skill de terceiro costuma gravar chave, e secrets/ e a pasta de chave do
   // deny: as duas fora do backup do projeto (sem a linha, o !*.json leva a chave). Na pasta-mae
@@ -639,18 +648,36 @@ export function rodarGates(dirKit, opcoes = {}) {
     }
   }
 
-  // Gate 5 (_modelo): o auto-sync saiu da linha de bash pro script, e a guarda mora nele
-  if (set.has('_modelo/.claude/settings.json')) {
-    const txt = readFileSync(join(dirKit, '_modelo/.claude/settings.json'), 'utf8')
-    const falha5 = detalhe => falhas.push({ gate: 5, arquivo: '_modelo/.claude/settings.json', detalhe })
+  // Gate 5 (_modelo e pasta-mae): o backup saiu da linha de bash pro script, e a guarda mora nele.
+  // 5.54 (A1): o Stop da pasta-mae chama o backup-pasta-mae.mjs, que guarda o Mac sem as ferramentas da Apple
+  const BACKUP_DO_STOP = [
+    { settings: '_modelo/.claude/settings.json', onde: 'do _modelo', chamada: '.claude/hooks/auto-sync.mjs', script: '_modelo/.claude/hooks/auto-sync.mjs', nome: 'auto-sync.mjs',
+      guarda: s => s.includes("'rev-parse', '--git-dir'") && s.includes("'remote', 'get-url', 'origin'"), semGuarda: 'auto-sync.mjs sem guarda de repo/remote' },
+    { settings: '.claude/settings.json', onde: 'da pasta-mae', chamada: '_ferramentas/backup-pasta-mae.mjs', script: '_ferramentas/backup-pasta-mae.mjs', nome: 'backup-pasta-mae.mjs', guarda: s => s.includes("'darwin'") && s.includes("'xcode-select'"), semGuarda: 'backup-pasta-mae.mjs sem a guarda do Mac' },
+  ]
+  for (const b of BACKUP_DO_STOP) {
+    if (!set.has(b.settings)) continue
+    const txt = readFileSync(join(dirKit, b.settings), 'utf8')
+    const falha5 = detalhe => falhas.push({ gate: 5, arquivo: b.settings, detalhe })
     let stop = []
     try { stop = (JSON.parse(txt).hooks?.Stop || []).flatMap(h => h.hooks || []).map(h => h.command || '') } catch { falha5('settings.json nao e JSON valido') }
     // so vale chamado do Stop: citado em outro evento, o backup nunca roda
-    if (!stop.some(c => c.includes('.claude/hooks/auto-sync.mjs'))) falha5('Stop do _modelo sem o auto-sync.mjs')
-    else if (!set.has('_modelo/.claude/hooks/auto-sync.mjs')) falha5('settings.json chama o auto-sync.mjs, que nao existe')
-    else {
-      const s = readFileSync(join(dirKit, '_modelo/.claude/hooks/auto-sync.mjs'), 'utf8')
-      if (!s.includes("'rev-parse', '--git-dir'") || !s.includes("'remote', 'get-url', 'origin'")) falha5('auto-sync.mjs sem guarda de repo/remote')
+    if (!stop.some(c => c.includes(b.chamada))) falha5(`Stop ${b.onde} sem o ${b.nome}`)
+    else if (!set.has(b.script)) falha5(`settings.json chama o ${b.nome}, que nao existe`)
+    else if (!b.guarda(readFileSync(join(dirKit, b.script), 'utf8'))) falha5(b.semGuarda)
+  }
+
+  // Gate 5 (_modelo, 5.54 C1): o aviso de sessao sem fechar sobe no SessionStart e no PreCompact
+  if (set.has('_modelo/.claude/settings.json')) {
+    const rel = '_modelo/.claude/settings.json'
+    let hooks = null
+    try { hooks = JSON.parse(readFileSync(join(dirKit, rel), 'utf8')).hooks || {} } catch { /* o JSON quebrado ja acusa acima */ }
+    if (hooks) {
+      const chama = ev => (hooks[ev] || []).flatMap(h => h.hooks || []).some(h => (h.command || '').includes('.claude/hooks/aviso-fechamento.mjs'))
+      const faltam = ['SessionStart', 'PreCompact'].filter(ev => !chama(ev))
+      for (const ev of faltam) falhas.push({ gate: 5, arquivo: rel, detalhe: `${ev} do _modelo sem o aviso-fechamento.mjs` })
+      if (!faltam.length && !set.has('_modelo/.claude/hooks/aviso-fechamento.mjs'))
+        falhas.push({ gate: 5, arquivo: rel, detalhe: 'settings.json chama o aviso-fechamento.mjs, que nao existe' })
     }
   }
 

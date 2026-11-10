@@ -80,4 +80,7 @@ Confira o vídeo no celular: dá para entender a fala com o som baixo? A luz est
 igual do começo ao fim? Tem algo atrás de você que não devia estar? Se alguma
 resposta for "não", é mais rápido regravar agora do que consertar depois.
 
-O arquivo vai para `producao/<slug>/bruto/`. Um vídeo gravado, um arquivo.
+O arquivo vai para `producao/<slug>/bruto/`, a pasta que a IA cria e abre com
+`node .claude/skills/conectar/scripts/abrir-pasta.mjs producao/<slug>/bruto`. Copie o
+vídeo pra pasta que abriu, e lembre: não arrasta pro chat, porque lá ele fica numa
+pasta temporária do app, fora do projeto. Um vídeo gravado, um arquivo.

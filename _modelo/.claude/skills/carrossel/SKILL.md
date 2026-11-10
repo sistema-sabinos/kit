@@ -49,8 +49,10 @@ Se escolher **tweet**, perguntar também:
 > "Pra o estilo tweet, preciso de algumas coisas:
 > 1. Teu nome (como quer que apareça no slide)
 > 2. Teu @ do Instagram
-> 3. Uma foto de perfil (joga na pasta `marca/foto-perfil.jpg`). Se não tiver agora, uso as iniciais do teu nome
+> 3. Uma foto de perfil: abro a pasta `marca/` pra ti, e tu copia a foto pra lá com o nome `foto-perfil.jpg` (não arrasta pro chat). Se não tiver agora, uso as iniciais do teu nome
 > 4. Quer o badge azul de verificado ao lado do nome? (sim/não)"
+
+Pra foto de perfil, criar e abrir a pasta com `node .claude/skills/conectar/scripts/abrir-pasta.mjs marca` antes de mandar a pergunta.
 
 Salvar essas informações na seção `## Perfil do autor` do guia visual da marca pra não perguntar de novo:
 ```markdown
@@ -109,7 +111,7 @@ Conferir se `.claude/skills/midia-social/node_modules/playwright` existe; senão
 
 O usuário fornece:
 - Tema, ideia, texto livre, link ou arquivo de referência
-- Imagens (opcional): se anexar fotos, usar nos slides. Se não, criar design visual sem foto
+- Imagens (opcional): a foto entra por `producao/<slug>/imagens/`, criada e aberta com `node .claude/skills/conectar/scripts/abrir-pasta.mjs producao/<slug>/imagens`; o aluno copia a foto pra pasta que abriu e não arrasta pro chat. Foto colada no chat: copiar na hora pra `producao/<slug>/imagens/` e conferir que o arquivo existe lá, porque o app guarda a colada numa pasta temporária que some. Sem o caminho da foto colada, pedir pra pôr na pasta. Sem foto, criar design visual sem foto
 - Número do episódio ou série (se aplicável)
 
 ## Onde o post mora
@@ -145,7 +147,7 @@ Cada carrossel é uma pasta `producao/<slug>/`, com `<slug>` no formato `AAAA-MM
    > "Antes de escrever, me confirma:
    > - Quantos slides? (padrão: 6 a 9; teto de 10, o limite do agendador)
    > - Vai querer imagem na capa ou dentro dos slides? Se sim, quantas imagens tu tem?
-   >   - Se tiver imagens: joga na pasta `producao/<slug>/imagens/` e me diz os nomes
+   >   - Se tiver imagens: abro a pasta `producao/<slug>/imagens/` pra ti; copia as fotos pra ela e me diz os nomes (não arrasta pro chat)
    >   - Se não tiver: faço um design visual que funciona bem sem foto
    >   - Se quiser, posso gerar imagens por IA (ver seção Geração de Imagens abaixo)
    > - CTA do último slide? (ex: 'segue pra mais', 'link na bio', 'comenta X')

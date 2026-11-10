@@ -237,8 +237,10 @@ gh release create v1.0.0
 MCPs sao conectores que dao acesso direto a plataformas dentro do Claude Code.
 O Claude passa a usar esses conectores automaticamente quando fizer sentido.
 
-Pra verificar quais MCPs ja estao instalados: `claude mcp list`
-Pra remover um MCP: `claude mcp remove nome-do-mcp`
+Os MCPs do kit se ligam pelo script do `/conectar`, que grava no `.mcp.json` do projeto e aprova no settings do usuario, sem chave nenhuma:
+Pra ver quais estao ligados neste projeto: `node .claude/skills/conectar/scripts/ligar-mcp.mjs listar`
+Pra desligar um: `node .claude/skills/conectar/scripts/ligar-mcp.mjs desligar nome-do-mcp`
+Depois de ligar, o servidor sobe numa sessao nova: espera terminar o que roda nas outras conversas, sai de vez do app do Claude (Windows: icone perto do relogio, botao direito, Sair; Mac: Cmd+Q) e abre de novo. Gerenciador de Tarefas so se o Sair nao fechar.
 
 > **Rota oficial primeiro:** Gmail, Google Drive e Google Calendar tem conectores OFICIAIS
 > hospedados pela Anthropic. Voce liga uma vez no site claude.ai (Configuracoes > Conectores,
@@ -251,34 +253,31 @@ Pra remover um MCP: `claude mcp remove nome-do-mcp`
 **Precisa de conta:** Nao, roda local e gratis
 **Como instalar:**
 ```bash
-claude mcp add playwright -- npx @playwright/mcp@0.0.83 --isolated --output-dir dados/navegador-saida --no-webmcp
+node .claude/skills/conectar/scripts/ligar-mcp.mjs ligar playwright
 npx playwright install chromium
 ```
-**Chrome dedicado logado (Degrau 5 do /conectar):** o servidor `navegador` usa o Chrome do projeto, aberto por `node .claude/skills/conectar/scripts/abrir-chrome.mjs`, na porta que `node .claude/skills/conectar/scripts/porta.mjs` imprime (no lugar de `<porta>`):
+**Chrome dedicado logado (Degrau 5 do /conectar):** o servidor `navegador` usa o Chrome do projeto, aberto por `node .claude/skills/conectar/scripts/abrir-chrome.mjs`, na porta que `node .claude/skills/conectar/scripts/porta.mjs` imprime (o script le a mesma porta sozinho):
 ```bash
-claude mcp add navegador -- npx @playwright/mcp@0.0.83 --cdp-endpoint http://127.0.0.1:<porta> --output-dir dados/navegador-saida --no-webmcp
+node .claude/skills/conectar/scripts/ligar-mcp.mjs ligar navegador
 ```
 **Quando usar:** Pesquisa de concorrentes, conferencia de precos, site sem API: pela escada do `/conectar`. Confirmar com /mcp (deve listar "playwright", e "navegador" se ligou o segundo)
 
 ### Notion
 **O que faz:** Acessa projetos, bases de dados, briefings e tarefas do Notion
 **Precisa de conta:** Sim, API key em notion.so/my-integrations
-**Como instalar:**
-```bash
-claude mcp add notion -- npx -y @notionhq/notion-mcp-server
-```
+**Como instalar:** ainda sem script do kit: o servidor `@notionhq/notion-mcp-server` pede a chave, e o `ligar-mcp.mjs` por enquanto so liga servidor sem chave. Enquanto isso, a escada do `/conectar` diz o proximo caminho
 **Quando usar:** Skills que precisam ler/escrever tarefas, bases de clientes, documentos
 
 ### Gmail
 **O que faz:** Le, busca e rascunha emails sem sair do Claude Code
 **Precisa de conta:** Sim, conta Google
-**Como instalar:** Conector oficial: claude.ai > Configuracoes > Conectores > Gmail (login Google). O Claude Code carrega sozinho. Alternativa por MCP de terceiro: `claude mcp add gmail -- npx -y @gongrzhe/server-gmail-autoauth-mcp`
+**Como instalar:** Conector oficial: claude.ai > Configuracoes > Conectores > Gmail (login Google). O Claude Code carrega sozinho. O MCP de terceiro (`@gongrzhe/server-gmail-autoauth-mcp`) pede chave do Google e ainda nao tem script do kit
 **Quando usar:** Skills de email, follow-up, comunicacao com clientes
 
 ### Google Calendar
 **O que faz:** Ve agenda, cria eventos e encontra horarios disponiveis
 **Precisa de conta:** Sim, conta Google
-**Como instalar:** Conector oficial: claude.ai > Configuracoes > Conectores > Google Calendar. Alternativa por MCP de terceiro: `claude mcp add google-calendar -- npx -y @gongrzhe/server-calendar-autoauth-mcp`
+**Como instalar:** Conector oficial: claude.ai > Configuracoes > Conectores > Google Calendar. O MCP de terceiro (`@gongrzhe/server-calendar-autoauth-mcp`) pede chave do Google e ainda nao tem script do kit
 **Quando usar:** Skills de agendamento, planejamento, organizacao de reunioes
 
 ### Canva
@@ -299,7 +298,7 @@ claude mcp add notion -- npx -y @notionhq/notion-mcp-server
 **Precisa de conta:** Nao
 **Como instalar:**
 ```bash
-claude mcp add context7 -- npx -y @upstash/context7-mcp
+node .claude/skills/conectar/scripts/ligar-mcp.mjs ligar context7
 ```
 **Quando usar:** Sempre que a skill envolver codigo com biblioteca ou framework. Evita que o Claude use info desatualizada do treinamento
 
@@ -317,10 +316,7 @@ claude mcp add context7 -- npx -y @upstash/context7-mcp
 ### N8N
 **O que faz:** Dispara automacoes e workflows do N8N
 **Precisa de conta:** Sim, instancia N8N + API key
-**Como instalar:**
-```bash
-claude mcp add n8n -- npx -y n8n-mcp
-```
+**Como instalar:** ainda sem script do kit: o servidor `n8n-mcp` pede a chave da instancia, e o `ligar-mcp.mjs` por enquanto so liga servidor sem chave
 **Quando usar:** Skills que precisam disparar automacoes externas
 
 ### Supabase

@@ -4,7 +4,7 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, statSync, realpathSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join, sep } from 'node:path'
+import { join, sep, win32, posix } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { python, exe } from './lib/plataforma.mjs'
 import { caminhos, pastaVideo, lerJsonSe } from './lib/pasta-video.mjs'
@@ -41,10 +41,30 @@ export const BYTES_MODELO = { small: 487601967, medium: 1533763059 }
 
 const tamanhoPadrao = (p) => { try { return statSync(p).size } catch { return 0 } }
 
+// 5.54 (B2, achado 18): onde o winget e o brew deixam cada programa. A sessao aberta antes da
+// instalacao guarda o PATH velho e nao acha o programa; com ele aqui, o item sai "reabrir" e a
+// skill pede pra sair de vez do app em vez de instalar de novo. So pros itens que conferem o
+// proprio programa (node, python, ffmpeg); as bibliotecas do Python ficam de fora.
+function lugaresConhecidos(id, plat, env) {
+  if (plat === 'win32') {
+    const programas = env.ProgramFiles || (env.SystemDrive || 'C:') + win32.sep + 'Program Files'
+    const local = env.LOCALAPPDATA
+    if (id === 'node') return [win32.join(programas, 'nodejs', 'node.exe')]
+    if (!local) return []
+    if (id === 'python') return [win32.join(local, 'Programs', 'Python', 'Python312', 'python.exe')]
+    if (id === 'ffmpeg') return [win32.join(local, 'Microsoft', 'WinGet', 'Links', 'ffmpeg.exe')]
+    return []
+  }
+  const nome = { node: 'node', python: 'python3.12', ffmpeg: 'ffmpeg' }[id]
+  return nome ? ['/opt/homebrew/bin', '/usr/local/bin'].map((d) => posix.join(d, nome)) : []
+}
+
 export function conferir({ plat = process.platform, arch = process.arch, base, executar = spawnSync, existe = existsSync, tamanho = tamanhoPadrao, env = process.env, modeloWhisper } = {}) {
   const c = caminhos(base)
   const py = python(plat, base)
-  const rodar = (cmd, args) => { try { return executar(cmd, args, { encoding: 'utf8' }) } catch { return { status: null, stdout: '' } } }
+  const rodar = (cmd, args) => { try { return executar(cmd, args, { encoding: 'utf8' }) } catch (error) { return { status: null, stdout: '', error } } }
+  // erro de spawn: o programa nem foi achado no PATH (status diferente de 0 e programa que rodou)
+  const naoAchou = (r) => r?.error?.code === 'ENOENT'
   const saida = (r) => `${r?.stdout ?? ''}${r?.stderr ?? ''}`
   const modeloMedido = modeloWhisper || lerJsonSe(c.maquina)?.whisper
   const modelo = modeloMedido || 'small'   // so pra achar o arquivo; sem medicao o item nao fica ok
@@ -76,12 +96,15 @@ export function conferir({ plat = process.platform, arch = process.arch, base, e
       : [true, 'sem versao pronta pra este computador: a voz vai pelo filtro afftdn do ffmpeg, que limpa um pouco menos e funciona'],
   }
 
+  const doPrograma = { node: nodeR, python: pyR, ffmpeg: ffR }
   const itens = ITENS.filter((i) => !i.soMac || plat === 'darwin').map((i) => {
-    const [ok, detalhe] = estado[i.id]
+    const [ok, detalheBruto] = estado[i.id]
+    const reabrir = !ok && naoAchou(doPrograma[i.id]) && lugaresConhecidos(i.id, plat, env).some((p) => existe(p))
+    const detalhe = reabrir ? 'instalado, falta reabrir o app (o programa esta no lugar da instalacao, e esta sessao ainda nao o enxerga)' : detalheBruto
     const modelo_mb = i.id === 'whisper' && modelo === 'medium' ? 1500 : i.mb
     const bruto = i.cmd ?? (plat === 'win32' ? i.win : i.mac)
     const instalar = (i.id === 'whisper' && !modeloMedido ? 'node .claude/skills/configurar-video/scripts/medir-maquina.mjs' : bruto.split('<modelo>').join(modelo)).replace(/<_video>\/(\S+)/g, (_, resto) => join(base, ...resto.split('/'))).split('<py>').join([py.cmd, ...py.base].join(' '))
-    return { id: i.id, mb: modelo_mb, ok, detalhe, instalar }
+    return { id: i.id, mb: modelo_mb, ok, estado: ok ? 'ok' : reabrir ? 'reabrir' : 'falta', detalhe, instalar }
   })
 
   const out = { itens, pastaComEspaco: /\s/.test(base ?? '') }

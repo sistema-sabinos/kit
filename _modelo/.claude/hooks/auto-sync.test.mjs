@@ -1,11 +1,11 @@
 import { test } from 'node:test'
 import assert from 'node:assert'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, readdirSync, copyFileSync, symlinkSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, readdirSync, copyFileSync, symlinkSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { autoSync, lerOrigem, carimbo, semInternet, semLogin, caraDeChave, conferirPreparados } from './auto-sync.mjs'
+import { autoSync, lerOrigem, carimbo, semInternet, semLogin, caraDeChave, conferirPreparados, idadeBackup } from './auto-sync.mjs'
 
 const SCRIPT = fileURLToPath(new URL('./auto-sync.mjs', import.meta.url))
 const AGORA = new Date(2026, 9, 5, 22, 7)   // 22h no Brasil: em UTC ja seria dia 6
@@ -509,6 +509,32 @@ test('rodado como hook: sai com codigo 0 mesmo fora de repositorio', () => {
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
+// 5.54 (A2, achado 12): na sessao na nuvem o Claude Code poe CLAUDE_CODE_REMOTE=true e o Stop roda
+// numa copia do repositorio fora do computador do aluno; o backup sai 0 sem commitar, o --conferir segue
+test('sessao na nuvem (CLAUDE_CODE_REMOTE=true): o hook sai 0 e nao commita; o --conferir segue', () => {
+  const r = montar()
+  try {
+    const semNuvem = { ...process.env, CLAUDE_PROJECT_DIR: r.a }
+    delete semNuvem.CLAUDE_CODE_REMOTE
+    const nuvem = { ...semNuvem, CLAUDE_CODE_REMOTE: 'true' }
+    writeFileSync(join(r.a, 'novo.md'), 'feito na nuvem\n')
+    const antes = git(r.a, 'rev-parse', 'HEAD')
+    const s = spawnSync(process.execPath, [SCRIPT], { cwd: r.a, env: nuvem, input: '{}', encoding: 'utf8' })
+    assert.equal(s.status, 0, s.stderr)
+    assert.equal(git(r.a, 'rev-parse', 'HEAD'), antes, 'na nuvem nada se commita')
+    assert.equal(git(r.a, 'status', '--porcelain'), '?? novo.md', 'o arquivo novo fica onde estava')
+    assert.ok(!temNoRemoto(r, 'novo.md'), 'na nuvem nada sobe')
+    const c = spawnSync(process.execPath, [SCRIPT, '--conferir'], { cwd: r.a, env: nuvem, encoding: 'utf8' })
+    assert.equal(c.status, 0, c.stderr)
+    assert.deepEqual(JSON.parse(c.stdout), [], 'o --conferir roda na nuvem e devolve a lista')
+    // canario: sem a variavel o mesmo hook commita e sobe
+    const l = spawnSync(process.execPath, [SCRIPT], { cwd: r.a, env: semNuvem, input: '{}', encoding: 'utf8' })
+    assert.equal(l.status, 0, l.stderr)
+    assert.notEqual(git(r.a, 'rev-parse', 'HEAD'), antes, 'canario: sem a variavel o hook commita')
+    assert.ok(temNoRemoto(r, 'novo.md'), 'canario: sem a variavel o arquivo sobe')
+  } finally { rmSync(r.raiz, { recursive: true, force: true }) }
+})
+
 // rodada 5.20 (decisao 9, N37): pela juncao ou link ate a pasta do hook, o auto-sync roda igual
 // ao caminho real. A opcao errada mostra o recado e sai 3 so quando o corpo roda; com a guarda
 // velha, pela juncao, saia 0 calado
@@ -529,4 +555,154 @@ test('pela juncao ou link ate a pasta do hook, o auto-sync roda igual ao caminho
       assert.match(r.stderr, /opcao desconhecida/)
     }
   } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// 5.54 (A3, achado 20): o --idade diz quanto o backup esta atrasado, sem rede e sem commit
+const DIA_MS = 24 * 60 * 60 * 1000
+const retrato = dir => [git(dir, 'status', '--porcelain', '--untracked-files=all'), git(dir, 'rev-parse', 'HEAD')].join('|')
+
+test('idade: limpo e em dia da "em dia", com a data do ultimo envio', () => {
+  const r = montar()
+  try {
+    const i = idadeBackup(r.a, new Date())
+    assert.ok(i.linha.length > 0, 'canario: a linha veio')
+    assert.match(i.linha, /^Backup em dia/)
+    assert.match(i.linha, /último envio \d{4}-\d{2}-\d{2} \d{2}:\d{2}/)
+    assert.equal(i.foraDoBackup, 0)
+    assert.equal(i.semSubir, 0)
+    assert.equal(i.vermelho, false)
+  } finally { rmSync(r.raiz, { recursive: true, force: true }) }
+})
+
+test('idade: arquivo novo e arquivo mudado dao a contagem e nada se commita', () => {
+  const r = montar()
+  try {
+    mkdirSync(join(r.a, 'pasta'))
+    writeFileSync(join(r.a, 'pasta', 'novo.md'), 'novo\n')
+    writeFileSync(join(r.a, 'notas.md'), 'linha 1\nmudou\n')
+    const antes = retrato(r.a)
+    assert.match(antes, /pasta\/novo\.md/, 'canario: o retrato ve o arquivo novo')
+    const i = idadeBackup(r.a, new Date())
+    assert.equal(i.foraDoBackup, 2)
+    assert.match(i.linha, /2 arquivos fora do backup/)
+    assert.equal(i.vermelho, false, 'mexido agora: o Stop manda no fim da resposta')
+    assert.equal(retrato(r.a), antes, 'nada commitado nem preparado')
+  } finally { rmSync(r.raiz, { recursive: true, force: true }) }
+})
+
+test('idade: commit sem push da a contagem e fica vermelho', () => {
+  const r = montar()
+  try {
+    writeFileSync(join(r.a, 'notas.md'), 'linha 1\nlocal\n')
+    git(r.a, 'commit', '-q', '-am', 'so local')
+    const i = idadeBackup(r.a, new Date())
+    assert.equal(i.semSubir, 1)
+    assert.match(i.linha, /1 commit sem subir/)
+    assert.equal(i.vermelho, true)
+    assert.match(i.linha, /^Backup vermelho/)
+  } finally { rmSync(r.raiz, { recursive: true, force: true }) }
+})
+
+test('idade: sem remoto diz "só neste computador"', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'auto-sync-'))
+  try {
+    git(dir, 'init', '-q')
+    writeFileSync(join(dir, 'x.md'), 'x\n')
+    const i = idadeBackup(dir, new Date())
+    assert.match(i.linha, /só neste computador/)
+    assert.equal(i.vermelho, true)
+    assert.equal(git(dir, 'status', '--porcelain'), '?? x.md', 'nada commitado')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('idade: com o agora fixo, arquivo sujo logo abaixo de 1 dia nao fica vermelho e logo acima fica', () => {
+  const r = montar()
+  try {
+    const arq = join(r.a, 'notas.md')
+    writeFileSync(arq, 'linha 1\nsujo\n')
+    const abaixo = new Date(AGORA.getTime() - DIA_MS + 60000)
+    utimesSync(arq, abaixo, abaixo)
+    const i1 = idadeBackup(r.a, AGORA)
+    assert.equal(i1.foraDoBackup, 1, 'canario: o arquivo sujo foi visto')
+    assert.equal(i1.vermelho, false, i1.linha)
+    assert.match(i1.linha, /^Backup pendente/)
+    const acima = new Date(AGORA.getTime() - DIA_MS - 60000)
+    utimesSync(arq, acima, acima)
+    const i2 = idadeBackup(r.a, AGORA)
+    assert.equal(i2.vermelho, true, i2.linha)
+    assert.match(i2.linha, /^Backup vermelho/)
+    assert.match(i2.linha, /há 1 dia/)
+  } finally { rmSync(r.raiz, { recursive: true, force: true }) }
+})
+
+test('idade: so arquivo apagado usa a data do commit do HEAD e fica vermelho depois de 1 dia', () => {
+  const r = montar()
+  try {
+    rmSync(join(r.a, 'notas.md'))
+    assert.match(git(r.a, 'status', '--porcelain'), /^D notas\.md$/, 'canario: o git ve o apagado')
+    const agora = idadeBackup(r.a, new Date())
+    assert.equal(agora.foraDoBackup, 1)
+    assert.match(agora.linha, /^Backup pendente: 1 arquivo apagado fora do backup, último commit há menos de 1 hora/)
+    assert.doesNotMatch(agora.linha, /mexido/)
+    assert.equal(agora.vermelho, false, agora.linha)
+    const depois = idadeBackup(r.a, new Date(Date.now() + 3 * DIA_MS))
+    assert.equal(depois.vermelho, true, depois.linha)
+    assert.match(depois.linha, /^Backup vermelho: 1 arquivo apagado fora do backup, último commit há 3 dias/)
+  } finally { rmSync(r.raiz, { recursive: true, force: true }) }
+})
+
+test('idade: remoto configurado sem nenhum commit nao da "em dia"', () => {
+  const raiz = mkdtempSync(join(tmpdir(), 'auto-sync-'))
+  try {
+    const remoto = join(raiz, 'remoto.git')
+    execFileSync('git', ['init', '-q', '--bare', '-b', 'main', remoto])
+    const dir = join(raiz, 'a')
+    mkdirSync(dir)
+    git(dir, 'init', '-q', '-b', 'main')
+    git(dir, 'remote', 'add', 'origin', remoto)
+    const i = idadeBackup(dir, new Date())
+    assert.ok(i.linha.length > 0, 'canario: a linha veio')
+    assert.equal(i.vermelho, true, i.linha)
+    assert.match(i.linha, /^Backup vermelho: nada enviado ainda\.$/)
+  } finally { rmSync(raiz, { recursive: true, force: true }) }
+})
+
+test('idade: git status que falha da vermelho, nunca "em dia"', () => {
+  const r = montar()
+  const antes = process.env.GIT_INDEX_FILE
+  try {
+    const canario = idadeBackup(r.a, new Date())
+    assert.match(canario.linha, /^Backup em dia/, 'canario: sem a costura o repo esta em dia')
+    // indice que nao e indice: o git status sai com erro e nao lista nada
+    const falso = join(r.raiz, 'indice-falso.txt')
+    writeFileSync(falso, 'isto nao e um indice do git\n')
+    process.env.GIT_INDEX_FILE = falso
+    assert.notEqual(spawnSync('git', ['-C', r.a, 'status', '--porcelain']).status, 0, 'canario: o git status falha mesmo')
+    const i = idadeBackup(r.a, new Date())
+    assert.equal(i.vermelho, true, i.linha)
+    assert.match(i.linha, /^Backup vermelho: não deu pra conferir o que está fora do backup/)
+  } finally {
+    if (antes === undefined) delete process.env.GIT_INDEX_FILE
+    else process.env.GIT_INDEX_FILE = antes
+    rmSync(r.raiz, { recursive: true, force: true })
+  }
+})
+
+test('--idade [pasta] pela linha de comando: imprime a linha, sai 0 e nao commita; a opcao errada cita as duas', () => {
+  const r = montar()
+  try {
+    writeFileSync(join(r.a, 'novo.md'), 'novo\n')
+    const antes = retrato(r.a)
+    const s = spawnSync(process.execPath, [SCRIPT, '--idade', r.a], { cwd: r.raiz, env: { ...process.env, CLAUDE_PROJECT_DIR: r.raiz }, encoding: 'utf8' })
+    assert.equal(s.status, 0, s.stderr)
+    assert.match(s.stdout, /^Backup pendente: 1 arquivo fora do backup/)
+    assert.equal(retrato(r.a), antes, 'o --idade nao commita')
+    // sem a pasta vale a do projeto aberto
+    const p = spawnSync(process.execPath, [SCRIPT, '--idade'], { cwd: r.raiz, env: { ...process.env, CLAUDE_PROJECT_DIR: r.a }, encoding: 'utf8' })
+    assert.match(p.stdout, /1 arquivo fora do backup/)
+    const e = spawnSync(process.execPath, [SCRIPT, '--idad'], { cwd: r.raiz, env: { ...process.env, CLAUDE_PROJECT_DIR: r.a }, encoding: 'utf8' })
+    assert.equal(e.status, 3)
+    assert.match(e.stderr, /--conferir/)
+    assert.match(e.stderr, /--idade/)
+  } finally { rmSync(r.raiz, { recursive: true, force: true }) }
 })

@@ -171,8 +171,11 @@ ffmpeg -y -f lavfi -i "gradients=s=1080x1920:c0=0x1b2a49:c1=0x4a6fa5:x0=540:y0=0
   Abra as três (leitura de imagem), mostre ao aluno e pergunte qual.
 - Copie a escolhida para `producao/<slug>/public/cenario.png`.
 
-Combine a entrega: o arquivo vai para `producao/<slug>/bruto/`. "Quando gravar,
-me manda o arquivo, e eu continuo daqui."
+Combine a entrega: crie e abra a pasta do bruto com
+`node .claude/skills/conectar/scripts/abrir-pasta.mjs producao/<slug>/bruto` e diga ao
+aluno: "Abri a pasta `producao/<slug>/bruto/`. Quando gravar, copia o vídeo pra pasta
+que abriu e me avisa, e eu continuo daqui. E não arrasta o vídeo pro chat, porque lá
+ele fica numa pasta temporária do app, fora do projeto."
 
 ## Passo 3: preparo (tudo grátis, tudo no computador)
 
@@ -346,8 +349,12 @@ node .claude/skills/editar-video/scripts/py.mjs profundidade.py producao/<slug>/
    `.claude/skills/editar-video/motor/exemplos/camadas-exemplo.tsx` para
    `producao/<slug>/composicao.tsx` e troque o que os comentários `TROQUE`
    mandam, seguindo `referencias/camadas.md`. Só você edita esse arquivo.
-   Peça ao aluno a foto de perfil (`perfil.jpg` em `public/`) se a chamada
-   "Seguir" ficar; sem foto, tire a chamada.
+   Se a chamada "Seguir" ficar, peça a foto de perfil: crie e abra a pasta com
+   `node .claude/skills/conectar/scripts/abrir-pasta.mjs producao/<slug>/public`
+   e diga ao aluno para copiar a foto pra pasta que abriu com o nome `perfil.jpg`
+   (não arrasta pro chat, porque lá ela fica numa pasta temporária do app, fora
+   do projeto). Confira que `producao/<slug>/public/perfil.jpg` existe; sem foto,
+   tire a chamada.
 5. **Arquivo para o fiscal** (a conferência quadro a quadro).
    Escreva `producao/<slug>/verificar-props.json`:
 

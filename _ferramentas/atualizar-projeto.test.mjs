@@ -224,9 +224,9 @@ test('recibo e mudanca levam a data do relogio da pessoa, nunca a de UTC', () =>
 }))
 
 // linha de comando: roda o motor de verdade, como a skill roda
-function rodar(args) {
+function rodar(args, env = process.env) {
   try {
-    return { saida: execFileSync(process.execPath, [MOTOR, ...args], { encoding: 'utf8', stdio: 'pipe' }), codigo: 0 }
+    return { saida: execFileSync(process.execPath, [MOTOR, ...args], { encoding: 'utf8', stdio: 'pipe', env }), codigo: 0 }
   } catch (e) {
     return { saida: (e.stdout || '') + (e.stderr || ''), codigo: e.status }
   }
@@ -494,7 +494,8 @@ test('mesclarSettings junta a trava do mcp sem tirar nada da pessoa e e idempote
   assert.deepEqual(settings.hooks.PreToolUse.find(ehBlocoMcp), SETTINGS_DO_KIT.hooks.PreToolUse.find(ehBlocoMcp))
   assert.deepEqual(settings.hooks.Stop, SETTINGS_DA_PESSOA.hooks.Stop, 'o Stop sem auto-sync fica como a pessoa deixou')
   // 5.49 (bloco B): o deny e a anotacao do navegador sairam do kit; 5.52 (chat 3): o ask e o allow do kit faltam
-  assert.deepEqual(faltava, [...FALTA_DO_KIT, 'trava do MCP (barrar-mcp)'])
+  // 5.54 (C2): e o aviso de fechamento nos dois eventos
+  assert.deepEqual(faltava, [...FALTA_DO_KIT, 'trava do MCP (barrar-mcp)', 'aviso de fechamento (inicio da conversa)', 'aviso de fechamento (antes de compactar)'])
   assert.deepEqual(tirou, [])
   // sem permissions da pessoa, o permissions nasce so com o do kit
   assert.deepEqual(mesclarSettings({}, SETTINGS_DO_KIT).settings.permissions, { ask: PERMISSOES_DO_KIT.ask, allow: PERMISSOES_DO_KIT.allow })
@@ -507,7 +508,7 @@ test('mesclarSettings junta a trava do mcp sem tirar nada da pessoa e e idempote
   const trocado = mesclarSettings(JSON.parse(JSON.stringify(velho)), SETTINGS_DO_KIT)
   assert.equal(trocado.settings.hooks.PreToolUse.filter(ehBlocoMcp).length, 1)
   assert.deepEqual(trocado.settings.hooks.PreToolUse.find(ehBlocoMcp), SETTINGS_DO_KIT.hooks.PreToolUse.find(ehBlocoMcp))
-  assert.equal(trocado.faltava.length, 1)
+  assert.deepEqual(trocado.faltava, ['trava do MCP (barrar-mcp)'])
   // hook da pessoa no mesmo bloco da chamada antiga da trava fica, com o matcher dela (Codex comum)
   const misturado = structuredClone(SETTINGS_DA_PESSOA)
   misturado.hooks.PreToolUse.push({ matcher: 'mcp__x__.*', hooks: [{ type: 'command', command: 'node barrar-mcp.mjs' }, { type: 'command', command: 'node auditoria.mjs' }] })
@@ -556,20 +557,23 @@ test('mesclarSettings tira o que o kit tirou e deixa o que e da pessoa', () => {
   assert.ok(TIRADAS_DO_KIT.deny.length >= 16 && TIRADAS_DO_KIT.ask.length === 2, 'canario: a lista das tiradas nao veio vazia')
   const { settings, faltava, tirou } = mesclarSettings(structuredClone(SETTINGS_DA_539), SETTINGS_DO_KIT)
   // 5.52 (chat 3, Task 3c): o ask e o allow do kit entram junto do que fica da pessoa
-  assert.deepEqual(faltava, FALTA_DO_KIT)
+  // 5.54 (C2): e o aviso de fechamento entra no fim do SessionStart e no PreCompact
+  assert.deepEqual(faltava, [...FALTA_DO_KIT, 'aviso de fechamento (inicio da conversa)', 'aviso de fechamento (antes de compactar)'])
   assert.deepEqual(settings.permissions, { allow: ['Bash(npm test)', ...PERMISSOES_DO_KIT.allow], ask: ['Bash(git push)', ...PERMISSOES_DO_KIT.ask], deny: ['Read(./meu/**)'] })
   assert.deepEqual(settings.hooks.SessionStart, [
     { matcher: 'startup', hooks: [{ type: 'command', command: 'node boas-vindas.mjs' }] },
     { hooks: [{ type: 'command', command: 'node lembrete.mjs' }] },
+    ...SETTINGS_DO_KIT.hooks.SessionStart,
   ], 'o hook da pessoa fica, inclusive o que dividia o bloco com a trava')
   assert.equal(tirou.length, TIRADAS_DO_KIT.deny.length + 2 + 1, tirou.join(', '))
   assert.ok(tirou.includes('ask Read(./.env.*)') && tirou.includes('anotação do navegador (barrar-mcp)'), tirou.join(', '))
   const segunda = mesclarSettings(structuredClone(settings), SETTINGS_DO_KIT)
   assert.deepEqual([segunda.settings, segunda.faltava, segunda.tirou], [settings, [], []], 'a segunda passada nao muda nada')
-  // so as tiradas: o deny e o SessionStart somem inteiros, e o permissions fica so com o do kit (5.52)
+  // so as tiradas: o deny some inteiro e o permissions fica so com o do kit (5.52), e do SessionStart
+  // sobra so o do kit (5.54, C2)
   const soDoKit = mesclarSettings({ permissions: { deny: [...TIRADAS_DO_KIT.deny] }, hooks: { SessionStart: [SETTINGS_DA_539.hooks.SessionStart[2]] } }, SETTINGS_DO_KIT).settings
   assert.deepEqual(soDoKit.permissions, { ask: PERMISSOES_DO_KIT.ask, allow: PERMISSOES_DO_KIT.allow })
-  assert.equal(soDoKit.hooks.SessionStart, undefined)
+  assert.deepEqual(soDoKit.hooks.SessionStart, SETTINGS_DO_KIT.hooks.SessionStart)
   // sem nada do kit em permissions, o permissions some inteiro
   const semKit = mesclarSettings({ permissions: { deny: [...TIRADAS_DO_KIT.deny] } }, { hooks: SETTINGS_DO_KIT.hooks }).settings
   assert.equal(semKit.permissions, undefined)
@@ -580,11 +584,114 @@ test('mesclarSettings tira o que o kit tirou e deixa o que e da pessoa', () => {
   assert.deepEqual(TIRADAS_DO_KIT.allow, [])
 })
 
+// 5.54 (C2): o aviso de fechamento entra no SessionStart e no PreCompact do projeto ja instalado. Toda
+// chamada do aviso-fechamento.mjs sai pela regex do nome do script e entra o bloco do kit, entao comando
+// de outra versao ou bloco mexido pela pessoa vira um so; o resto do bloco da pessoa fica
+const EVENTOS_DO_AVISO = ['SessionStart', 'PreCompact']
+// chamada do script (caminho com barra antes do nome); o nome so como argumento de outro nao conta
+const ehAviso = h => typeof h?.command === 'string' && /\/aviso-fechamento\.mjs"?$/.test(h.command)
+const chamadasDoAviso = lista => (lista ?? []).flatMap(b => b.hooks || []).filter(ehAviso).length
+const blocoAvisoDoKit = ev => SETTINGS_DO_KIT.hooks[ev].find(b => (b.hooks || []).some(ehAviso))
+
+test('mesclarSettings junta o aviso de fechamento nos dois eventos e a segunda rodada nao duplica', () => {
+  for (const ev of EVENTOS_DO_AVISO) assert.equal(chamadasDoAviso(SETTINGS_DO_KIT.hooks[ev]), 1, `canario: o kit chama o aviso no ${ev}`)
+  const { settings, faltava } = mesclarSettings(structuredClone(SETTINGS_DA_PESSOA), SETTINGS_DO_KIT)
+  for (const ev of EVENTOS_DO_AVISO) {
+    assert.equal(chamadasDoAviso(settings.hooks[ev]), 1, ev)
+    assert.ok(settings.hooks[ev].some(b => JSON.stringify(b) === JSON.stringify(blocoAvisoDoKit(ev))), ev)
+  }
+  assert.deepEqual(faltava, [...FALTA_DO_KIT, 'trava do MCP (barrar-mcp)', 'aviso de fechamento (inicio da conversa)', 'aviso de fechamento (antes de compactar)'])
+  const segunda = mesclarSettings(structuredClone(settings), SETTINGS_DO_KIT)
+  assert.deepEqual([segunda.settings, segunda.faltava, segunda.tirou], [settings, [], []], 'a segunda passada nao muda nada')
+})
+
+test('mesclarSettings: bloco antigo do aviso com comando diferente vira um so, e o hook da pessoa fica', () => {
+  const velho = 'node --no-warnings "C:/Fulano de Tal/p/.claude/hooks/aviso-fechamento.mjs"'
+  const argumento = 'node registro.mjs --sobre aviso-fechamento.mjs'
+  const pessoa = structuredClone(SETTINGS_DA_PESSOA)
+  pessoa.hooks.SessionStart = [
+    { matcher: 'startup', hooks: [{ type: 'command', command: 'node boas-vindas.mjs' }] },
+    { hooks: [{ type: 'command', command: velho }, { type: 'command', command: 'node lembrete.mjs' }] },
+    { hooks: [{ type: 'command', command: argumento }] },
+  ]
+  // o do kit mexido pela pessoa (timeout) e, junto, o bloco igual ao do kit
+  const mexido = structuredClone(blocoAvisoDoKit('PreCompact'))
+  mexido.hooks[0].timeout = 5
+  pessoa.hooks.PreCompact = [mexido, structuredClone(blocoAvisoDoKit('PreCompact'))]
+  const { settings } = mesclarSettings(pessoa, SETTINGS_DO_KIT)
+  for (const ev of EVENTOS_DO_AVISO) {
+    assert.equal(chamadasDoAviso(settings.hooks[ev]), 1, `${ev}: ${JSON.stringify(settings.hooks[ev])}`)
+    assert.ok(settings.hooks[ev].some(b => JSON.stringify(b) === JSON.stringify(blocoAvisoDoKit(ev))), ev)
+  }
+  assert.ok(!JSON.stringify(settings).includes('Fulano de Tal'), 'a chamada antiga do aviso devia sair')
+  assert.deepEqual(settings.hooks.SessionStart.slice(0, 3), [
+    { matcher: 'startup', hooks: [{ type: 'command', command: 'node boas-vindas.mjs' }] },
+    { hooks: [{ type: 'command', command: 'node lembrete.mjs' }] },
+    { hooks: [{ type: 'command', command: argumento }] },
+  ], 'o SessionStart da pessoa fica, inclusive o hook que dividia o bloco e o que so cita o nome')
+})
+
+// 5.54 (C2, revisao interna): o PreCompact da pessoa fica, o que divide o bloco com a chamada velha e o solto
+test('mesclarSettings: o PreCompact da pessoa fica, inclusive o que dividia o bloco com o aviso antigo', () => {
+  const pessoa = structuredClone(SETTINGS_DA_PESSOA)
+  pessoa.hooks.PreCompact = [
+    { hooks: [{ type: 'command', command: 'node meu-resumo.mjs' }] },
+    { hooks: [{ type: 'command', command: 'node "C:/velho/.claude/hooks/aviso-fechamento.mjs"' }, { type: 'command', command: 'node minha-copia.mjs' }] },
+  ]
+  const { settings, faltava } = mesclarSettings(pessoa, SETTINGS_DO_KIT)
+  assert.ok(faltava.includes('aviso de fechamento (antes de compactar)'), 'canario: o PreCompact foi remexido')
+  assert.deepEqual(settings.hooks.PreCompact, [
+    { hooks: [{ type: 'command', command: 'node meu-resumo.mjs' }] },
+    { hooks: [{ type: 'command', command: 'node minha-copia.mjs' }] },
+    blocoAvisoDoKit('PreCompact'),
+  ])
+})
+
+test('mesclarSettings: o barrar-mcp antigo no SessionStart sai e o aviso fica', () => {
+  const mcpVelho = SETTINGS_DA_539.hooks.SessionStart[2]
+  const so = mesclarSettings({ hooks: { SessionStart: [structuredClone(mcpVelho)] } }, SETTINGS_DO_KIT)
+  assert.deepEqual(so.settings.hooks.SessionStart, [blocoAvisoDoKit('SessionStart')])
+  assert.ok(so.tirou.includes(TIRADAS_DO_KIT.SessionStart), so.tirou.join(', '))
+  const junto = mesclarSettings({ hooks: { SessionStart: [structuredClone(blocoAvisoDoKit('SessionStart')), structuredClone(mcpVelho)] } }, SETTINGS_DO_KIT)
+  assert.deepEqual(junto.settings.hooks.SessionStart, [blocoAvisoDoKit('SessionStart')])
+  assert.ok(!junto.faltava.includes('aviso de fechamento (inicio da conversa)'), junto.faltava.join(', '))
+})
+
+// o recibo regravado leva o corte do aviso: nasce no primeiro aplicar e nunca muda depois
+test('aplicar grava o avisoFechamentoDesde: nasce com o --registro e o segundo aplicar nao muda', () => comPasta(raiz => {
+  const kit = montarKit(raiz, { [INICIAR]: 'novo\n' })
+  const projeto = montarProjeto(raiz, { [INICIAR]: 'novo\n' })
+  const noite = new Date(2026, 10, 9, 23, 30)   // 23h30 local: em UTC no Brasil ja seria dia 10
+  aplicarPlano({ kit, projeto, plano: montarPlano({ kit, projeto }), registro: true, agora: noite })
+  assert.equal(JSON.parse(ler(projeto, '.sabinos/instalado.json')).avisoFechamentoDesde, '2026-11-09')
+  aplicarPlano({ kit, projeto, plano: montarPlano({ kit, projeto }), agora: new Date(2026, 11, 1, 10) })
+  const r = JSON.parse(ler(projeto, '.sabinos/instalado.json'))
+  assert.equal(r.data, '2026-12-01', 'canario: o segundo aplicar regravou o recibo')
+  assert.equal(r.avisoFechamentoDesde, '2026-11-09')
+}))
+
+test('desfazer a atualizacao que trouxe o aviso tira o hook e o campo juntos', () => comPasta(raiz => {
+  const AVISO = '.claude/hooks/aviso-fechamento.mjs'
+  const kit = montarKit(raiz, { [INICIAR]: 'novo\n', [AVISO]: 'aviso\n' }, { [INICIAR]: { 'velho\n': '3.0' } })
+  escrever(kit, { '_ferramentas/componentes.json': JSON.stringify({
+    ...COMPONENTES, componentes: { ...COMPONENTES.componentes, nucleo: { depende: [], caminhos: ['.claude/skills/iniciar/', AVISO] } },
+  }) })
+  const reciboAntigo = JSON.stringify({ versao: '3.0', data: '2026-01-01', arquivos: {}, mudancas: { x: 'aplicada 2026-01-01' } }, null, 2) + '\n'
+  const projeto = montarProjeto(raiz, { [INICIAR]: 'velho\n', '.sabinos/instalado.json': reciboAntigo })
+  const r = aplicarPlano({ kit, projeto, plano: montarPlano({ kit, projeto }), agora: new Date(2026, 10, 9, 10) })
+  assert.ok(existsSync(join(projeto, AVISO)), 'canario: o aplicar trouxe o hook')
+  assert.equal(JSON.parse(ler(projeto, '.sabinos/instalado.json')).avisoFechamentoDesde, '2026-11-09')
+  desfazer({ projeto, backup: r.backup })
+  assert.ok(!existsSync(join(projeto, AVISO)), 'o hook sai no desfazer')
+  assert.equal(ler(projeto, '.sabinos/instalado.json'), reciboAntigo, 'o recibo volta sem o campo')
+}))
+
 test('plano avisa settings.json sem as travas do kit e com o que o kit tirou', () => comPasta(raiz => {
   const kit = montarKit(raiz, { [INICIAR]: 'novo\n', '.claude/settings.json': JSON.stringify(SETTINGS_DO_KIT) })
   const projeto = montarProjeto(raiz, { [INICIAR]: 'novo\n', '.claude/settings.json': JSON.stringify(SETTINGS_DA_PESSOA) })
-  // 5.52 (chat 3, Task 3c): faltam a trava do mcp, o ask e o allow do kit
-  const faltam = 1 + FALTA_DO_KIT.length
+  // 5.52 (chat 3, Task 3c): faltam a trava do mcp, o ask e o allow do kit; 5.54 (C2): e o aviso de
+  // fechamento nos dois eventos
+  const faltam = 1 + FALTA_DO_KIT.length + 2
   assert.ok(resumo(montarPlano({ kit, projeto })).split('\n').includes(`settings.json: faltam ${faltam} regra(s) ou trava(s) do kit; rodar o passo settings`))
   writeFileSync(join(projeto, '.claude/settings.json'), JSON.stringify(SETTINGS_DO_KIT))
   assert.ok(!/settings\.json: (faltam|sobram)/.test(resumo(montarPlano({ kit, projeto }))), 'com tudo junto, o aviso some')
@@ -593,7 +700,7 @@ test('plano avisa settings.json sem as travas do kit e com o que o kit tirou', (
   assert.ok(resumo(montarPlano({ kit, projeto })).split('\n').includes(`settings.json: sobram ${n} regra(s) ou trava(s) que o kit tirou; rodar o passo settings`))
 }))
 
-test('CLI settings mostra antes e depois, so grava com --gravar, e recusa gravar sem o barrar-mcp.mjs no projeto', () => comPasta(raiz => {
+test('CLI settings mostra antes e depois, so grava com --gravar, e recusa gravar sem o barrar-mcp.mjs ou o aviso-fechamento.mjs no projeto', () => comPasta(raiz => {
   const kit = montarKit(raiz, { [INICIAR]: 'novo\n', '.claude/settings.json': JSON.stringify(SETTINGS_DO_KIT) })
   const original = JSON.stringify(SETTINGS_DA_PESSOA, null, 2) + '\n'
   const projeto = montarProjeto(raiz, { '.claude/settings.json': original })
@@ -612,6 +719,13 @@ test('CLI settings mostra antes e depois, so grava com --gravar, e recusa gravar
   assert.match(sem.saida, /rodar o aplicar antes/)
   assert.equal(ler(projeto, '.claude/settings.json'), original, 'sem o barrar-mcp.mjs o arquivo fica igual')
   escrever(projeto, { '.claude/hooks/barrar-mcp.mjs': 'x\n' })
+  // 5.54 (C2, revisao interna): o merge junta a chamada do aviso, entao sem o script o gravar recusa
+  assert.ok(EVENTOS_DO_AVISO.every(ev => chamadasDoAviso(mesclarSettings(structuredClone(SETTINGS_DA_PESSOA), SETTINGS_DO_KIT).settings.hooks[ev]) === 1), 'canario: o merge chama o aviso')
+  const semAviso = rodar(['settings', projeto, '--kit', kit, '--gravar'])
+  assert.ok(recusou(semAviso, 'settings-sem-trava'), semAviso.saida)
+  assert.match(semAviso.saida, /aviso-fechamento\.mjs/)
+  assert.equal(ler(projeto, '.claude/settings.json'), original, 'sem o aviso-fechamento.mjs o arquivo fica igual')
+  escrever(projeto, { '.claude/hooks/aviso-fechamento.mjs': 'x\n' })
   const grava = rodar(['settings', projeto, '--kit', kit, '--gravar'])
   assert.equal(grava.codigo, 0, grava.saida)
   const gravado = ler(projeto, '.claude/settings.json')
@@ -707,6 +821,58 @@ test('linha de comando mae: lista os quatro grupos e recusa pasta que nao e kit'
   assert.ok(recusou(naoKit, 'fora-do-kit'), naoKit.saida)
 }))
 
+// 5.54 (comum do Bloco C): o mae e o passo de comparar e roda antes do "pode aplicar?"; gravar ali mudava
+// o settings do computador sem o sim. Os 30 dias vem do aplicar do projeto, que o /atualizar-sabinos ja
+// instalado roda depois do sim, com o motor da versao nova. Home de mentira com prazo escolhido (90).
+function comHomeEKits(fn) {
+  return comMae(({ raiz, mae, kitNovo }) => {
+    const home = join(raiz, 'home')
+    mkdirSync(join(home, '.claude'), { recursive: true })
+    const arq = join(home, '.claude', 'settings.json')
+    writeFileSync(arq, '{"desktopSessionCleanupPeriodDays": 90}\n')
+    const env = { ...process.env, HOME: home, USERPROFILE: home }
+    const script = readFileSync(new URL('./historico-app.mjs', import.meta.url))
+    writeFileSync(join(kitNovo, '_ferramentas', 'historico-app.mjs'), script)
+    const { kit, projeto } = cenario(raiz)
+    writeFileSync(join(kit, '_ferramentas', 'historico-app.mjs'), script)
+    return fn({ mae, kitNovo, kit, projeto, home, arq, env })
+  })
+}
+
+test('linha de comando mae: com o historico-app no kit novo, nao cria nem muda o settings do usuario', () => comHomeEKits(({ mae, kitNovo, arq, env }) => {
+  const r = rodar(['mae', kitNovo, '--mae', mae], env)
+  assert.equal(r.codigo, 0, r.saida)
+  assert.ok(r.saida.startsWith('Pasta-mae na versao'), r.saida)
+  assert.ok(!r.saida.includes('Historico do app'), r.saida)
+  assert.equal(readFileSync(arq, 'utf8'), '{"desktopSessionCleanupPeriodDays": 90}\n', 'o mae nao mexe no prazo')
+  rmSync(arq)
+  assert.equal(rodar(['mae', kitNovo, '--mae', mae], env).codigo, 0)
+  assert.ok(!existsSync(arq), 'o mae nao cria o settings do usuario')
+}))
+
+test('canario do historico: o resumo do plano avisa os 30 dias e o aplicar com a mesma home grava', () => comHomeEKits(({ kit, projeto, home, arq, env }) => {
+  const p = rodar(['plano', projeto, '--kit', kit], env)
+  assert.equal(p.codigo, 0, p.saida)
+  assert.ok(p.saida.split('\n').some(l => l.startsWith('Historico do app:') && l.includes('30 dias') && l.includes('aplicar')), p.saida)
+  assert.equal(readFileSync(arq, 'utf8'), '{"desktopSessionCleanupPeriodDays": 90}\n', 'o plano nao grava')
+  const a = rodar(['aplicar', projeto], env)
+  assert.equal(a.codigo, 0, a.saida)
+  assert.ok(a.saida.split('\n').some(l => l.startsWith('Historico do app: 30 dias, gravado em ') && l.includes(home)), a.saida)
+  assert.equal(JSON.parse(readFileSync(arq, 'utf8')).desktopSessionCleanupPeriodDays, 30)
+}))
+
+test('aplicar: JSON quebrado no settings do usuario nao derruba o aplicar, e kit sem o script nao cita o historico', () => comHomeEKits(({ kit, projeto, arq, env }) => {
+  writeFileSync(arq, '{"model":')
+  assert.equal(rodar(['plano', projeto, '--kit', kit], env).codigo, 0)
+  const q = rodar(['aplicar', projeto], env)
+  assert.equal(q.codigo, 0, q.saida)
+  assert.ok(q.saida.startsWith('Aplicado.') && q.saida.includes('tem JSON quebrado'), q.saida)
+  assert.equal(readFileSync(arq, 'utf8'), '{"model":')
+  rmSync(join(kit, '_ferramentas', 'historico-app.mjs'))
+  const p = rodar(['plano', projeto, '--kit', kit], env)
+  assert.ok(p.saida.startsWith('Projeto na versao') && !p.saida.includes('Historico do app'), p.saida)
+}))
+
 // 5.49 (revisao do bloco B, 2026-11-03): entrada antiga do mudancas.md que mandava por de volta o que a
 // TIRADAS_DO_KIT tira, ou que confere o hook de antes, deixava o /atualizar-sabinos num vai e volta.
 // Fora a travas-soltas, nenhum "Te afeta se", "Como aplicar" ou "Como testar" cita o que saiu.
@@ -720,4 +886,31 @@ test('mudancas.md: nenhuma entrada religa o que o kit tirou na 5.49', () => {
   const religam = entradas.filter(([id, campos]) => id !== 'travas-soltas' && proibidos.some(p => campos.includes(p)))
     .map(([id, campos]) => `${id}: ${proibidos.filter(p => campos.includes(p)).join(' | ')}`)
   assert.deepEqual(religam, [])
+})
+
+// 5.54 (C2): o aplicar nunca grava o settings, entao o hook do aviso so chega ao projeto ja instalado
+// por uma entrada que manda rodar o settings --gravar
+test('mudancas.md: a entrada do aviso de fechamento manda juntar o hook pelo settings', () => {
+  const md = readFileSync(fileURLToPath(new URL('./mudancas.md', import.meta.url)), 'utf8').split(CRLF).join('\n')
+  const bloco = md.split(/\n(?=## )/).find(b => b.startsWith('## aviso-fechamento\n'))
+  assert.ok(bloco, 'falta a entrada aviso-fechamento')
+  const campo = nome => bloco.split('\n').find(l => l.startsWith(`**${nome}:**`)) ?? ''
+  assert.match(campo('Te afeta se'), /aviso-fechamento/)
+  assert.match(campo('Como aplicar'), /\.claude\/hooks\/aviso-fechamento\.mjs/)
+  assert.match(campo('Como aplicar'), /settings \..*--gravar/)
+  assert.match(campo('Como testar'), /aviso-fechamento/)
+})
+
+// merge do main na 5.54: o mesmo comando settings junta a permissao por area e o aviso de fechamento,
+// entao cada entrada conta o que a outra poe na linha Falta, e a primeira preve o --gravar parando
+test('mudancas.md: permissao-por-area e aviso-fechamento contam o que o settings junta da outra', () => {
+  const md = readFileSync(fileURLToPath(new URL('./mudancas.md', import.meta.url)), 'utf8').split(CRLF).join('\n')
+  const aplicar = id => (md.split(/\n(?=## )/).find(b => b.startsWith(`## ${id}\n`)) ?? '').split('\n').find(l => l.startsWith('**Como aplicar:**')) ?? ''
+  const perm = aplicar('permissao-por-area'), aviso = aplicar('aviso-fechamento')
+  assert.ok(perm.includes('settings .') && aviso.includes('settings .'), 'o leitor nao achou as duas entradas')
+  assert.match(perm, /aviso-fechamento/)
+  assert.match(perm, /falta o \.claude\/hooks\/aviso-fechamento\.mjs/)
+  assert.match(perm, /a partir da próxima conversa/)
+  assert.match(aviso, /permissao-por-area/)
+  assert.match(aviso, /`allow` só passa a valer depois que a pessoa responde que confia na pasta/)
 })
