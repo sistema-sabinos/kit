@@ -83,7 +83,7 @@ Desistir no meio: `git rebase --abort` volta tudo como estava, sem perder nada. 
 
 ## Outro computador no mesmo projeto
 
-O projeto vive no GitHub; o outro computador baixa de lá. Nele, com o SabinOS instalado, abrir a pasta-mãe no VS Code e pedir "baixa o projeto <pasta> do GitHub": `git clone <endereço do repositório> <pasta>`, a pasta entra numa linha do `.gitignore` da pasta-mãe, e a autenticação segue o passo 6 da "Primeira vez".
+O projeto vive no GitHub; o outro computador baixa de lá. Nele, com o SabinOS instalado, abrir a pasta-mãe no VS Code ou no app do Claude e pedir "baixa o projeto <pasta> do GitHub": `git clone <endereço do repositório> <pasta>`, a pasta entra numa linha do `.gitignore` da pasta-mãe, e a autenticação segue o passo 6 da "Primeira vez".
 
 Dentro do projeto, no primeiro `/syncar` daquele computador: sem `.origem` na raiz e com a linha "Equipe e máquinas" no `_contexto/ferramentas.md`, perguntar qual dos nomes da linha é este computador e gravar o `.origem` com essa palavra. Nome que não está na linha: perguntar um curto (uma palavra, minúscula, só letras sem acento, números ou hífen) e acrescentar na linha. O `.origem` fica fora do backup de propósito: cada computador tem o seu.
 

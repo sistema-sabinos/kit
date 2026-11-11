@@ -138,8 +138,8 @@ atualiza pelo motor, que já sabe o que é do kit e o que é da pessoa.
 ## Passo 5, registrar e encerrar
 
 1. Cada projeto tocado já ganhou a linha no diário de hoje (`_memoria/diario/`) pelo Passo 6 da `/atualizar-sabinos`.
-2. No resumo final, repetir a linha do `node _modelo/.claude/hooks/auto-sync.mjs --idade <caminho-do-projeto>` de cada projeto tocado, rodada de novo agora.
-3. Rodar `node _ferramentas/historico-app.mjs` aqui na pasta-mãe, que grava no `~/.claude/settings.json` da pessoa (o do computador, fora de qualquer projeto) o prazo de 30 dias pro app guardar as conversas, e mostrar a linha que ele imprime. As outras configurações desse arquivo ficam como estavam. Saída 2 quer dizer que o arquivo tem um erro de escrita e nada foi gravado: dizer isso em uma frase e seguir, sem consertar sozinho.
+2. No resumo final, repetir a linha do `node _modelo/.claude/hooks/auto-sync.mjs --idade <caminho-do-projeto>` de cada projeto tocado, rodada de novo agora. Vindo da versão 5.44 ou de antes (o `VERSAO` desta pasta-mãe antes da troca), e se a frase ainda não saiu nesta conversa pela entrada `dois-caminhos` de um projeto, dizer também, com essas palavras: "O SabinOS agora funciona e fala certo nos dois programas: no VS Code com a extensão do Claude e no app do Claude (aba Code). Quem instalou pelo VS Code segue recebendo atualização como antes."
+3. Rodar `node _ferramentas/historico-app.mjs` aqui na pasta-mãe, que grava no `~/.claude/settings.json` da pessoa (o do computador, fora de qualquer projeto) o prazo de 30 dias de conversas guardadas, e mostrar a linha que ele imprime. As outras configurações desse arquivo ficam como estavam. Saída 2 quer dizer que o arquivo tem um erro de escrita e nada foi gravado: dizer isso em uma frase e seguir, sem consertar sozinho.
 4. Apagar a pasta temporária da extração.
 5. Fechar com a economia de conversa: "Kit atualizado. As pastas `_kit-anterior-*` guardam a versão de antes; pode apagar quando tiver certeza de que está tudo bem. Esse processo fechou, abre uma conversa nova."
 

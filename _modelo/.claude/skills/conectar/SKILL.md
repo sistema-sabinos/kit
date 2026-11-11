@@ -58,7 +58,7 @@ Antes do Degrau 1, três perguntas, nesta ordem:
 3. Ligar o servidor `navegador` com a porta que o `porta.mjs` imprimiu, pelo script do kit, que lê a mesma porta sozinho. Fica só neste projeto (no `.mcp.json` dele), porque a porta é dele:
    `node .claude/skills/conectar/scripts/ligar-mcp.mjs ligar navegador`
 
-Cada vez que for usar o `navegador`, rodar antes o `abrir-chrome.mjs`: o servidor entra em qualquer Chrome que estiver na porta, e é o `abrir-chrome.mjs` que confere se esse Chrome é o deste projeto. Se ele avisar que a porta mudou, ligar o `navegador` de novo com a porta nova (o passo 3 de novo, que troca a definição velha) e, antes de usar, sair de vez do app do Claude (Windows: ícone perto do relógio, botão direito, Sair; Mac: Cmd+Q) e abrir de novo, depois de esperar terminar o que roda nas outras conversas (Gerenciador de Tarefas só se o Sair não fechar): o `navegador` que já está rodando só pega a porta nova numa sessão nova.
+Cada vez que for usar o `navegador`, rodar antes o `abrir-chrome.mjs`: o servidor entra em qualquer Chrome que estiver na porta, e é o `abrir-chrome.mjs` que confere se esse Chrome é o deste projeto. Se ele avisar que a porta mudou, ligar o `navegador` de novo com a porta nova (o passo 3 de novo, que troca a definição velha) e, antes de usar, esperar terminar o que roda nas outras conversas e fechar de vez o programa onde você conversa comigo (VS Code: fecha todas as janelas; app do Claude: ícone perto do relógio, botão direito, Sair; no Mac, Cmd+Q nos dois) e abrir de novo nesta pasta, numa conversa nova. Gerenciador de Tarefas só se não fechar. Na fala, o parêntese leva só o programa em uso, lido pelo shell (`echo "$CLAUDE_CODE_ENTRYPOINT"` no Bash, `$env:CLAUDE_CODE_ENTRYPOINT` no PowerShell): `claude-vscode`, só o VS Code; começando com `claude-desktop`, só o app; vazio ou outro valor, os dois. O `navegador` que já está rodando só pega a porta nova numa sessão nova.
 
 Tarefa sem você na frente (script de rotina) abre o Chrome sem janela, com `--sem-janela` no `abrir-chrome.mjs`: o login que você fez com janela vale sem janela. Com você na frente, a janela do Chrome dedicado pode ficar atrás de outra, mas minimizada trava o clique do robô. O que o robô baixa cai em `dados/navegador-saida/`, e o do script de rotina também: ele espera o arquivo pelo `baixarNaSaida` da lib do Chrome, que recebe a página onde o script clica e só aceita o download que começou nela.
 
@@ -66,7 +66,7 @@ Tarefa de vez em quando, com você na frente, também pode ir pelo Claude in Chr
 
 **Degrau 6, API escondida.** O caminho que o próprio site usa por dentro, achado uma vez e conferido toda vez. Ainda sem site testado por quem faz o SabinOS: o seu primeiro uso já é o teste, e se algo não bater o robô para e te avisa. O mesmo desempate do Degrau 5: tarefa que se repete toda semana ou mais vira script; de vez em quando, com você na frente.
 
-**Degrau 7, programa do computador.** Programa instalado sem site nem API: o app Desktop do Claude opera a tela com você na frente.
+**Degrau 7, programa do computador.** Programa instalado sem site nem API: o app do Claude opera a tela com você na frente, pelo Computer Use do app (no Windows, só o app tem; quem usa o VS Code instala o app só pra isso). Vem desligado e liga nas configurações do app.
 
 **Degrau 8, nuvem paga.** Serviço que roda fora do seu computador. O custo se diz antes, e nenhum gasto roda sem o seu "pode ir".
 
@@ -88,9 +88,9 @@ Pra cada um, responder sempre as mesmas 4 coisas: **o que te deixa fazer**, **é
 
 ### 2. Plugins (pacotes de habilidade prontos)
 
-- **O que te deixa fazer:** instalar de uma vez coleções de habilidades feitas pela comunidade: metodologia de trabalho pra projetos (superpowers), auditoria de anúncios, SEO. Ver o que existe com o comando `/plugin`.
+- **O que te deixa fazer:** instalar de uma vez coleções de habilidades feitas pela comunidade: metodologia de trabalho pra projetos (superpowers), auditoria de anúncios, SEO. Ver o que existe com o comando `/plugins`.
 - **Grátis ou pago:** grátis (os plugins em si; alguns conectam em serviços que têm custo próprio).
-- **Precisa de quê:** só o comando `/plugin` e escolher no menu.
+- **Precisa de quê:** só o comando `/plugins` e escolher no menu.
 - **Hoje ou depois:** hoje. Recomendação inicial: superpowers. Os de anúncios e SEO, quando a frente de tráfego estiver ativa.
 
 ### 3. Gmail e Google Drive
@@ -111,7 +111,7 @@ Pra cada um, responder sempre as mesmas 4 coisas: **o que te deixa fazer**, **é
 
 - **O que te deixa fazer:** eu leio suas campanhas, aponto o que está gastando sem retornar, monto relatório e proponho ajustes. Alteração em campanha real só com sua aprovação, sempre.
 - **Grátis ou pago:** a conexão é grátis; o que se gasta é o próprio orçamento de anúncio.
-- **Precisa de quê:** conta de anúncio ativa e uma autorização (OAuth) que depende da plataforma; em geral se liga por um plugin de anúncios (ver `/plugin`) ou conector. É a fricção do meio: não é difícil, mas tem burocracia de autorização da Meta/Google.
+- **Precisa de quê:** conta de anúncio ativa e uma autorização (OAuth) que depende da plataforma; em geral se liga por um plugin de anúncios (ver `/plugins`) ou conector. É a fricção do meio: não é difícil, mas tem burocracia de autorização da Meta/Google.
 - **Hoje ou depois:** depois, com calma. Anotar em `tarefas.md` e marcar um momento pra fazer junto.
 
 ### 6. WhatsApp (o mais desejado e o mais chato, na real)

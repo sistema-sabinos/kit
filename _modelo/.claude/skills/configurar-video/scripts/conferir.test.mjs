@@ -62,7 +62,8 @@ test('Windows: programa fora do PATH mas no lugar do winget sai instalado, falta
     const noDisco = conferir({ plat: 'win32', base, env, executar: semNoPath(id), existe: p => p === NO_DISCO_WIN[id] }).itens.find(i => i.id === id)
     assert.equal(noDisco.ok, false, id)
     assert.equal(noDisco.estado, 'reabrir', id)
-    assert.match(noDisco.detalhe, /instalado, falta reabrir o app/, id)
+    // 5.56 (A): neutro, vale no VS Code e no app
+    assert.match(noDisco.detalhe, /instalado, falta reabrir o programa/, id)
     // canario do outro lado: sem o arquivo no disco o mesmo erro e falta
     const fora = conferir({ plat: 'win32', base, env, executar: semNoPath(id), existe: () => false }).itens.find(i => i.id === id)
     assert.equal(fora.ok, false, id)

@@ -14,6 +14,7 @@ import { execFileSync } from 'node:child_process'
 import { readFileSync, realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { ordenarAulas, textoDosLotes } from './lib/aulas.mjs'
+import { fraseSair } from '../../conectar/scripts/lib/programa.mjs'
 
 const minutos = s => `${Math.round(s / 60)} min`
 
@@ -36,7 +37,7 @@ export function lerPlaylist(url, { rodar = execFileSync } = {}) {
 // estar certo: o caminho e a lista de links da SKILL, um link por vez.
 export function recadoDaPlaylist(e) {
   if (e?.code === 'ETIMEDOUT') return 'A lista do curso demorou demais pra chegar e eu parei de esperar. Quem le esta mensagem e a IA: peca pra pessoa colar os links das aulas, um por vez, e siga pela lista de links soltos da SKILL (passo 1).'
-  return `Nao consegui abrir a playlist. Confira se o link abre no navegador sem login e se o yt-dlp esta instalado. Quem le esta mensagem e a IA: se faltar o yt-dlp, diga a pessoa em uma frase, peca o sim e instale voce mesma, nunca passe o comando pra ela (Windows: winget install --id yt-dlp.yt-dlp -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity; Mac: brew install yt-dlp; no Windows, depois peca pra pessoa esperar terminar o que roda nas outras conversas, sair de vez do app do Claude (Windows: icone perto do relogio, botao direito, Sair; Mac: Cmd+Q) e abrir de novo; Gerenciador de Tarefas so se o Sair nao fechar). Detalhe: ${String(e?.message ?? e).split('\n')[0]}`
+  return `Nao consegui abrir a playlist. Confira se o link abre no navegador sem login e se o yt-dlp esta instalado. Quem le esta mensagem e a IA: se faltar o yt-dlp, diga a pessoa em uma frase, peca o sim e instale voce mesma, nunca passe o comando pra ela (Windows: winget install --id yt-dlp.yt-dlp -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity; Mac: brew install yt-dlp; no Windows, depois peca pra pessoa ${fraseSair(undefined, 'sair')}) Detalhe: ${String(e?.message ?? e).split('\n')[0]}`
 }
 
 // "1:02:03" -> 3723, "12:40" -> 760, "95" e "95.4" (o yt-dlp de outro site) -> 95; o resto vira

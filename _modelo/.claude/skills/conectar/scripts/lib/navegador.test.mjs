@@ -14,7 +14,7 @@ import {
   FAIXA, SENTINELA, AVISO, perfilDedicado, portaDoProjeto, candidatosDeChrome, acharChrome, argumentosDoChrome,
   guidDaPorta, portaLivre, esperarPorta, pidDoChrome, conferirPerfil, abrirChrome, conectar, sessaoCaiu, paginaPedeLogin, sessaoDaPagina, SINAL_LOGIN, estadoDaUrl,
   relogar, receitaValida, abaDoSite, tentouHaPouco, marcarTentativa, desmarcarTentativa, JANELA_RELOGIN_MS,
-  travarRelogin, expressaoClique, RELIGAR,
+  travarRelogin, expressaoClique, RELIGAR, religar,
   SAIDA, apontarDownload, desminimizar, fecharChrome, opcoesDeAbrir, processoVivo, FOLGA_SEM_PID_MS,
   FECHAR_CHROME, avisosDeAbrir, saidaNoProjeto, baixarNaSaida, TRAVA_DOWNLOAD,
 } from './navegador.mjs'
@@ -973,9 +973,21 @@ test('abrirChrome: porta viva com outro Chrome abre na porta seguinte livre e gr
     assert.deepEqual(sentinela(perfilDedicado(raiz)), { porta: P + 1, guid: 'novo-1' })
     assert.equal(portaDoProjeto(raiz), P + 1)
     // o texto de religar e o mesmo dos recados do hook (5.31); 5.54 (B1): religa pelo ligar-mcp.mjs e sai de vez do app
-    assert.ok(RELIGAR.includes('ligar-mcp.mjs ligar navegador') && RELIGAR.includes('saia de vez do app do Claude'), 'canario: o texto de religar pede o script e o sair de vez do app')
+    // 5.56 (A): o sair de vez sai do fraseSair, com o programa desta sessao
+    assert.ok(RELIGAR.includes('ligar-mcp.mjs ligar navegador') && RELIGAR.includes('feche de vez o programa onde você conversa comigo'), 'canario: o texto de religar pede o script e o sair de vez do programa')
     assert.ok(avisos.some(m => m.includes(`passou pra porta ${P + 1}`) && m.includes(RELIGAR)), avisos.join(' | '))
   } finally { rmSync(raiz, { recursive: true, force: true }) }
+})
+
+// 5.56 (A): o religar fala so do programa em uso, e dos dois quando nao sabe
+test('religar: cada programa com o seu jeito de sair, o desconhecido com os dois', () => {
+  assert.ok(religar('vscode').includes('(VS Code: fecha todas as janelas; no Mac, Cmd+Q)') && !religar('vscode').includes('app do Claude'), religar('vscode'))
+  assert.ok(religar('app').includes('(app do Claude: ícone perto do relógio, botão direito, Sair; no Mac, Cmd+Q)') && !religar('app').includes('VS Code'), religar('app'))
+  assert.ok(religar('desconhecido').includes('VS Code: fecha todas as janelas; app do Claude:'), religar('desconhecido'))
+  for (const p of ['vscode', 'app', 'desconhecido']) {
+    const r = religar(p)
+    assert.ok(r.includes('ligar-mcp.mjs ligar navegador') && r.includes('antes de usar, espere terminar o que roda nas outras conversas') && r.endsWith('numa sessão nova'), r)
+  }
 })
 
 test('abrirChrome soExistente: perfil que nao existe nao cria perfil (licao 262)', async () => {

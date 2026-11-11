@@ -210,7 +210,7 @@ gh release create v1.0.0
 
 ## Trafego pago e analytics
 
-> Pra Meta Ads, Google Ads e GA4, nao programar contra a API na mao: a rota e a skill `/trafego` do SabinOS (regua do negocio, ponto de empate e auditoria por script testado), que e condicional e entra no projeto pelo `/setup` quando o negocio anuncia, mais um plugin de anuncios do marketplace oficial do Claude Code (`/plugin`, categoria de ads: auditoria e criacao de campanha Meta, Google, YouTube e TikTok) ou um conector MCP de anuncios (ex: NotFair, Google e Meta Ads). Nome e comando mudam com o tempo: VERIFICAR AO VIVO no `/plugin` antes de instalar. Listados tambem em `../skills/catalogo.md` (o catalogo de skills, nesta mesma biblioteca).
+> Pra Meta Ads, Google Ads e GA4, nao programar contra a API na mao: a rota e a skill `/trafego` do SabinOS (regua do negocio, ponto de empate e auditoria por script testado), que e condicional e entra no projeto pelo `/setup` quando o negocio anuncia, mais um plugin de anuncios do marketplace oficial do Claude Code (`/plugins`, categoria de ads: auditoria e criacao de campanha Meta, Google, YouTube e TikTok) ou um conector MCP de anuncios (ex: NotFair, Google e Meta Ads). Nome e comando mudam com o tempo: VERIFICAR AO VIVO no `/plugins` antes de instalar. Listados tambem em `../skills/catalogo.md` (o catalogo de skills, nesta mesma biblioteca).
 
 ### Google Analytics 4 (Data API)
 **O que faz:** Le dados de propriedades GA4: sessoes, usuarios, pageviews, conversoes, fontes de trafego, landing pages, dados em tempo real
@@ -221,13 +221,13 @@ gh release create v1.0.0
 ### Meta Ads (Marketing API)
 **O que faz:** Gerencia campanhas no Facebook/Instagram Ads: criar, editar, pausar, duplicar, ler insights, configurar publicos
 **Precisa de conta:** Sim, conta de anuncios Meta + token de longa duracao
-**Recomendacao:** Plugin de ads do marketplace oficial (`/plugin`) ou conector MCP de Meta Ads (ex: NotFair), com a skill `/trafego` por cima pra regua e auditoria. Alteracao em campanha real so com aprovacao explicita (gate humano)
+**Recomendacao:** Plugin de ads do marketplace oficial (`/plugins`) ou conector MCP de Meta Ads (ex: NotFair), com a skill `/trafego` por cima pra regua e auditoria. Alteracao em campanha real so com aprovacao explicita (gate humano)
 **Quando usar:** Skills de gestao de midia paga Meta, relatorios de performance, criacao de campanhas, ajuste de orcamento
 
 ### Google Ads API
 **O que faz:** Le e edita campanhas Google Ads (Search, Performance Max, Shopping), busca keywords, le quality score, gera relatorios via GAQL
 **Precisa de conta:** Sim, conta Google Ads + developer token
-**Recomendacao:** Plugin de ads do marketplace oficial (`/plugin`) ou conector MCP de Google Ads (ex: NotFair, que roda GAQL, keyword planner e auditoria), com a skill `/trafego` por cima. Alteracao em campanha real so com aprovacao explicita (gate humano)
+**Recomendacao:** Plugin de ads do marketplace oficial (`/plugins`) ou conector MCP de Google Ads (ex: NotFair, que roda GAQL, keyword planner e auditoria), com a skill `/trafego` por cima. Alteracao em campanha real so com aprovacao explicita (gate humano)
 **Quando usar:** Skills de gestao Google Ads, pesquisa de keywords, relatorios de quality score, monitoramento de campanhas
 
 ---
@@ -240,7 +240,7 @@ O Claude passa a usar esses conectores automaticamente quando fizer sentido.
 Os MCPs do kit se ligam pelo script do `/conectar`, que grava no `.mcp.json` do projeto e aprova no settings do usuario, sem chave nenhuma:
 Pra ver quais estao ligados neste projeto: `node .claude/skills/conectar/scripts/ligar-mcp.mjs listar`
 Pra desligar um: `node .claude/skills/conectar/scripts/ligar-mcp.mjs desligar nome-do-mcp`
-Depois de ligar, o servidor sobe numa sessao nova: espera terminar o que roda nas outras conversas, sai de vez do app do Claude (Windows: icone perto do relogio, botao direito, Sair; Mac: Cmd+Q) e abre de novo. Gerenciador de Tarefas so se o Sair nao fechar.
+Depois de ligar, o servidor sobe numa sessao nova: espera terminar o que roda nas outras conversas e fecha de vez o programa onde voce conversa comigo (VS Code: fecha todas as janelas; app do Claude: icone perto do relogio, botao direito, Sair; no Mac, Cmd+Q nos dois) e abre de novo nesta pasta, numa conversa nova. Gerenciador de Tarefas so se nao fechar. Na fala, o parentese leva so o programa em uso, lido pelo shell (`echo "$CLAUDE_CODE_ENTRYPOINT"` no Bash, `$env:CLAUDE_CODE_ENTRYPOINT` no PowerShell): `claude-vscode`, so o VS Code; comecando com `claude-desktop`, so o app; vazio ou outro valor, os dois.
 
 > **Rota oficial primeiro:** Gmail, Google Drive e Google Calendar tem conectores OFICIAIS
 > hospedados pela Anthropic. Voce liga uma vez no site claude.ai (Configuracoes > Conectores,

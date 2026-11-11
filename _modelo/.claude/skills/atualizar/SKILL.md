@@ -50,9 +50,9 @@ A fonte aqui é **esta conversa**. Listar o que aconteceu e dar a cada item um d
 - **Bastão:** existe `.claude/bastao.md` e esta sessão fechou o último dos Próximos passos dele: propor apagar, no plano do Passo 5. Fechou só parte dos passos: propor atualizar o Ponto exato de parada e os Próximos passos do bastão, sem apagar.
 - **Erro corrigido:** vai pro `licoes.md`, com data, se ainda não entrou na hora.
 - **Contato:** fornecedor, parceiro ou outra pessoa que não é cliente nem equipe, citado nesta sessão com telefone, email ou preço, ou já presente num diário anterior (buscar o nome em `_memoria/diario/`): propor a ficha `_contexto/pessoas/<nome>.md` (nome em minúscula, sem acento, com hífen), com quem é, como fala com ele e o que já se combinou, cada linha com data. Preço entra com a data em que foi dito, porque envelhece.
-- **Memória automática:** o que a IA anotou nesta sessão na memória automática do app (`~/.claude/projects/<projeto>/memory/`) e vale pro projeto vai pro destino da Tabela, porque lá fica só neste computador e fora do backup.
+- **Memória automática:** o que a IA anotou nesta sessão na memória automática do Claude (`~/.claude/projects/<projeto>/memory/`) e vale pro projeto vai pro destino da Tabela, porque lá fica só neste computador e fora do backup.
 - **Trivial:** não salva; decisão de boca nunca é trivial. **Não coube:** perguntar, nunca inventar gaveta.
-- **Fechamento:** a última linha do diário do dia do fechamento é `- HH:MM, sessão fechada pelo /atualizar`, gravada depois de todas as outras, no Passo 5. A mesma marca vai como última linha do diário de cada dia anterior desta sessão que ainda não termina na marca (conversa que atravessou a meia-noite, ou conversa antiga reaberta pela lateral do app): sem ela, o aviso da próxima conversa segue apontando aquele dia.
+- **Fechamento:** a última linha do diário do dia do fechamento é `- HH:MM, sessão fechada pelo /atualizar`, gravada depois de todas as outras, no Passo 5. A mesma marca vai como última linha do diário de cada dia anterior desta sessão que ainda não termina na marca (conversa que atravessou a meia-noite, ou conversa antiga reaberta pela lista de conversas: no VS Code, o botão de histórico no alto do painel; no app do Claude, a lateral): sem ela, o aviso da próxima conversa segue apontando aquele dia.
 
 Projeto de antes da 4.3 com a seção "Decisões recentes" no `agora.md`: cada linha dela vai pro `decisoes.md` com a data que tinha (origem `dono`, motivo "não registrado") e a seção sai do `agora.md`.
 
@@ -118,8 +118,8 @@ A resposta termina sem pergunta pendente e diz "pode fechar": o backup automáti
 
 Só quando o aviso do começo da conversa apontou dias sem fechar ou a pessoa pede. Duas rotas, com o custo dito antes:
 
-1. Reabrir a conversa antiga pela lista da lateral do app e rodar o `/atualizar` lá: a marca vai no diário de hoje e no de cada dia anterior desta sessão que ainda não termina na marca, e o aviso some daqueles dias. Gasta uma fatia do limite de uso, e a conversa que virou resumo volta só como resumo.
-2. No app, pedir em palavras, nesta conversa, que a IA leia a conversa antiga e traga o que ficou sem passar pela Tabela. Nada de script lendo o `.jsonl` das conversas, que é formato interno do app.
+1. Reabrir a conversa antiga pela lista de conversas (no VS Code, o botão de histórico no alto do painel; no app do Claude, a lateral) e rodar o `/atualizar` lá: a marca vai no diário de hoje e no de cada dia anterior desta sessão que ainda não termina na marca, e o aviso some daqueles dias. Gasta uma fatia do limite de uso, e a conversa que virou resumo volta só como resumo.
+2. Pedir em palavras, nesta conversa, que a IA leia a conversa antiga e traga o que ficou sem passar pela Tabela. Nada de script lendo o `.jsonl` das conversas, que é formato interno do Claude.
 
 A pessoa diz "dispensar": gravar `- HH:MM, sessão fechada pelo /atualizar (dispensada)` como última linha do diário de cada dia apontado, e o aviso some daqueles dias.
 

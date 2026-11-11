@@ -76,7 +76,7 @@ de rodar. Nunca usar outro endereço.
 
    Quando o plano imprimir a linha que começa com `Historico do app:`, mostrar
    sempre essa parte, antes do "Posso seguir?", em palavras simples: o aplicar
-   vai deixar o app guardar as conversas por 30 dias neste computador.
+   vai fazer o Claude guardar as conversas por 30 dias neste computador.
 
 3. "Componentes que o projeto ainda não tem": oferecer cada um numa linha, com o
    que ele faz, e perguntar quais entram. Pergunta no formato de 4 partes (a

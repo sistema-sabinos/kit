@@ -28,11 +28,16 @@
   `abrir-chrome.mjs`, porque o servidor entra em qualquer Chrome que estiver na
   porta. Se ele avisar que a porta mudou, ligar o `navegador` de novo com a
   porta nova (`node .claude/skills/conectar/scripts/ligar-mcp.mjs ligar
-  navegador`, o passo 3) e, antes de usar, sair de vez do app do Claude
-  (Windows: ícone perto do relógio, botão direito, Sair; Mac: Cmd+Q) e abrir
-  de novo, depois de esperar terminar o que roda nas outras conversas
-  (Gerenciador de Tarefas só se o Sair não fechar): o `navegador` que já está
-  rodando só pega a porta nova numa sessão nova.
+  navegador`, o passo 3) e, antes de usar, esperar terminar o que roda nas
+  outras conversas e fechar de vez o programa onde você conversa comigo (VS
+  Code: fecha todas as janelas; app do Claude: ícone perto do relógio, botão
+  direito, Sair; no Mac, Cmd+Q nos dois) e abrir de novo nesta pasta, numa
+  conversa nova. Gerenciador de Tarefas só se não fechar. Na fala, o parêntese
+  leva só o programa em uso, lido pelo shell (`echo "$CLAUDE_CODE_ENTRYPOINT"`
+  no Bash, `$env:CLAUDE_CODE_ENTRYPOINT` no PowerShell): `claude-vscode`, só o
+  VS Code; começando com `claude-desktop`, só o app; vazio ou outro valor, os
+  dois. O `navegador` que já está rodando só pega a porta nova numa sessão
+  nova.
 - Tarefa sem a pessoa na frente abre o Chrome dedicado sem janela
   (`abrir-chrome.mjs --sem-janela`, ou `abrirChrome` com `headless: true` no
   script) e, se foi ela que abriu, fecha no fim (`fecharChrome` da lib), porque

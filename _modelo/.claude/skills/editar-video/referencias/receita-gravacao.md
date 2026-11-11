@@ -83,4 +83,4 @@ resposta for "não", é mais rápido regravar agora do que consertar depois.
 O arquivo vai para `producao/<slug>/bruto/`, a pasta que a IA cria e abre com
 `node .claude/skills/conectar/scripts/abrir-pasta.mjs producao/<slug>/bruto`. Copie o
 vídeo pra pasta que abriu, e lembre: não arrasta pro chat, porque lá ele fica numa
-pasta temporária do app, fora do projeto. Um vídeo gravado, um arquivo.
+pasta temporária do programa, fora do projeto. Um vídeo gravado, um arquivo.

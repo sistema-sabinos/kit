@@ -33,7 +33,7 @@ python3 --version
 Precisa do Python 3.10 ou mais novo (o yt-dlp de hoje não roda no 3.9). Se não tiver, ou se for mais antigo, dizer ao usuário em uma frase o que falta, pedir o sim e instalar (quem roda o comando é a IA, nunca o usuário):
 - **Mac:** `brew install python3`
 - **Linux:** `sudo apt install python3 python3-pip`
-- **Windows:** `winget install --id Python.Python.3.12 -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity`, depois pedir pra pessoa esperar terminar o que roda nas outras conversas, sair de vez do app do Claude (Windows: ícone perto do relógio, botão direito, Sair; Mac: Cmd+Q) e abrir de novo; Gerenciador de Tarefas só se o Sair não fechar
+- **Windows:** `winget install --id Python.Python.3.12 -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity`, depois pedir pra pessoa esperar terminar o que roda nas outras conversas e fechar de vez o programa onde você conversa comigo (VS Code: fecha todas as janelas; app do Claude: ícone perto do relógio, botão direito, Sair; no Mac, Cmd+Q nos dois) e abrir de novo nesta pasta, numa conversa nova. Gerenciador de Tarefas só se não fechar. Na fala, o parêntese leva só o programa em uso, lido pelo shell (`echo "$CLAUDE_CODE_ENTRYPOINT"` no Bash, `$env:CLAUDE_CODE_ENTRYPOINT` no PowerShell): `claude-vscode`, só o VS Code; começando com `claude-desktop`, só o app; vazio ou outro valor, os dois.
 
 ### Passo 2: conferir os pacotes do Python
 
@@ -72,7 +72,7 @@ which ffmpeg && ffmpeg -version | head -1 || echo "MISSING: ffmpeg"
 Se não tiver, o mesmo jeito: dizer o que falta, pedir o sim e instalar:
 - **Mac:** `brew install ffmpeg`
 - **Linux:** `sudo apt install ffmpeg`
-- **Windows:** `winget install --id Gyan.FFmpeg -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity`, depois pedir pra pessoa esperar terminar o que roda nas outras conversas, sair de vez do app do Claude (Windows: ícone perto do relógio, botão direito, Sair; Mac: Cmd+Q) e abrir de novo; Gerenciador de Tarefas só se o Sair não fechar
+- **Windows:** `winget install --id Gyan.FFmpeg -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity`, depois pedir pra pessoa esperar terminar o que roda nas outras conversas e fechar de vez o programa onde você conversa comigo (VS Code: fecha todas as janelas; app do Claude: ícone perto do relógio, botão direito, Sair; no Mac, Cmd+Q nos dois) e abrir de novo nesta pasta, numa conversa nova. Gerenciador de Tarefas só se não fechar. Na fala, o parêntese leva só o programa em uso, lido pelo shell (`echo "$CLAUDE_CODE_ENTRYPOINT"` no Bash, `$env:CLAUDE_CODE_ENTRYPOINT` no PowerShell): `claude-vscode`, só o VS Code; começando com `claude-desktop`, só o app; vazio ou outro valor, os dois.
 
 ### Passo 4: conferir o script
 

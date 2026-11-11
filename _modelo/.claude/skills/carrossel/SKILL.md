@@ -111,7 +111,7 @@ Conferir se `.claude/skills/midia-social/node_modules/playwright` existe; senão
 
 O usuário fornece:
 - Tema, ideia, texto livre, link ou arquivo de referência
-- Imagens (opcional): a foto entra por `producao/<slug>/imagens/`, criada e aberta com `node .claude/skills/conectar/scripts/abrir-pasta.mjs producao/<slug>/imagens`; o aluno copia a foto pra pasta que abriu e não arrasta pro chat. Foto colada no chat: copiar na hora pra `producao/<slug>/imagens/` e conferir que o arquivo existe lá, porque o app guarda a colada numa pasta temporária que some. Sem o caminho da foto colada, pedir pra pôr na pasta. Sem foto, criar design visual sem foto
+- Imagens (opcional): a foto entra por `producao/<slug>/imagens/`, criada e aberta com `node .claude/skills/conectar/scripts/abrir-pasta.mjs producao/<slug>/imagens`; o aluno copia a foto pra pasta que abriu e não arrasta pro chat. Foto colada no chat: copiar na hora pra `producao/<slug>/imagens/` e conferir que o arquivo existe lá, porque o programa guarda a colada numa pasta temporária que some. Sem o caminho da foto colada, pedir pra pôr na pasta. Sem foto, criar design visual sem foto
 - Número do episódio ou série (se aplicável)
 
 ## Onde o post mora

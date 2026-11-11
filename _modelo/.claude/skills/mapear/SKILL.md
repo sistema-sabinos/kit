@@ -95,7 +95,7 @@ Escrever direto a partir do que foi escolhido no Passo 3, garantindo:
 
 ### Caminho B, criar do zero (delegar pra skill-creator)
 
-Quando não há template nem skill externa, não escrever na mão: montar um briefing e invocar a skill `skill-creator` (oficial da Anthropic; se não aparecer no `/`, instalar pelo `/plugin`, marketplace oficial). O briefing leva:
+Quando não há template nem skill externa, não escrever na mão: montar um briefing e invocar a skill `skill-creator` (oficial da Anthropic; se não aparecer no `/`, instalar pelo `/plugins`, marketplace oficial). O briefing leva:
 
 - **Processo** em uma frase, **gatilho** e **frequência**
 - **Passo a passo** exatamente como o usuário descreveu, sem etapa inventada

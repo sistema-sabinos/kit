@@ -100,7 +100,7 @@ export function conferir({ plat = process.platform, arch = process.arch, base, e
   const itens = ITENS.filter((i) => !i.soMac || plat === 'darwin').map((i) => {
     const [ok, detalheBruto] = estado[i.id]
     const reabrir = !ok && naoAchou(doPrograma[i.id]) && lugaresConhecidos(i.id, plat, env).some((p) => existe(p))
-    const detalhe = reabrir ? 'instalado, falta reabrir o app (o programa esta no lugar da instalacao, e esta sessao ainda nao o enxerga)' : detalheBruto
+    const detalhe = reabrir ? 'instalado, falta reabrir o programa (o que foi instalado esta no lugar certo, e esta sessao ainda nao o enxerga)' : detalheBruto
     const modelo_mb = i.id === 'whisper' && modelo === 'medium' ? 1500 : i.mb
     const bruto = i.cmd ?? (plat === 'win32' ? i.win : i.mac)
     const instalar = (i.id === 'whisper' && !modeloMedido ? 'node .claude/skills/configurar-video/scripts/medir-maquina.mjs' : bruto.split('<modelo>').join(modelo)).replace(/<_video>\/(\S+)/g, (_, resto) => join(base, ...resto.split('/'))).split('<py>').join([py.cmd, ...py.base].join(' '))

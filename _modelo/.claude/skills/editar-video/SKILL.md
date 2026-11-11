@@ -175,7 +175,7 @@ Combine a entrega: crie e abra a pasta do bruto com
 `node .claude/skills/conectar/scripts/abrir-pasta.mjs producao/<slug>/bruto` e diga ao
 aluno: "Abri a pasta `producao/<slug>/bruto/`. Quando gravar, copia o vídeo pra pasta
 que abriu e me avisa, e eu continuo daqui. E não arrasta o vídeo pro chat, porque lá
-ele fica numa pasta temporária do app, fora do projeto."
+ele fica numa pasta temporária do programa, fora do projeto."
 
 ## Passo 3: preparo (tudo grátis, tudo no computador)
 
@@ -352,7 +352,7 @@ node .claude/skills/editar-video/scripts/py.mjs profundidade.py producao/<slug>/
    Se a chamada "Seguir" ficar, peça a foto de perfil: crie e abra a pasta com
    `node .claude/skills/conectar/scripts/abrir-pasta.mjs producao/<slug>/public`
    e diga ao aluno para copiar a foto pra pasta que abriu com o nome `perfil.jpg`
-   (não arrasta pro chat, porque lá ela fica numa pasta temporária do app, fora
+   (não arrasta pro chat, porque lá ela fica numa pasta temporária do programa, fora
    do projeto). Confira que `producao/<slug>/public/perfil.jpg` existe; sem foto,
    tire a chamada.
 5. **Arquivo para o fiscal** (a conferência quadro a quadro).

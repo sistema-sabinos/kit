@@ -58,7 +58,7 @@ https.request = (url, op, responder) => {
 // projeto temporario, que vira a raiz dele pelo caminho (o mesmo jeito do projeto do aluno)
 const SKILLS = path.join(path.dirname(SCRIPT), '..')
 function copiarScripts(dir) {
-  for (const [pasta, nomes] of [['assistir-video', ['ver-video.mjs', 'custo.mjs', 'baixar-video.mjs']], [path.join('conectar', 'scripts', 'lib'), ['orcamento.mjs', 'raiz.mjs', 'autonomia.mjs']]]) {
+  for (const [pasta, nomes] of [['assistir-video', ['ver-video.mjs', 'custo.mjs', 'baixar-video.mjs']], [path.join('conectar', 'scripts', 'lib'), ['orcamento.mjs', 'raiz.mjs', 'autonomia.mjs', 'programa.mjs']]]) {
     fs.mkdirSync(path.join(dir, '.claude', 'skills', pasta), { recursive: true })
     for (const n of nomes) fs.copyFileSync(path.join(SKILLS, pasta, n), path.join(dir, '.claude', 'skills', pasta, n))
   }

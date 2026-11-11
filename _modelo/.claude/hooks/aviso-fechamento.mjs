@@ -52,12 +52,33 @@ function lerCorte(dir) {
   } catch { return null }
 }
 
-// dias de guarda do app; sem a chave, o app guarda a conversa sem prazo e a frase do "apaga" fica fora
-export function lerDiasDoApp() {
-  try {
-    const n = lerJson(join(homedir(), '.claude', 'settings.json')).desktopSessionCleanupPeriodDays
-    return Number.isInteger(n) && n > 0 ? n : null
-  } catch { return null }
+// 5.56 (G): o programa pela mesma regra do conectar/scripts/lib/programa.mjs, e o teste prova que
+// as duas concordam. Copiada de proposito: import quebrado aqui viraria erro em toda conversa nova
+export function programaDoHook(env = process.env) {
+  const e = String(env.CLAUDE_CODE_ENTRYPOINT ?? '')
+  return e === 'claude-vscode' ? 'vscode' : e.startsWith('claude-desktop') ? 'app' : 'desconhecido'
+}
+
+const prazo = n => (Number.isInteger(n) && n > 0 ? n : null)
+
+// dias ate a primeira conversa do projeto poder sair deste computador. A conversa do VS Code sai pelo
+// cleanupPeriodDays (padrao 30) e a do app so depois dos dois prazos, e o diario nao diz de qual
+// programa veio a conversa que ficou sem fechar: vale o prazo mais curto que pode valer pra alguma,
+// o cleanupPeriodDays, nos dois programas (final do Codex da 5.56: o maior dos dois dava margem
+// falsa pra conversa velha do VS Code aberta de novo no app). No app sem a chave do app (0, guarda
+// pra sempre) a frase fica fora, e o furo fica nomeado: quem usa os dois programas no mesmo projeto
+// com a chave padrao fica sem a data. Desconhecido: so a chave do app, como antes da 5.56. O
+// cleanupPeriodDays vale em qualquer settings e o mais perto ganha (local, projeto, usuario); a
+// chave do app so no usuario
+export function lerDiasDeGuarda(prog = programaDoHook(), dir = '') {
+  const ler = c => { try { return lerJson(c) || {} } catch { return {} } }
+  const usuario = ler(join(homedir(), '.claude', 'settings.json'))
+  const camadas = dir ? [ler(join(dir, '.claude', 'settings.local.json')), ler(join(dir, '.claude', 'settings.json')), usuario] : [usuario]
+  const geral = camadas.map(s => prazo(s.cleanupPeriodDays)).find(Boolean) ?? 30
+  const app = prazo(usuario.desktopSessionCleanupPeriodDays)
+  if (prog === 'vscode') return geral
+  if (prog === 'app') return app ? geral : null
+  return app
 }
 
 // linhas que contam no dia: sem o titulo, sem linha vazia e sem a linha rotulada da atualizacao
@@ -97,10 +118,10 @@ function juntar(dias) {
   return dias.length === 1 ? dias[0] : `${dias.slice(0, -1).join(', ')} e ${dias[dias.length - 1]}`
 }
 
-export function textoDoAviso(dias, diasDoApp) {
+export function textoDoAviso(dias, diasDeGuarda) {
   if (!dias.length) return ''
   const linhas = [`Ficou sem fechar: o diário tem trabalho sem a marca do /atualizar em ${juntar(dias)}.`]
-  if (diasDoApp) linhas.push(`O app apaga essas conversas a partir de cerca de ${somarDias(dias[0], diasDoApp)}.`)
+  if (diasDeGuarda) linhas.push(`Essas conversas saem deste computador a partir de cerca de ${somarDias(dias[0], diasDeGuarda)}.`)
   linhas.push(`Na primeira resposta, ofereça ao usuário: fechar agora (\`/atualizar\`) ou dispensar; dispensar grava a linha \`- HH:MM, ${MARCA} (dispensada)\` no fim do diário de cada um desses dias.`)
   return linhas.join('\n') + '\n'
 }
@@ -119,7 +140,7 @@ export function responder(entrada, env = process.env) {
   if (entrada.hook_event_name === 'PreCompact') return textoPreCompact(diasSemFechar(dir)) + '\n'
   if (entrada.hook_event_name !== 'SessionStart') return ''
   if (['compact', 'clear'].includes(entrada.source)) return TEXTO_RESUMO
-  if (['startup', 'resume', 'fork'].includes(entrada.source)) return textoDoAviso(diasSemFechar(dir), lerDiasDoApp())
+  if (['startup', 'resume', 'fork'].includes(entrada.source)) return textoDoAviso(diasSemFechar(dir), lerDiasDeGuarda(programaDoHook(env), dir))
   return ''
 }
 

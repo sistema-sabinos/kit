@@ -42,12 +42,13 @@ function montar({ diarios = {}, origem, corte = dia(60), settingsUsuario } = {})
   return { dir, home, proj }
 }
 
-function rodar(p, entrada) {
-  const env = { ...process.env, HOME: p.home, USERPROFILE: p.home, CLAUDE_PROJECT_DIR: p.proj }
+// 5.56 (G): o programa vai sempre explicito; a suite roda dentro da extensao e herdaria claude-vscode
+function rodar(p, entrada, entrypoint = '') {
+  const env = { ...process.env, CLAUDE_CODE_ENTRYPOINT: entrypoint, HOME: p.home, USERPROFILE: p.home, CLAUDE_PROJECT_DIR: p.proj }
   const stdin = typeof entrada === 'string' ? entrada : JSON.stringify({ cwd: p.proj, ...entrada })
   return spawnSync(process.execPath, [HOOK], { input: stdin, encoding: 'utf8', env })
 }
-const inicio = (p, source = 'startup') => rodar(p, { hook_event_name: 'SessionStart', source })
+const inicio = (p, source = 'startup', entrypoint = '') => rodar(p, { hook_event_name: 'SessionStart', source }, entrypoint)
 
 // roda o mesmo cenario em dois projetos: o de controle tem de avisar, o outro nao
 function quietoComControle(controle, alvo) {
@@ -239,14 +240,80 @@ test('frase do "apaga" so com desktopSessionCleanupPeriodDays no settings do usu
   const sem = montar({ diarios, settingsUsuario: { theme: 'dark' } })
   try {
     const rc = inicio(com)
-    assert.ok(rc.stdout.includes(`O app apaga essas conversas a partir de cerca de ${somar(dia(3), 30)}.`), rc.stdout)
+    assert.ok(rc.stdout.includes(`Essas conversas saem deste computador a partir de cerca de ${somar(dia(3), 30)}.`), rc.stdout)
     const rs = inicio(sem)
     assert.notEqual(rs.stdout, '', 'sem a chave segue avisando')
-    assert.ok(!/apaga/.test(rs.stdout), rs.stdout)
+    assert.ok(!/apaga|saem deste computador/.test(rs.stdout), rs.stdout)
   } finally {
     rmSync(com.dir, { recursive: true, force: true })
     rmSync(sem.dir, { recursive: true, force: true })
   }
+})
+
+// 5.56 (G): a frase do prazo por programa. Cada caso roda com as duas chaves em valores diferentes,
+// pra provar qual delas o hook leu
+const FRASE = n => `Essas conversas saem deste computador a partir de cerca de ${somar(dia(3), n)}.`
+const comPrazo = (settingsUsuario, entrypoint, projeto = {}) => {
+  const p = montar({ diarios: { [`${dia(3)}.md`]: [L('10:00', 'anuncio')] }, settingsUsuario })
+  try {
+    for (const [nome, conteudo] of Object.entries(projeto)) {
+      mkdirSync(join(p.proj, '.claude'), { recursive: true })
+      writeFileSync(join(p.proj, '.claude', nome), JSON.stringify(conteudo))
+    }
+    const r = inicio(p, 'startup', entrypoint)
+    assert.ok(r.stdout.includes('Ficou sem fechar'), 'canario: o aviso saiu: ' + r.stdout)
+    return r.stdout
+  } finally { rmSync(p.dir, { recursive: true, force: true }) }
+}
+
+test('VS Code: o prazo vem do cleanupPeriodDays, 30 sem a chave, e a chave do app nao conta', () => {
+  assert.ok(comPrazo({ theme: 'dark' }, 'claude-vscode').includes(FRASE(30)))
+  const r = comPrazo({ cleanupPeriodDays: 10, desktopSessionCleanupPeriodDays: 50 }, 'claude-vscode')
+  assert.ok(r.includes(FRASE(10)), r)
+  assert.ok(!r.includes(FRASE(50)), r)
+})
+
+// achado da comum do G: o cleanupPeriodDays vale em qualquer settings, e o mais perto ganha
+test('VS Code: o cleanupPeriodDays do projeto e do local passam por cima do usuario', () => {
+  const usuario = { cleanupPeriodDays: 10 }
+  assert.ok(comPrazo(usuario, 'claude-vscode', { 'settings.json': { cleanupPeriodDays: 5 } }).includes(FRASE(5)))
+  const local = comPrazo(usuario, 'claude-vscode', { 'settings.json': { cleanupPeriodDays: 5 }, 'settings.local.json': { cleanupPeriodDays: 1 } })
+  assert.ok(local.includes(FRASE(1)), local)
+  // a chave do app no projeto nao vale (so usuario ou gerenciado)
+  const app = comPrazo({}, 'claude-desktop', { 'settings.json': { desktopSessionCleanupPeriodDays: 40 } })
+  assert.ok(!/saem deste computador/.test(app), app)
+})
+
+// final do Codex da 5.56: a conversa velha pode ser do outro programa, entao vale o prazo mais curto
+// que pode valer pra alguma (o cleanupPeriodDays); o maior dos dois dava margem falsa no app
+test('app: vale o cleanupPeriodDays com a chave do app ligada, e sem a chave do app a frase fica fora', () => {
+  assert.ok(comPrazo({ cleanupPeriodDays: 20, desktopSessionCleanupPeriodDays: 7 }, 'claude-desktop').includes(FRASE(20)))
+  const curto = comPrazo({ cleanupPeriodDays: 1, desktopSessionCleanupPeriodDays: 90 }, 'claude-desktop')
+  assert.ok(curto.includes(FRASE(1)) && !curto.includes(FRASE(90)), curto)
+  // o mesmo projeto aberto no VS Code da a mesma data
+  assert.ok(comPrazo({ cleanupPeriodDays: 1, desktopSessionCleanupPeriodDays: 90 }, 'claude-vscode').includes(FRASE(1)))
+  assert.ok(comPrazo({ desktopSessionCleanupPeriodDays: 7 }, 'claude-desktop').includes(FRASE(30)))
+  const sem = comPrazo({ cleanupPeriodDays: 20, desktopSessionCleanupPeriodDays: 0 }, 'claude-desktop')
+  assert.ok(!/saem deste computador/.test(sem), sem)
+})
+
+test('desconhecido: so a chave do app, como antes da 5.56', () => {
+  assert.ok(comPrazo({ cleanupPeriodDays: 20, desktopSessionCleanupPeriodDays: 7 }, '').includes(FRASE(7)))
+  const sem = comPrazo({ cleanupPeriodDays: 20 }, 'sdk-ts')
+  assert.ok(!/saem deste computador/.test(sem), sem)
+})
+
+test('a checagem do hook concorda com o programa() do conectar nos tres casos', async () => {
+  const { programa } = await import('../skills/conectar/scripts/lib/programa.mjs')
+  const { programaDoHook } = await import('./aviso-fechamento.mjs')
+  const valores = ['claude-vscode', 'claude-desktop', 'claude-desktop-3p', '', 'cli', 'sdk-ts', undefined]
+  const vistos = new Set()
+  for (const v of valores) {
+    const env = v === undefined ? {} : { CLAUDE_CODE_ENTRYPOINT: v }
+    assert.equal(programaDoHook(env), programa(env), String(v))
+    vistos.add(programa(env))
+  }
+  assert.deepEqual([...vistos].sort(), ['app', 'desconhecido', 'vscode'], 'canario: os tres casos passaram')
 })
 
 test('settings.json e instalado.json com BOM (Bloco de Notas, PowerShell 5) seguem valendo', () => {
@@ -259,7 +326,7 @@ test('settings.json e instalado.json com BOM (Bloco de Notas, PowerShell 5) segu
     // sem corte lido o hook fica quieto: o aviso do dia 3 prova que os dois JSON com BOM valeram
     writeFileSync(join(p.proj, '.sabinos', 'instalado.json'), BOM + JSON.stringify({ avisoFechamentoDesde: dia(3) }))
     const ra = inicio(p)
-    assert.ok(ra.stdout.includes(`O app apaga essas conversas a partir de cerca de ${somar(dia(3), 30)}.`), ra.stdout)
+    assert.ok(ra.stdout.includes(`Essas conversas saem deste computador a partir de cerca de ${somar(dia(3), 30)}.`), ra.stdout)
     writeFileSync(join(p.proj, '.sabinos', 'instalado.json'), BOM + JSON.stringify({ avisoFechamentoDesde: dia(2) }))
     const rc = inicio(p)
     assert.notEqual(rc.stdout, '', 'o dia depois do corte segue avisando')

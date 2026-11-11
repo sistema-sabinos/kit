@@ -1,14 +1,14 @@
 # SabinOS
 
-Versão 5.44 (2026-11-10)
+Versão 5.45 (2026-11-10)
 
-Um sistema de trabalho com IA pro seu negócio, rodando dentro do VS Code com o Claude Code.
+Um sistema de trabalho com IA pro seu negócio, rodando no Claude Code, pelo VS Code ou pelo app do Claude.
 
 A ideia é simples: em vez de conversar com uma IA que esquece tudo a cada conversa, você monta uma pasta que é a memória permanente do seu negócio. O Claude lê essa pasta no começo de toda sessão, então ele sempre sabe quem você é, o que você vende, como você escreve e o que está pegando agora. Esta pasta aqui é a sala de controle: é onde você cria e organiza os projetos. O trabalho do dia a dia acontece dentro da pasta de cada projeto.
 
 ## Como instalar
 
-**1. Assine o Claude** em [claude.com](https://claude.com/). A conta entra no passo 4, já no VS Code.
+**1. Assine o Claude** em [claude.com](https://claude.com/). A conta entra no passo 4, já no programa que você escolher.
 
 **2. Garanta o Git:**
 - **Windows:** baixe em [git-scm.com/downloads](https://git-scm.com/downloads) e siga as opções padrão (Avançar até o fim). Se pular, o Claude confere na primeira conversa, avisa e instala.
@@ -16,17 +16,17 @@ A ideia é simples: em vez de conversar com uma IA que esquece tudo a cada conve
 
 **3. Instale o Node.js** em [nodejs.org](https://nodejs.org/) (botão verde, versão LTS, opções padrão). É o motor das ferramentas internas do kit, como a de assistir vídeo; sem ele essas partes travam na primeira vez que você for usar. Se pular, o Claude confere na primeira conversa, avisa e instala.
 
-**4. Instale o VS Code**, em [code.visualstudio.com](https://code.visualstudio.com/). Depois, no VS Code, abra a aba de extensões (ícone de blocos na lateral), busque "Claude Code", instale e faça login.
+**4. Instale o VS Code ou o app do Claude** (um dos dois basta). VS Code: baixe em [code.visualstudio.com](https://code.visualstudio.com/); depois, no VS Code, abra a aba de extensões (ícone de blocos na lateral), busque "Claude Code", instale e faça login. App do Claude: baixe em [claude.com/download](https://claude.com/download), instale, entre na conta e use a aba Code.
 
 **5. Descompacte este kit** e deixe a pasta `SabinOS-Sistema` dentro de `Documentos`. No Windows, no Extrair Tudo, não mude o caminho que ele sugere (já termina em `SabinOS-Sistema`); mudando pra terminar só em `Documentos`, os arquivos caem soltos lá. No Mac, o duplo clique no `SabinOS-Sistema.zip` cria a pasta. Nos dois, arraste a pasta `SabinOS-Sistema` pra `Documentos`. Não deixe em Downloads nem na Área de Trabalho, que são pastas de passagem e um dia alguém limpa. Também não ponha dentro de uma pasta que já é repositório git (uma pasta que o Git já acompanha, como a de um projeto baixado do GitHub): o backup do SabinOS se misturaria com o dela. Abrindo a pasta, o `COMECE-AQUI.md` aparece logo de cara.
 
-**6. Abra a pasta no VS Code** (`Arquivo > Abrir Pasta`) e siga o [COMECE-AQUI.md](COMECE-AQUI.md).
+**6. Abra a pasta no programa que você instalou** e siga o [COMECE-AQUI.md](COMECE-AQUI.md). No VS Code: `Arquivo > Abrir Pasta`. No app do Claude: na aba Code, clique no seletor de pasta e escolha esta pasta; antes da primeira mensagem, confira que o Worktree, na linha embaixo da caixa de mensagem, está desligado.
 
 Quando sair versão nova, `/atualizar-kit` aqui na pasta-mãe traz as melhorias sem mexer nos seus projetos, e dentro de cada projeto `/atualizar-sabinos` puxa a versão nova direto do GitHub.
 
 ## O fluxo em 3 passos
 
-Todo o passo a passo de leigo está no [COMECE-AQUI.md](COMECE-AQUI.md): abrir a pasta no VS Code, dizer oi ao Claude e responder as perguntas no chat, e depois trabalhar dentro da pasta do projeto que ele cria pra você.
+Todo o passo a passo de leigo está no [COMECE-AQUI.md](COMECE-AQUI.md): abrir a pasta no VS Code ou no app do Claude, dizer oi ao Claude e responder as perguntas no chat, e depois trabalhar dentro da pasta do projeto que ele cria pra você.
 
 ## O que vem dentro
 
@@ -36,7 +36,7 @@ Todo o passo a passo de leigo está no [COMECE-AQUI.md](COMECE-AQUI.md): abrir a
 - `_modelo/`, o molde completo de um projeto (skills, contexto, estrutura de pastas), de onde cada projeto novo nasce. Não é pasta de trabalho
 - `_ferramentas/`, o verificador do kit e uma biblioteca pronta contra automação que trava
 - `docs/`, o guia avançado (Codex e Hermes Agent) e o roteiro de próximos passos. Os dois guias em PDF, de instalação (`Guia-SabinOS-Instalacao`) e de comandos (`Guia-SabinOS-Comandos`), vêm junto com o zip, fora desta pasta
-- `<projeto>/`, uma pasta por projeto que você criar, cada uma vira um workspace próprio no VS Code
+- `<projeto>/`, uma pasta por projeto que você criar, cada uma aberta sozinha, como pasta própria, no VS Code ou no app do Claude
 
 **Comandos desta pasta-mãe** (digite `/` na conversa pra ver):
 

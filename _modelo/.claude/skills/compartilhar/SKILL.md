@@ -84,8 +84,8 @@ pessoa. Com o sim:
    marca inteira.
    Se a marca do projeto ainda é o molde em branco, pular e dizer pra pessoa
    que a pasta vai sem marca.
-2. **`AGENTS.md` da pasta.** Primeira linha: "Quem recebe esta pasta abre esta
-   pasta no VS Code, e ela se basta." Trocar todo caminho com `../` pelo que agora
+2. **`AGENTS.md` da pasta.** Primeira linha: "Quem recebe esta pasta abre ela
+   no VS Code ou no app do Claude, e ela se basta." Trocar todo caminho com `../` pelo que agora
    mora dentro (`marca/`, `decisoes.md`). Acrescentar uma tabela de destinos
    curta: trabalho, aqui; onde está e o que falta, `andamento.md`; o que foi
    combinado e quem é quem, `contexto.md`; decisão, `decisoes.md` desta pasta, só
@@ -206,8 +206,8 @@ O que dizer pra quem recebe:
 
 - **Só vai olhar:** abre o link do repositório no navegador; os arquivos aparecem
   ali mesmo.
-- **Vai trabalhar junto:** no VS Code, `Ctrl+Shift+P` (no Mac, `Cmd+Shift+P`),
-  digita `Git: Clone`, cola o link e escolhe onde salvar. Baixar como zip não
+- **Vai trabalhar junto:** com o Claude Code aberto (no VS Code ou no app do
+  Claude), cola o link e pede pra IA baixar o repositório na pasta que escolher. Baixar como zip não
   serve: a cópia sai sem o jeito de mandar de volta. Depois abre a pasta com o
   Claude Code ou o Codex: o `AGENTS.md` daqui já explica tudo pro assistente
   dela. No fim do dia, cada um roda o `/syncar` dentro da pasta, que manda o seu

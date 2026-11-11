@@ -18,6 +18,7 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { fraseSair } from '../conectar/scripts/lib/programa.mjs';
 
 // a rota sem login pelo Chrome dedicado só existe com o pacote de mídia social (a /pauta) no projeto
 const COLETA = fileURLToPath(new URL('../pauta/scripts/coletar.mjs', import.meta.url));
@@ -68,7 +69,7 @@ function viaYtDlp(url, destino) {
       '[baixar] yt-dlp não encontrado no PATH.\n' +
       '  Quem lê esta mensagem é a IA: diga ao usuário em uma frase o que vai instalar e instale você mesma, sem esperar resposta (só pare se faltar espaço no disco), nunca passe o comando pra ele.\n' +
       '  Windows: winget install --id yt-dlp.yt-dlp -e --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity\n' +
-      '           (depois peça pro usuário esperar terminar o que roda nas outras conversas, sair de vez do app do Claude (Windows: ícone perto do relógio, botão direito, Sair; Mac: Cmd+Q) e abrir de novo; Gerenciador de Tarefas só se o Sair não fechar)\n' +
+      `           (depois peça pro usuário ${fraseSair(undefined, 'sair')})\n` +
       '  Mac:     brew install yt-dlp'
     );
     return { motivo: 'yt-dlp ausente' };

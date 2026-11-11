@@ -15,6 +15,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RAIZ } from './lib/raiz.mjs'
 import { portaDoProjeto } from './lib/navegador.mjs'
+import { fraseSair } from './lib/programa.mjs'
 
 // a versao do Playwright MCP e a sondada na bancada (Gate 16): cada linha com o pacote diz qual navegador usa
 export const SERVIDORES = {
@@ -130,7 +131,7 @@ if (direto()) {
         console.log(`ligado: ${nome}`)
         console.log(`projeto: ${r.arqMcp}`)
         console.log(`aprovacao no settings.json do usuario: ${r.arqSettings}`)
-        console.log('o servidor sobe numa sessao nova: sai de vez do app do Claude (Windows: icone perto do relogio, botao direito, Sair; Mac: Cmd+Q) e abre de novo, depois de esperar terminar o que roda nas outras conversas; Gerenciador de Tarefas so se o Sair nao fechar')
+        console.log('o servidor sobe numa sessao nova: ' + fraseSair())
         if (r.recusado.length) console.log(avisoRecusado(nome, r.recusado))
         if (r.local) console.log(avisoLocal(nome))
         if (r.usuario) console.log(avisoUsuario(nome))

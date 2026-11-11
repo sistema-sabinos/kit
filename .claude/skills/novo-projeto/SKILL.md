@@ -18,7 +18,8 @@ princípio de que já existe pelo menos um projeto na casa. Todo caminho abaixo
 caminho global. Chamada de dentro de um projeto (regra 13 do `AGENTS.md` do
 projeto: o aluno começou ali um projeto que merece pasta própria), a raiz é a
 pasta de cima (`..`) e o resto segue igual; no fim, avisar pra abrir a pasta
-nova no VS Code e começar um chat novo lá.
+nova no programa em uso (VS Code: Arquivo > Abrir Pasta; app do Claude: aba
+Code, seletor de pasta) e começar um chat novo lá.
 
 ## Regra de formato das perguntas (obrigatória em toda a conversa)
 
@@ -804,8 +805,8 @@ qual é o próximo passo ao terminar cada etapa)".
    - **Pendências:** fica vazia (só entra o que espera alguém de fora:
      fornecedor, cliente, contador, plataforma).
 
-   E, no topo do `tarefas.md`, nesta ordem: "Abrir esta pasta no VS Code e
-   rodar /iniciar", "/conectar pra ligar as ferramentas", "/mapear pra criar
+   E, no topo do `tarefas.md`, nesta ordem: "Abrir esta pasta no VS Code ou no app do
+   Claude e rodar /iniciar", "/conectar pra ligar as ferramentas", "/mapear pra criar
    mais comandos" e, enquanto o projeto não tem GitHub ligado (o normal no
    primeiro dia, com ou sem auto-sync), "/syncar pra ligar o backup no GitHub".
    Essa linha é o lembrete único que a regra 5 do `AGENTS.md` pede.
@@ -821,8 +822,8 @@ qual é o próximo passo ao terminar cada etapa)".
    "igual" e nada é trocado: o que fica é o recibo `.sabinos/instalado.json` e o
    motor guardado, que deixam o `/atualizar-sabinos` saber, na versão seguinte,
    o que veio do SabinOS e o que é da pessoa. A saída do `aplicar` pode trazer
-   a linha que começa com `Historico do app:` (o prazo de 30 dias pro app guardar
-   as conversas neste computador): mostrar essa linha como veio. Se ela disser
+   a linha que começa com `Historico do app:` (o prazo de 30 dias de conversas guardadas
+   neste computador): mostrar essa linha como veio. Se ela disser
    que o arquivo tem JSON quebrado, o arquivo tem um erro de escrita e nada foi
    gravado: dizer isso em uma frase e seguir, sem consertar sozinho.
 5. **Teste de aceite.** Reler do disco, nunca da memória da conversa, o
@@ -842,8 +843,13 @@ qual é o próximo passo ao terminar cada etapa)".
    `/setup` fica só no primeiro projeto. Ele apresenta a casa a quem chegou
    agora, e quem cria o segundo projeto já conhece.
 6. Mensagem final, ensinando clique a clique, cobrindo Windows e Mac, como
-   abrir a pasta nova no VS Code (menu Arquivo, opção Abrir Pasta, ou
-   arrastar a pasta pro ícone do VS Code). Antes de fechar, dizer que a
+   abrir a pasta nova (VS Code: menu Arquivo, opção Abrir Pasta, ou
+   arrastar a pasta pro ícone do VS Code; app do Claude: aba Code, seletor de
+   pasta, com o Worktree da linha embaixo da caixa de mensagem desligado). Na
+   fala, só o programa em uso, lido pelo shell (`echo "$CLAUDE_CODE_ENTRYPOINT"`
+   no Bash, `$env:CLAUDE_CODE_ENTRYPOINT` no PowerShell): `claude-vscode`, só o
+   VS Code; começando com `claude-desktop`, só o app; vazio ou outro valor, os
+   dois. Antes de fechar, dizer que a
    estrutura de hoje é o começo, com este texto:
 
    > "Os comandos de hoje cobrem o que mais pesa agora. A estrutura cresce

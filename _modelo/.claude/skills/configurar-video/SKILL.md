@@ -94,10 +94,14 @@ deep-filter**: diga em uma frase o que é, mostre o tamanho (`mb`) e o comando
   `conferir.mjs` rodado de novo; o código de saída do winget não vale (sai diferente de 0
   quando o programa já existia). No Windows, instale primeiro todos os programas do
   computador que faltam (node, python, ffmpeg) e só então diga: "Espera terminar o que roda
-  nas outras conversas, sai de vez do app do Claude (Windows: ícone perto do relógio, botão
-  direito, Sair; Mac: Cmd+Q), abre de novo nesta pasta e me chama numa conversa nova com
-  /configurar-video. Gerenciador de Tarefas só se o Sair não fechar. O conferir retoma de
-  onde parou." No Mac, rode o conferir de novo; se o programa continuar faltando, peça o
+  nas outras conversas e fecha de vez o programa onde você conversa comigo (VS Code: fecha
+  todas as janelas; app do Claude: ícone perto do relógio, botão direito, Sair; no Mac,
+  Cmd+Q nos dois) e abre de novo nesta pasta, numa conversa nova, e me chama com
+  /configurar-video. Gerenciador de Tarefas só se não fechar. O conferir retoma de onde
+  parou." Na fala, o parêntese leva só o programa em uso, lido pelo shell
+  (`echo "$CLAUDE_CODE_ENTRYPOINT"` no Bash, `$env:CLAUDE_CODE_ENTRYPOINT` no PowerShell):
+  `claude-vscode`, só o VS Code; começando com `claude-desktop`, só o app; vazio ou outro
+  valor, os dois. No Mac, rode o conferir de novo; se o programa continuar faltando, peça o
   mesmo. Item com `estado: "reabrir"` (detalhe "instalado, falta reabrir o app") já está
   instalado, e a sessão aberta antes da instalação ainda não enxerga o programa: pule o
   `instalar` dele e diga a mesma frase.

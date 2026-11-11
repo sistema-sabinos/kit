@@ -63,11 +63,16 @@ que a resposta deixou faltando.
 2. O que fazer com a resposta:
    - `OK`: seguir sem falar nada.
    - `REINICIAR ...` (só Windows), texto exato:
-     > "Os programas já estão instalados, só falta o app do Claude enxergar. Até você reabrir,
-     > as ferramentas do app e as conexões ficam barradas. Espera terminar o que roda nas
-     > outras conversas, sai de vez do app do Claude (Windows: ícone perto do relógio, botão
-     > direito, Sair; Mac: Cmd+Q) e abre de novo nesta pasta, numa conversa nova. Gerenciador
-     > de Tarefas só se o Sair não fechar. A gente continua daqui."
+     > "Os programas já estão instalados, só falta reabrir o programa pra ele enxergar. Até
+     > lá, as ferramentas do Claude e as conexões ficam barradas. Espera terminar o que roda
+     > nas outras conversas e fecha de vez o programa onde você conversa comigo (VS Code:
+     > fecha todas as janelas; app do Claude: ícone perto do relógio, botão direito, Sair; no
+     > Mac, Cmd+Q nos dois) e abre de novo nesta pasta, numa conversa nova. Gerenciador de
+     > Tarefas só se não fechar. A gente continua daqui."
+
+     Na fala, o parêntese leva só o programa em uso, lido pelo shell (`echo "$CLAUDE_CODE_ENTRYPOINT"`
+     no Bash, `$env:CLAUDE_CODE_ENTRYPOINT` no PowerShell): `claude-vscode`, só o VS Code;
+     começando com `claude-desktop`, só o app; vazio ou outro valor, os dois.
    - `FALTA ...` com Git e Node, avisar com este texto exato e já seguir pra instalação
      abaixo, sem esperar resposta (os dois são de graça):
      > "Antes de começar, faltam 2 programas que o sistema usa: o **Git**, que guarda o
@@ -101,9 +106,13 @@ que a resposta deixou faltando.
      e dizer: "Abriu o instalador do Node. Vai clicando em **Continuar** e **Instalar**. Se
      ele pedir a senha do Mac, é a mesma de ligar o computador."
    - Depois, conferir de novo; continuou `FALTA`, pedir pra esperar terminar o que roda nas
-     outras conversas, sair de vez do app do Claude (Windows: ícone perto do relógio, botão
-     direito, Sair; Mac: Cmd+Q) e abrir de novo; Gerenciador de Tarefas só se o Sair não
-     fechar. Sem brew, que pede senha no terminal.
+     outras conversas e fechar de vez o programa onde você conversa comigo (VS Code: fecha
+     todas as janelas; app do Claude: ícone perto do relógio, botão direito, Sair; no Mac,
+     Cmd+Q nos dois) e abrir de novo nesta pasta, numa conversa nova. Gerenciador de Tarefas
+     só se não fechar. Na fala, o parêntese leva só o programa em uso, lido pelo shell
+     (`echo "$CLAUDE_CODE_ENTRYPOINT"` no Bash, `$env:CLAUDE_CODE_ENTRYPOINT` no PowerShell):
+     `claude-vscode`, só o VS Code; começando com `claude-desktop`, só o app; vazio ou outro
+     valor, os dois. Sem brew, que pede senha no terminal.
 5. ffmpeg, Python e yt-dlp: quem instala é a skill que usa (`/configurar-video`, `/transcribe`,
    `/assistir-video`): no Windows sempre pelo winget com as mesmas flags, no Mac pelo caminho
    que a própria skill dá.
@@ -449,7 +458,7 @@ linha `| Equipe e máquinas | dono (este computador), <nomes> | <AAAA-MM-DD> | c
 e, em `tarefas.md`, uma linha por computador, que se basta sozinha (nesse
 computador o agente abre a pasta-mãe, e o projeto só depois): "no computador
 <nome>, com o SabinOS instalado e o Git configurado: abrir a pasta-mãe no VS Code
-e pedir 'baixa o projeto <pasta> do GitHub' (o agente roda `git clone <endereço do
+ou no app do Claude e pedir 'baixa o projeto <pasta> do GitHub' (o agente roda `git clone <endereço do
 repositório> <pasta>`); antes de abrir o projeto, criar na raiz dele o arquivo
 `.origem` contendo só `<nome>`; acrescentar a linha `<pasta>/` no `.gitignore`
 da pasta-mãe; abrir a pasta do projeto e rodar /syncar uma vez (ele acerta nome e
@@ -954,8 +963,8 @@ qual é o próximo passo ao terminar cada etapa)".
    - **Pendências:** fica vazia (só entra o que espera alguém de fora: fornecedor,
      cliente, contador, plataforma).
 
-   E, no topo do `tarefas.md`, nesta ordem: "Abrir esta pasta no VS Code e rodar
-   /iniciar", o pedido do treino do Passo 2 (quando houve), "/conectar pra ligar as
+   E, no topo do `tarefas.md`, nesta ordem: "Abrir esta pasta no VS Code ou no app do Claude
+   e rodar /iniciar", o pedido do treino do Passo 2 (quando houve), "/conectar pra ligar as
    ferramentas", "/mapear pra criar mais comandos" e, enquanto o projeto não tem
    GitHub ligado (o normal no primeiro dia, com ou sem auto-sync), "/syncar pra ligar
    o backup no GitHub". Essa linha é o lembrete único que a regra 5 do `AGENTS.md` pede.
@@ -968,8 +977,8 @@ qual é o próximo passo ao terminar cada etapa)".
    "igual" e nada é trocado: o que fica é o recibo `.sabinos/instalado.json` e o
    motor guardado, que deixam o `/atualizar-sabinos` saber, na versão seguinte,
    o que veio do SabinOS e o que é da pessoa. A saída do `aplicar` pode trazer
-   a linha que começa com `Historico do app:` (o prazo de 30 dias pro app guardar
-   as conversas neste computador): mostrar essa linha como veio. Se ela disser
+   a linha que começa com `Historico do app:` (o prazo de 30 dias de conversas guardadas
+   neste computador): mostrar essa linha como veio. Se ela disser
    que o arquivo tem JSON quebrado, o arquivo tem um erro de escrita e nada foi
    gravado: dizer isso em uma frase e seguir, sem consertar sozinho.
 5. **Teste de aceite.** Reler do disco, nunca da memória da conversa, o
@@ -1015,8 +1024,12 @@ qual é o próximo passo ao terminar cada etapa)".
    o retrato do que o sistema sabe hoje, tirado agora: a página não se atualiza
    sozinha quando os arquivos mudam.
 7. Mensagem final, ensinando clique a clique, cobrindo Windows e Mac, como abrir a
-   pasta nova no VS Code (menu Arquivo, opção Abrir Pasta, ou arrastar a pasta pro
-   ícone do VS Code). Antes de fechar, dizer que a estrutura de hoje é o começo, com
+   pasta nova (VS Code: menu Arquivo, opção Abrir Pasta, ou arrastar a pasta pro
+   ícone do VS Code; app do Claude: aba Code, seletor de pasta, com o Worktree da
+   linha embaixo da caixa de mensagem desligado). Na fala, só o programa em uso,
+   lido pelo shell (`echo "$CLAUDE_CODE_ENTRYPOINT"` no Bash,
+   `$env:CLAUDE_CODE_ENTRYPOINT` no PowerShell): `claude-vscode`, só o VS Code;
+   começando com `claude-desktop`, só o app; vazio ou outro valor, os dois. Antes de fechar, dizer que a estrutura de hoje é o começo, com
    este texto:
 
    > "Os comandos de hoje cobrem o que mais pesa agora. A estrutura cresce com o

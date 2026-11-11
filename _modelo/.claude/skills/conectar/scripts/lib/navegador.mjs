@@ -15,6 +15,7 @@ import { spawn } from 'node:child_process'
 import { createServer } from 'node:net'
 import { createHash, randomUUID } from 'node:crypto'
 import { RAIZ } from './raiz.mjs'
+import { programa, fraseSair } from './programa.mjs'
 import { codigo as codigoTotp, CONTA } from '../totp.mjs'
 
 // Abaixo das portas efemeras do Windows, do Mac e do Linux (32768 em diante) e longe das portas
@@ -262,8 +263,10 @@ export async function conferirPerfil({ porta, perfil, fetchFn, timeoutMs } = {})
   return { estado: s.porta === porta && s.guid === guid ? 'conferido' : 'outro-na-porta', guid }
 }
 
-// O texto de religar mora so aqui: o log do pulo de porta do abrirChrome usa ele.
-export const RELIGAR = 'ligue o `navegador` de novo com a porta nova (`node .claude/skills/conectar/scripts/ligar-mcp.mjs ligar navegador`, o passo 3 do Degrau 5) e, antes de usar, saia de vez do app do Claude (Windows: ícone perto do relógio, botão direito, Sair; Mac: Cmd+Q) e abra de novo, depois de esperar terminar o que roda nas outras conversas (Gerenciador de Tarefas só se o Sair não fechar), porque o `navegador` que já está rodando só pega a porta nova numa sessão nova'
+// O texto de religar mora so aqui: o log do pulo de porta do abrirChrome usa ele. O sair de vez
+// sai do fraseSair, com o programa desta sessao (5.56); RELIGAR fica pras cascas que reexportam.
+export const religar = (prog = programa()) => `ligue o \`navegador\` de novo com a porta nova (\`node .claude/skills/conectar/scripts/ligar-mcp.mjs ligar navegador\`, o passo 3 do Degrau 5) e, antes de usar, ${fraseSair(prog, 'saia')} O \`navegador\` que já está rodando só pega a porta nova numa sessão nova`
+export const RELIGAR = religar()
 
 // soExistente: so usa perfil que ja existe e nunca pula de porta (a sonda agendada roda assim).
 // headless: tarefa sem a pessoa na frente; o login feito com janela vale sem janela (C1c, volta 4).

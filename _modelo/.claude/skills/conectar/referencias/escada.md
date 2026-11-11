@@ -106,12 +106,13 @@ conferido toda vez.
 
 **Programa do computador**: pra programa instalado que não tem site nem API.
 
-- **O que te deixa fazer:** o app Desktop do Claude opera a tela do programa (clica,
-  lê, digita) com você na frente, olhando.
+- **O que te deixa fazer:** o app do Claude opera a tela do programa (clica, lê,
+  digita) com você na frente, olhando, pelo Computer Use do app. No Windows ele só
+  existe no app, e quem usa o VS Code instala o app só pra isso.
 - **Grátis ou pago:** depende do plano do Claude; o que o plano de hoje cobre se
   confere ao vivo no dia, antes de usar.
-- **Precisa de quê:** o app Desktop do Claude instalado e você na frente do computador
-  durante o uso.
+- **Precisa de quê:** o app do Claude instalado e aberto, o Computer Use ligado nas
+  configurações do app (vem desligado) e você na frente do computador durante o uso.
 - **Hoje ou depois:** quando a tarefa pedir, sempre acompanhada. Robô sozinho operando
   a sua tela fica fora.
 - **Trava:** você vê cada passo e pode parar na hora.
