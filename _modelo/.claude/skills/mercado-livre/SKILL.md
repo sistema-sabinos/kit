@@ -14,7 +14,10 @@ description: >
 
 Esta skill decide a ordem, guarda o estado e para nos gates. Quem faz cada
 trabalho são as especialistas do pacote. Nada gasta dinheiro, publica ou altera
-a conta sem o "pode ir" da pessoa naquele momento.
+a conta sem o "pode ir" da pessoa naquele momento. A exceção é a área
+`anuncio-ml` liberada no `_contexto/autonomia.md` (seção "Anúncio sem
+parar"): ela tira só as paradas que a pessoa escolheu, e pôr o anúncio no ar
+segue sempre com ela.
 
 ## Dependências
 
@@ -206,7 +209,9 @@ pra tocar agora, oferecer continuar o mais avançado.
 2. Pesquisa pendente: despachar `ml-minerador`. Ao voltar, mostrar o recibo.
 3. Espionagem pendente: propor os finalistas (nota 50 ou mais, maior margem
    primeiro), confirmar, despachar `ml-espiao` em lotes de 2 a 3 produtos.
-4. Decisão: rodar `/decidir-anuncio` no chat. Ao aprovar, criar
+4. Decisão: rodar `/decidir-anuncio` no chat. Com a ação `decidir` da área
+   `anuncio-ml` liberada no `_contexto/autonomia.md`, ela aprova o plano pela
+   permissão, mostra o resumo e segue. Ao aprovar, criar
    `dados/pipeline/<slug>/` com `status.json` e `decisao.json` pra cada
    anúncio aprovado, e atualizar o arquivo da categoria.
 5. Seguir o fluxo por produto pra cada slug, na ordem do plano.
@@ -252,11 +257,15 @@ ler `dados/pipeline/<slug>/status.json` e continuar da etapa atual:
    - `zero-ia`: despachar no modo GERAR.
 3. Gate de imagens: abrir a prancha que o `ml-designer` gerou
    (`anuncios/<slug>/imagens/prancha.html`) e esperar 'aprova tudo' ou 'refaz a
-   N'. Reprovou alguma: `ml-designer` no modo REFAZER com o comentário literal.
+   N'. Com a ação `fotos` da área `anuncio-ml` liberada no
+   `_contexto/autonomia.md`, abrir a prancha mesmo assim, dizer que as fotos
+   foram aprovadas pela permissão e seguir; se a pessoa pedir pra refazer
+   alguma, vale o REFAZER abaixo. Reprovou alguma: `ml-designer` no modo REFAZER com o comentário literal.
    Refazer no Gemini é gasto novo: estimativa e "pode ir" de novo, e o
    despacho leva "gasto autorizado" outra vez. No Codex, o aviso e o "pode ir"
    de novo, e o despacho leva "Codex autorizado" outra vez. Aprovou: `ml-designer` no modo
-   ENTREGAR.
+   ENTREGAR, dizendo "aprovado pela pessoa" ou, quando foi pela permissão,
+   "aprovado pela permissão fotos".
 4. Auditoria: despachar `ml-auditor`. Reprovado: despachar a correção pra quem a
    falha aponta e auditar de novo. Aprovado: seguir.
 5. Cadastro e publicação: despachar `ml-publicador`. Com `erp: bling`, ele
@@ -265,8 +274,12 @@ ler `dados/pipeline/<slug>/status.json` e continuar da etapa atual:
    pela pessoa" (ou rodar o `--enviar` da `/cadastrar-bling` nesta conversa).
    Sem ERP, ele monta o anúncio da API (`publicar-ml.mjs --montar`) e
    devolve o resumo: mostrar à pessoa e esperar o "pode ir"; com ele,
-   despachar de novo dizendo "envio autorizado pela pessoa". O anúncio nasce
-   pausado: a pessoa confere no painel, ativa e aplica o
+   despachar de novo dizendo "envio autorizado pela pessoa: <a frase do sim
+   dela>". Com a ação `criar-pausado` da área `anuncio-ml` liberada no
+   `_contexto/autonomia.md`, mostrar o resumo e despachar logo dizendo "envio
+   pela permissão criar-pausado", e avisar com o link que o anúncio foi criado
+   e pausado. O anúncio é criado e pausado na hora, e essa parada fica sempre,
+   com ou sem permissão: a pessoa confere no painel, ativa e aplica o
    desconto (antes de ativar, se a Central deixar), e quando
    ela disser que ativou, rodar o `--conferir`. PLANO B (variação ou
    catálogo): o publicador gera o checklist, a pessoa publica no painel, e
@@ -277,13 +290,40 @@ ler `dados/pipeline/<slug>/status.json` e continuar da etapa atual:
 **`/mercado-livre continuar`**: varrer os `status.json`, achar o produto mais
 perto de publicar sem bloqueio e propor continuar ele.
 
+## Anúncio sem parar
+
+Quando a pessoa pedir pra esteira andar sozinha (ou reclamar das paradas),
+oferecer liberar a área `anuncio-ml` no `_contexto/autonomia.md`. Explicar as
+três ações e deixar ela escolher quais quer:
+
+- `decidir`: a decisão de anúncio (etapa 4) é aprovada pela permissão, e o
+  resumo sai do mesmo jeito.
+- `fotos`: a prancha de imagens é aprovada pela permissão; ela continua
+  abrindo, e a pessoa pode pedir pra refazer qualquer foto.
+- `criar-pausado`: depois do resumo, o anúncio é criado na conta e pausado na
+  hora, e a esteira avisa com o link. Pôr no ar continua sendo ela, no painel.
+
+Nenhuma delas mexe com dinheiro: o gasto com imagem por IA segue a regra de
+custo abaixo. Antes de gravar, passar a escolha pela `/segunda-opiniao` uma
+vez e contar o que ela disse. Com o sim, gravar dentro do bloco `autonomia` do
+`_contexto/autonomia.md` (pela caixinha de confirmar), uma linha por campo:
+`area: anuncio-ml`, `pode: <as ações escolhidas, separadas por vírgula>`,
+`definido_em: <data de hoje>`, `definido_por: <o .origem da raiz, ou dono>` e
+`frase: <o sim dela>`. Mostrar o que entrou. Tirar é só ela dizer: gravar a
+área de novo com `pode:` vazio. Sem resposta clara, fica sem permissão.
+
 ## Regras de orquestração
 
 - Estado primeiro: ler `status.json` antes de despachar. Nunca refazer etapa
   `ok` ou `aprovado` sem a pessoa pedir.
 - Recibo, nunca despejo: repassar só o recibo dos agentes.
-- Gates invioláveis: decisão (etapa 4) e aprovação de imagens nunca são pulados,
-  mesmo que a pessoa diga "roda tudo". Nesses dois pontos, parar e apresentar.
+- Gates: decisão (etapa 4) e aprovação de imagens param e apresentam, mesmo
+  que a pessoa diga "roda tudo". Só ficam fora com a área `anuncio-ml`
+  liberada no `_contexto/autonomia.md`: a ação `decidir` tira a parada da
+  decisão e a ação `fotos` tira a das imagens, e o recibo diz o que foi
+  aprovado pela permissão. A parada antes de publicar fica sempre: com
+  `criar-pausado`, o anúncio é criado e pausado e a esteira avisa com o link;
+  ativar é da pessoa, no painel, com o sim dela.
 - Custo: antes de todo gasto, mesmo pequeno e dentro do teto, mostrar a
   estimativa e esperar o "pode ir" da pessoa naquele momento, fora a permissão
   de gasto do `_contexto/autonomia.md`, em que o script roda sem o
@@ -310,7 +350,9 @@ perto de publicar sem bloqueio e propor continuar ele.
 ## O que esta skill nunca faz
 
 - Publicar, cadastrar, mexer em campanha ou gastar sem o "pode ir" daquele
-  momento
+  momento. A única exceção é criar o anúncio pausado com a ação
+  `criar-pausado` da área `anuncio-ml` no `_contexto/autonomia.md`; ativar,
+  nunca
 - Fazer o trabalho da especialista no lugar dela
 - Guardar número de imposto, margem, depósito ou SKU fora de
   `_contexto/mercado-livre.md`

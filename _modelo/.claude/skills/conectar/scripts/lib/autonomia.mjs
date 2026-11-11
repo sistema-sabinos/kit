@@ -16,7 +16,8 @@
 // - Acoes fechadas: gasto-ia e verba-* = ['gastar']; apagar = ['apagar']; anuncio-ml = decidir, fotos,
 //   criar-pausado; atendimento-ml = responder-pergunta.
 // - Area de dinheiro (gasto-ia, verba-*) com `pode` nao vazio EXIGE `teto` ("valor MOEDA periodo", ex.: 20 USD mes).
-//   gasto-ia aceita so USD (o codigo compara em dolar; o valor em reais vai so na `frase`); verba-* aceita USD ou BRL.
+//   gasto-ia aceita so USD (o codigo compara em dolar; o valor em reais vai so na `frase`); verba-* aceita so BRL
+//   (o cofrinho da verba e em reais; um "10 USD mes" seria lido como R$ 10).
 //   `por_vez` usa a moeda do teto e nao pode passar do teto. `definido_em` e data real AAAA-MM-DD.
 // - Area de nao-dinheiro nao leva teto nem por_vez. trafego e mercado-ads nunca recebem `pode`.
 //
@@ -82,7 +83,7 @@ function validar(reg) {
     const valor = m && numero(m[1])
     const moeda = m && m[2].toUpperCase()
     const periodo = m && m[3].toLowerCase()
-    const moedas = area === 'gasto-ia' ? ['USD'] : MOEDAS_AUTONOMIA
+    const moedas = area === 'gasto-ia' ? ['USD'] : ['BRL']
     if (!m || valor === null || !(valor > 0) || !moedas.includes(moeda) || !PERIODOS_AUTONOMIA.includes(periodo)) {
       return { erro: problema(area, 'teto-invalido', `o teto da area ${area} precisa ser "valor moeda periodo" (ex.: 20 USD mes; moeda ${moedas.join(' ou ')}, periodo ${PERIODOS_AUTONOMIA.join(', ')}), e veio "${reg.teto}"`) }
     }

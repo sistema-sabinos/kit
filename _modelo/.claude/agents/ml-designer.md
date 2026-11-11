@@ -29,8 +29,10 @@ regra do GERAR (aviso, e "pode ir" só com crédito avulso).
 Sem "gasto autorizado" ou "Codex autorizado" neste despacho, refaça no
 `zero-ia` e diga no recibo.
 
-**ENTREGAR (depois da aprovação):** `aprovado_pelo_usuario: true` e cada imagem
-`aprovada: true` em `imagens.json`; atualizar `status.json` (etapa `imagens`
+**ENTREGAR (depois da aprovação):** `aprovado_por: "pessoa"` quando o despacho
+diz "aprovado pela pessoa", ou `aprovado_por: "delegacao:anuncio-ml"` quando
+diz "aprovado pela permissão fotos" (sem uma das duas frases, não entregue e
+diga no recibo), e cada imagem `aprovada: true` em `imagens.json`; atualizar `status.json` (etapa `imagens`
 aprovada, e `etapa_atual: "imagens"`). O envio pro anúncio: na rota API, o
 `--enviar` da `/publicar-marketplace` sobe as imagens sozinho; no Bling e no
 plano B do painel, elas sobem à mão, na ordem do checklist de publicação.

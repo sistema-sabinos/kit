@@ -58,9 +58,9 @@ Projeto de antes da 4.3 com a seção "Decisões recentes" no `agora.md`: cada l
 
 Montar o plano arquivo por arquivo, com as linhas que vão entrar, sem mostrar aqui: ele se mostra uma vez no Passo 5, junto com o resto, e se aplica com um sim. Sessão trivial (uma pergunta, um email avulso) não mexe em nada além da marca de fechamento (Passo 5).
 
-## Passo 3.5: Lição repetida vira regra na skill
+## Passo 3.5: Lição repetida vira regra na skill, ou proposta de soltar
 
-O `licoes.md` registra; este passo é quem fecha o ciclo. Só roda quando esta sessão escreveu linha nova no `licoes.md` (repetição nova só nasce de lição nova): aí ler o arquivo inteiro e, em cada seção, procurar lições que falam do mesmo erro (mesma skill, mesmo tipo de dado, mesma etapa), mesmo com palavras diferentes. Duas ou mais sobre a mesma coisa é sinal de que a regra ainda não chegou onde precisava.
+O `licoes.md` registra; este passo é quem fecha o ciclo. Roda em todo fechamento, com ou sem lição nova nesta sessão: ler o arquivo inteiro e, em cada seção, procurar lições que falam do mesmo erro (mesma skill, mesmo tipo de dado, mesma etapa), mesmo com palavras diferentes. Duas ou mais sobre a mesma coisa é sinal de que a regra ainda não chegou onde precisava.
 
 Pra cada repetição encontrada:
 
@@ -69,7 +69,12 @@ Pra cada repetição encontrada:
 3. Mostrar ao usuário: "essas duas lições de [data] e [data] falam do mesmo erro em `/[skill]`. Proponho gravar dentro dela a regra: '[texto]'. Aplico?"
 4. Com aprovação, gravar e marcar as lições de origem no `licoes.md` com ` → virou regra em /[skill] (AAAA-MM-DD)`, sem apagar a linha.
 
-Só propõe; nunca edita skill sem aprovação. Sem repetição encontrada, não dizer nada sobre este passo.
+O caminho de volta: lição marcada com `[trava X/regra Y]` registra uma vez em que uma trava ou uma regra barrou o que a pessoa queria de fato fazer. Duas lições com a mesma marca (mesma trava e mesma regra), ainda sem a marca ` → proposta de soltar`, viram proposta de soltar:
+
+1. **Regra de texto** (o que o `AGENTS.md`, uma skill ou o `preferencias.md` mandam a IA fazer): mostrar "essas duas lições de [data] e [data] dizem que a regra Y barrou o que você queria fazer. Proponho afrouxar a regra assim: '[texto novo]'. Aplico?" Com o sim, gravar no arquivo dono e marcar as duas lições com ` → proposta de soltar, gravada em [arquivo] (AAAA-MM-DD)`.
+2. **Trava de código** (hook ou script do sistema, a que avisa "Barrada pela trava X, regra Y"): essa não se mexe aqui, porque a próxima atualização do sistema traria a trava de volta. Montar o recado pro canal do curso, pronto pra pessoa colar: a trava, a regra, as duas datas e o que ela queria fazer, sem chave, senha nem dado de cliente. Quem manda é a pessoa; a IA nunca envia. Com o sim, marcar as duas lições com ` → proposta de soltar, recado pro curso (AAAA-MM-DD)`.
+
+Só propõe; nunca edita skill nem regra sem aprovação. Sem repetição nem proposta de soltar, não dizer nada sobre este passo.
 
 ## Passo 3.6: Memória cheia, consolidar antes de escrever
 
@@ -104,7 +109,7 @@ Se tudo em dia: "Tudo atualizado. Os arquivos refletem o estado real."
 
 ## Passo 5: Aplicar (com aprovação)
 
-Mostrar cada mudança proposta (incluindo o plano do Passo 3, as regras do Passo 3.5 e a diferença da ponte do Codex) e perguntar se aplica. Se sim, fazer a segunda leitura do Passo 2, aplicar todas de uma vez, gravar a marca de fechamento por último (no diário de hoje e no de cada dia anterior desta sessão que ainda não termina na marca) e resumir. Se o usuário quiser aprovar uma a uma, respeitar. Fora da sessão trivial, sem o sim nada se grava, nem a marca.
+Mostrar cada mudança proposta (incluindo o plano do Passo 3, as regras e as propostas de soltar do Passo 3.5 e a diferença da ponte do Codex) e perguntar se aplica. Se sim, fazer a segunda leitura do Passo 2, aplicar todas de uma vez, gravar a marca de fechamento por último (no diário de hoje e no de cada dia anterior desta sessão que ainda não termina na marca) e resumir. Se o usuário quiser aprovar uma a uma, respeitar. Fora da sessão trivial, sem o sim nada se grava, nem a marca.
 
 Sessão trivial, sem nada a mudar: dizer "nada a gravar", sem pergunta. Se o diário de hoje teve qualquer linha, gravar a marca de fechamento no fim dele assim mesmo, e também no fim do diário de cada dia anterior desta sessão que ainda não termina na marca: ela muda só o fechamento, então dispensa o sim, e sem ela o aviso da próxima conversa sairia à toa.
 

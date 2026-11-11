@@ -171,12 +171,16 @@ no Mercado Livre) e margem projetada, com a mesma conta da seção 2.
 
 Quantos individuais e kits, margem média, as 3 primeiras prioridades. A pessoa
 aprova, ajusta ou corta item por item; sem aprovação explícita nada avança.
+A exceção é a ação `decidir` da área `anuncio-ml` liberada no
+`_contexto/autonomia.md`: aí o plano fica aprovado pela permissão, o resumo
+sai do mesmo jeito, e a pessoa pode cortar ou ajustar depois.
 
 Ao aprovar, pra cada anúncio aprovado:
 
 1. Criar `dados/pipeline/<slug>/decisao.json` (contrato 3 do `contratos.md`,
    com `aprovado: true` e a data) e `status.json` (contrato 2, `etapa_atual:
-   "decidido"`, etapa `decisao` com `aprovado`), copiando o nome do produto
+   "decidido"`, etapa `decisao` com `aprovado` e `aprovado_por`: `pessoa`, ou
+   `delegacao:anuncio-ml` quando foi pela permissão), copiando o nome do produto
    letra por letra do `catalogo-analisado.csv` e as variações da coluna
    `variacoes`. Slug: minúsculas, sem acento, hífen no lugar de espaço.
    Perguntar a marca que está na embalagem e gravar em `marca`, também em

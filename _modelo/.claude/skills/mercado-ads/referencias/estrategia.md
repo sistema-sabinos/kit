@@ -25,7 +25,8 @@
   produto mais apertado da campanha.
 - `janela_minima_dias` (7): o algoritmo aprende por alguns dias depois de
   cada ajuste; antes disso nada se julga.
-- `gasto_min_sem_conversao` (R$ 30): gastou isso sem vender, pausa.
+- `gasto_min_sem_conversao` (R$ 30): gastou isso sem vender, a
+  recomendação é pausar, e quem pausa é a pessoa, no painel.
 - `orcamento_diario_max`: teto por campanha, pra operação que não tem gente
   olhando o dia inteiro.
 - `uso_min_escalar` (70%): só vale subir verba de quem já gasta quase tudo o
@@ -44,6 +45,7 @@ margem: o teto desce junto.
   corta verba; se gasta pouco, a alavanca é o ROAS objetivo (subir ROAS é
   baixar o ACOS aceito).
 - **Pausar**: gastou o limite sem nenhuma venda, mesmo dentro da janela mínima.
+  Quem pausa é a pessoa, no painel.
 - **Manter**: ACOS entre alvo e teto. Observa.
 - **Aprender**: menos dias de dado que a janela mínima.
 

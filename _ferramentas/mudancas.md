@@ -938,3 +938,27 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o `.claude/skills/conectar/scripts/lib/navegador.mjs` do projeto não tem o texto `fraseSair`, ou a cópia dele que o motor guardou nesta atualização (`.sabinos/antes-<versão nova>-*/arquivos/.claude/skills/conectar/scripts/lib/navegador.mjs`) existe e não tem esse texto. O motor troca o arquivo no Passo 4, antes desta lista, então é a cópia guardada que mostra que a mudança é nova pra pessoa; sem a cópia, o arquivo não mudou nesta atualização e a entrada não afeta por ela.
 **Como aplicar:** nada no projeto: contar à pessoa a frase do "O que é", com essas palavras, uma vez só na conversa (atualizando vários projetos de uma vez, só no primeiro). Se ela ficou com a versão dela do `navegador.mjs` no Passo 3 ("fica a sua"), contar também que o aviso de religar o navegador segue falando só do VS Code até ela aceitar a versão nova.
 **Como testar:** `grep -l fraseSair .claude/skills/conectar/scripts/lib/navegador.mjs` imprime o caminho. Se a pessoa ficou com a versão dela, não imprime, e ela ouviu que o aviso do navegador segue o de antes.
+
+## gate-anuncio-e-pergunta-ml
+
+**O que é:** a regra **Gate humano.** ganha duas ações no Mercado Livre que a permissão escrita do `_contexto/autonomia.md` pode cobrir: criar o anúncio já pausado (área `anuncio-ml`, ação `criar-pausado`) e responder a pergunta do comprador pelo `responder-ml.mjs` (área `atendimento-ml`, ação `responder-pergunta`). Sem essa permissão, nada muda: o anúncio espera o seu sim e a resposta fica de rascunho pra você mandar.
+**Por quê:** a regra antiga só tinha o gasto como exceção, e a IA ia perguntar de novo mesmo com a permissão dada por você.
+**Te afeta se:** a regra com o título **Gate humano.** do `AGENTS.md` do projeto não tem o texto `responder-ml.mjs`.
+**Como aplicar:** achar a regra pelo título **Gate humano.** e, na frase que começa com "Exceções:", acrescentar logo depois do parêntese do script o trecho do `_modelo/AGENTS.md` do kit ", anúncio do ML criado pausado e resposta do ML pelo `responder-ml.mjs`, na mesma permissão", sem tirar o que a pessoa escreveu e sem mudar o número. Se a regra ainda não tem a frase "Exceções:", aplicar antes a entrada `permissao-por-area`. Mostrar o antes e o depois e gravar com o sim.
+**Como testar:** a regra **Gate humano.** do `AGENTS.md` contém `responder-ml.mjs` uma vez.
+
+## segunda-opiniao-risco-alto
+
+**O que é:** a `/segunda-opiniao` passa a entrar sozinha só no que é de risco alto (o que não tem volta, gasto fora da permissão, publicar, mandar pra fora), uma vez quando nasce uma permissão nova no `_contexto/autonomia.md`, e quando você pede. O que tem volta segue sem revisão.
+**Por quê:** cada revisão demora e gasta do seu plano, e a linha antiga mandava revisar até o que se desfaz fácil.
+**Te afeta se:** a linha da seção Gatilhos do `AGENTS.md` do projeto que cita `/segunda-opiniao` não tem o texto `risco alto`.
+**Como aplicar:** achar na seção Gatilhos a linha que cita `/segunda-opiniao` e trocar ela pela linha do `_modelo/AGENTS.md` do kit que começa com "- vai pedir o ok de algo de risco alto". Mostrar o antes e o depois e gravar com o sim.
+**Como testar:** a linha de Gatilhos que cita `/segunda-opiniao` tem `risco alto` e `permissão nova`, e `grep -c "apaga ou muda estrutura" AGENTS.md` dá 0.
+
+## marca-da-barrada
+
+**O que é:** quando uma trava ou uma regra barra o que você queria de fato fazer, a IA anota uma lição com a marca `[trava X/regra Y]`. Com duas lições da mesma marca, o `/atualizar` propõe soltar a trava ou a regra, e quem decide é você. Entra uma frase na regra **Loop de lições.** e uma na regra **Travas.**.
+**Por quê:** sem a marca, a trava que atrapalha o uso de verdade nunca chega à proposta de soltar do `/atualizar`.
+**Te afeta se:** o `AGENTS.md` do projeto não tem o texto `[trava X/regra Y]`.
+**Como aplicar:** achar a regra pelo título **Loop de lições.** e acrescentar no fim a frase do `_modelo/AGENTS.md` do kit que começa com "Barrada de uso legítimo"; achar a regra pelo título **Travas.** e acrescentar no fim a frase que começa com "Uso legítimo barrado". Sem tirar o que a pessoa escreveu e sem mudar número. Mostrar o antes e o depois e gravar com o sim.
+**Como testar:** o texto `[trava X/regra Y]` aparece duas vezes no `AGENTS.md`, uma na regra **Loop de lições.** e uma na regra **Travas.**.

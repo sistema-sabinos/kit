@@ -17,9 +17,9 @@ description: >
 Lê as campanhas de Product Ads pela API, aplica as regras de
 `referencias/estrategia.md` e diz, por campanha, o que fazer. Cruza com a ata
 de decisões (`dados/decisoes.jsonl`) pra não recomendar hoje o que a pessoa
-decidiu ontem, e cobra quando o combinado vence ou fura. Não mexe em nada: a
-execução é sempre no painel, com a pessoa, por decisão do projeto (gate
-humano). Se a escrita de campanha também exige selo de parceiro certificado,
+decidiu ontem, e cobra quando o combinado vence ou fura. Só recomenda: cada
+ajuste a pessoa aprova e faz ela mesma, no painel do Mercado Ads, e nenhum
+modo, preferência ou permissão do `_contexto/autonomia.md` muda isso. Se a escrita de campanha também exige selo de parceiro certificado,
 não deu pra confirmar em 2026-09-24 (sem painel logado); conferir na fumaça
 do plano D.
 
@@ -72,16 +72,20 @@ Grava `dados/ads/snapshots/<data>.json` e `relatorios/ads-<data>.md`.
 Traduzir no chat em linguagem direta: o que está bom, o que está queimando
 dinheiro, e a fila do que fazer, uma linha por campanha. Campanha com menos de
 7 dias de dado está aprendendo e não se julga, a não ser que já tenha gastado
-o limite sem vender: essa pausa na hora.
+o limite sem vender: essa vai pro topo da fila como pausa, e quem pausa é a
+pessoa, no painel.
 
 ### Executar uma ação
 
 Cofrinho da verba: se o `_contexto/autonomia.md` tem a área `verba-ml-ads`, o valor dela,
 em reais, é o teto do que a fila pode propor de verba nova no Mercado Ads; recomendação
 que passa dele sai da fila, com o motivo. O cofrinho nunca solta nada sozinho: cada ação
-segue pedindo o sim da pessoa.
+segue pedindo o sim da pessoa. Freio a mais, no próprio Mercado Ads (conferido em
+2026-11-10): o orçamento médio diário de cada campanha; teto da conta inteira não
+foi achado.
 
-Uma por vez, com o "pode ir": dizer exatamente o que clicar no painel do
+A fila sai numerada e a pessoa diz quais números aprova; o que ela não marcou
+não entra. Um por vez, dos aprovados: dizer exatamente o que clicar no painel do
 Mercado Ads (campanha, campo, valor antigo, valor novo). O painel fala em ROAS
 objetivo: ROAS é 1 dividido pelo ACOS (ACOS 12% é ROAS 8,3). Editar orçamento
 só funciona com a campanha ativa. Quando a pessoa confirmar que fez, gravar a

@@ -40,10 +40,13 @@ Os blocos:
 | 2 | Instaladores órfãos do `C:\Windows\Installer` → **quarentena** em outro disco | baixo, é movido e reversível |
 | 3 | Sobras de programa antigo e jogo, **item por item**, só o que o raio-X achou | baixo, mas sem volta: confirmar cada um |
 | 4 | DISM no WinSxS | zero, mas perde a opção de desinstalar atualização antiga do Windows |
-| 5 | Atualizar apps (winget) + Windows Update | baixo |
+| 5 | Atualizar apps (winget) | baixo |
+| Windows Update | Atualizações do Windows | baixo, mas pode pedir pra reiniciar o PC |
 | 6 | Tirar programa da inicialização | zero, reversível no Gerenciador de Tarefas |
 
 A lixeira se pergunta à parte, com o tamanho que o raio-X mediu.
+
+O bloco 5 fica fora da pergunta e vai com aviso: atualizar programa é atualizar ferramenta, e a pessoa confirma no UAC que abre na tela dela. O Windows Update se pergunta à parte, sempre, porque pode pedir pra reiniciar o PC no meio do trabalho.
 
 Bloco 3 aprovado: uma segunda pergunta com multi-select por item, só com os ids que o raio-X mostrou, cada um com o tamanho e o que é. `android` leva o aviso 'apaga a chave de teste e os emuladores do Android, sem volta'. Mais de 4 itens: dividir em perguntas de até 4 opções.
 
@@ -59,7 +62,8 @@ Bloco 3 aprovado: uma segunda pergunta com multi-select por item, só com os ids
 # blocos 2, 4 e 5 precisam de admin e disparam o UAC: nunca chamar direto daqui.
 # Use o comando de admin logo abaixo, trocando o nome do script:
 # bloco 2 quarentena-installer.ps1, bloco 4 dism.ps1 (10 a 20 min, trava a máquina
-# em rajadas), bloco 5 atualizar-apps.ps1
+# em rajadas), bloco 5 atualizar-apps.ps1 com "-Parte","apps" no fim da lista;
+# Windows Update, só se aprovado à parte: atualizar-apps.ps1 com "-Parte","windows"
 ```
 
 Os que precisam de admin devem ser disparados assim, e **avisar o usuário pra aprovar o UAC na tela dele**:

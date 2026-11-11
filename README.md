@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 5.45 (2026-11-10)
+Versão 5.46 (2026-11-11)
 
 Um sistema de trabalho com IA pro seu negócio, rodando no Claude Code, pelo VS Code ou pelo app do Claude.
 
@@ -49,7 +49,7 @@ Todo o passo a passo de leigo está no [COMECE-AQUI.md](COMECE-AQUI.md): abrir a
 
 Dentro de cada projeto criado, outro conjunto de comandos entra em ação (`/iniciar`, `/conectar`, `/mapear`, `/atualizar`, `/checar` e mais), explicados no PDF `Guia-SabinOS-Comandos`, que veio junto com este zip (ele fica fora da pasta); dentro do projeto, digite `/` pra ver a lista.
 
-O projeto guarda o que foi feito e por quê em `_memoria/` (diário, decisões e recados dos robôs), e vem com `/faxina` (confere uma vez por mês se a memória envelheceu e só mexe com o seu sim), `/compartilhar` (manda a pasta de um cliente ou sócio pro GitHub dela, sem senha e sem o resto do projeto) e `/segunda-opiniao` (um revisor que não viu a conversa confere a proposta antes de você aprovar gasto, publicação, envio pra fora ou mudança de pasta, ou quando você pede).
+O projeto guarda o que foi feito e por quê em `_memoria/` (diário, decisões e recados dos robôs), e vem com `/faxina` (confere uma vez por mês se a memória envelheceu e só mexe com o seu sim), `/compartilhar` (manda a pasta de um cliente ou sócio pro GitHub dela, sem senha e sem o resto do projeto) e `/segunda-opiniao` (um revisor que não viu a conversa confere a proposta antes de você aprovar o que pesa: o que não tem volta, gasto fora do que você liberou, publicação e envio pra fora; entra também uma vez quando você libera algo novo por escrito, e quando você pede).
 
 A marca tem duas metades em `marca/`: o visual e a voz com que o sistema escreve pro seu cliente, separada do jeito que ele fala com você. O backup automático segura arquivo com cara de senha ou grande demais, manda o resto e deixa um recado dizendo o que ficou.
 
@@ -59,7 +59,7 @@ Quem edita ou posta vídeo em pé (Shorts, Reels, TikTok) ganha, se quiser, o pa
 
 Quem posta em rede social ganha, se quiser, o pacote de redes sociais (`/midia-social`), com ou sem marketplace: faz a pauta da semana, agenda no Instagram, TikTok e YouTube pelo Buffer e mede o resultado, grátis (análise pelo Gemini opcional). O `/setup` oferece quando suas respostas falam em Instagram, TikTok, YouTube, post ou vídeo.
 
-Quem vende direto pro cliente (encomenda, WhatsApp, Instagram, Pix) ganha, se quiser, o pacote de loja: `/atendimento` responde as mensagens com o preço e o prazo da sua tabela, conferidos antes de chegar em você (o Claude rascunha, você manda); `/caixa` anota pedido e sinal, mostra quem está devendo e fecha o mês; `/cobrar` rascunha a cobrança no seu tom. Pra quem é MEI, o `/mei` avisa do DAS de todo dia 20, da declaração anual até 31 de maio e do faturamento perto do teto, somando o total que você anota das vendas de fora do `/caixa` (Mercado Livre, Shopee), com os valores conferidos em fonte oficial. Tudo grátis. O `/setup` oferece quando suas respostas falam em venda direta, e pergunta se o negócio tem CNPJ antes de instalar o `/mei`. Ao MEI que vende só em marketplace, ele oferece o `/mei` também, que traz junto os scripts do caixa.
+Quem vende direto pro cliente (encomenda, WhatsApp, Instagram, Pix) ganha, se quiser, o pacote de loja: `/atendimento` responde as mensagens com o preço e o prazo da sua tabela, conferidos antes de chegar em você (o Claude rascunha, você manda); `/caixa` anota pedido e sinal, mostra quem está devendo e fecha o mês; `/cobrar` rascunha a cobrança no seu tom. Pra quem é MEI, o `/mei` avisa do DAS de todo dia 20, da declaração anual até 31 de maio e do faturamento perto do teto, somando o total que você anota das vendas de fora do `/caixa` (Mercado Livre, Shopee), com os valores conferidos em fonte oficial. Tudo grátis. O `/setup` oferece quando suas respostas falam em venda direta, e pergunta se o negócio tem CNPJ antes de instalar o `/mei`. Ao MEI que vende só em marketplace, ele oferece o `/mei` também, que traz junto os scripts do caixa. Com o pacote de marketplace, o `/atendimento` responde também as perguntas dos compradores do Mercado Livre só com o que está no anúncio: o aplicativo do Mercado Livre precisa da permissão de perguntas (Comunicação pré e pós-venda, ligada pelo `/conectar`), e a resposta só vai sozinha se você liberar; sem isso, ela fica pronta pra você mandar no painel.
 
 Todo projeto vem com a `/ler-avaliacoes`, que lê as avaliações reais dos clientes de um concorrente e ranqueia o que eles mais reclamam e pedem, com a frase de cada um. E quem quer criar um app ou sistema próprio pra vender ganha, se quiser, o pacote criar app: dez comandos, de `/app-estudar` a `/app-publicar`, mais a `/ler-avaliacoes` como etapa 2: onze etapas, do estudo de um app que já existe até o seu no ar com marca própria. Montar é grátis, mas gasta bastante do seu plano Claude; domínio, hospedagem paga, conta nas lojas de celular e taxa do INPI aparecem antes, com o valor, e só andam com o seu ok. O `/setup` oferece quando suas respostas falam em app, sistema ou SaaS.
 

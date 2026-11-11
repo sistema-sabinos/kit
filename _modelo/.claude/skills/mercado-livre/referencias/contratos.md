@@ -102,7 +102,7 @@ anúncios do topo.
   "categoria": "doces",
   "etapa_atual": "copy",
   "etapas": {
-    "decisao":    { "status": "aprovado", "em": "2026-09-23", "aprovado_por": "usuario" },
+    "decisao":    { "status": "aprovado", "em": "2026-09-23", "aprovado_por": "pessoa" },
     "copy":       { "status": "ok", "em": "2026-09-23", "arquivo": "anuncios/kit-5-suspiros/copy.md" },
     "imagens":    { "status": "pendente" },
     "auditoria":  { "status": "pendente" },
@@ -117,6 +117,8 @@ anúncios do topo.
 `etapa_atual`: `decidido`, `copy`, `imagens`, `auditado`, `cadastrado` ou
 `publicado`. O anúncio que a API cria pausado não muda o `etapa_atual` até a
 pessoa ativar: o `pausado` fica em `etapas.publicacao.status` (contrato 7).
+`aprovado_por` diz quem aprovou a decisão: `pessoa`, ou `delegacao:anuncio-ml`
+quando foi pela ação `decidir` da área `anuncio-ml` do `_contexto/autonomia.md`.
 `pendencias` não travam; `bloqueios` travam, e o agente para e avisa.
 
 ## 3. `<slug>/decisao.json` (a etapa 4, escrita no chat com a pessoa)
@@ -190,7 +192,7 @@ fornecedor ou da contadora; sem dado, `null` e pendência.
     { "n": 2, "arquivo": "anuncios/kit-5-suspiros/imagens/02-sabores.jpg", "papel": "infografico", "motor": "zero-ia", "aprovada": true }
   ],
   "custo_usd_total": 0,
-  "aprovado_pelo_usuario": true,
+  "aprovado_por": "pessoa",
   "em": "2026-09-23"
 }
 ```
@@ -199,6 +201,12 @@ fornecedor ou da contadora; sem dado, `null` e pendência.
 `codex` ou `gemini` (cenário por IA com o produto real por cima) ou `zero-ia`
 (fundo liso). Peça com texto herda o motor da foto de base. A prancha de
 aprovação (`anuncios/<slug>/imagens/prancha.html`) sai deste arquivo.
+
+`aprovado_por` diz quem aprovou a prancha: `null` antes da aprovação,
+`pessoa`, ou `delegacao:anuncio-ml` quando foi pela ação `fotos` da área
+`anuncio-ml` do `_contexto/autonomia.md`. Nesse último caso o `--montar` e o
+`--enviar` da publicação só aceitam se a ação `fotos` ainda vale na hora. Arquivo antigo, sem
+`aprovado_por`, vale pelo `aprovado_pelo_usuario: true`.
 
 As imagens ficam no computador. Na rota API (o padrão sem ERP), o `--enviar`
 da `/publicar-marketplace` sobe as imagens sozinho; no Bling e no plano B do
@@ -250,11 +258,14 @@ Sem ERP, `erp` fica `null`. `anuncio_id` é o código que o Mercado Livre dá ao
 anúncio: na rota API o script grava na hora; no checklist, a pessoa informa
 depois de publicar.
 
-Canal publicado pela API ganha quatro campos: `via: "api"`, `estado`
+Canal publicado pela API ganha cinco campos: `via: "api"`, `estado`
 (`pausado`, `ativo`, `fechado`, `em revisao`, `ainda nao ativo`, `inativo` ou
 `pagamento pendente`; status que o script não conhece vai cru, do jeito que a
-conta mostra, e vazio vira `desconhecido`), `link` e `descricao` (`ok`, ou `pendente` quando a descrição não gravou e o
-próximo `--enviar` só grava ela). Na etapa `publicacao` do `status.json`, o
+conta mostra, e vazio vira `desconhecido`), `link`, `descricao` (`ok`, ou `pendente` quando a descrição não gravou e o
+próximo `--enviar` só grava ela) e `autorizacao`, quem liberou a criação:
+`{ "via": "sim", "frase": "<o sim da pessoa>" }`, ou `{ "via": "permissao",
+"area": "anuncio-ml", "definido_em": "<data>" }` quando foi pela ação
+`criar-pausado` do `_contexto/autonomia.md`. Na etapa `publicacao` do `status.json`, o
 status fica `pausado` até a pessoa ativar; o `--conferir` troca pra `ok` e
 põe `etapa_atual: "publicado"`.
 

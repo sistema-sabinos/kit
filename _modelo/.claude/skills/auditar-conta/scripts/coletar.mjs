@@ -34,10 +34,11 @@ export async function idsDaConta(uid, get) {
   return ids
 }
 
-export async function itensDaConta(ids, get, dormir = esperar) {
+// campos: a ficha do atendimento (ficha-ml.mjs) pede tambem last_updated e sale_terms, sem mudar o CAMPOS da auditoria
+export async function itensDaConta(ids, get, dormir = esperar, campos = CAMPOS) {
   const itens = []
   for (const grupo of pedacos(ids, 20)) {
-    for (const r of await get(`/items?ids=${grupo.join(',')}&attributes=${CAMPOS}`)) if (r.code === 200 && r.body) itens.push(r.body)
+    for (const r of await get(`/items?ids=${grupo.join(',')}&attributes=${campos}`)) if (r.code === 200 && r.body) itens.push(r.body)
     await dormir(250)
   }
   return itens

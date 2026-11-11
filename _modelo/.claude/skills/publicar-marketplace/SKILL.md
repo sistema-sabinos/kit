@@ -2,7 +2,8 @@
 name: publicar-marketplace
 description: >
   Publica um anúncio auditado no Mercado Livre. Sem ERP, cria o anúncio direto
-  pela API do Mercado Livre, já pausado, depois do "pode ir" da pessoa, e ela
+  pela API do Mercado Livre e pausa na hora, depois do "pode ir" da pessoa
+  (ou pela permissão criar-pausado que ela deu), e ela
   confere no painel e ativa; com Bling, ou quando o produto tem variação ou é
   de catálogo, monta o checklist com todos os valores prontos pra colar. É a
   etapa 7 da esteira, e só roda com auditoria aprovada. Use quando o usuário
@@ -17,8 +18,10 @@ description: >
 
 Leva o anúncio auditado até o Mercado Livre. Sem ERP, o caminho padrão é a
 API: o script monta o anúncio, o Mercado Livre confere antes (a validação dele
-não cria nada), a pessoa lê o resumo e diz "pode ir", e o anúncio nasce
-PAUSADO. Quem põe no ar é a pessoa, no painel, depois de conferir, e ela aplica o
+não cria nada), a pessoa lê o resumo e diz "pode ir", e o anúncio é criado e
+PAUSADO na hora. Com a ação `criar-pausado` da área `anuncio-ml` liberada no
+`_contexto/autonomia.md`, a pessoa lê o resumo e o anúncio é criado e pausado
+sem esperar o sim, e a skill avisa com o link. Quem põe no ar é a pessoa, no painel, depois de conferir, e ela aplica o
 desconto antes de ativar se a Central de Promoções deixar: publicar continua
 sendo ação dela. Com Bling, e no plano B da API,
 a skill entrega o roteiro completo, cada campo com o valor pronto, na ordem da
@@ -33,7 +36,9 @@ parar e dizer o que falta. Não existe exceção.
 ## Dependências
 
 - `dados/pipeline/<slug>/`: `copy.json` (título, descrição, ficha, preços,
-  mapa de fotos), `imagens.json` (`aprovado_pelo_usuario: true`),
+  mapa de fotos), `imagens.json` (`aprovado_por` `pessoa`, ou
+  `delegacao:anuncio-ml` com a ação `fotos` ainda valendo no
+  `_contexto/autonomia.md`),
   `auditoria.json`, `status.json`, e `publicacao.json` com o bloco `erp` quando
   a `/cadastrar-bling` já rodou
 - `anuncios/<slug>/imagens/`: os arquivos, na ordem do mapa
@@ -86,17 +91,22 @@ Os comandos rodam da raiz do projeto.
      foi enviado.
    - Código 2: PLANO B. Seguir pelo checklist do painel (seção "Fluxo").
 3. Com o "pode ir":
-   `node .claude/skills/publicar-marketplace/scripts/publicar-ml.mjs --enviar <slug>`.
-   Ele sobe as imagens, cria o anúncio pausado, grava a descrição, lê de
+   `node .claude/skills/publicar-marketplace/scripts/publicar-ml.mjs --enviar <slug> --sim "<a frase do sim dela>"`.
+   Com a ação `criar-pausado` da área `anuncio-ml` liberada no
+   `_contexto/autonomia.md`, o mesmo comando sem o `--sim`, logo depois de
+   mostrar o resumo; sem a permissão valendo, o script recusa e nada é
+   enviado. Ele sobe as imagens, cria o anúncio pausado, grava a descrição, lê de
    volta pra conferir, grava `publicacao.json` e `status.json` e imprime o
    link. Repassar à pessoa o link e cada aviso. Aviso com ATENCAO quer dizer
    anúncio ATIVO que ela ainda não conferiu: pedir que pause no painel agora.
    Se o `--enviar` disser que o Mercado Livre recusou na validação e nada foi
-   criado, resolver o que ele lista, montar de novo e pedir outro "pode ir".
+   criado, resolver o que ele lista, montar de novo e pedir outro "pode ir"
+   (com `criar-pausado`, mostrar o resumo novo e rodar de novo).
    Primeira vez nessa conta: se o anúncio sair "em revisao", "inativo" ou
    "ainda nao ativo", não ativar nada e mostrar o recibo.
 4. Se o `--enviar` disser que a copy ou as imagens mudaram depois do resumo,
    montar de novo e pedir outro "pode ir": o anterior valeu pro que ela leu.
+   Com `criar-pausado`, montar de novo, mostrar o resumo novo e rodar de novo.
 5. Se a resposta do Mercado Livre não chegar (queda de internet, ou erro 5xx
    do lado dele), nunca criar o anúncio no painel nem mandar a pessoa criar:
    rodar o `--enviar` de novo, que ele procura na conta se o anúncio chegou
@@ -228,7 +238,9 @@ entra mudança de foco, se a pessoa decidir uma. Conferir por API que o anúncio
 - Um anúncio por produto; segundo posicionamento é produto ou kit novo.
 - Publicar, aplicar promoção e entrar em campanha são ações da pessoa, com o
   "pode ir" daquele momento. Na rota API, o `--enviar` só roda depois do
-  "pode ir" sobre o resumo, e o anúncio nasce pausado: quem ativa é ela.
+  "pode ir" sobre o resumo, ou com a ação `criar-pausado` da área
+  `anuncio-ml` liberada no `_contexto/autonomia.md`, e o anúncio é criado e
+  pausado na hora: quem ativa é ela, sempre.
 - Escrita na API nunca se repete no escuro: resposta que não chegou se
   resolve rodando o `--enviar` de novo, que procura antes de criar.
 - Toda regra de plataforma citada aqui leva data e se confere ao vivo antes

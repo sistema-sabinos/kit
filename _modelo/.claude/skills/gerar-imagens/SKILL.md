@@ -6,7 +6,9 @@ description: Faz imagens pelo melhor motor que você tiver (Codex, Gemini ou nen
 # /gerar-imagens
 
 Você faz as imagens do anúncio. A pessoa só olha a prancha e responde
-"aprova tudo" ou "refaz a 3: mais clara".
+"aprova tudo" ou "refaz a 3: mais clara". Com a ação `fotos` da área
+`anuncio-ml` liberada no `_contexto/autonomia.md`, a prancha é aprovada pela
+permissão e a pessoa ainda pode pedir pra refazer.
 
 Pedido de cenário de fundo pra vídeo não segue o roteiro do anúncio abaixo
 (não tem `copy.json`, estilo nem foto de produto): siga o item "Imagem por IA"
@@ -141,7 +143,7 @@ Abrir cada imagem (Read) e conferir, refazendo sozinho o que falhar:
 ## Prancha e aprovação
 
 1. Gravar `dados/pipeline/<slug>/imagens.json` (contrato 5, com `motor` em cada
-   imagem e `aprovado_pelo_usuario: false`). Peça com texto herda o motor da
+   imagem e `aprovado_por: null`). Peça com texto herda o motor da
    foto de base.
 2. `node .claude/skills/gerar-imagens/scripts/prancha.mjs --imagens dados/pipeline/<slug>/imagens.json`
 3. Abrir a prancha pra pessoa: no Windows `node -e "require('child_process').spawn('cmd',['/c','start','',process.argv[1]],{detached:true,stdio:'ignore'}).unref()" "<caminho>"` (pelo Node porque o `cmd /c` direto no terminal Git Bash não faz nada), no Mac
@@ -151,8 +153,11 @@ Abrir cada imagem (Read) e conferir, refazendo sozinho o que falhar:
    novo. Nunca refazer o conjunto por causa de uma. Refazer no Gemini ou no
    Codex é gasto novo: estimativa (ou o aviso do Codex) e "pode ir" de novo
    antes (no `ml-designer`, vindos no despacho).
-5. Aprovou: `aprovado_pelo_usuario: true`, cada imagem `aprovada: true`, e a
-   esteira segue pra auditoria.
+5. Aprovou: `aprovado_por: "pessoa"`, cada imagem `aprovada: true`, e a
+   esteira segue pra auditoria. Com a ação `fotos` da área `anuncio-ml`
+   liberada no `_contexto/autonomia.md`, abrir a prancha do mesmo jeito,
+   dizer que as fotos foram aprovadas pela permissão e gravar
+   `aprovado_por: "delegacao:anuncio-ml"`; sem ela, esperar a resposta.
 
 ## Custo
 

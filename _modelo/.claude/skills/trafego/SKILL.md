@@ -124,11 +124,11 @@ A estrutura do teste (quantas campanhas, quantos conjuntos de anúncio e quantos
 
 ## O gate
 
-Propor a lista e esperar o "pode ir". Nenhuma pausa, nenhuma mudança de verba e nenhuma campanha nova acontece antes disso, e aprovação de ontem não vale pra rodada de hoje.
+Propor a lista numerada, um item por linha, e pedir um sim por item: a pessoa diz quais números aprova (por exemplo, "1 e 3"), e o item que ela não marcou não roda. Nenhuma pausa, nenhuma mudança de verba e nenhuma campanha nova acontece antes desse sim, e aprovação de ontem não vale pra rodada de hoje. Nenhum modo, nenhuma preferência de "só faz" e nenhuma permissão do `_contexto/autonomia.md` dispensa o sim de cada item.
 
-Cofrinho da verba: se o `_contexto/autonomia.md` tem a área `verba-meta` (Facebook e Instagram) ou `verba-google`, o valor dela, em reais, é o teto do que a lista pode propor de verba nova naquela plataforma. Proposta que passa do cofrinho sai da lista, com o motivo. O cofrinho nunca solta nada sozinho: cada item da lista segue pedindo o sim da pessoa.
+Cofrinho da verba: se o `_contexto/autonomia.md` tem a área `verba-meta` (Facebook e Instagram) ou `verba-google`, o valor dela, em reais, é o teto do que a lista pode propor de verba nova naquela plataforma. Proposta que passa do cofrinho sai da lista, com o motivo. O cofrinho nunca solta nada sozinho: cada item da lista segue pedindo o sim da pessoa. Freio a mais, na própria plataforma (conferido em 2026-11-10): no Meta, o limite de gastos da conta, que soma o gasto e pausa os anúncios quando bate, e não existe na conta de pagamento manual; no Google, o orçamento diário de cada campanha, que num dia pode chegar ao dobro.
 
-Com o "pode ir" dado, aplicar pelo MCP um por um, dizendo o que fez a cada passo, e registrar cada ação em `dados/trafego/decisoes.jsonl`, uma linha por ação. Sem MCP: passar uma ação por vez o que clicar no Gerenciador de Anúncios (anúncio, campo, valor antigo, valor novo), esperar a pessoa dizer "feito" e só então gravar a linha da ata, com `"via":"manual"`:
+Com os itens marcados, aplicar pelo MCP um por um, dizendo o que fez a cada passo, e registrar cada ação em `dados/trafego/decisoes.jsonl`, uma linha por ação. Sem MCP: passar uma ação por vez o que clicar no Gerenciador de Anúncios (anúncio, campo, valor antigo, valor novo), esperar a pessoa dizer "feito" e só então gravar a linha da ata, com `"via":"manual"`:
 
 ```json
 {"data":"<AAAA-MM-DD>","anuncio":"<id>","faixa":"<CRITICO, PASSE ou AVISO>","motivo":"<o motivo que o script deu>","resposta":"<o que o usuário respondeu>"}
@@ -140,7 +140,7 @@ Discordância entra no mesmo `dados/trafego/decisoes.jsonl` (a ata do Mercado Li
 
 ## O que esta skill nunca faz
 
-- Aplicar qualquer coisa na conta sem o "pode ir" daquele momento
+- Aplicar qualquer coisa na conta sem o sim daquele momento, item por item
 - Mexer nos limiares do método. Quem muda a agressividade da régua é o ticket em `_contexto/trafego.md`
 - Julgar anúncio com dado parado. O script avisa, e a proposta de corte espera dado fresco
 - Escrever copy ou criativo, que é trabalho de outra skill

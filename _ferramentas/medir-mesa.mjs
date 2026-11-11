@@ -3,7 +3,7 @@
 // o CLAUDE.md global (~/.claude/CLAUDE.md), a cadeia de CLAUDE.md / AGENTS.md da pasta
 // aberta ate a raiz do disco, e os arquivos do _contexto/ que o AGENTS.md manda ler em
 // toda conversa. Mostra bytes e tokens estimados por arquivo e o total. Depois do total, a
-// parte, o _contexto/licoes.md, que entra so quando o /atualizar grava licao nova.
+// parte, o _contexto/licoes.md, que entra inteiro em todo fechamento do /atualizar.
 // Sem dependencia. A estimativa usa 3,8 caracteres por token, medido em portugues (tiktoken, 2026-09-09).
 // Uso: node _ferramentas/medir-mesa.mjs [pasta]   (padrao: pasta atual)
 // Limiares de arquivo de regra: amarelo acima de 2.000 tokens, vermelho acima de 6.000.
@@ -53,7 +53,7 @@ for (const nome of CONTEXTO_SEMPRE) {
   if (!existsSync(p)) continue
   arquivos.push({ camada: 'contexto', caminho: p, amarelo: CONTEXTO_AMARELO, vermelho: CONTEXTO_VERMELHO })
 }
-// O licoes.md entra inteiro quando o /atualizar grava licao nova (Passo 3.5): mesmo teto do
+// O licoes.md entra inteiro em todo fechamento do /atualizar (Passo 3.5): mesmo teto do
 // _contexto/, fora do total, porque nao chega antes da primeira palavra (5.54, C3)
 const licoes = join(inicio, '_contexto', 'licoes.md')
 if (existsSync(licoes)) arquivos.push({ camada: 'contexto', caminho: licoes, amarelo: CONTEXTO_AMARELO, vermelho: CONTEXTO_VERMELHO, foraDoTotal: true })
@@ -78,7 +78,7 @@ for (const a of arquivos) if (!a.foraDoTotal) linha(a)
 console.log(`\nTotal estimado: ${totalTokens} tokens antes da sua primeira palavra (3,8 chars/token).`)
 const fora = arquivos.filter((a) => a.foraDoTotal)
 if (fora.length) {
-  console.log('\nFora do total (entra so quando o /atualizar grava licao nova):\n')
+  console.log('\nFora do total (entra inteiro em todo fechamento do /atualizar):\n')
   for (const a of fora) linha(a)
 }
 if (estourouRegra) {

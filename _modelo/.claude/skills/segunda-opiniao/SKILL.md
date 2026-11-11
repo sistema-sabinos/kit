@@ -3,10 +3,11 @@ name: segunda-opiniao
 description: >
   Passa a proposta por um revisor que não viu a conversa, com ordem de derrubar:
   contradição, furo, suposição sem prova e o que quebra na prática. Cada achado se
-  confere nos arquivos; o que se sustenta se corrige antes de mostrar. Use sempre
-  antes de pedir o ok de algo que gasta dinheiro, publica, envia pra fora, apaga ou
-  muda a estrutura de pastas e skills; quando a skill da tarefa mandar; e quando o
-  usuário chamar /segunda-opiniao ou disser "revisa isso", "se autorrevisa", "se
+  confere nos arquivos; o que se sustenta se corrige antes de mostrar. Use antes de
+  pedir o ok de algo de risco alto (não tem volta, gasta dinheiro fora da permissão,
+  publica ou manda pra fora); uma vez quando nasce permissão nova no
+  `_contexto/autonomia.md`; quando a skill da tarefa mandar; e quando o usuário
+  chamar /segunda-opiniao ou disser "revisa isso", "se autorrevisa", "se
   autoverifica", "tem furo nisso?", "pede uma segunda opinião".
 ---
 
@@ -22,14 +23,23 @@ Uma revisão custa caro (uma rodada medida passou de 100 mil tokens e um minuto 
 meio de espera), então ela fica pro que pesa e pro que a pessoa pede. Entra
 sempre, sem precisar pedir:
 
-- antes do ok de tudo que gasta dinheiro, publica, envia mensagem pra fora, apaga
-  ou muda a estrutura de pastas e skills;
+- antes do ok de tudo que é de risco alto: o que não tem volta (apagar de vez,
+  mandar uma pasta pra fora), gasto que passa do teto ou que a permissão do
+  `_contexto/autonomia.md` não cobre (o crédito avulso do Codex entra aqui, e
+  pede o "pode ir"), domínio e cartão, publicar o que vai pro ar, a primeira
+  mensagem pra cliente num formato novo, campanha nova, verba total maior ou
+  objetivo de campanha trocado, e a estrutura de pasta e o pacote de skills que
+  o `/setup` e o `/novo-projeto` criam (a mesma lista da seção "Risco alto" do
+  `detalhe-regras.md`);
+- uma vez quando nasce permissão nova no `_contexto/autonomia.md`, antes de
+  gravar: a revisão olha a permissão inteira (a área, o que ela pode e o teto), e
+  o uso dela depois segue sem revisão a cada vez;
 - quando a skill da tarefa manda passar por aqui num passo dela;
 - quando a pessoa pede ("revisa", "se autorrevisa", "se autoverifica", "tem furo
   nisso?").
 
-O resto (uma linha de memória, um texto curto, uma mudança pequena e fácil de
-desfazer) segue sem revisão: o ok da pessoa basta.
+O resto (uma linha de memória, um texto curto, uma mudança que tem volta, o que a
+permissão já cobre) segue sem revisão: o ok da pessoa basta.
 
 ## Passo 1, o pacote
 
@@ -53,12 +63,11 @@ com ela.
 ## Passo 2, a dose
 
 - **Rápida**, uma volta só (no máximo três achados), quando a pessoa pede a
-  revisão de algo que não gasta, não publica, não manda nada pra fora e não apaga,
-  ou quando a skill da tarefa diz "dose rápida".
+  revisão de algo que não é de risco alto, ou quando a skill da tarefa diz "dose
+  rápida".
 - **Completa**, com revisor separado e até três revisões no total, contando a
-  primeira, pra tudo que gasta dinheiro, publica, envia pra fora, apaga ou muda a
-  estrutura de pastas e skills; uma nova volta só depois de uma correção que mudou
-  a proposta de verdade.
+  primeira, pra tudo que é de risco alto e pra permissão nova; uma nova volta só
+  depois de uma correção que mudou a proposta de verdade.
 
 Várias confirmações da mesma tarefa (o `/setup` pergunta várias coisas seguidas)
 viram um pacote só, revisado uma vez antes do ok final, nunca uma revisão por
@@ -136,9 +145,8 @@ rodou. Depois disso, pedir o ok normalmente.
 
 ## Regras
 
-- Gasto, publicação, envio pra fora, apagar e estrutura nunca pulam a revisão, por
-  menores que pareçam.
-- Coisa pequena que ninguém pediu pra revisar não chama revisor: custa caro e
+- Risco alto e permissão nova nunca pulam a revisão, por menores que pareçam.
+- O resto, quando ninguém pediu pra revisar, não chama revisor: custa caro e
   atrasa sem ganho.
 - Nunca passar sua conclusão pro revisor; só o pedido, a proposta e os arquivos.
 - Nunca aceitar achado sem abrir o arquivo; nunca descartar sem dizer por quê.

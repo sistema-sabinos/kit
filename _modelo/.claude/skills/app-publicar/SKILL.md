@@ -62,7 +62,7 @@ Gate é o ponto em que a skill para e pede autorização. Todo passo marcado
 
 1. Mostrar o que vai acontecer, o custo pelo id do `fatos.md` e a data em que o
    valor foi conferido.
-2. Passar a proposta pela `/segunda-opiniao`.
+2. Se o passo gasta, publica ou mexe em domínio, DNS ou pagamento real, passar a proposta pela `/segunda-opiniao`.
 3. Esperar o "pode ir" do aluno naquele momento.
 4. Quando há custo, acrescentar uma linha no fim de `dados/custos.jsonl`
    (criar o arquivo se não existir), uma linha por gasto, sem editar as antigas:
@@ -300,7 +300,8 @@ do passo 1 antes de cada publicação. Com os primeiros clientes, a
 
 - Checagem com falha para tudo. Nada de "publica e conserta depois".
 - O Claude nunca compra, nunca digita cartão, senha ou chave real.
-- Todo gate passa pela `/segunda-opiniao` e espera o "pode ir" na hora.
+- Todo gate espera o "pode ir" na hora, e o que gasta, publica ou mexe em domínio, DNS ou pagamento real passa antes pela
+  `/segunda-opiniao`.
 - Valor sempre pelo id do `fatos.md`, conferido se passou de 60 dias.
 - A régua legal aqui é informação pra decidir, sem garantia de resultado
   jurídico. Caso com dinheiro alto ou briga com outra empresa vai pra um

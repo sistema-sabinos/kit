@@ -1,12 +1,13 @@
 #!/usr/bin/env node
-// Publica um anuncio auditado direto no Mercado Livre pela API, sem ERP, e ele nasce PAUSADO: quem
+// Publica um anuncio auditado direto no Mercado Livre pela API, sem ERP, criado e pausado na hora: quem
 // poe no ar e a pessoa, no painel. Tres voltas, no molde da /cadastrar-bling:
 //   node .claude/skills/publicar-marketplace/scripts/publicar-ml.mjs --montar <slug> --estoque N --garantia-dias N [--categoria MLB123] [--embalagem CxLxA --peso-g N]
 //        descobre a categoria, monta o anuncio, pede a validacao do Mercado Livre (nao cria nada),
 //        grava anuncios/<slug>/ml-payload.json e mostra o resumo. Nada muda na conta.
-//   node .claude/skills/publicar-marketplace/scripts/publicar-ml.mjs --enviar <slug>
-//        so depois do "pode ir": sobe as imagens, cria o anuncio, pausa, grava a descricao,
-//        confere lendo de volta e grava publicacao.json e status.json
+//   node .claude/skills/publicar-marketplace/scripts/publicar-ml.mjs --enviar <slug> [--sim "<frase do sim>"]
+//        so com o "pode ir" (a frase no --sim) ou com a permissao criar-pausado da area anuncio-ml
+//        do _contexto/autonomia.md: sobe as imagens, cria o anuncio, pausa, grava a descricao,
+//        confere lendo de volta e grava publicacao.json (com a autorizacao no canal) e status.json
 //   node .claude/skills/publicar-marketplace/scripts/publicar-ml.mjs --conferir <slug>
 //        depois que a pessoa ativou no painel: le o anuncio e marca publicado
 // Saida: 0 deu certo; 2 esse produto vai pelo checklist manual (plano B); 1 pendencia ou erro.
@@ -22,8 +23,10 @@ import { tokenMl } from '../../mercado-livre/scripts/lib/tokens.mjs'
 import { lerCsv } from '../../cadastrar-bling/scripts/cadastrar.mjs'
 import { montarItem, normalizar } from './lib/montar-item.mjs'
 import { lerValidacao, IGNORAR_SEM_FOTO } from './lib/erros-ml.mjs'
+import { lerAutonomia } from '../../conectar/scripts/lib/autonomia.mjs'
+import { RECADO_TRAVA } from '../../conectar/scripts/lib/orcamento.mjs'
 
-const USO = 'uso: --montar <slug> --estoque N --garantia-dias N [--categoria MLB123] [--embalagem CxLxA --peso-g N] | --enviar <slug> | --conferir <slug>'
+const USO = 'uso: --montar <slug> --estoque N --garantia-dias N [--categoria MLB123] [--embalagem CxLxA --peso-g N] | --enviar <slug> [--sim "<frase do sim>"] | --conferir <slug>'
 const CANAL = 'mercado-livre'
 // Janela pra achar o anuncio de um envio cuja resposta nao chegou: relogio do computador e do
 // Mercado Livre podem nao bater, entao aceita criado ate 10 minutos antes da tentativa.
@@ -48,8 +51,9 @@ export function argumentos(argv) {
   const acao = acoes[0]
   const slug = valor(acao)
   if (!slug) throw new Error(`faltou o slug depois de --${acao}. ${USO}`)
-  const conhecidas = new Set(['montar', 'enviar', 'conferir', 'estoque', 'garantia-dias', 'categoria', 'embalagem', 'peso-g'])
+  const conhecidas = new Set(['montar', 'enviar', 'conferir', 'estoque', 'garantia-dias', 'categoria', 'embalagem', 'peso-g', 'sim'])
   for (const a of argv) if (a.startsWith('--') && !conhecidas.has(a.slice(2))) throw new Error(`nao conheco ${a}. ${USO}`)
+  if (acao === 'enviar') return { acao, slug, sim: valor('sim') }
   if (acao !== 'montar') return { acao, slug }
   return { acao, slug, estoque: inteiro('estoque'), garantiaDias: inteiro('garantia-dias'), categoria: valor('categoria'), embalagem: valor('embalagem'), pesoG: valor('peso-g') }
 }
@@ -62,6 +66,34 @@ const caminhos = (slug, raiz) => ({
 
 const carimbo = arquivo => (existsSync(arquivo) ? statSync(arquivo).mtimeMs : null)
 
+// 5.57 B: a area anuncio-ml do _contexto/autonomia.md, ou null (sem arquivo, arquivo com defeito ou area
+// ausente: o kit pede o sim de sempre). Molde do permissaoDeGasto (conectar/scripts/lib/orcamento.mjs). Nunca lanca.
+function permissaoAnuncioMl(raiz) {
+  try {
+    return lerAutonomia(readFileSync(join(raiz, '_contexto', 'autonomia.md'), 'utf8')).areas['anuncio-ml'] || null
+  } catch { return null }
+}
+
+// 5.57 B: criar o anuncio na conta precisa da frase do sim (--sim) ou da permissao criar-pausado escrita.
+// Sem nenhuma das duas, recusa antes de qualquer chamada. A autorizacao volta pra ir gravada no canal.
+function autorizacaoDoEnvio(sim, raiz) {
+  const frase = String(sim ?? '').trim()
+  if (frase) return { via: 'sim', frase }
+  const a = permissaoAnuncioMl(raiz)
+  if (a && a.pode.includes('criar-pausado')) return { via: 'permissao', area: 'anuncio-ml', definido_em: a.definido_em }
+  throw new Error(`Barrada pela trava anuncio-ml, regra sem-autorizacao: criar o anuncio na conta precisa do sim da pessoa (mostre o resumo, peca o pode ir e rode --enviar com --sim "<a frase que a pessoa disse>") ou da permissao criar-pausado da area anuncio-ml no _contexto/autonomia.md. Nada foi enviado. ${RECADO_TRAVA}`)
+}
+
+// 5.57 B: quem aprovou as fotos. aprovado_por 'pessoa' ou o aprovado_pelo_usuario antigo (projeto de antes
+// da 5.57, sem aprovado_por); 'delegacao:anuncio-ml' so com a permissao fotos valendo na hora
+function fotosAprovadas(imagens, raiz) {
+  const por = imagens?.aprovado_por
+  if (por === undefined) return imagens?.aprovado_pelo_usuario === true
+  if (por === 'pessoa') return true
+  if (por === 'delegacao:anuncio-ml') return Boolean(permissaoAnuncioMl(raiz)?.pode.includes('fotos'))
+  return false
+}
+
 function carregar(slug, raiz) {
   const { pasta } = caminhos(slug, raiz)
   const status = lerJson(join(pasta, 'status.json'))
@@ -69,7 +101,10 @@ function carregar(slug, raiz) {
   const ler = n => lerJson(join(pasta, `${n}.json`))
   const dados = { pasta, status, copy: ler('copy'), decisao: ler('decisao'), auditoria: ler('auditoria'), imagens: ler('imagens'), publicacao: ler('publicacao') }
   if (dados.auditoria?.veredito !== 'aprovado') throw new Error('a auditoria desse anuncio nao esta aprovada: rode o ml-auditor antes de publicar')
-  if (dados.imagens?.aprovado_pelo_usuario !== true) throw new Error('as imagens desse anuncio ainda nao foram aprovadas por voce na prancha')
+  if (!fotosAprovadas(dados.imagens, raiz)) {
+    if (dados.imagens?.aprovado_por === 'delegacao:anuncio-ml') throw new Error('as imagens foram aprovadas pela permissao fotos da area anuncio-ml, e ela nao vale mais no _contexto/autonomia.md: mostre a prancha e peca a aprovacao da pessoa')
+    throw new Error('as imagens desse anuncio ainda nao foram aprovadas por voce na prancha')
+  }
   if (!dados.copy) throw new Error(`nao existe dados/pipeline/${slug}/copy.json`)
   dados.avisoAuditoria = conferirAuditoria(pasta, dados.auditoria).aviso
   return dados
@@ -212,10 +247,11 @@ async function gravarDescricao(api, id, descricao) {
   return r.ok ? null : `a descricao nao gravou (${r.dado?.message || r.status}): rode --enviar de novo, que ele so grava a descricao`
 }
 
-// --enviar: so roda depois do "pode ir" da pessoa.
-export async function enviar(slug, { api, raiz = RAIZ, agora = () => new Date() }) {
+// --enviar: so roda com o "pode ir" da pessoa (sim) ou com a permissao criar-pausado escrita.
+export async function enviar(slug, { api, raiz = RAIZ, agora = () => new Date(), sim = null }) {
   exigirSemErp(raiz)
   const d = carregar(slug, raiz)
+  const autorizacao = autorizacaoDoEnvio(sim, raiz)
   const { payload: arquivoPayload, tentativa: arquivoTentativa } = caminhos(slug, raiz)
   const canal = (d.publicacao?.canais || []).find(c => c.canal === CANAL)
   const avisos = []
@@ -308,7 +344,7 @@ export async function enviar(slug, { api, raiz = RAIZ, agora = () => new Date() 
   const id = item.id
   const link = item.permalink || null
   let estadoPausa = estadoDe(item.status)
-  gravarCanal(slug, raiz, { canal: CANAL, anuncio_id: id, modalidade: p.resumo?.modalidade, preco: p.corpo.price, em: dataLocal(agora()), via: 'api', estado: estadoPausa, link, descricao: 'pendente' })
+  gravarCanal(slug, raiz, { canal: CANAL, anuncio_id: id, modalidade: p.resumo?.modalidade, preco: p.corpo.price, em: dataLocal(agora()), via: 'api', estado: estadoPausa, link, descricao: 'pendente', autorizacao })
   gravarEtapa(slug, raiz, { status: estadoPausa, em: dataLocal(agora()), anuncio_id: id })
 
   let pausaFalhou = null
@@ -320,7 +356,7 @@ export async function enviar(slug, { api, raiz = RAIZ, agora = () => new Date() 
   } else {
     estadoPausa = 'pausado'
   }
-  gravarCanal(slug, raiz, { canal: CANAL, anuncio_id: id, modalidade: p.resumo?.modalidade, preco: p.corpo.price, em: dataLocal(agora()), via: 'api', estado: estadoPausa, link, descricao: 'pendente' })
+  gravarCanal(slug, raiz, { canal: CANAL, anuncio_id: id, modalidade: p.resumo?.modalidade, preco: p.corpo.price, em: dataLocal(agora()), via: 'api', estado: estadoPausa, link, descricao: 'pendente', autorizacao })
   gravarEtapa(slug, raiz, { status: estadoPausa, em: dataLocal(agora()), anuncio_id: id })
 
   const falhaDescricao = await gravarDescricao(api, id, p.descricao)
@@ -333,12 +369,12 @@ export async function enviar(slug, { api, raiz = RAIZ, agora = () => new Date() 
     if ((real.family_name || real.title) !== p.corpo.family_name) avisos.push(`o titulo no Mercado Livre saiu diferente: "${real.family_name || real.title}"`)
     if (Number(real.price) !== Number(p.corpo.price)) avisos.push(`o preco no Mercado Livre saiu R$ ${real.price}, e o montado era R$ ${p.corpo.price}`)
     if ((real.pictures || []).length !== p.imagens.length) avisos.push(`o anuncio ficou com ${(real.pictures || []).length} imagens de ${p.imagens.length}`)
-    const final = { canal: CANAL, anuncio_id: id, modalidade: p.resumo?.modalidade, preco: real.price, em: dataLocal(agora()), via: 'api', estado, link: real.permalink || link, descricao: falhaDescricao ? 'pendente' : 'ok' }
+    const final = { canal: CANAL, anuncio_id: id, modalidade: p.resumo?.modalidade, preco: real.price, em: dataLocal(agora()), via: 'api', estado, link: real.permalink || link, descricao: falhaDescricao ? 'pendente' : 'ok', autorizacao }
     gravarCanal(slug, raiz, final)
     gravarEtapa(slug, raiz, { status: estado, em: dataLocal(agora()), anuncio_id: id })
   } catch (e) {
     avisos.push('nao consegui ler o anuncio de volta pra conferir: rode --conferir ' + slug + ' daqui a pouco')
-    const final = { canal: CANAL, anuncio_id: id, modalidade: p.resumo?.modalidade, preco: p.corpo.price, em: dataLocal(agora()), via: 'api', estado: estadoPausa, link, descricao: falhaDescricao ? 'pendente' : 'ok' }
+    const final = { canal: CANAL, anuncio_id: id, modalidade: p.resumo?.modalidade, preco: p.corpo.price, em: dataLocal(agora()), via: 'api', estado: estadoPausa, link, descricao: falhaDescricao ? 'pendente' : 'ok', autorizacao }
     gravarCanal(slug, raiz, final)
     gravarEtapa(slug, raiz, { status: estadoPausa, em: dataLocal(agora()), anuncio_id: id })
   }
@@ -385,13 +421,15 @@ const ehCli = chamadoDireto()
 if (ehCli) {
   try {
     const a = argumentos(process.argv.slice(2))
+    // sem autorizacao, recusa antes do criarApi: o tokenMl pode renovar o token e regravar o .env (comum da 5.57 B)
+    if (a.acao === 'enviar') autorizacaoDoEnvio(a.sim, RAIZ)
     const api = await criarApi()
     if (a.acao === 'montar') {
       const r = await montar(a.slug, a, { api })
       console.log(textoDoResumo(r))
       process.exitCode = r.planoB ? 2 : r.gravado ? 0 : 1
     } else if (a.acao === 'enviar') {
-      const r = await enviar(a.slug, { api })
+      const r = await enviar(a.slug, { api, sim: a.sim })
       console.log(`Anuncio ${r.anuncio_id}: ${r.estado.toUpperCase()}\n${r.link || ''}`)
       for (const x of [...r.avisos, ...r.pendencias]) console.log(`- ${x}`)
       process.exitCode = r.pendencias.length ? 1 : 0

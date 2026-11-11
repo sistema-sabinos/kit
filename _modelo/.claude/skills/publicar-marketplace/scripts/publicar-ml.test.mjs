@@ -14,7 +14,7 @@ const ATRIBUTOS = [
   { id: 'EMPTY_GTIN_REASON', name: 'Motivo de GTIN vazio', tags: {}, values: [{ id: '17055160', name: 'O produto não tem código cadastrado' }] },
 ]
 
-function projeto({ erp = 'nenhum', auditoria = { veredito: 'aprovado', modalidade_escolhida: 'classico' }, imagensAprovadas = true, variacoes = '', nomeNaDecisao = 'Moedor Inox', carimbar = true } = {}) {
+function projeto({ erp = 'nenhum', auditoria = { veredito: 'aprovado', modalidade_escolhida: 'classico' }, imagensAprovadas = true, variacoes = '', nomeNaDecisao = 'Moedor Inox', carimbar = true, aprovacao = { aprovado_pelo_usuario: imagensAprovadas }, autonomia = null } = {}) {
   const raiz = mkdtempSync(join(tmpdir(), 'publicar-ml-'))
   const pasta = join(raiz, 'dados', 'pipeline', SLUG)
   mkdirSync(pasta, { recursive: true })
@@ -25,13 +25,15 @@ function projeto({ erp = 'nenhum', auditoria = { veredito: 'aprovado', modalidad
   j('status', { slug: SLUG, fornecedor: 'forn-teste', categoria: 'casa', etapa_atual: 'auditado', etapas: {} })
   j('copy', { titulo: 'Moedor Eletrico Acme Inox', descricao: 'Descricao do moedor', ficha: { Marca: 'Acme' }, precos: { ml_classico: 84.9 }, gtin: null })
   j('decisao', { tipo: 'individual', composicao: [{ produto: nomeNaDecisao, qtd: 1 }], preco: { tabela: 96.5, alvo_pos_desconto: 84.9 }, marca: 'Acme' })
-  j('imagens', { aprovado_pelo_usuario: imagensAprovadas, imagens: [{ n: 2, arquivo: `anuncios/${SLUG}/imagens/02-uso.jpg` }, { n: 1, arquivo: `anuncios/${SLUG}/imagens/01-capa.jpg` }] })
+  j('imagens', { ...aprovacao, imagens: [{ n: 2, arquivo: `anuncios/${SLUG}/imagens/02-uso.jpg` }, { n: 1, arquivo: `anuncios/${SLUG}/imagens/01-capa.jpg` }] })
   for (const f of ['01-capa.jpg', '02-uso.jpg']) writeFileSync(join(raiz, 'anuncios', SLUG, 'imagens', f), Buffer.from([0xff, 0xd8]))
   // o ml-auditor carimba no fim (5.7, E.1): o projeto de teste nasce auditado em dia
   j('auditoria', carimbar && auditoria.veredito === 'aprovado' ? { ...auditoria, carimbos: carimbosDoAnuncio(pasta) } : auditoria)
   writeFileSync(join(raiz, 'fornecedores', 'forn-teste', 'catalogo-analisado.csv'), `status,categoria,produto,ean,custo,peso_g,dimensoes_cm,variacoes,observacao\nOK,casa,Moedor Inox,,50.00,400,18x11x10,${variacoes},\n`)
   const cerca = '`'.repeat(3)
   writeFileSync(join(raiz, '_contexto', 'mercado-livre.md'), `# Mercado Livre\n\n${cerca}mercado-livre\nerp: ${erp}\n${cerca}\n`)
+  // autonomia: o corpo do bloco autonomia do _contexto/autonomia.md (null = sem o arquivo)
+  if (autonomia !== null) writeFileSync(join(raiz, '_contexto', 'autonomia.md'), `# Autonomia\n\n${cerca}autonomia\n${autonomia}\n${cerca}\n`)
   return { raiz, pasta, ler: n => JSON.parse(readFileSync(join(pasta, `${n}.json`), 'utf8')), payload: join(raiz, 'anuncios', SLUG, 'ml-payload.json') }
 }
 
@@ -62,11 +64,15 @@ const LEITURAS = {
 }
 const OK_VALIDA = { ok: false, status: 400, dado: { cause: [{ type: 'warning', code: 'shipping.lost_me1_by_user', message: 'x' }] } }
 const OPCOES = { estoque: 5, garantiaDias: 90 }
+// 5.57 B: o --enviar so cria com a frase do sim ou com a permissao criar-pausado; os testes de envio vao com o sim
+const SIM = 'pode ir'
 const ITEM = { id: 'MLB123', status: 'paused', family_name: 'Moedor Eletrico Acme Inox', price: 96.5, pictures: [{}, {}], permalink: 'https://produto.mercadolivre.com.br/MLB-123' }
 
 test('argumentos: uma acao so, slug obrigatorio, numero inteiro e flag desconhecida barrada', () => {
   assert.deepEqual(argumentos(['--montar', 'x', '--estoque', '5', '--garantia-dias', '90']), { acao: 'montar', slug: 'x', estoque: 5, garantiaDias: 90, categoria: null, embalagem: null, pesoG: null })
-  assert.deepEqual(argumentos(['--enviar', 'x']), { acao: 'enviar', slug: 'x' })
+  assert.deepEqual(argumentos(['--enviar', 'x']), { acao: 'enviar', slug: 'x', sim: null })
+  assert.deepEqual(argumentos(['--enviar', 'x', '--sim', 'pode ir, manda']), { acao: 'enviar', slug: 'x', sim: 'pode ir, manda' })
+  assert.deepEqual(argumentos(['--conferir', 'x']), { acao: 'conferir', slug: 'x' })
   assert.throws(() => argumentos(['--montar']), /slug/)
   assert.throws(() => argumentos(['--montar', 'x', '--enviar', 'x']), /uso/)
   assert.throws(() => argumentos(['--montar', 'x', '--estoque', '2.5']), /inteiro/)
@@ -211,7 +217,7 @@ test('enviar sobe as imagens na ordem, cria pausado, grava descricao e registra'
   try {
     await montado(p)
     const api = apiFalsa({ 'POST /items/validate': OK_VALIDA, 'POST /items/MLB123/description': { ok: true, status: 201, dado: {} }, 'POST /items': { ok: true, status: 201, dado: ITEM }, 'GET /items/MLB123': ITEM })
-    const r = await enviar(SLUG, { api, raiz: p.raiz, agora: () => new Date('2026-10-01T12:00:00Z') })
+    const r = await enviar(SLUG, { sim: SIM, api, raiz: p.raiz, agora: () => new Date('2026-10-01T12:00:00Z') })
     assert.deepEqual(api.chamadas.filter(c => typeof c === 'string' && c.startsWith('SUBIR')), ['SUBIR 01-capa.jpg', 'SUBIR 02-uso.jpg'])
     const criado = api.chamadas[api.chamadas.indexOf('POST /items') + 1]
     assert.deepEqual(criado.pictures, [{ id: 'foto-1' }, { id: 'foto-2' }])
@@ -220,11 +226,100 @@ test('enviar sobe as imagens na ordem, cria pausado, grava descricao e registra'
     assert.deepEqual(r.pendencias, [])
     assert.equal(r.estado, 'pausado')
     const canal = p.ler('publicacao').canais.find(c => c.canal === 'mercado-livre')
-    assert.deepEqual(canal, { canal: 'mercado-livre', anuncio_id: 'MLB123', modalidade: 'classico', preco: 96.5, em: '2026-10-01', via: 'api', estado: 'pausado', link: ITEM.permalink, descricao: 'ok' })
+    assert.deepEqual(canal, { canal: 'mercado-livre', anuncio_id: 'MLB123', modalidade: 'classico', preco: 96.5, em: '2026-10-01', via: 'api', estado: 'pausado', link: ITEM.permalink, descricao: 'ok', autorizacao: { via: 'sim', frase: 'pode ir' } })
     assert.deepEqual(p.ler('status').etapas.publicacao, { status: 'pausado', em: '2026-10-01', anuncio_id: 'MLB123' })
     assert.equal(p.ler('status').etapa_atual, 'auditado', 'publicado so depois que a pessoa ativa')
   } finally {
     rmSync(p.raiz, { recursive: true, force: true })
+  }
+})
+
+// 5.57 B: sem a frase do sim e sem a permissao criar-pausado valendo, o --enviar recusa antes de qualquer chamada
+const CRIA = () => apiFalsa({ 'POST /items/validate': OK_VALIDA, 'POST /items/MLB123/description': { ok: true, status: 201, dado: {} }, 'POST /items': { ok: true, status: 201, dado: ITEM }, 'GET /items/MLB123': ITEM })
+async function recusaSemSim(opcoes) {
+  const p = projeto(opcoes)
+  try {
+    await montado(p)
+    const api = CRIA()
+    await assert.rejects(enviar(SLUG, { api, raiz: p.raiz }), /precisa do sim da pessoa[\s\S]*Nada foi enviado/)
+    assert.deepEqual(api.chamadas, [], 'chamou a API sem autorizacao')
+    assert.ok(!existsSync(join(p.pasta, 'publicacao.json')), 'gravou o canal sem autorizacao')
+  } finally {
+    rmSync(p.raiz, { recursive: true, force: true })
+  }
+}
+
+test('enviar sem sim e sem autonomia.md recusa com 0 chamadas', async () => {
+  await recusaSemSim({})
+})
+
+test('enviar sem sim recusa com anuncio-ml so com decidir, fotos', async () => {
+  await recusaSemSim({ autonomia: 'area: anuncio-ml\npode: decidir, fotos\ndefinido_em: 2026-11-10' })
+})
+
+test('enviar sem sim recusa com pode vazio na anuncio-ml', async () => {
+  await recusaSemSim({ autonomia: 'area: anuncio-ml\npode: criar-pausado\ndefinido_em: 2026-11-01\narea: anuncio-ml\npode:\ndefinido_em: 2026-11-10' })
+})
+
+test('enviar sem sim recusa com autonomia.md com defeito', async () => {
+  await recusaSemSim({ autonomia: 'area: anuncio-ml\npode: criar-pausado\ndefinido_em: 2026-11-10\nisto nao e chave valor' })
+})
+
+test('enviar com criar-pausado e sem sim grava a autorizacao via permissao', async () => {
+  const p = projeto({ autonomia: 'area: anuncio-ml\npode: criar-pausado\ndefinido_em: 2026-11-10\ndefinido_por: pessoa' })
+  try {
+    await montado(p)
+    const r = await enviar(SLUG, { api: CRIA(), raiz: p.raiz })
+    assert.equal(r.estado, 'pausado')
+    const canal = p.ler('publicacao').canais.find(c => c.canal === 'mercado-livre')
+    assert.deepEqual(canal.autorizacao, { via: 'permissao', area: 'anuncio-ml', definido_em: '2026-11-10' })
+  } finally {
+    rmSync(p.raiz, { recursive: true, force: true })
+  }
+})
+
+test('enviar com --sim grava a frase; frase so de espaco nao vale', async () => {
+  const p = projeto()
+  try {
+    await montado(p)
+    await assert.rejects(enviar(SLUG, { sim: '   ', api: CRIA(), raiz: p.raiz }), /precisa do sim da pessoa/)
+    await enviar(SLUG, { sim: ' pode ir, sobe pausado ', api: CRIA(), raiz: p.raiz })
+    const canal = p.ler('publicacao').canais.find(c => c.canal === 'mercado-livre')
+    assert.deepEqual(canal.autorizacao, { via: 'sim', frase: 'pode ir, sobe pausado' })
+  } finally {
+    rmSync(p.raiz, { recursive: true, force: true })
+  }
+})
+
+test('montar aceita aprovado_por pessoa sem o booleano antigo', async () => {
+  const p = projeto({ aprovacao: { aprovado_por: 'pessoa' } })
+  try {
+    const r = await montar(SLUG, OPCOES, { api: apiFalsa({ ...LEITURAS, 'POST /items/validate': OK_VALIDA }), raiz: p.raiz })
+    assert.equal(r.gravado, true)
+  } finally {
+    rmSync(p.raiz, { recursive: true, force: true })
+  }
+})
+
+test('fotos aprovadas por delegacao so valem com a permissao fotos na hora', async () => {
+  const delegada = { aprovado_por: 'delegacao:anuncio-ml' }
+  const comFotos = projeto({ aprovacao: delegada, autonomia: 'area: anuncio-ml\npode: decidir, fotos\ndefinido_em: 2026-11-10' })
+  try {
+    const r = await montar(SLUG, OPCOES, { api: apiFalsa({ ...LEITURAS, 'POST /items/validate': OK_VALIDA }), raiz: comFotos.raiz })
+    assert.equal(r.gravado, true, 'canario: com a permissao fotos a delegacao passa')
+  } finally {
+    rmSync(comFotos.raiz, { recursive: true, force: true })
+  }
+  for (const autonomia of [null, 'area: anuncio-ml\npode: decidir, criar-pausado\ndefinido_em: 2026-11-10']) {
+    const p = projeto({ aprovacao: delegada, autonomia })
+    try {
+      const api = apiFalsa(LEITURAS)
+      await assert.rejects(montar(SLUG, OPCOES, { api, raiz: p.raiz }), /permissao fotos da area anuncio-ml/)
+      await assert.rejects(enviar(SLUG, { sim: SIM, api, raiz: p.raiz }), /permissao fotos da area anuncio-ml/)
+      assert.deepEqual(api.chamadas, [])
+    } finally {
+      rmSync(p.raiz, { recursive: true, force: true })
+    }
   }
 })
 
@@ -234,7 +329,7 @@ test('enviar pausa em seguida quando o anuncio nasce ativo, e avisa em destaque 
     await montado(p)
     const ativo = { ...ITEM, status: 'active' }
     const api = apiFalsa({ 'POST /items/validate': OK_VALIDA, 'POST /items/MLB123/description': { ok: true, status: 201, dado: {} }, 'POST /items': { ok: true, status: 201, dado: ativo }, 'PUT /items/MLB123': { ok: false, status: 500, dado: { message: 'erro interno' } }, 'GET /items/MLB123': ativo })
-    const r = await enviar(SLUG, { api, raiz: p.raiz })
+    const r = await enviar(SLUG, { sim: SIM, api, raiz: p.raiz })
     assert.ok(api.chamadas.includes('PUT /items/MLB123'))
     assert.equal(r.estado, 'ativo')
     assert.ok(r.pendencias.some(a => /ATENCAO/.test(a) && /ATIVO/.test(a)))
@@ -247,13 +342,13 @@ test('enviar pausa em seguida quando o anuncio nasce ativo, e avisa em destaque 
 test('enviar recusa sem payload, com copy mudado depois do resumo e com anuncio ja publicado', async () => {
   const p = projeto()
   try {
-    await assert.rejects(enviar(SLUG, { api: apiFalsa(), raiz: p.raiz }), /--montar antes/)
+    await assert.rejects(enviar(SLUG, { sim: SIM, api: apiFalsa(), raiz: p.raiz }), /--montar antes/)
     await montado(p)
     const futuro = new Date(Date.now() + 60_000)
     utimesSync(join(p.pasta, 'copy.json'), futuro, futuro)
-    await assert.rejects(enviar(SLUG, { api: apiFalsa(), raiz: p.raiz }), /mudaram depois do resumo/)
+    await assert.rejects(enviar(SLUG, { sim: SIM, api: apiFalsa(), raiz: p.raiz }), /mudaram depois do resumo/)
     writeFileSync(join(p.pasta, 'publicacao.json'), JSON.stringify({ slug: SLUG, erp: null, canais: [{ canal: 'mercado-livre', anuncio_id: 'MLB9', descricao: 'ok' }] }))
-    await assert.rejects(enviar(SLUG, { api: apiFalsa(), raiz: p.raiz }), /ja foi publicado \(MLB9\)/)
+    await assert.rejects(enviar(SLUG, { sim: SIM, api: apiFalsa(), raiz: p.raiz }), /ja foi publicado \(MLB9\)/)
   } finally {
     rmSync(p.raiz, { recursive: true, force: true })
   }
@@ -268,7 +363,7 @@ test('enviar recusa payload montado com titulo sem a marca da decisao, sem chama
     writeFileSync(join(p.pasta, 'auditoria.json'), JSON.stringify({ ...p.ler('auditoria'), carimbos: carimbosDoAnuncio(p.pasta) }))
     const chamadas = []
     const api = { get: async c => { chamadas.push(c); return {} }, escrever: async (m, c) => { chamadas.push(c); return { ok: true, dado: {} } }, subirImagem: async () => { chamadas.push('imagem'); return {} } }
-    await assert.rejects(enviar(SLUG, { api, raiz: p.raiz }), /nao tem a marca "Acme".*nada foi enviado/s)
+    await assert.rejects(enviar(SLUG, { sim: SIM, api, raiz: p.raiz }), /nao tem a marca "Acme".*nada foi enviado/s)
     assert.deepEqual(chamadas, [])
   } finally {
     rmSync(p.raiz, { recursive: true, force: true })
@@ -288,7 +383,7 @@ test('payload de antes da regra da marca com envio anterior que chegou: aproveit
       'GET /items/MLB123': { ...ITEM, date_created: '2026-10-01T12:00:05.000Z' },
       'POST /items/MLB123/description': { ok: true, status: 201, dado: {} },
     })
-    const r = await enviar(SLUG, { api, raiz: p.raiz })
+    const r = await enviar(SLUG, { sim: SIM, api, raiz: p.raiz })
     assert.equal(r.anuncio_id, 'MLB123')
     assert.ok(r.avisos.some(a => /ja existia e foi aproveitado/.test(a)))
     assert.ok(!api.chamadas.includes('POST /items'))
@@ -303,7 +398,7 @@ test('enviar com validacao recusada nao cria nada', async () => {
     await montado(p)
     const recusa = { ok: false, status: 400, dado: { cause: [{ type: 'error', code: 'item.coisa', message: 'ruim' }] } }
     const api = apiFalsa({ 'POST /items/validate': recusa })
-    await assert.rejects(enviar(SLUG, { api, raiz: p.raiz }), /nada foi criado[\s\S]*item\.coisa/)
+    await assert.rejects(enviar(SLUG, { sim: SIM, api, raiz: p.raiz }), /nada foi criado[\s\S]*item\.coisa/)
     assert.ok(!api.chamadas.includes('POST /items'))
   } finally {
     rmSync(p.raiz, { recursive: true, force: true })
@@ -316,7 +411,7 @@ test('queda de rede na criacao: nao repete, e o proximo --enviar acha o anuncio 
     await montado(p)
     const queda = Object.assign(new Error('a resposta do Mercado Livre nao chegou'), { semResposta: true })
     const api1 = apiFalsa({ 'POST /items/validate': OK_VALIDA, 'POST /items': queda })
-    await assert.rejects(enviar(SLUG, { api: api1, raiz: p.raiz, agora: () => new Date('2026-10-01T12:00:00Z') }), /Rode --enviar de novo/)
+    await assert.rejects(enviar(SLUG, { sim: SIM, api: api1, raiz: p.raiz, agora: () => new Date('2026-10-01T12:00:00Z') }), /Rode --enviar de novo/)
     assert.equal(api1.chamadas.filter(c => c === 'POST /items').length, 1)
     assert.ok(JSON.parse(readFileSync(join(p.raiz, 'anuncios', SLUG, 'ml-tentativa.json'), 'utf8')).tentativa_em, 'a tentativa nao ficou marcada')
 
@@ -327,7 +422,7 @@ test('queda de rede na criacao: nao repete, e o proximo --enviar acha o anuncio 
       'GET /items/MLB123': achado,
       'POST /items/MLB123/description': { ok: true, status: 201, dado: {} },
     })
-    const r = await enviar(SLUG, { api: api2, raiz: p.raiz })
+    const r = await enviar(SLUG, { sim: SIM, api: api2, raiz: p.raiz })
     assert.ok(!api2.chamadas.includes('POST /items'), 'criou em dobro')
     assert.ok(!api2.chamadas.some(c => typeof c === 'string' && c.startsWith('SUBIR')), 'subiu imagem de novo')
     assert.equal(r.anuncio_id, 'MLB123')
@@ -352,7 +447,7 @@ test('queda de rede sem anuncio achado: cria de novo, uma vez', async () => {
       'POST /items': { ok: true, status: 201, dado: ITEM },
       'GET /items/MLB123': ITEM,
     })
-    const r = await enviar(SLUG, { api, raiz: p.raiz, agora: () => new Date('2026-10-01T12:15:00.000Z') })
+    const r = await enviar(SLUG, { sim: SIM, api, raiz: p.raiz, agora: () => new Date('2026-10-01T12:15:00.000Z') })
     assert.equal(api.chamadas.filter(c => c === 'POST /items').length, 1)
     assert.equal(r.anuncio_id, 'MLB123')
     assert.ok(!existsSync(join(p.raiz, 'anuncios', SLUG, 'ml-tentativa.json')), 'a marca ficou depois de dar certo')
@@ -366,12 +461,12 @@ test('descricao que falha fica pendente, e o --enviar seguinte so grava a descri
   try {
     await montado(p)
     const api1 = apiFalsa({ 'POST /items/validate': OK_VALIDA, 'POST /items/MLB123/description': { ok: false, status: 500, dado: { message: 'erro' } }, 'POST /items': { ok: true, status: 201, dado: ITEM }, 'GET /items/MLB123': ITEM })
-    const r1 = await enviar(SLUG, { api: api1, raiz: p.raiz })
+    const r1 = await enviar(SLUG, { sim: SIM, api: api1, raiz: p.raiz })
     assert.equal(r1.pendencias.length, 1)
     assert.match(r1.pendencias[0], /descricao/)
     assert.equal(p.ler('publicacao').canais[0].descricao, 'pendente')
     const api2 = apiFalsa({ 'POST /items/MLB123/description': { ok: true, status: 201, dado: {} }, 'GET /items/MLB123/description': { plain_text: '' }, 'GET /items/MLB123': ITEM })
-    const r2 = await enviar(SLUG, { api: api2, raiz: p.raiz })
+    const r2 = await enviar(SLUG, { sim: SIM, api: api2, raiz: p.raiz })
     assert.deepEqual(api2.chamadas.filter(c => typeof c === 'string'), ['GET /items/MLB123/description', 'POST /items/MLB123/description', 'GET /items/MLB123'])
     assert.deepEqual(r2.pendencias, [])
     assert.equal(p.ler('publicacao').canais[0].descricao, 'ok')
@@ -402,7 +497,7 @@ test('POST /items 503: marca fica, proximo --enviar acha o anuncio', async () =>
   try {
     await montado(p)
     const api1 = apiFalsa({ 'POST /items/validate': OK_VALIDA, 'POST /items': { ok: false, status: 503, dado: { message: 'gateway timeout' } } })
-    await assert.rejects(enviar(SLUG, { api: api1, raiz: p.raiz, agora: () => new Date('2026-10-01T12:00:00Z') }), /Rode --enviar de novo/)
+    await assert.rejects(enviar(SLUG, { sim: SIM, api: api1, raiz: p.raiz, agora: () => new Date('2026-10-01T12:00:00Z') }), /Rode --enviar de novo/)
     assert.ok(existsSync(join(p.raiz, 'anuncios', SLUG, 'ml-tentativa.json')), 'a marca ficou')
     const achado = { ...ITEM, date_created: '2026-10-01T12:00:05.000Z' }
     const api2 = apiFalsa({
@@ -411,7 +506,7 @@ test('POST /items 503: marca fica, proximo --enviar acha o anuncio', async () =>
       'GET /items/MLB123': achado,
       'POST /items/MLB123/description': { ok: true, status: 201, dado: {} },
     })
-    const r = await enviar(SLUG, { api: api2, raiz: p.raiz })
+    const r = await enviar(SLUG, { sim: SIM, api: api2, raiz: p.raiz })
     assert.ok(!api2.chamadas.includes('POST /items'))
     assert.equal(r.anuncio_id, 'MLB123')
   } finally {
@@ -425,7 +520,7 @@ test('queda de rede na criacao, copy muda, --montar de novo, --enviar acha pela 
     await montado(p)
     const queda = Object.assign(new Error('a resposta do Mercado Livre nao chegou'), { semResposta: true })
     const api1 = apiFalsa({ 'POST /items/validate': OK_VALIDA, 'POST /items': queda })
-    await assert.rejects(enviar(SLUG, { api: api1, raiz: p.raiz, agora: () => new Date('2026-10-01T12:00:00Z') }), /Rode --enviar de novo/)
+    await assert.rejects(enviar(SLUG, { sim: SIM, api: api1, raiz: p.raiz, agora: () => new Date('2026-10-01T12:00:00Z') }), /Rode --enviar de novo/)
     const futuro = new Date(Date.now() + 60_000)
     utimesSync(join(p.pasta, 'copy.json'), futuro, futuro)
     await montar(SLUG, OPCOES, { api: apiFalsa({ ...LEITURAS, 'POST /items/validate': OK_VALIDA }), raiz: p.raiz })
@@ -436,7 +531,7 @@ test('queda de rede na criacao, copy muda, --montar de novo, --enviar acha pela 
       'GET /items/MLB123': achado,
       'POST /items/MLB123/description': { ok: true, status: 201, dado: {} },
     })
-    const r = await enviar(SLUG, { api: api2, raiz: p.raiz })
+    const r = await enviar(SLUG, { sim: SIM, api: api2, raiz: p.raiz })
     assert.ok(!api2.chamadas.includes('POST /items'), 'criou em dobro')
     assert.equal(r.anuncio_id, 'MLB123')
   } finally {
@@ -455,11 +550,12 @@ test('GET /items apos criacao lanca: sem erro, canal gravado com estado do pause
       'GET /items/MLB123': new Error('item nao achado'),
       'POST /items/MLB123/description': { ok: true, status: 201, dado: {} },
     })
-    const r = await enviar(SLUG, { api, raiz: p.raiz })
+    const r = await enviar(SLUG, { sim: SIM, api, raiz: p.raiz })
     assert.equal(r.anuncio_id, 'MLB123')
     assert.equal(r.estado, 'pausado')
     assert.ok(r.avisos.some(a => /conferir/.test(a)))
     assert.equal(p.ler('publicacao').canais[0].estado, 'pausado')
+    assert.deepEqual(p.ler('publicacao').canais[0].autorizacao, { via: 'sim', frase: 'pode ir' })
   } finally {
     rmSync(p.raiz, { recursive: true, force: true })
   }
@@ -477,7 +573,7 @@ test('pausa falha: ATENCAO vai pra pendencias', async () => {
       'PUT /items/MLB123': { ok: false, status: 500, dado: { message: 'erro interno' } },
       'GET /items/MLB123': ativo,
     })
-    const r = await enviar(SLUG, { api, raiz: p.raiz })
+    const r = await enviar(SLUG, { sim: SIM, api, raiz: p.raiz })
     assert.equal(r.estado, 'ativo')
     assert.ok(r.pendencias.some(a => /ATENCAO/.test(a) && /ATIVO/.test(a)))
   } finally {
@@ -498,7 +594,7 @@ test('busca de duplicado com resultado que lanca e outro que casa: aproveita o q
       'GET /items/MLB123': achado,
       'POST /items/MLB123/description': { ok: true, status: 201, dado: {} },
     })
-    const r = await enviar(SLUG, { api, raiz: p.raiz })
+    const r = await enviar(SLUG, { sim: SIM, api, raiz: p.raiz })
     assert.equal(r.anuncio_id, 'MLB123')
   } finally {
     rmSync(p.raiz, { recursive: true, force: true })
@@ -517,7 +613,7 @@ test('titulo que volta com caixa ou acento diferente: busca aproveita', async ()
       'GET /items/MLB123': caixa,
       'POST /items/MLB123/description': { ok: true, status: 201, dado: {} },
     })
-    const r = await enviar(SLUG, { api, raiz: p.raiz })
+    const r = await enviar(SLUG, { sim: SIM, api, raiz: p.raiz })
     assert.equal(r.anuncio_id, 'MLB123')
   } finally {
     rmSync(p.raiz, { recursive: true, force: true })
@@ -533,7 +629,7 @@ test('descricao pendente com GET /items/MLB123/description devolvendo plain_text
       'GET /items/MLB123/description': { plain_text: 'Descricao do moedor' },
       'GET /items/MLB123': ITEM,
     })
-    const r = await enviar(SLUG, { api, raiz: p.raiz })
+    const r = await enviar(SLUG, { sim: SIM, api, raiz: p.raiz })
     assert.ok(!api.chamadas.includes('POST /items/MLB123/description'), 'repostou a descricao')
     assert.deepEqual(r.pendencias, [])
     assert.equal(p.ler('publicacao').canais[0].descricao, 'ok')
@@ -549,7 +645,7 @@ test('POST /items 400 com erro: marca some', async () => {
     await montado(p)
     const recusa = { ok: false, status: 400, dado: { cause: [{ type: 'error', code: 'item.coisa', message: 'ruim' }] } }
     const api = apiFalsa({ 'POST /items/validate': OK_VALIDA, 'POST /items': recusa })
-    await assert.rejects(enviar(SLUG, { api, raiz: p.raiz }), /nada foi criado/)
+    await assert.rejects(enviar(SLUG, { sim: SIM, api, raiz: p.raiz }), /nada foi criado/)
     assert.ok(!existsSync(join(p.raiz, 'anuncios', SLUG, 'ml-tentativa.json')), 'a marca foi apagada')
   } finally {
     rmSync(p.raiz, { recursive: true, force: true })
@@ -562,7 +658,7 @@ test('POST /items ok mas sem id: lanca pedindo --enviar de novo, marca fica', as
     await montado(p)
     const semId = { ok: true, status: 201, dado: {} }
     const api = apiFalsa({ 'POST /items/validate': OK_VALIDA, 'POST /items': semId })
-    await assert.rejects(enviar(SLUG, { api, raiz: p.raiz, agora: () => new Date('2026-10-01T12:00:00Z') }), /Rode --enviar de novo/)
+    await assert.rejects(enviar(SLUG, { sim: SIM, api, raiz: p.raiz, agora: () => new Date('2026-10-01T12:00:00Z') }), /Rode --enviar de novo/)
     assert.ok(existsSync(join(p.raiz, 'anuncios', SLUG, 'ml-tentativa.json')), 'a marca ficou')
   } finally {
     rmSync(p.raiz, { recursive: true, force: true })
@@ -581,10 +677,11 @@ test('nasce ativo, pausa ok, leitura de volta lanca: grava pausado em ambos os a
       'PUT /items/MLB123': { ok: true, status: 200, dado: {} },
       'GET /items/MLB123': new Error('item nao achado'),
     })
-    const r = await enviar(SLUG, { api, raiz: p.raiz })
+    const r = await enviar(SLUG, { sim: SIM, api, raiz: p.raiz })
     assert.equal(r.estado, 'pausado')
     assert.ok(r.avisos.some(a => /conferir/.test(a)))
     assert.equal(p.ler('publicacao').canais[0].estado, 'pausado')
+    assert.deepEqual(p.ler('publicacao').canais[0].autorizacao, { via: 'sim', frase: 'pode ir' })
     assert.equal(p.ler('status').etapas.publicacao.status, 'pausado')
   } finally {
     rmSync(p.raiz, { recursive: true, force: true })
@@ -599,7 +696,7 @@ test('nasce em revisao e a pausa falha: grava em revisao, sem ATENCAO, avisa pra
     await montado(p)
     const revisao = { ...ITEM, status: 'under_review' }
     const api = apiFalsa({ ...LEITURA_PAUSA, 'POST /items': { ok: true, status: 201, dado: revisao }, 'PUT /items/MLB123': { ok: false, status: 400, dado: { message: 'em revisao' } }, 'GET /items/MLB123': revisao })
-    const r = await enviar(SLUG, { api, raiz: p.raiz })
+    const r = await enviar(SLUG, { sim: SIM, api, raiz: p.raiz })
     assert.equal(r.estado, 'em revisao')
     assert.ok(!r.pendencias.some(a => /ATENCAO/.test(a)))
     assert.ok(r.avisos.some(a => /em revisao/.test(a) && /nao ative nada/.test(a)))
@@ -616,7 +713,7 @@ test('pausa deu certo mas a leitura de volta mostra ativo: ATENCAO e estado ativ
     await montado(p)
     const ativo = { ...ITEM, status: 'active' }
     const api = apiFalsa({ ...LEITURA_PAUSA, 'POST /items': { ok: true, status: 201, dado: ativo }, 'PUT /items/MLB123': { ok: true, status: 200, dado: {} }, 'GET /items/MLB123': ativo })
-    const r = await enviar(SLUG, { api, raiz: p.raiz })
+    const r = await enviar(SLUG, { sim: SIM, api, raiz: p.raiz })
     assert.equal(r.estado, 'ativo')
     assert.ok(r.pendencias.some(a => /ATENCAO/.test(a) && /ATIVO/.test(a) && /Pause agora/.test(a)))
     assert.equal(p.ler('publicacao').canais[0].estado, 'ativo')
@@ -635,7 +732,7 @@ test('descricao pendente, anuncio ativo e pausa nunca confirmada: pausa agora', 
     await montado(p)
     comCanalPendente(p, 'ativo')
     const api = apiFalsa({ 'GET /items/MLB123/description': { plain_text: 'x' }, 'GET /items/MLB123': { ...ITEM, status: 'active' }, 'PUT /items/MLB123': { ok: true, status: 200, dado: {} } })
-    const r = await enviar(SLUG, { api, raiz: p.raiz })
+    const r = await enviar(SLUG, { sim: SIM, api, raiz: p.raiz })
     assert.ok(api.chamadas.includes('PUT /items/MLB123'), 'nao pausou')
     assert.equal(r.estado, 'pausado')
     assert.equal(p.ler('publicacao').canais[0].estado, 'pausado')
@@ -648,7 +745,7 @@ test('descricao pendente, anuncio ativo e pausa nunca confirmada: pausa agora', 
     await montado(q)
     comCanalPendente(q, 'ativo')
     const api = apiFalsa({ 'GET /items/MLB123/description': { plain_text: 'x' }, 'GET /items/MLB123': { ...ITEM, status: 'active' }, 'PUT /items/MLB123': { ok: false, status: 500, dado: { message: 'erro' } } })
-    const r = await enviar(SLUG, { api, raiz: q.raiz })
+    const r = await enviar(SLUG, { sim: SIM, api, raiz: q.raiz })
     assert.ok(r.pendencias.some(a => /ATENCAO/.test(a)))
     assert.equal(q.ler('publicacao').canais[0].estado, 'ativo')
   } finally {
@@ -662,7 +759,7 @@ test('descricao pendente, canal gravado pausado e anuncio ativo: foi a pessoa, n
     await montado(p)
     comCanalPendente(p, 'pausado')
     const api = apiFalsa({ 'GET /items/MLB123/description': { plain_text: 'x' }, 'GET /items/MLB123': { ...ITEM, status: 'active' } })
-    const r = await enviar(SLUG, { api, raiz: p.raiz })
+    const r = await enviar(SLUG, { sim: SIM, api, raiz: p.raiz })
     assert.ok(!api.chamadas.includes('PUT /items/MLB123'), 'pausou o que a pessoa ativou')
     assert.deepEqual(r.pendencias, [])
     assert.equal(r.estado, 'ativo')
@@ -678,12 +775,12 @@ test('marca recente e busca vazia: nao cria, manda esperar; marca velha: cria um
     writeFileSync(join(p.raiz, 'anuncios', SLUG, 'ml-tentativa.json'), JSON.stringify({ tentativa_em: '2026-10-01T12:00:00.000Z', titulo: 'Moedor Eletrico Acme Inox' }))
     const rotas = { 'GET /users/me': { id: 42 }, 'GET /users/42/items/search': { results: [] }, ...LEITURA_PAUSA, 'POST /items': { ok: true, status: 201, dado: ITEM }, 'GET /items/MLB123': ITEM }
     const api = apiFalsa(rotas)
-    await assert.rejects(enviar(SLUG, { api, raiz: p.raiz, agora: () => new Date('2026-10-01T12:02:00.000Z') }), /depois das/)
+    await assert.rejects(enviar(SLUG, { sim: SIM, api, raiz: p.raiz, agora: () => new Date('2026-10-01T12:02:00.000Z') }), /depois das/)
     assert.ok(!api.chamadas.some(c => typeof c === 'string' && c.startsWith('SUBIR')), 'subiu imagem')
     assert.ok(!api.chamadas.includes('POST /items'), 'criou em dobro')
     assert.ok(existsSync(join(p.raiz, 'anuncios', SLUG, 'ml-tentativa.json')), 'a marca sumiu')
     const api2 = apiFalsa(rotas)
-    await enviar(SLUG, { api: api2, raiz: p.raiz, agora: () => new Date('2026-10-01T12:15:00.000Z') })
+    await enviar(SLUG, { sim: SIM, api: api2, raiz: p.raiz, agora: () => new Date('2026-10-01T12:15:00.000Z') })
     assert.equal(api2.chamadas.filter(c => c === 'POST /items').length, 1)
   } finally {
     rmSync(p.raiz, { recursive: true, force: true })
@@ -712,7 +809,7 @@ test('descricao pendente de anuncio que a pessoa ja publicou: nao pausa, nao gri
     const status = p.ler('status')
     writeFileSync(join(p.pasta, 'status.json'), JSON.stringify({ ...status, etapa_atual: 'publicado', etapas: { ...status.etapas, publicacao: { status: 'ok', em: '2026-10-02', anuncio_id: 'MLB123' } } }))
     const api = apiFalsa({ 'GET /items/MLB123/description': { plain_text: '' }, 'POST /items/MLB123/description': { ok: true, status: 201, dado: {} }, 'GET /items/MLB123': { ...ITEM, status: 'active' }, 'PUT /items/MLB123': { ok: true, status: 200, dado: {} } })
-    const r = await enviar(SLUG, { api, raiz: p.raiz })
+    const r = await enviar(SLUG, { sim: SIM, api, raiz: p.raiz })
     assert.ok(!api.chamadas.includes('PUT /items/MLB123'), 'pausou anuncio publicado')
     assert.ok(!r.pendencias.some(a => /ATENCAO/.test(a)))
     assert.equal(p.ler('publicacao').canais[0].descricao, 'ok')

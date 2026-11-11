@@ -139,7 +139,12 @@ rende duas linhas, e está ótimo.
 
 ## Passo 4, aplicar o que teve sim
 
-Todo pedido de sim desta skill segue o gatilho da `/segunda-opiniao` (dose rápida).
+Os pedidos de sim desta skill seguem sem a `/segunda-opiniao`: nada aqui gasta
+ou sai do projeto, e o que se tira de um lugar fica guardado em outro antes (o
+fato vai pro projeto antes de sair da memória do assistente, e a chave só sai do
+arquivo depois que o `.env` bate). Apagar de vez, como o CPF de cliente que a
+pessoa manda tirar do sistema, é risco alto e passa pela `/segunda-opiniao`. Se
+a pessoa pedir a revisão, ela entra.
 
 Um item por vez, ou tudo de uma vez se a pessoa disser "aplica tudo":
 

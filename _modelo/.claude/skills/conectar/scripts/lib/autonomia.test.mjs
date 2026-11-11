@@ -78,7 +78,7 @@ test('teto invalido: texto, zero, negativo, moeda, periodo e partes faltando', (
 })
 
 test('por_vez invalido derruba a area; teto e por_vez fora de area de dinheiro tambem', () => {
-  let r = lerAutonomia(bloco('area: verba-meta', 'pode: gastar', 'teto: 10 USD mes', 'por_vez: dois'))
+  let r = lerAutonomia(bloco('area: verba-meta', 'pode: gastar', 'teto: 10 BRL mes', 'por_vez: dois'))
   assert.equal(r.areas['verba-meta'], undefined)
   assert.equal(r.problemas[0].codigo, 'por-vez-invalido')
   r = lerAutonomia(bloco('area: apagar', 'pode: apagar', 'teto: 5 USD mes'))
@@ -163,19 +163,24 @@ test('acoes fechadas das areas de dinheiro e do apagar', () => {
   assert.equal(lerAutonomia(bloco('area: apagar', 'pode: gastar')).problemas[0].codigo, 'acao-invalida')
 })
 
-test('gasto-ia so aceita USD; verba-* aceita BRL', () => {
+test('gasto-ia so aceita USD; verba-* so aceita BRL', () => {
   const g = lerAutonomia(bloco('area: gasto-ia', 'pode: gastar', 'teto: 100 BRL mes'))
   assert.equal(g.areas['gasto-ia'], undefined)
   assert.equal(g.problemas[0].codigo, 'teto-invalido')
   const v = lerAutonomia(bloco('area: verba-meta', 'pode: gastar', 'teto: 100 BRL semana'))
   assert.deepEqual(v.areas['verba-meta'].teto, { valor: 100, moeda: 'BRL', periodo: 'semana' })
+  for (const a of ['verba-meta', 'verba-google', 'verba-ml-ads']) {
+    const u = lerAutonomia(bloco(`area: ${a}`, 'pode: gastar', 'teto: 10 USD mes'))
+    assert.equal(u.areas[a], undefined, a)
+    assert.equal(u.problemas[0].codigo, 'teto-invalido', a)
+  }
 })
 
 test('por_vez acima do teto derruba a area; igual ao teto passa', () => {
-  const r = lerAutonomia(bloco('area: verba-google', 'pode: gastar', 'teto: 10 USD mes', 'por_vez: 10,5'))
+  const r = lerAutonomia(bloco('area: verba-google', 'pode: gastar', 'teto: 10 BRL mes', 'por_vez: 10,5'))
   assert.equal(r.areas['verba-google'], undefined)
   assert.equal(r.problemas[0].codigo, 'por-vez-acima-do-teto')
-  assert.equal(lerAutonomia(bloco('area: verba-google', 'pode: gastar', 'teto: 10 USD mes', 'por_vez: 10')).areas['verba-google'].por_vez, 10)
+  assert.equal(lerAutonomia(bloco('area: verba-google', 'pode: gastar', 'teto: 10 BRL mes', 'por_vez: 10')).areas['verba-google'].por_vez, 10)
 })
 
 test('definido_em precisa ser data real do calendario', () => {

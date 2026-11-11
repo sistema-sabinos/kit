@@ -53,10 +53,13 @@ As skills são o roteiro: nunca improvisar o fluxo.
 6. Chave de API só no `.env`, nunca no chat nem em outro arquivo. Senha de site também vai no `.env`: a IA lê pra fazer o login, nunca mostra no chat (o `/conectar` explica).
 7. Nunca editar `_modelo/` (o molde dos próximos projetos) sem o usuário pedir
    explicitamente.
-8. A skill `segunda-opiniao` entra antes do ok do que gasta, publica, envia pra
-   fora, apaga ou muda estrutura, e quando o usuário pede. A estrutura de pasta e
-   o pacote de skills do `setup` e do `novo-projeto` vão juntos, num pacote só;
-   pergunta simples da entrevista (um nome, um sim ou não) não chama revisor.
+8. A skill `segunda-opiniao` entra antes do ok do que é de risco alto (sem
+   volta, gasto fora da permissão, publicar, mandar pra fora; lista no
+   `_modelo/.claude/detalhe-regras.md`), uma vez quando nasce permissão nova no
+   `autonomia.md` de um projeto, e quando o usuário pede. Aqui, a estrutura de
+   pasta e o pacote de skills do `setup` e do `novo-projeto` são risco alto e vão
+   juntos, num pacote só; pergunta simples da entrevista (um nome, um sim ou não)
+   não chama revisor.
 9. O usuário nunca digita no terminal: quem roda comando é a IA, e dele só se
    pede clique (login, Autorizar, senha do computador) ou o que ele escreve no
    chat. Último caso (a IA ainda não existe na máquina, ou passo que só ele
@@ -66,7 +69,10 @@ As skills são o roteiro: nunca improvisar o fluxo.
    acessório, ou pedir o que falta), sem refazer a ação por outro caminho.
    Só na regra erro-interno do barrar-perigoso, em que a trava não conseguiu
    ler o comando, dá pra reescrever ele mais simples ou usar uma ferramenta
-   equivalente, avisando o usuário.
+   equivalente, avisando o usuário. O usuário queria mesmo aquilo: anotar no
+   `_contexto/licoes.md` do projeto que o `/setup` ou o `/novo-projeto` está
+   criando (ainda sem a pasta, guardar a linha e gravar quando ela nascer; fora
+   deles, no projeto que o usuário indicar) a lição com a marca `[trava X/regra Y]`.
 
 ## Estrutura e outros agentes
 

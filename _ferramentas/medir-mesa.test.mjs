@@ -62,7 +62,7 @@ test('ignora arquivo do _contexto/ que não é lido em toda conversa', () => {
   assert.doesNotMatch(saida, /ferramentas\.md/);
 });
 
-// 5.54 (C3): o /atualizar le o licoes.md inteiro quando entra licao nova, e ninguem media
+// 5.54 (C3): o /atualizar le o licoes.md inteiro (desde a 5.57, em todo fechamento), e ninguem media
 // (o do Projeto-02 chegou a 24042 bytes, por wc -c). Entra como [contexto], fora do total.
 test('mede o licoes.md como [contexto]: com 24042 bytes sai vermelho, fora do total', () => {
   const so = medir({ contexto: { 'empresa.md': 100 } });
@@ -82,6 +82,9 @@ test('mede o licoes.md como [contexto]: com 24042 bytes sai vermelho, fora do to
   assert.ok(iTotal > 0 && linhas.findIndex((l) => l.includes('empresa.md')) < iTotal, 'canario: o empresa.md vem antes do total');
   assert.ok(iTotal < iFora && iFora < iLicoes, 'o licoes.md sai depois do total, debaixo do "Fora do total"');
   assert.match(linhas[iFora], /\/atualizar/);
+  // 5.57 G: a frase segue o Passo 3.5 do /atualizar e o item 8 do /checar
+  assert.match(linhas[iFora], /entra inteiro em todo fechamento do \/atualizar/);
+  assert.doesNotMatch(linhas[iFora], /licao nova/);
 });
 
 test('_contexto/ tem limiar próprio, mais apertado que o de arquivo de regra', () => {

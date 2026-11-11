@@ -158,7 +158,8 @@ gastar e explica.
    perguntar a cada vez? Eu te aviso logo depois de cada gasto quanto foi e quanto sobra."
    Opções: "não, pergunta sempre" (o padrão), ou um valor em reais por dia, por semana ou
    por mês, menor ou igual ao orçamento, e, se ela quiser, um máximo por vez. Com o sim e
-   o valor, converta pra dólar no câmbio do item 2 e grave dentro do bloco `autonomia` do
+   o valor, passe a permissão pela `/segunda-opiniao` uma vez, antes de gravar; depois
+   converta pra dólar no câmbio do item 2 e grave dentro do bloco `autonomia` do
    `_contexto/autonomia.md` uma área nova, uma linha por campo: `area: gasto-ia`,
    `pode: gastar`, `teto: <dólar> USD <dia, semana ou mes>`, `por_vez: <dólar>` (só se ela
    deu), `definido_em: <data de hoje>`, `definido_por: <o .origem da raiz, ou dono>` e

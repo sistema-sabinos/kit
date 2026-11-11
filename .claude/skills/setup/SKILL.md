@@ -542,6 +542,15 @@ ficam quietos até alguém chamar o `/caixa`. Com o sim, copiar as quatro pastas
 `**Registro:** MEI` no `_contexto/empresa.md`. Os outros regimes se anotam igual ao bloco
 Loja, sem copiar nada.
 
+Perguntas do Mercado Livre: quando o pacote de loja não entrar, oferecer depois dele a
+`/atendimento` pra responder as perguntas dos compradores com o que a ficha de cada anúncio
+diz, dizendo que ela traz junto os scripts do caixa (`atendimento`, `caixa` e `cobrar`),
+que ficam quietos até alguém chamar o `/caixa`, e que sem permissão ela só rascunha e a
+pessoa responde no painel; pra resposta sair sozinha, a própria `/atendimento` oferece
+liberar a área `atendimento-ml`. Com o sim, copiar as três pastas (se a `/mei` já trouxe,
+nada a copiar). Com o pacote de loja instalado, a `/atendimento` já está no projeto: só
+contar que ela também responde as perguntas do Mercado Livre.
+
 Resposta negativa: não copiar nada, e anotar em `tarefas.md` que o pacote de
 marketplace existe e pode ser instalado depois pelo `/mapear`.
 

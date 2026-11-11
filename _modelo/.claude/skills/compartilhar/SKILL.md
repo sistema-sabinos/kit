@@ -74,8 +74,7 @@ apaga do histórico do GitHub, então a senha tem que ser trocada no serviço. R
 
 ## Passo 3, completar a pasta
 
-Montar a lista do que vai entrar, passar pela `/segunda-opiniao` e mostrar pra
-pessoa. Com o sim:
+Montar a lista do que vai entrar e mostrar pra pessoa. Com o sim:
 
 1. **Marca.** Se a pasta não tem `marca/` própria, criar `marca/design-guide.md`
    com o resumo da marca do projeto que esta pasta usa (cores, fontes) e
@@ -215,8 +214,9 @@ O que dizer pra quem recebe:
 
 ## Passo 6, o projeto para de guardar a pasta
 
-Só depois que o push do Passo 5 deu certo. O pedido de ok daqui também passa
-pela `/segunda-opiniao` (dose rápida). Antes disso, a pasta continua no
+Só depois que o push do Passo 5 deu certo. O pedido de ok daqui segue sem a
+`/segunda-opiniao`, porque tem volta: a pasta já está no GitHub dela. Antes
+disso, a pasta continua no
 backup do projeto e nada se perde se a pessoa parar no meio.
 
 Explicar e pedir o ok:
