@@ -426,7 +426,8 @@ export function memoriaDoAgente(raiz, home = homedir()) {
 const RENDE_JANELA = 30
 const RENDE_MIN_ENTRADAS = 10
 const RENDE_ENTRADAS_POR_MUDANCA = 10
-// Frescor: regra ou contexto sem commit ha mais de 60 dias enquanto o diario teve entrada nos ultimos 14.
+// Frescor: regra ou contexto sem commit ha mais de 60 dias enquanto o diario teve entrada nos ultimos 14,
+// e o contexto.md e o andamento.md de cada pasta de projeto.
 const FRESCOR_PARADO = 60
 const FRESCOR_DIARIO_VIVO = 14
 const FRESCOR_ARQUIVOS = ['AGENTS.md', '_contexto/empresa.md', '_contexto/estrategia.md', '_contexto/preferencias.md']
@@ -468,16 +469,129 @@ export function diarioRende(raiz, hoje) {
   return { semGit: false, entradas, mudancas, alerta: entradas >= RENDE_MIN_ENTRADAS && entradas > RENDE_ENTRADAS_POR_MUDANCA * mudancas }
 }
 
+// pasta de projeto: fora da raiz, do _contexto (o arquivo dele inclusive), do _memoria e do .claude
+const dePasta = p => p.includes('/') && !/^(_contexto|_memoria|\.claude)\//.test(p)
+
+// andamento.md de pasta de projeto que o backup guarda, e o contexto.md so da pasta que nao tem andamento.md:
+// o contexto guarda o combinado e quase nao muda, entao parado ao lado de um andamento vivo nao quer dizer nada.
+// -z: sem ele o git devolve nome com acento entre aspas e em octal, e a pasta some calada
+function arquivosDePasta(raiz) {
+  let saida = ''
+  try { saida = git(raiz, ['ls-files', '-z', '--', ':(glob)**/contexto.md', ':(glob)**/andamento.md']) } catch {}
+  const todos = saida.split('\0').filter(dePasta)
+  return todos.filter(a => !a.endsWith('/contexto.md') || !todos.includes(a.replace(/contexto\.md$/, 'andamento.md'))).sort()
+}
+
 export function frescor(raiz, hoje) {
   if (!gitDaRaiz(raiz)) return { semGit: true, parados: [] }
   const parados = []
-  if (entradasDoDiario(raiz).some(d => naJanela(d, hoje, FRESCOR_DIARIO_VIVO))) for (const arq of FRESCOR_ARQUIVOS) {
+  if (entradasDoDiario(raiz).some(d => naJanela(d, hoje, FRESCOR_DIARIO_VIVO))) for (const arq of [...FRESCOR_ARQUIVOS, ...arquivosDePasta(raiz)]) {
     if (!existsSync(join(raiz, arq))) continue
     let ultimo = ''
     try { ultimo = git(raiz, ['log', '-1', '--format=%cd', '--date=short', '--', arq]).trim() } catch {}
     if (RE_DATA.test(ultimo) && diasEntre(ultimo, hoje) > FRESCOR_PARADO) parados.push({ arquivo: arq, dias: diasEntre(ultimo, hoje) })
   }
   return { semGit: false, parados }
+}
+
+// habilidade guardada numa pasta de projeto que o AGENTS.md dela nao cita: com a sessao no projeto-pai, ninguem acha.
+// Pasta de projeto tem contexto.md ou andamento.md (repositorio baixado com .claude/skills proprio fica fora).
+// O nome se compara por palavra inteira, sem caixa: `post-bia-2` citado nao esconde o `post-bia`.
+export function skillsSemCitacao(raiz) {
+  const fora = []
+  for (const { p } of andar(raiz)) {
+    const m = /^(.+)\/\.claude\/skills\/([^/]+)\/SKILL\.md$/.exec(rel(raiz, p))
+    if (!m || !dePasta(m[0])) continue
+    const [, pasta, nome] = m
+    if (!existsSync(join(raiz, pasta, 'contexto.md')) && !existsSync(join(raiz, pasta, 'andamento.md'))) continue
+    let agents
+    try { agents = readFileSync(join(raiz, pasta, 'AGENTS.md'), 'utf8') } catch { continue }
+    if (agents.toLowerCase().split(/[^a-z0-9-]+/).includes(nome.toLowerCase())) continue
+    fora.push({ pasta: pasta + '/', skill: nome, secao: /^## Habilidades desta pasta\s*$/m.test(agents) })
+  }
+  return fora.sort((a, b) => (a.pasta + a.skill).localeCompare(b.pasta + b.skill))
+}
+
+// ---------- fato repetido no diario ----------
+// So levanta candidato: termo entre crases ou em negrito, ou nome com inicial maiuscula, que voltou ao diario em 3
+// dias diferentes do ultimo mes e que o _contexto/ e o contexto.md das pastas de projeto ainda nao citam. Quem
+// escolhe o que vale guardar e o modelo, no passo 2 da skill.
+const FATO_JANELA = 30
+const FATO_MIN_DIAS = 3
+const FATO_TETO = 10
+// diario assinado por robo ou outra rotina repete o mesmo nome todo dia e enche a lista de ruido
+const RE_DIARIO_ROBO = /^\d{4}-\d{2}-\d{2}-robo-/
+const COMUNS = new Set(['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'])
+const dobra = s => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+// palavra por palavra, entre espacos: "bia" casa dentro de " a bia aprovou " e nunca dentro de " bianca "
+const tokens = s => ' ' + dobra(s).replace(/[^a-z0-9]+/g, ' ').trim() + ' '
+
+export function termosDaLinha(l) {
+  const corpo = l.replace(RE_LINHA_DIARIO, '').replace(/\s*\([^()]*\)\s*$/, '')
+  const termos = []
+  for (const m of corpo.matchAll(/`([^`]+)`|\*\*([^*]+)\*\*/g)) {
+    const t = (m[1] || m[2]).trim()
+    // caminho e comando ficam fora
+    if (t.length >= 3 && t.length <= 40 && !/[/=]|\.[a-z0-9]{1,5}$/i.test(t)) termos.push(t)
+  }
+  // tira o que ja saiu acima e o caminho ou arquivo solto (AGENTS.md, clientes/acme)
+  const limpo = corpo.replace(/`[^`]*`|\*\*[^*]*\*\*/g, ' ').replace(/\S*\/\S*|\S+\.[a-z0-9]{1,5}\b/gi, ' ')
+  for (const m of limpo.matchAll(/(?<![\p{L}\p{N}])\p{Lu}\p{L}{2,}(?: (?:d[aeo]s? )?\p{Lu}\p{L}+)*/gu)) {
+    const antes = limpo.slice(0, m.index).trimEnd()
+    // comeco de frase tem maiuscula de regra: ali so conta nome de 2 palavras ou mais
+    if ((!antes || /[.!?:;]$/.test(antes)) && !m[0].includes(' ')) continue
+    termos.push(m[0])
+  }
+  return termos.filter(t => !COMUNS.has(dobra(t)))
+}
+
+// o que o projeto ja guarda: todo .md do _contexto/ (fora a memoria fria do arquivo/), o nome de cada arquivo de
+// pessoas/ e o contexto.md de cada pasta de projeto
+function textoConhecido(raiz) {
+  let texto = ''
+  try { for (const f of readdirSync(join(raiz, '_contexto', 'pessoas'))) texto += f.replace(/\.md$/, '') + '\n' } catch {}
+  for (const { p } of andar(raiz)) {
+    const r = rel(raiz, p)
+    const doContexto = r.startsWith('_contexto/') && !r.startsWith('_contexto/arquivo/') && r.endsWith('.md')
+    if (doContexto || (basename(r) === 'contexto.md' && dePasta(r))) { try { texto += readFileSync(p, 'utf8') + '\n' } catch {} }
+  }
+  return texto
+}
+
+// diario de rotina: robo do /agendar (robo-<nome>) ou origem com linha no _contexto/automacoes.md
+function origensDeRotina(raiz) {
+  try { return lerTabela(readFileSync(join(raiz, '_contexto', 'automacoes.md'), 'utf8')).map(r => r.origem).filter(Boolean) } catch { return [] }
+}
+
+export function fatosRepetidos(raiz, hoje) {
+  const d = join(raiz, '_memoria', 'diario')
+  const vistos = new Map()
+  const rotinas = origensDeRotina(raiz)
+  // diario de outra origem se chama AAAA-MM-DD-<origem>.md
+  const deRotina = f => rotinas.includes(f.slice(11, -3).toLowerCase())
+  if (existsSync(d)) for (const f of readdirSync(d).sort()) {
+    const m = RE_DATA.exec(f)
+    if (!m || !f.endsWith('.md') || RE_DIARIO_ROBO.test(f) || deRotina(f) || !naJanela(m[0], hoje, FATO_JANELA)) continue
+    let linhas
+    try { linhas = readFileSync(join(d, f), 'utf8').split(/\r?\n/) } catch { continue }
+    linhas.forEach((l, i) => {
+      if (!RE_LINHA_DIARIO.test(l)) return
+      for (const t of termosDaLinha(l)) {
+        const k = tokens(t)
+        if (!k.trim()) continue
+        const v = vistos.get(k) || { termo: t, dias: new Set() }
+        // dia pela data do nome: o diario do notebook no mesmo dia soma no mesmo dia
+        v.dias.add(m[0])
+        if (!v.ultimo || m[0] >= v.ultimo) { v.ultimo = m[0]; v.onde = `_memoria/diario/${f}:${i + 1}` }
+        vistos.set(k, v)
+      }
+    })
+  }
+  const conhecido = tokens(textoConhecido(raiz))
+  const todos = [...vistos].filter(([k, v]) => v.dias.size >= FATO_MIN_DIAS && !conhecido.includes(k))
+    .map(([, v]) => ({ termo: v.termo, dias: v.dias.size, ultimo: v.ultimo, onde: v.onde }))
+    .sort((a, b) => b.dias - a.dias || a.termo.localeCompare(b.termo))
+  return { candidatos: todos.slice(0, FATO_TETO), sobra: Math.max(0, todos.length - FATO_TETO) }
 }
 
 // servidor do .mcp.json e variavel do .env que o ferramentas.md nao cita. Do .env sai so o NOME:
@@ -534,6 +648,8 @@ export function relatorio(raiz, hoje = dataLocal(), home) {
     diarioRende: diarioRende(raiz, hoje),
     frescor: frescor(raiz, hoje),
     ferramentasSemRegistro: ferramentasSemRegistro(raiz),
+    skillsSemCitacao: skillsSemCitacao(raiz),
+    fatosRepetidos: fatosRepetidos(raiz, hoje),
     ilegiveis,
     ultimosDiarios: ultimos,
   }

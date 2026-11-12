@@ -1,7 +1,7 @@
 ---
 name: proposta-comercial
 description: >
-  Gera uma proposta comercial profissional em HTML a partir de um briefing em texto livre.
+  Gera uma proposta comercial profissional em HTML a partir de um texto livre ou da transcrição da reunião.
   Aplica a identidade visual da marca do usuário (cores e fontes do guia visual da marca).
   Use quando o usuário mencionar "proposta", "proposta comercial", "orçamento",
   "apresentação de projeto" ou pedir um documento de venda para um cliente.
@@ -19,17 +19,13 @@ description: >
 
 ## Workflow
 
-### Passo 1, Coletar o briefing
+### Passo 1, Entender o pedido
 
-Se o usuário ainda não forneceu um briefing completo, perguntar:
+O usuário conta do jeito dele: um texto solto ou a transcrição da reunião colada no chat. Tirar dali o que der: cliente e empresa, o problema, o que se propõe fazer, valor, prazo e entregáveis.
 
-1. "Nome do cliente e empresa?"
-2. "Qual é o problema ou necessidade do cliente?"
-3. "O que você propõe fazer? (serviço ou produto)"
-4. "Qual é o valor? (pode ser range ou 'a definir')"
-5. "Tem prazo ou entregável específico?"
+Se existe a pasta desse cliente no projeto, ler o `contexto.md` e o `andamento.md` dela antes de perguntar: o que já foi combinado está ali.
 
-Se o usuário já forneceu as informações de forma livre, extrai o que der e prossegue sem fazer todas as perguntas.
+Só então perguntar o que ainda falta, uma pergunta por mensagem.
 
 ### Passo 2, Ler os arquivos de contexto
 
@@ -39,30 +35,29 @@ Se o usuário já forneceu as informações de forma livre, extrai o que der e p
 
 ### Passo 3, Gerar o HTML
 
-Criar um arquivo HTML completo com as seguintes seções:
+Criar um arquivo HTML completo. A ordem, os títulos e o tamanho de cada parte se escolhem pelo caso.
 
-**Estrutura da proposta:**
-1. Header, logo/nome da empresa prestadora + data. Se o design guide tiver logo definido na seção **Logo**, usar a imagem (largura 140-180px). Escolher a versão correta (fundo claro ou escuro) conforme o estilo da proposta. Se não tiver logo, usar o nome da empresa em texto
-2. Destinatário, "Proposta para [Cliente]"
-3. O problema, o desafio que o cliente enfrenta (em 2-3 parágrafos, na perspectiva do cliente)
-4. A solução, o que você propõe e por que resolve
-5. Escopo, o que está incluído (lista clara)
-6. O que NÃO está incluído (quando relevante, evita conflito depois)
-7. Prazo e entregáveis
-8. Investimento, valor com contexto de ROI quando possível
-9. Próximos passos, call to action claro
-10. Sobre a empresa, 3-4 linhas sobre quem entrega
+**O que não pode faltar:**
+- Pra quem é a proposta e a data
+- O problema, do jeito que o cliente vê
+- O que você propõe e por que resolve
+- O escopo, e o que fica de fora quando isso evita briga depois
+- Prazo e entregáveis
+- O investimento, visível
+- O próximo passo, claro
+
+Logo: se o design guide tiver logo na seção **Logo**, usar a imagem (largura 140-180px), na versão que combina com o fundo (claro ou escuro). Sem logo, o nome da empresa em texto.
 
 **Estilo visual:**
 - Aplicar cores e fontes do guia visual da marca
-- Se design guide estiver vazio, usar: fundo branco, texto escuro, acento em azul escuro (#1E3A5F), tipografia limpa
+- Se o design guide estiver vazio: visual limpo e neutro, sem inventar marca
 - Layout de uma coluna, responsivo, leve
 - Seções com espaçamento generoso
 - Valor em destaque visual (não escondido)
 
 ### Passo 4, Salvar e oferecer publicação
 
-Salvar em `propostas/proposta-[nome-cliente]-[data].html`
+Salvar na pasta do cliente, quando ela existe: `<pasta do cliente>/proposta-[nome-cliente]-[data].html`. Sem pasta do cliente, onde a Tabela de destinos do `AGENTS.md` do projeto manda guardar proposta; sem linha pra proposta lá, em `propostas/proposta-[nome-cliente]-[data].html`.
 
 Perguntar: "Quer que eu publique essa proposta com um link compartilhável? É só chamar `/publicar-site` passando o arquivo."
 

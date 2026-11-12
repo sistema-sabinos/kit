@@ -5,7 +5,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { autoSync, lerOrigem, carimbo, semInternet, semLogin, caraDeChave, conferirPreparados, idadeBackup } from './auto-sync.mjs'
+import { autoSync, lerOrigem, carimbo, semInternet, semLogin, caraDeChave, conferirPreparados, idadeBackup, lerCheckIgnore, segredoForaDoBackup, SEGREDOS } from './auto-sync.mjs'
 
 const SCRIPT = fileURLToPath(new URL('./auto-sync.mjs', import.meta.url))
 const AGORA = new Date(2026, 9, 5, 22, 7)   // 22h no Brasil: em UTC ja seria dia 6
@@ -19,7 +19,12 @@ function configurar(dir) {
   git(dir, 'config', 'user.email', 'teste@exemplo.com')
   git(dir, 'config', 'commit.gpgsign', 'false')
   git(dir, 'config', 'core.autocrlf', 'false')
+  // o .gitignore global de quem roda o teste nao pode barrar o .env no lugar do projeto
+  git(dir, 'config', 'core.excludesFile', join(dir, 'sem-exclude-global'))
 }
+
+// sem o .env barrado o backup nao sobe nada (5.59, A)
+const GI_BASE = '.origem\n.backup-falhou\n.env*\n!.env.example\n'
 
 // remoto local (git init --bare) com dois clones, A e B, nunca GitHub
 function montar() {
@@ -33,7 +38,7 @@ function montar() {
   git(a, 'remote', 'add', 'origin', remoto)
   writeFileSync(join(a, 'notas.md'), 'linha 1\n')
   // o que o .gitignore do molde bloqueia de proposito e o hook escreve
-  writeFileSync(join(a, '.gitignore'), '.origem\n.backup-falhou\n')
+  writeFileSync(join(a, '.gitignore'), GI_BASE)
   git(a, 'add', '-A')
   git(a, 'commit', '-q', '-m', 'inicio')
   git(a, 'push', '-q', '-u', 'origin', 'main')
@@ -155,8 +160,8 @@ test('recado de envio parado fica neste computador: o .gitignore do molde barra 
       return git(r.b, 'log', '--all', '--format=', '--name-only')
     } finally { rmSync(r.raiz, { recursive: true, force: true }) }
   }
-  assert.match(conflito('.origem\n.backup-falhou\n'), /auto-sync-parado/, 'canario: sem a linha, o recado entra no commit')
-  assert.doesNotMatch(conflito(`.origem\n.backup-falhou\n${linha}\n`), /auto-sync-parado/)
+  assert.match(conflito(GI_BASE), /auto-sync-parado/, 'canario: sem a linha, o recado entra no commit')
+  assert.doesNotMatch(conflito(`${GI_BASE}${linha}\n`), /auto-sync-parado/)
 })
 
 test('rebase pela metade (o /syncar resolvendo) nao e tocado', () => {
@@ -705,4 +710,121 @@ test('--idade [pasta] pela linha de comando: imprime a linha, sai 0 e nao commit
     assert.match(e.stderr, /--conferir/)
     assert.match(e.stderr, /--idade/)
   } finally { rmSync(r.raiz, { recursive: true, force: true }) }
+})
+
+// 5.59 (A): o .gitignore que nao barra o .env para o backup inteiro
+const MOLDE_GI = fileURLToPath(new URL('../../.gitignore', import.meta.url))
+const MAE_GI = fileURLToPath(new URL('../../../.gitignore', import.meta.url))
+
+test('sem .gitignore que barra o .env nada sobe: sem arquivo e com !.env no fim do molde', () => {
+  const casos = [
+    ['sem .gitignore', null, /deixou de barrar \.env e \.env\.local/],
+    ['molde com !.env no fim', readFileSync(MOLDE_GI, 'utf8') + '\n!.env\n', /deixou de barrar \.env \(/],
+  ]
+  for (const [nome, gi, recado] of casos) {
+    const r = montar()
+    try {
+      if (gi === null) rmSync(join(r.a, '.gitignore'))
+      else writeFileSync(join(r.a, '.gitignore'), gi)
+      writeFileSync(join(r.a, '.env'), 'OPENAI_API_KEY=' + CHAVE_FALSA + '\n')
+      writeFileSync(join(r.a, 'notas.md'), 'linha 1\nlinha 2\n')
+      const local = git(r.a, 'rev-parse', 'HEAD')
+      const remoto = git(r.a, 'rev-parse', 'origin/main')
+      assert.equal(autoSync(r.a, AGORA), 'sem-gitignore', nome)
+      assert.equal(git(r.a, 'rev-parse', 'HEAD'), local, `${nome}: nenhum commit novo`)
+      assert.equal(execFileSync('git', ['--git-dir', r.remoto, 'rev-parse', 'main'], { encoding: 'utf8' }).trim(), remoto, `${nome}: o remoto nao mudou`)
+      assert.equal(git(r.a, 'diff', '--cached', '--name-only'), '', `${nome}: nada preparado`)
+      const aviso = readFileSync(join(r.a, '.backup-falhou'), 'utf8')
+      assert.match(aviso, recado, nome)
+      assert.match(aviso, /nada foi enviado/)
+      // canario: com o .gitignore de volta, o mesmo projeto manda e o .env fica de fora
+      writeFileSync(join(r.a, '.gitignore'), GI_BASE)
+      assert.equal(autoSync(r.a, AGORA), 'enviado', `${nome}: com o .gitignore certo sobe`)
+      assert.ok(temNoRemoto(r, 'notas.md') && !temNoRemoto(r, '.env'), nome)
+      assert.ok(!existsSync(join(r.a, '.backup-falhou')), 'o envio que deu certo apaga o aviso')
+    } finally { rmSync(r.raiz, { recursive: true, force: true }) }
+  }
+})
+
+test('.env ja rastreado e mudado: o resto sobe e o .env fica segurado, com a regra arquivo-de-chave', () => {
+  const r = montar()
+  try {
+    writeFileSync(join(r.a, '.env'), 'A=1\n')
+    git(r.a, 'add', '-f', '.env')
+    git(r.a, 'commit', '-q', '-m', 'env rastreado')
+    git(r.a, 'push', '-q')
+    writeFileSync(join(r.a, '.env'), 'OPENAI_API_KEY=' + CHAVE_FALSA + '\n')
+    writeFileSync(join(r.a, 'notas.md'), 'linha 1\nlinha 2\n')
+    assert.equal(autoSync(r.a, AGORA), 'enviado')
+    assert.equal(doRemoto(r, 'notas.md'), 'linha 1\nlinha 2\n', 'o resto subiu')
+    assert.equal(doRemoto(r, '.env'), 'A=1\n', 'a mudanca do .env nao subiu')
+    const texto = readFileSync(join(r.a, '_memoria', 'recados', '2026-10-05-dono-auto-sync-segurou.md'), 'utf8')
+    assert.match(texto, /regra arquivo-de-chave:/)
+    assert.match(texto, /- \.env: é o arquivo das chaves \(\.env\)/)
+    assert.match(texto, /Arquivo das chaves \(`\.env`\): ele nunca vai pro backup/)
+    assert.equal(readFileSync(join(r.a, '.env'), 'utf8'), 'OPENAI_API_KEY=' + CHAVE_FALSA + '\n', 'o arquivo continua no disco, intacto')
+  } finally { rmSync(r.raiz, { recursive: true, force: true }) }
+})
+
+test('conferirPreparados segura o .env pelo nome exato; .envrc e .envio passam pela varredura', () => {
+  const r = montar()
+  try {
+    writeFileSync(join(r.a, '.env'), 'X=1\n')
+    writeFileSync(join(r.a, '.env.local'), 'Y=2\n')
+    writeFileSync(join(r.a, '.env.example'), 'Z=exemplo\n')
+    writeFileSync(join(r.a, '.envrc'), 'export OPENAI_API_KEY=' + CHAVE_FALSA + '\n')
+    writeFileSync(join(r.a, '.envio.md'), 'lista de envio\n')
+    mkdirSync(join(r.a, 'app', 'codigo'), { recursive: true })
+    writeFileSync(join(r.a, 'app', 'codigo', '.env.local'), 'W=3\n')
+    // .ENV e o mesmo arquivo que .env no Windows e no Mac: em outra pasta, pra caber junto
+    mkdirSync(join(r.a, 'caixa'))
+    writeFileSync(join(r.a, 'caixa', '.ENV'), 'SENHA=teste123\n')
+    git(r.a, 'add', '-f', '.env', '.env.local', '.env.example', '.envrc', '.envio.md', 'app/codigo/.env.local', 'caixa/.ENV')
+    const segurados = Object.fromEntries(conferirPreparados(r.a).map(s => [s.rel, s.motivo]))
+    assert.deepEqual(segurados, {
+      '.env': 'é o arquivo das chaves (.env)',
+      '.env.local': 'é o arquivo das chaves (.env)',
+      '.envrc': 'tem cara de chave de API',
+      'app/codigo/.env.local': 'é o arquivo das chaves (.env)',
+      'caixa/.ENV': 'é o arquivo das chaves (.env)',
+    })
+  } finally { rmSync(r.raiz, { recursive: true, force: true }) }
+})
+
+test('git que nao responde na conferencia do .env: nada sobe, falhou, e o aviso nao culpa o .gitignore', () => {
+  const r = montar()
+  try {
+    writeFileSync(join(r.a, 'notas.md'), 'linha 1\nlinha 2\n')
+    const local = git(r.a, 'rev-parse', 'HEAD')
+    assert.equal(autoSync(r.a, AGORA, { conferirSegredo: () => ({ erro: 'fatal: quebrou' }) }), 'falhou')
+    assert.equal(git(r.a, 'rev-parse', 'HEAD'), local, 'nenhum commit novo')
+    assert.equal(git(r.a, 'diff', '--cached', '--name-only'), '', 'nada preparado')
+    const aviso = readFileSync(join(r.a, '.backup-falhou'), 'utf8')
+    assert.match(aviso, /O Git não respondeu na conferência/)
+    assert.match(aviso, /fatal: quebrou/)
+    assert.doesNotMatch(aviso, /deixou de barrar/)
+    // canario: sem a conferencia injetada, o mesmo projeto manda
+    assert.equal(autoSync(r.a, AGORA), 'enviado')
+  } finally { rmSync(r.raiz, { recursive: true, force: true }) }
+})
+
+test('lerCheckIgnore: 128 e erro, 1 e nenhum ignorado, 0 lista os ignorados', () => {
+  assert.deepEqual(lerCheckIgnore({ status: 128, stdout: '', stderr: 'fatal: quebrou\n' }), { erro: 'fatal: quebrou' })
+  assert.deepEqual(lerCheckIgnore({ status: 1, stdout: '' }), { faltam: SEGREDOS })
+  assert.deepEqual(lerCheckIgnore({ status: 0, stdout: '.env\0' }), { faltam: ['.env.local'] })
+  assert.deepEqual(lerCheckIgnore({ status: 0, stdout: '.env\0.env.local\0' }), { faltam: [] })
+})
+
+test('o .gitignore do molde e o da pasta-mae passam na conferencia do auto-sync', () => {
+  for (const gi of [MOLDE_GI, MAE_GI]) {
+    const dir = mkdtempSync(join(tmpdir(), 'auto-sync-gi-'))
+    try {
+      git(dir, 'init', '-q')
+      configurar(dir)
+      // canario: sem .gitignore a conferencia acusa
+      assert.deepEqual(segredoForaDoBackup(dir), { faltam: SEGREDOS })
+      copyFileSync(gi, join(dir, '.gitignore'))
+      assert.deepEqual(segredoForaDoBackup(dir), { faltam: [] }, gi)
+    } finally { rmSync(dir, { recursive: true, force: true }) }
+  }
 })

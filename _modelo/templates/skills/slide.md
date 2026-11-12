@@ -27,7 +27,7 @@ Se não estiver claro, perguntar:
 ### Passo 2, Ler o design guide
 
 Ler o guia visual da marca pra aplicar as cores e fontes corretas.
-Se estiver vazio, usar padrão: fundo escuro, acento amarelo, Bricolage Grotesque.
+Se estiver vazio: visual limpo e neutro, sem inventar marca. Cor e fonte novas só entram no guia com o ok da pessoa.
 
 ### Passo 3, Gerar o HTML
 
@@ -36,21 +36,13 @@ Criar um arquivo HTML único, com dimensões específicas pro formato pedido:
 - Slide 16:9: 1920x1080px
 - Story 9:16: 1080x1920px
 
-**Tipos de layout por conteúdo:**
+**O que não pode faltar:**
+- A ideia principal, que se entende em 2 segundos
+- Um destaque só por slide (o número, a frase ou o fluxo)
+- Texto que cabe sem letra miúda
+- As cores e fontes do guia visual
 
-*Dado/estatística:*
-- Número em destaque grande (80-120px)
-- Label descritivo pequeno abaixo
-- Fundo de cor sólida ou gradiente sutil
-
-*Texto/insight:*
-- Título em serif italic grande
-- Corpo em sans-serif, até 3 frases
-- Elemento gráfico de destaque (linha, box, destaque de cor)
-
-*Diagrama/fluxo:*
-- Usar CSS para criar caixas, setas e conexões
-- Layout horizontal ou vertical conforme o conteúdo
+A disposição (onde vai o título, se tem caixa, seta ou gráfico, em linha ou em coluna) se escolhe pelo conteúdo de cada slide.
 
 ### Passo 4, Salvar
 

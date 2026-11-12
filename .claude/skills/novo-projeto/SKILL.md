@@ -645,7 +645,12 @@ perguntar outro nome antes de seguir.
   Executivo se grava só quando a pessoa disser o valor.
 - `marca/design-guide.md`: perguntar rapidamente se este projeto muda algo do
   visual já usado nos outros projetos da pessoa. Identidade própria, preencher
-  com ela. Mesma identidade dos outros, copiar o `design-guide.md` já
+  com ela. Se ela vier de um site, ler com WebFetch e mostrar o que saiu antes de
+  preencher. Do site sai só a marca: a cor principal, a cor de fundo, a cor do
+  texto, as fontes, o logo e uma linha sobre o clima. Canto arredondado, sombra,
+  jeito do botão e montagem da página ficam de fora, a não ser que a pessoa peça
+  com todas as letras tudo igual ao site ou mande um manual da marca que fale
+  deles. Mesma identidade dos outros, copiar o `design-guide.md` já
   preenchido do projeto irmão (lido no Passo 0) em vez de deixar em branco,
   senão as skills visuais vão perguntar cor e fonte de novo. Só fica neutro se
   ela ainda não tiver visual definido em lugar nenhum, avisando que dá pra

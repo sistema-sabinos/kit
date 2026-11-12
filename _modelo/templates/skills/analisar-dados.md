@@ -55,31 +55,12 @@ Identificar e reportar:
 
 ### Passo 4, Output
 
-Gerar um resumo executivo em prosa (não só bullet points):
+Gerar um resumo em prosa (não só bullet points), do tamanho que o dado pede, com o nome do arquivo e a data da análise no topo. Seções, títulos e ordem se escolhem pelo caso.
 
-```markdown
-# Análise, [Nome do Arquivo/Relatório]
-*[Data da análise]*
-
-## O que esses dados mostram
-[2-3 parágrafos com o panorama geral]
-
-## O que está funcionando
-[lista com contexto]
-
-## O que merece atenção
-[lista com contexto]
-
-## 3 recomendações
-1. [ação concreta]
-2. [ação concreta]
-3. [ação concreta]
-
-## Números-chave
-| Métrica | Valor | Contexto |
-|---------|-------|---------|
-| ... | ... | ... |
-```
+**O que não pode faltar:**
+- A resposta à pergunta da pessoa, logo no começo
+- Os números que sustentam a resposta (uma tabela curta ajuda)
+- O que fazer, em ações concretas, quantas o dado sustentar
 
 Salvar em `estudos/analise-[nome]-[data].md` ou na pasta mais adequada pro perfil do usuário.
 

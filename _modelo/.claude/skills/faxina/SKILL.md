@@ -80,15 +80,34 @@ passado; palavra desconhecida sai com erro 3 e não roda nada.) O que cada parte
   /atualizar". `semGit`: sem backup ligado não dá pra contar; dizer isso numa
   linha.
 - `frescor.parados`: regra ou contexto (`AGENTS.md`, `empresa.md`,
-  `estrategia.md`, `preferencias.md`) que ninguém mexe há mais de 60 dias,
+  `estrategia.md`, `preferencias.md`, e o `andamento.md` de cada pasta de
+  projeto, ou o `contexto.md` da pasta que não tem `andamento.md`) que ninguém
+  mexe há mais de 60 dias,
   enquanto o diário teve entrada nas últimas duas semanas. Frase: "o
   `estrategia.md` está parado há N dias enquanto o trabalho segue; confere se
-  ainda vale". Sem backup ligado (`semGit`), pula.
+  ainda vale". Quando é de pasta de projeto: "o andamento da pasta
+  `clientes/acme/` está parado há N dias enquanto o trabalho segue; o projeto
+  acabou ou só ninguém atualizou?". Com o sim, ou a pessoa conta onde o projeto
+  está e o `andamento.md` ganha a linha nova, ou a pasta acabou e vai pro
+  `_contexto/arquivo/`. Sem backup ligado (`semGit`), pula.
 - `ferramentasSemRegistro`: ferramenta ligada que o `_contexto/ferramentas.md`
   não cita. `mcp` são as conexões do `.mcp.json`; `env` são os nomes das chaves
   do `.env` (só o nome; o valor nunca aparece no relatório). Propor uma linha no
   `ferramentas.md` pra cada uma, dizendo o que ela faz. Sem `ferramentas.md`,
   vem vazio.
+- `skillsSemCitacao`: habilidade guardada dentro de uma pasta de projeto
+  (`<pasta>/.claude/skills/<nome>/`) que o `AGENTS.md` daquela pasta não cita;
+  com a sessão aberta no projeto-pai, ninguém acha ela. Vai pra "Precisa de
+  você" com a linha pronta pra seção "Habilidades desta pasta" do `AGENTS.md`
+  da pasta: "- `<nome>`: <o que ela faz, numa frase tirada do `SKILL.md`
+  dela>". `secao: false` quer dizer que a seção ainda não existe e nasce com
+  essa linha. Grava só com o sim.
+- `fatosRepetidos.candidatos`: nome ou termo que apareceu no diário em 3 dias
+  diferentes ou mais no último mês (fora o diário das rotinas do
+  `automacoes.md`) e que nenhum arquivo do `_contexto/` (fora o `arquivo/`) nem
+  o `contexto.md` de nenhuma pasta de projeto cita. É só candidato: quem escolhe é o passo 2. `onde` é a
+  linha mais recente, `ultimo` a data dela, e `sobra` quantos ficaram de fora
+  do teto de 10.
 - `ultimosDiarios`: os três arquivos mais recentes do diário, pra conferir o
   "onde paramos".
 - `ilegiveis`: arquivo que não deu pra ler (aberto em outro programa, por exemplo). Ficou fora da varredura de segredo: dizer qual é e pedir pra fechar o programa e rodar de novo.
@@ -116,6 +135,12 @@ Esses o script não resolve; ler e julgar:
    tipo de arquivo (planilha de outro programa, arquivo de design): oferecer
    liberar a extensão no `.gitignore`, avisando que arquivo acima de 100 MB o
    GitHub recusa.
+6. **Fato repetido no diário.** Pra cada candidato de `fatosRepetidos`, ler a
+   linha de `onde`. Fica só fato do negócio (cliente, fornecedor, produto, preço,
+   combinado); palavra comum, lugar e nome de programa saem. No máximo 3, em
+   "Precisa de você", cada um com a linha pronta e o destino pela Tabela de
+   destinos do `AGENTS.md`; preço vai sempre com a data do diário (`ultimo`).
+   Grava só com o sim. Nada sobrou: não fala nada.
 
 ## Passo 3, o relatório
 
@@ -173,10 +198,13 @@ Um item por vez, ou tudo de uma vez se a pessoa disser "aplica tudo":
   vai pro arquivo sem a pessoa confirmar que não usa mais. Arquivo citado por
   skill instalada (`grep -rl "<caminho>" .claude/skills/` acha) nunca recebe a
   oferta de arquivar: a skill para de achar o que procura.
-- Fato trazido da memória do assistente ou correção do `agora.md`: gravar a
-  linha mostrada, no destino que a Tabela de destinos dá, sem reformatar o
-  arquivo. O fato trazido continua também na memória do assistente: dizer isso e
-  oferecer apagar de lá, só com o sim.
+- Habilidade de pasta sem citação: acrescentar a linha mostrada na seção
+  "Habilidades desta pasta" do `AGENTS.md` da pasta (sem a seção, ela nasce no
+  fim do arquivo com essa linha), sem mexer no resto.
+- Fato trazido da memória do assistente, fato repetido no diário ou correção do
+  `agora.md`: gravar a linha mostrada, no destino que a Tabela de destinos dá,
+  sem reformatar o arquivo. O que veio da memória do assistente continua também
+  lá: dizer isso e oferecer apagar de lá, só com o sim.
 - Extensão liberada no `.gitignore`: uma linha `!*.<extensão>` no fim, com o
   aviso dos 100 MB.
 

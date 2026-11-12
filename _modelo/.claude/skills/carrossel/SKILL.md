@@ -21,13 +21,12 @@ Ler o guia visual da marca (linha "a marca" do Mapa no `AGENTS.md`; pasta de pro
 
 > "Pra criar o carrossel com a tua cara, preciso de algumas coisas. Me conta:
 > 1. Qual a cor principal da tua marca? (hex tipo #FF5C35, ou descreve: "azul escuro", "laranja quente")
-> 2. Tem preferência de fonte? (Se não, eu escolho uma boa pro teu estilo)
-> 3. Estilo geral: clean/minimalista, bold/impactante, editorial/elegante, ou outro?
-> 4. Tem logo? Se sim, joga o arquivo na pasta `marca/` e me diz o nome"
+> 2. Tem preferência de fonte? (Se não, eu escolho uma que combine com o teu negócio)
+> 3. Tem logo? Se sim, joga o arquivo na pasta `marca/` e me diz o nome"
 
-Com as respostas, preencher o guia visual da marca. A partir da cor principal, gerar variações claras e escuras pra usar nos slides (uma versão mais clara pro destaque sutil, uma mais escura pra fundos). Escolher um fundo escuro e um fundo claro que combinem com o tom da cor (cores quentes pedem fundos mais aconchegantes, cores frias pedem fundos mais neutros).
+Com as respostas, preencher a parte de identidade do guia visual da marca (logo, cores, fontes). O visual dos slides se escolhe no passo 2. A partir da cor principal, gerar variações claras e escuras pra usar nos slides (uma versão mais clara pro destaque sutil, uma mais escura pra fundos). Escolher um fundo escuro e um fundo claro que combinem com o tom da cor (cores quentes pedem fundos mais aconchegantes, cores frias pedem fundos mais neutros).
 
-Se o usuário disser "não sei" ou "escolhe pra mim": usar padrão limpo (fundo escuro #0D0D0D, destaque amarelo #FFD600, Bricolage Grotesque + Instrument Serif).
+Se o usuário disser "não sei" ou "escolhe pra mim": propor uma cor principal e um par de fontes que combinem com o negócio (lido no `_contexto/empresa.md`), mostrar e só gravar no guia visual da marca com o ok. Sem o ok, seguir com visual limpo e neutro, sem inventar marca.
 
 ### 2. Estilo de design dos slides
 

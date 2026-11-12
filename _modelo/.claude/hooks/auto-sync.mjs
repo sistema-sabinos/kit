@@ -7,6 +7,7 @@
 // resolve junto com a pessoa. O recado so sai pela mao do /syncar ("tratou, apaga").
 // Antes do commit segura o que nao pode subir (cara de chave, arquivo grande): o resto
 // sobe e um recado diz o que ficou. Sem internet fica quieto por um dia antes de avisar.
+// Antes de tudo pergunta ao git se o .gitignore ainda barra o .env: se nao barra, nada sobe.
 // Sai sempre com codigo 0: hook de Stop que falha nao pode travar a conversa.
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync, rmSync, mkdirSync, readdirSync, statSync, realpathSync } from 'node:fs'
@@ -152,6 +153,38 @@ function deixarRecado(dir, origem, dia, hora, conflitos) {
   ].join('\n'))
 }
 
+const MOTIVO_ENV = 'é o arquivo das chaves (.env)'
+// sem caixa: no Windows e no Mac .ENV e o mesmo arquivo que .env, e o .gitignore barra os dois
+export function ehArquivoDeChave(nome) {
+  const n = nome.toLowerCase()
+  return n === '.env' || (n.startsWith('.env.') && n !== '.env.example')
+}
+
+// 5.59 (A): o que o .gitignore tem de barrar pra o backup rodar. So segredo: a lista completa
+// do que fica fora e do que sobe mora no /checar.
+export const SEGREDOS = ['.env', '.env.local']
+
+// Le a resposta do git check-ignore --stdin -z: saida 0 com algum ignorado, 1 com nenhum, o
+// resto (128) e git quebrado, que nunca pode passar por "nenhum ignorado".
+export function lerCheckIgnore(r, lista = SEGREDOS) {
+  if (r.status !== 0 && r.status !== 1) return { erro: (r.stderr || '').trim() || `git saiu ${r.status}` }
+  const ignorados = new Set(r.status === 0 ? String(r.stdout || '').split('\0').filter(Boolean) : [])
+  return { faltam: lista.filter(c => !ignorados.has(c)) }
+}
+
+// Quais segredos o .gitignore desta pasta deixaria subir. --no-index: o .env ja rastreado
+// responde pela regra do .gitignore (rastreado sairia "nao ignorado" e pararia o backup a toa);
+// o .env rastreado em si o conferirPreparados segura pelo nome. O .gitignore global da maquina
+// conta, porque e ele que o add -A da rodada respeita nesta maquina.
+export function segredoForaDoBackup(dir) {
+  const r = spawnSync('git', ['-C', dir, 'check-ignore', '--no-index', '--stdin', '-z'], {
+    encoding: 'utf8', timeout: 30000, windowsHide: true, input: SEGREDOS.join('\0') + '\0',
+    env: { ...process.env, GIT_TERMINAL_PROMPT: '0', LC_ALL: 'C' },
+  })
+  if (r.error) return { erro: r.error.message }
+  return lerCheckIgnore(r)
+}
+
 // O que esta preparado (git add) e nao pode subir: cara de chave ou acima do limite.
 // So lista; o /syncar manual usa isto pela linha de comando (--conferir).
 export function conferirPreparados(dir, limite = LIMITE_BYTES) {
@@ -164,11 +197,14 @@ export function conferirPreparados(dir, limite = LIMITE_BYTES) {
     let st
     try { st = statSync(join(dir, rel)) } catch { continue }
     if (st.size > limite) { segurados.push({ rel, motivo: `passa de ${Math.round(limite / 1024 / 1024)} MB` }); continue }
-    // .env nunca chega aqui (o .gitignore barra), mas o .env.example sobe e e onde chave
-    // de verdade costuma ficar esquecida; teste traz chave falsa de proposito. Texto de
-    // qualquer tamanho abaixo do limite e lido: so o que mudou passa por aqui.
+    // 5.59 (A): .env preparado (ja rastreado, ou o .gitignore deixou passar) se segura pelo
+    // nome, sem ler: a varredura nao reconhece toda chave. Nome exato: o .envrc e qualquer
+    // outro que so comeca com .env passa pela varredura como os outros. O .env.example sobe e
+    // e onde chave de verdade costuma ficar esquecida; teste traz chave falsa de proposito.
+    // Texto de qualquer tamanho abaixo do limite e lido: so o que mudou passa por aqui.
     const nome = basename(rel)
-    if ((nome.startsWith('.env') && nome !== '.env.example') || rel.endsWith('.test.mjs')) continue
+    if (ehArquivoDeChave(nome)) { segurados.push({ rel, motivo: MOTIVO_ENV }); continue }
+    if (rel.endsWith('.test.mjs')) continue
     let buf
     try { buf = readFileSync(join(dir, rel)) } catch { continue }
     if (buf.subarray(0, 8000).includes(0)) continue
@@ -200,7 +236,8 @@ function avisarSegurados(dir, origem, dia, segurados) {
   }
   const nome = existente || `${dia}${fim}`
   // 5.49 (bloco C, 2026-11-03): o recado abre no formato das travas do kit, com a regra que segurou
-  const regras = [...new Set(segurados.map(s => (s.motivo.startsWith('passa de ') ? 'arquivo-grande' : 'cara-de-chave')))].sort()
+  const regra = s => (s.motivo.startsWith('passa de ') ? 'arquivo-grande' : s.motivo === MOTIVO_ENV ? 'arquivo-de-chave' : 'cara-de-chave')
+  const regras = [...new Set(segurados.map(regra))].sort()
   const texto = [
     `de: ${origem}`,
     `quando: ${nome.slice(0, 10)}`,
@@ -212,6 +249,7 @@ function avisarSegurados(dir, origem, dia, segurados) {
     ...segurados.map(s => `- ${s.rel}: ${s.motivo}`),
     '',
     'Cara de chave: tirar a chave do arquivo e guardar no `.env`, deixando no texto só o nome dela. Se esse arquivo já tinha subido antes com a chave, trocar a chave no serviço: apagar o arquivo não apaga o histórico do GitHub.',
+    'Arquivo das chaves (`.env`): ele nunca vai pro backup. Rodar o `/checar`, que mostra o que falta no `.gitignore` e tira o `.env` do backup se ele já estava lá; se ele já tinha subido antes, trocar as chaves no serviço.',
     'Arquivo grande: guardar fora da pasta do projeto (Drive, HD) e deixar aqui só o link.',
     'Este recado some sozinho quando não sobrar nada segurado.',
     '',
@@ -266,8 +304,10 @@ function travar(dir, agora) {
 }
 
 // Devolve o que aconteceu, pra teste e pra quem chamar: sem-repo, fora-do-repo, sem-remoto,
-// ocupado, em-andamento, nada, enviado, puxado-e-enviado, parado (conflito), sem-internet ou falhou.
-export function autoSync(dir, agora = new Date(), { limiteBytes = LIMITE_BYTES } = {}) {
+// ocupado, em-andamento, sem-gitignore, nada, enviado, puxado-e-enviado, parado (conflito),
+// sem-internet ou falhou.
+// conferirSegredo entra por parametro so pro teste do git que nao responde
+export function autoSync(dir, agora = new Date(), { limiteBytes = LIMITE_BYTES, conferirSegredo = segredoForaDoBackup } = {}) {
   if (!git(dir, ['rev-parse', '--git-dir']).ok) return 'sem-repo'
   // pasta que e pedaco de um repositorio de fora: o add -A e o push seriam do repositorio
   // de cima, com o trabalho de outra pessoa junto (5.7, D.2)
@@ -275,10 +315,10 @@ export function autoSync(dir, agora = new Date(), { limiteBytes = LIMITE_BYTES }
   if (!git(dir, ['remote', 'get-url', 'origin']).ok) return 'sem-remoto'
   const trava = travar(dir, agora)
   if (!trava) return 'ocupado'
-  try { return rodada(dir, agora, limiteBytes) } finally { rmSync(trava, { recursive: true, force: true }) }
+  try { return rodada(dir, agora, limiteBytes, conferirSegredo) } finally { rmSync(trava, { recursive: true, force: true }) }
 }
 
-function rodada(dir, agora, limiteBytes) {
+function rodada(dir, agora, limiteBytes, conferirSegredo) {
   const { dia, hora } = carimbo(agora)
   if (emAndamento(dir)) {
     // fica quieto, mas se ninguem avisou ainda, avisa uma vez (nao pisa no aviso existente)
@@ -286,6 +326,19 @@ function rodada(dir, agora, limiteBytes) {
     return 'em-andamento'
   }
   const origem = lerOrigem(dir)
+
+  // 5.59 (A): sem .gitignore que barra o .env, o add -A mandaria a chave pro GitHub, de onde
+  // ela nao sai mais. Nada se adiciona e o .backup-falhou avisa na conversa seguinte.
+  const barra = conferirSegredo(dir)
+  if (barra.erro) {
+    marcarFalha(dir, dia, hora, ['O Git não respondeu na conferência do `.env` (o arquivo das chaves), então nada foi enviado. O `.gitignore` pode estar certo; a próxima resposta tenta de novo.', 'Erro do git:', barra.erro])
+    return 'falhou'
+  }
+  if (barra.faltam.length) {
+    marcarFalha(dir, dia, hora, [`O \`.gitignore\` desta pasta sumiu ou deixou de barrar ${barra.faltam.join(' e ')} (o arquivo das chaves), então nada foi enviado, pra chave não ir pro GitHub.`,
+      'O conserto é repor no `.gitignore` as linhas que barram o `.env`.'])
+    return 'sem-gitignore'
+  }
 
   git(dir, ['add', '-A'])
   const recado = avisarSegurados(dir, origem, dia, segurar(dir, limiteBytes))

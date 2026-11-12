@@ -29,6 +29,7 @@ description: >
 11. Projeto com mais de 30 dias e nenhuma menção a `/faxina` no diário dos últimos 30 dias: uma linha no fim do resumo, "faz um mês sem faxina; quer rodar a `/faxina`? ela só mostra, e mexe com o seu sim"
 12. Com a pasta `.claude/skills/caixa/`, rodar `node .claude/skills/caixa/scripts/caixa.mjs alertas`; com a `.claude/skills/mei/` e o `dados/mei.json`, também `node .claude/skills/mei/scripts/mei.mjs alertas`. Saída vazia: nada. Com saída, cada linha vira uma frase no campo "Dinheiro"
 13. O começo da conversa trouxe o aviso "Ficou sem fechar" (hook do kit, a partir do diário): ele vira o campo "Ficou sem fechar" do resumo, com os dias e a oferta de fechar agora (`/atualizar`) ou dispensar, como manda a seção "Sessão que ficou sem fechar" do `/atualizar`
+14. Decisão recente: ler só o fim do `_memoria/decisoes.md` (as linhas que começam com `- AAAA-MM-DD`). Das últimas linhas, vale a de data mais nova: se ela for de menos de 7 dias, vira o campo "Decidido há pouco", em uma linha, só o que se decidiu, sem o porquê. Sem o arquivo, sem linha datada ou com a mais nova de 7 dias ou mais: o campo some
 
 ## Se está configurado
 
@@ -51,6 +52,7 @@ quais já foram tratados e apagar só esses]
 **Dinheiro:** [só aparece com saída do passo 12: quem está devendo há mais de 7 dias, DAS ou declaração do MEI chegando, teto do MEI acima de 70%. Depois do resumo, oferecer o `/cobrar` ou o `/mei`]
 **Hoje em outro computador:** [só aparece com diário de hoje de outra origem: uma frase por computador]
 **Ficou sem fechar:** [só aparece com o aviso do passo 13: os dias e "fecho agora pelo `/atualizar` ou dispenso?"]
+**Decidido há pouco:** [só aparece com o passo 14: a decisão mais nova dos últimos 7 dias, em uma linha, sem o porquê]
 **Onde paramos:** [do agora.md, a última coisa em andamento; omitir se vazio]
 **Pendências:** [do agora.md, até 2 itens mais relevantes; omitir se não houver]
 **Lembretes:** [preferência importante de escrita, se houver]

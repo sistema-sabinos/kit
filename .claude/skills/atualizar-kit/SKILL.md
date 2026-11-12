@@ -146,6 +146,10 @@ atualiza pelo motor, que já sabe o que é do kit e o que é da pessoa.
 ## Regras
 
 - Nada dentro de pasta de projeto muda sem aprovação nominal, projeto por projeto
+- "Pode fazer tudo" ou "decide você" vale só pro grupo que está na tela: o sim só
+  do Passo 2 (o novo e o que ninguém mexeu) ou as até 3 mudanças do `mudancas.md`
+  em curso num projeto do Passo 4. Arquivo editado, o que some do kit, o bloco do
+  `~/.claude/CLAUDE.md` e cada projeto do Passo 4 continuam com pergunta pelo nome
 - Sempre cópia de segurança antes de substituir
 - Nunca rodar `git reset`, `git checkout --` ou apagar `.git/`
 - A versão do kit está no arquivo `VERSAO` na raiz (e no topo do `README.md`). Comparar a da pasta-mãe com a do zip e dizer no resumo: "você está na 3.0, o zip é a 4.0". Se a do zip for **mais antiga ou igual**, avisar e perguntar se é isso mesmo antes de seguir

@@ -3,6 +3,7 @@
 > Você pode editar esse arquivo a qualquer momento.
 > As skills de carrossel, proposta e slide leem este arquivo antes de criar qualquer visual.
 > As fotos do anúncio seguem a categoria do produto (`/gerar-imagens`) e usam outro arquivo.
+> **Pra IA:** cor, fonte e logo valem pra tudo que sai pra fora. O resto, quando vazio, deixa a composição pelo que o conteúdo pede; a regra fixa de cada formato mora na referência da skill (ex.: `references/design-carrossel.md` do carrossel).
 
 ---
 
@@ -34,7 +35,9 @@
 
 ---
 
-## Elementos-chave
+## Elementos-chave (opcional)
+
+> Fica vazio no caso comum. Só se preenche quando você pede ou o manual da marca fixa canto, sombra ou botão.
 
 - Bordas:
 - Border-radius dos cards:

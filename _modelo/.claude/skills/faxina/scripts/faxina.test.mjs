@@ -5,7 +5,7 @@ import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { lerDecisoes, planoArquivo, aplicarArquivo, varrerSegredos, cpfValido, orfaos, automacoes, foraDoBackup, memoriaDoAgente, diasEntre, relatorio, diarioRende, frescor, ferramentasSemRegistro } from './faxina.mjs'
+import { lerDecisoes, planoArquivo, aplicarArquivo, varrerSegredos, cpfValido, orfaos, automacoes, foraDoBackup, memoriaDoAgente, diasEntre, relatorio, diarioRende, frescor, ferramentasSemRegistro, skillsSemCitacao, fatosRepetidos } from './faxina.mjs'
 
 const SCRIPT = fileURLToPath(new URL('./faxina.mjs', import.meta.url))
 const HOJE = '2026-10-05'
@@ -644,6 +644,141 @@ test('frescor: regra parada ha mais de 60 dias com diario vivo; diario parado na
   })
 })
 
+test('frescor de pasta: contexto e andamento de pasta de projeto entram, raiz e arquivo nao', () => {
+  comProjeto({}, raiz => {
+    iniciarGit(raiz)
+    // o padrao do git: nome com acento sai entre aspas e em octal sem o -z
+    execFileSync('git', ['-C', raiz, 'config', 'core.quotePath', 'true'])
+    commitar(raiz, {
+      'clientes/acme/andamento.md': 'x', 'clientes/acme/contexto.md': 'x', 'clientes/joão/andamento.md': 'x',
+      'andamento.md': 'x', '_contexto/arquivo/velho/andamento.md': 'x', '_memoria/arquivo/2026/contexto.md': 'x',
+    }, '2026-07-01')
+    commitar(raiz, { 'clientes/acme/contexto.md': 'y', '_memoria/diario/2026-09-01.md': entradas(1) }, '2026-09-20')
+    assert.deepEqual(frescor(raiz, HOJE), { semGit: false, parados: [] }, 'diario sem entrada nos ultimos 14 dias: nada')
+    commitar(raiz, { '_memoria/diario/2026-10-01.md': entradas(1) }, '2026-10-01')
+    const r = frescor(raiz, HOJE)
+    assert.ok(r.parados.length > 0, 'canario: achou parado')
+    const dias = diasEntre('2026-07-01', HOJE)
+    assert.deepEqual(r.parados, [{ arquivo: 'clientes/acme/andamento.md', dias }, { arquivo: 'clientes/joão/andamento.md', dias }])
+  })
+})
+
+test('frescor de pasta: contexto.md parado ao lado de andamento vivo nao avisa; pasta so com contexto.md avisa', () => {
+  comProjeto({}, raiz => {
+    iniciarGit(raiz)
+    commitar(raiz, { 'clientes/acme/contexto.md': 'combinado', 'clientes/acme/andamento.md': 'x', 'clientes/loja/contexto.md': 'x' }, '2026-07-01')
+    commitar(raiz, { 'clientes/acme/andamento.md': 'y', '_memoria/diario/2026-10-01.md': entradas(1) }, '2026-10-01')
+    assert.deepEqual(frescor(raiz, HOJE).parados, [{ arquivo: 'clientes/loja/contexto.md', dias: diasEntre('2026-07-01', HOJE) }])
+  })
+})
+
+test('skillsSemCitacao: habilidade de pasta de projeto que o AGENTS.md da pasta nao cita', () => {
+  const skill = '---\nname: x\n---\n'
+  comProjeto({
+    'clientes/acme/AGENTS.md': '## Regras desta pasta\n', 'clientes/acme/andamento.md': 'x',
+    'clientes/acme/.claude/skills/orcamento-acme/SKILL.md': skill, 'clientes/acme/.claude/skills/tabela/SKILL.md': skill,
+    'clientes/bia/AGENTS.md': '## Habilidades desta pasta\n- `Post-Bia-2`: posts\n', 'clientes/bia/contexto.md': 'x',
+    'clientes/bia/.claude/skills/post-bia/SKILL.md': skill, 'clientes/bia/.claude/skills/post-bia-2/SKILL.md': skill,
+    '.claude/skills/faxina/SKILL.md': skill,
+    // o AGENTS.md dessas duas nao cita a habilidade: quem segura e a regra da pasta de projeto
+    'ferramentas/repo-baixado/AGENTS.md': 'repositorio', 'ferramentas/repo-baixado/.claude/skills/gerador/SKILL.md': skill,
+    '_contexto/arquivo/velho/AGENTS.md': 'pasta velha', '_contexto/arquivo/velho/contexto.md': 'x', '_contexto/arquivo/velho/.claude/skills/antiga/SKILL.md': skill,
+  }, raiz => {
+    const r = skillsSemCitacao(raiz)
+    assert.ok(r.length > 0, 'canario: achou habilidade sem citacao')
+    assert.deepEqual(r, [
+      { pasta: 'clientes/acme/', skill: 'orcamento-acme', secao: false },
+      { pasta: 'clientes/acme/', skill: 'tabela', secao: false },
+      { pasta: 'clientes/bia/', skill: 'post-bia', secao: true },
+    ])
+  })
+})
+
+// diario montado: cada nome so tem um motivo pra entrar ou ficar fora
+const dia = (data, linhas) => `# ${data}\n\n` + linhas.join('\n') + '\n'
+const DIARIO_FATOS = {
+  '_memoria/diario/2026-10-01.md': dia('2026-10-01', [
+    '- 09:00, Conferi o pedido com a Doce Mel e mandei pra Bia (dono)',
+    '- 10:00, Mexi no `estrategia.md`, no AGENTS.md e no **pote 500 ml** da Shopee, que travou em Outubro, e o Café Aurora ligou (dono)',
+  ]),
+  '_memoria/diario/2026-10-02.md': dia('2026-10-02', ['- 08:00, Vovó Rosa pediu bolo e o Zeca passou (dono)']),
+  '_memoria/diario/2026-10-02-notebook.md': dia('2026-10-02', [
+    '- 09:00, Conferi a entrega da Doce Mel, a Bia aprovou o **pote 500 ml** e a Shopee travou em Outubro; o Zeca voltou (notebook)',
+    '- 09:10, `estrategia.md` de novo, o AGENTS.md também e o Café Aurora (notebook)',
+  ]),
+  '_memoria/diario/2026-10-03.md': dia('2026-10-03', [
+    '- 09:00, Doce Mel entregou o **pote 500 ml**: R$ 12 (dono)',
+    '- 09:30, a Bia e a Shopee fecharam em Outubro, com o AGENTS.md, o `estrategia.md` e o Café Aurora (dono)',
+    'Vovó Rosa ligou',
+  ]),
+  '_memoria/diario/2026-10-04.md': dia('2026-10-04', [
+    '- 09:00, a Vovó Rosa e o Zeca passaram e o Kiko também (dono)',
+    '- 09:05, `/faxina` rodou (dono)',
+    '- 10:00, Conferi o caixa (dono)',
+  ]),
+  '_memoria/diario/2026-08-01.md': dia('2026-08-01', ['- 09:00, o Kiko veio (dono)']),
+  '_memoria/diario/2026-08-02.md': dia('2026-08-02', ['- 09:00, o Kiko veio (dono)']),
+  '_memoria/diario/2026-10-01-robo-estoque.md': dia('2026-10-01', ['- 06:00, conferiu o Estoque Mestre (robo-estoque)']),
+  '_memoria/diario/2026-10-02-robo-estoque.md': dia('2026-10-02', ['- 06:00, conferiu o Estoque Mestre (robo-estoque)']),
+  '_memoria/diario/2026-10-03-robo-estoque.md': dia('2026-10-03', ['- 06:00, conferiu o Estoque Mestre (robo-estoque)']),
+}
+const termosDe = r => r.candidatos.map(c => c.termo + ':' + c.dias)
+
+test('fatosRepetidos: nome em 3 dias vira candidato; comeco de frase, mesmo dia, caminho, mes, robo, conhecido e velho nao', () => {
+  comProjeto(DIARIO_FATOS, raiz => {
+    const cru = termosDe(fatosRepetidos(raiz, HOJE))
+    assert.ok(cru.includes('Bia:3') && cru.includes('Shopee:3') && cru.includes('Café Aurora:3'), 'canario: sem o _contexto, o que ele filtra aparece')
+  })
+  const conhecido = { '_contexto/pessoas/bia.md': '# Bia\n', '_contexto/ferramentas.md': '| Shopee | ligado |\n', '_contexto/empresa.md': 'Cliente: cafe AURORA, padaria\n' }
+  comProjeto({ ...DIARIO_FATOS, ...conhecido }, raiz => {
+    const r = fatosRepetidos(raiz, HOJE)
+    assert.deepEqual(termosDe(r), ['Doce Mel:3', 'pote 500 ml:3'])
+    assert.deepEqual(r.candidatos[0], { termo: 'Doce Mel', dias: 3, ultimo: '2026-10-03', onde: '_memoria/diario/2026-10-03.md:3' })
+    assert.equal(r.sobra, 0)
+  })
+  comProjeto({ ...DIARIO_FATOS, ...conhecido, 'clientes/doce/contexto.md': 'Cliente Doce Mel desde 2026\n' }, raiz => {
+    assert.deepEqual(termosDe(fatosRepetidos(raiz, HOJE)), ['pote 500 ml:3'], 'o contexto.md da pasta de projeto tambem conta')
+  })
+})
+
+test('fatosRepetidos: o que qualquer arquivo do _contexto/ ja cita sai; a memoria fria do arquivo/ nao esconde', () => {
+  const conhecido = { '_contexto/estrategia.md': 'Foco do semestre: doce mel\n', '_contexto/agora.md': '## Pendências\n- **pote 500 ml** com a Bia\n' }
+  // pessoas/ vazio: so o nome do arquivo conta
+  comProjeto({ ...DIARIO_FATOS, ...conhecido, '_contexto/pessoas/cafe-aurora.md': '', '_contexto/arquivo/velho/notas.md': 'Shopee\n' }, raiz => {
+    const t = termosDe(fatosRepetidos(raiz, HOJE))
+    assert.ok(t.includes('Shopee:3'), 'canario: o arquivo/ nao tira nada')
+    for (const fora of ['Doce Mel:3', 'pote 500 ml:3', 'Bia:3', 'Café Aurora:3']) assert.ok(!t.includes(fora), fora + ' ja esta no _contexto/')
+  })
+})
+
+test('fatosRepetidos: diario de rotina com linha no automacoes.md fica fora, como o do robo', () => {
+  const arquivos = { ...DIARIO_FATOS }
+  for (const d of ['2026-10-01', '2026-10-02', '2026-10-03']) arquivos[`_memoria/diario/${d}-vigia.md`] = dia(d, ['- 06:00, conferiu a Planilha Mestra (vigia)'])
+  comProjeto(arquivos, raiz => {
+    assert.ok(termosDe(fatosRepetidos(raiz, HOJE)).includes('Planilha Mestra:3'), 'canario: sem a linha, o diario da rotina conta')
+  })
+  const tabela = '| rotina | o que faz | origem que assina |\n|---|---|---|\n| vigia | confere a planilha | `vigia` |\n'
+  comProjeto({ ...arquivos, '_contexto/automacoes.md': tabela }, raiz => {
+    const t = termosDe(fatosRepetidos(raiz, HOJE))
+    assert.ok(t.includes('Doce Mel:3'), 'canario: o diario do dono segue contando')
+    assert.ok(!t.includes('Planilha Mestra:3'))
+  })
+})
+
+test('fatosRepetidos teto: 10 candidatos, o de mais dias primeiro e a sobra contada', () => {
+  const nomes = 'abcdefghijkl'.split('').map(x => 'item-' + x)
+  const linha = nomes.map(n => '`' + n + '`').join(' e ')
+  const arquivos = {}
+  for (const d of ['2026-10-01', '2026-10-02', '2026-10-03']) arquivos[`_memoria/diario/${d}.md`] = dia(d, [`- 09:00, ${linha} e \`item-z\` (dono)`])
+  arquivos['_memoria/diario/2026-10-04.md'] = dia('2026-10-04', ['- 09:00, `item-z` (dono)'])
+  comProjeto(arquivos, raiz => {
+    const r = fatosRepetidos(raiz, HOJE)
+    assert.ok(r.candidatos.length > 0, 'canario: achou candidato')
+    assert.deepEqual(termosDe(r), ['item-z:4', ...nomes.slice(0, 9).map(n => n + ':3')])
+    assert.equal(r.sobra, 3)
+  })
+})
+
 test('ferramentasSemRegistro: servidor e variavel que o ferramentas.md nao cita, sem valor', () => {
   const valor = 'Zx9' + 'Qw8Er7Ty6Ui5'
   const base = {
@@ -692,6 +827,8 @@ test('relatorio traz as tres checagens novas', () => {
     assert.deepEqual(r.diarioRende, { semGit: true })
     assert.deepEqual(r.frescor, { semGit: true, parados: [] })
     assert.deepEqual(r.ferramentasSemRegistro, { mcp: ['notion'], env: [] })
+    assert.deepEqual(r.skillsSemCitacao, [])
+    assert.deepEqual(r.fatosRepetidos, { candidatos: [], sobra: 0 })
   })
 })
 

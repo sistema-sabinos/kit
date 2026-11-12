@@ -26,7 +26,7 @@
   .card { background: var(--card); border: 1px solid rgba(0,0,0,.08); border-radius: 14px; padding: 20px 24px; margin: 0 0 16px; }
   .card h2 { font-size: 18px; margin: 0 0 6px; color: var(--destaque); }
   .card p { margin: 0; }
-  ul { margin: 0; padding-left: 20px; }
+  ul, ol { margin: 0; padding-left: 20px; }
   li { margin: 4px 0; }
   .proximo { border: 2px solid var(--destaque); }
   footer { margin-top: 40px; font-size: 14px; opacity: .7; }
@@ -54,14 +54,23 @@
   </section>
   <section class="card">
     <h2>A casa</h2>
-    <p>Tudo que o sistema sabe mora em pastas comuns, que você pode abrir e ler:</p>
-    <p class="casa">_contexto/   o que é o negócio: quem você é, o foco, o jeito, as ferramentas
-_memoria/    o que aconteceu: o diário de cada dia, as decisões com o porquê, os recados
-marca/       o visual e a voz com o seu cliente</p>
+    <p>Tudo que o sistema sabe mora em arquivos comuns, que você pode abrir e ler. Comece por estes:</p>
+    <p class="casa">O que vale hoje (muda quando você muda):
+_contexto/empresa.md        quem você é e o que vende
+_contexto/estrategia.md     o foco de fundo do negócio
+_contexto/preferencias.md   o jeito que você quer que eu trabalhe
+_contexto/agora.md          onde a gente parou
+_contexto/licoes.md         erro já corrigido, pra não repetir
+marca/design-guide.md       as cores, as fontes e o logo
+marca/tom-de-voz.md         a voz com o seu cliente
+
+O histórico (só cresce):
+_memoria/diario/            o que foi feito em cada dia
+_memoria/decisoes.md        cada decisão com o porquê</p>
   </section>
   <section class="card">
     <h2>O ritmo</h2>
-    <p>O <b>/iniciar</b> lê tudo e diz onde você parou. O <b>/atualizar</b> guarda o que a conversa decidiu. O backup manda sozinho pro GitHub ao fim de cada resposta.</p>
+    <p><b>/iniciar</b> lê, <b>/atualizar</b> guarda: um no começo da conversa, pra dizer onde você parou, e o outro no fim, pra guardar o que ficou decidido. O backup manda sozinho pro GitHub ao fim de cada resposta.</p>
   </section>
   <section class="card">
     <h2>Comandos prontos</h2>
@@ -70,8 +79,10 @@ marca/       o visual e a voz com o seu cliente</p>
     </ul>
   </section>
   <section class="card proximo">
-    <h2>Próximo passo</h2>
-    <p>{{PROXIMO_PASSO}}</p>
+    <h2>Próximos passos</h2>
+    <ol>
+{{PROXIMOS_PASSOS}}
+    </ol>
   </section>
 
   <footer>Criado pelo SabinOS em {{DATA}}. Tudo isso mora nos arquivos da pasta do projeto e muda quando você pedir.</footer>

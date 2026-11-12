@@ -46,10 +46,11 @@ Explicar em uma frase antes de começar:
 
 ## Vezes seguintes
 
+0. Antes de tudo, ver se tem algo pra subir: `git status --porcelain` sem nenhuma linha e a primeira linha do `git status -sb` com `...origin/` e sem a palavra `ahead` (ela aparece quando tem commit daqui que ainda não subiu). Com `.backup-falhou` na raiz, pular este passo e seguir do passo 1. Nada pra subir: anotar o `git rev-parse HEAD`, rodar `git pull --ff-only` pra trazer o que o outro computador mandou e responder "Está tudo salvo no GitHub, não tinha nada novo pra subir." Se o pull trouxe arquivo, mais uma linha pela lista `git diff --name-only <HEAD anotado> HEAD`: "Veio do outro computador: README.md e .gitignore." Pull que falhou: dizer o que aconteceu em português e resolver junto, como no push que falhou. Parar aqui, sem commit.
 1. `git add -A`, e conferir o que vai subir antes do commit rodando `node _modelo/.claude/hooks/auto-sync.mjs --conferir` daqui da pasta-mãe: é a mesma conferência do backup automático dos projetos, lista sem commitar nada cada arquivo preparado com cara de chave ou acima de 50 MB, e sai 1 quando acha. Cada arquivo da lista sai com `git reset -q -- <arquivo>`, e a pessoa ouve o porquê em uma frase. Nunca procurar prefixo de chave com `grep` à mão: os próprios arquivos do kit citam os prefixos e sairiam do backup por engano. Nunca sobe
 2. Commit com mensagem curta descrevendo o que mudou de verdade (não "updates")
 3. `git push`
-4. Confirmar: "Salvo. [resumo de uma linha do que subiu]"
+4. Confirmar quantos arquivos subiram e os principais pelo nome, pela lista do `git diff --name-only origin/<ramo>...HEAD` anotada logo antes do `git push` do passo 3, com o `origin/<ramo>` que aparece depois de `...` na primeira linha do `git status -sb`: ela conta o commit de agora e os que já esperavam pra subir. "Salvo. Subiram 7 arquivos: agora.md, o diário de hoje e o roteiro do vídeo, e mais 4." No máximo 3 nomes; o resto vira "e mais N".
 
 Conferir que o push **realmente** subiu (`git status` sem "ahead of origin"), nunca
 supor pelo comando não ter reclamado. Se o push falhou, dizer o que aconteceu em
@@ -59,6 +60,13 @@ a pessoa para de fazer cópia acreditando que está coberta.
 Quando o push completa, apagar o arquivo `.backup-falhou` da raiz, se existir: é a
 marca que o auto-sync deixa quando não conseguiu subir, e é ela que dispara o aviso
 no começo das sessões seguintes.
+
+Quando o `.backup-falhou` diz que o `.gitignore` deixou de barrar o `.env` (outro motivo:
+senha recusada vai pelo passo 6, internet fora espera e tenta o `git push` de novo): nada subiu, pra chave não ir pro GitHub. Acrescentar no fim do `.gitignore` as linhas `.env` e `.env.*`
+(ou repor o arquivo pelo passo 4), mostrando o antes e o depois, e conferir com
+`git check-ignore --no-index .env .env.local`, que tem de responder os dois nomes. A
+próxima resposta já manda o backup sozinha. Projeto da pasta-mãe com o mesmo aviso: o
+`/syncar` aberto na pasta do projeto resolve.
 
 ## Regras
 

@@ -76,7 +76,10 @@ de rodar. Nunca usar outro endereço.
 
    Quando o plano imprimir a linha que começa com `Historico do app:`, mostrar
    sempre essa parte, antes do "Posso seguir?", em palavras simples: o aplicar
-   vai fazer o Claude guardar as conversas por 30 dias neste computador.
+   vai fazer o Claude guardar as conversas por 30 dias neste computador. O sim
+   do "Posso seguir?" vale pra isso também, porque o aplicar grava junto. Se a
+   pessoa não quiser os 30 dias, dizer que eles vêm com a troca e perguntar se
+   segue assim ou deixa a atualização pra depois.
 
 3. "Componentes que o projeto ainda não tem": oferecer cada um numa linha, com o
    que ele faz, e perguntar quais entram. Pergunta no formato de 4 partes (a
@@ -137,8 +140,17 @@ Se o `aplicar` falhou no meio e foi rodado de novo, existem duas cópias `antes-
 
 - Nada do que é da pessoa muda sem aprovação: só o "troca sem perguntar", que ela
   aprova de uma vez no Passo 3, entra sem pergunta por arquivo
+- "Pode fazer tudo" ou "decide você" vale só pro grupo que está na tela: o
+  "troca sem perguntar" do Passo 3 ou as até 3 mudanças do Passo 5 que estão
+  sendo mostradas. Arquivo que a pessoa mexeu, o que saiu do SabinOS e o que
+  grava fora da pasta continuam com pergunta pelo nome, um por um; o prazo das
+  conversas é a exceção, vai com o sim do Passo 3
 - Endereço fixo, `github.com/sistema-sabinos/kit`; nunca outro
-- Nada fora da pasta do projeto, fora a pasta temporária do download
+- Nada fora da pasta do projeto, fora a pasta temporária do download e o que o
+  plano avisa pelo nome antes e só grava com o sim: o prazo das conversas
+  guardadas no `~/.claude/settings.json` do computador, o bloco do
+  `~/.claude/CLAUDE.md` e a troca do servidor do navegador no `~/.claude.json`
+  e no `settings.json` da pasta `.claude` do usuário
 - Falar como gente: "impressão digital", "cópia de segurança", "juntar os dois
   textos"; nunca "hash", "merge", "diff"
 - Se a trava barrar algum comando no caminho, dizer o nome da trava e da regra

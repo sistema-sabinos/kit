@@ -131,9 +131,11 @@ Com a classificação em mãos, seguir pelo ramo que cabe:
 
 **Nenhuma respondida:** abrir com este texto exato:
 
-> "Oi! Antes de trabalhar pra você, preciso te conhecer. Vou fazer umas perguntas aqui,
-> uma de cada vez, e quando der é só clicar numa opção. Vou guardando tudo no arquivo
-> RESPONDA-AQUI.txt: se a conversa cair, a gente continua de onde parou."
+> "Oi! Antes de trabalhar pra você, preciso te conhecer. São 17 perguntas, uma de cada
+> vez, e quando der é só clicar numa opção. Leva coisa de meia hora a 40 minutos. Vou
+> guardando cada resposta no arquivo RESPONDA-AQUI.txt: se você parar no meio das
+> perguntas ou a conversa cair, a gente continua de onde parou. Depois delas, o melhor é
+> ir até o fim de uma vez."
 
 Em seguida, sem perguntar ritmo nem oferecer atalho, fazer as 17 perguntas na ordem dos
 blocos (A a F), uma por vez, no formato da regra acima, pulando as marcadas como
@@ -225,8 +227,11 @@ Com nome: guardar para o Passo 3. Sem nome: seguir, nada muda.
 
 Oferecer as 4 rotas em conversa:
 
-- **URL do site:** ler com WebFetch, apresentar o que foi detectado (cores,
-  tipografia, estilo) e confirmar antes de usar.
+- **URL do site:** ler com WebFetch e mostrar o que saiu antes de preencher o guia.
+  Do site sai só a marca: a cor principal, a cor de fundo, a cor do texto, as
+  fontes, o logo e uma linha sobre o clima. Canto arredondado, sombra, jeito do
+  botão e montagem da página ficam de fora, a não ser que a pessoa peça com todas
+  as letras tudo igual ao site ou mande um manual da marca que fale deles.
 - **Prints ou logo:** como o projeto ainda não existe nesse ponto da conversa,
   pedir pra pessoa dizer onde os arquivos estão salvos no computador dela
   (o caminho da pasta, ou arrastar o arquivo pro Explorer/Finder e copiar o
@@ -813,7 +818,8 @@ uma pasta com esse nome na raiz, avisar e perguntar outro nome antes de seguir.
   `autonomia.md` nasce em branco em todo modo: a permissão de gasto do Delegado e do
   Executivo se grava só quando a pessoa disser o valor.
 - `marca/design-guide.md`, preenchido com o que veio do Passo 2 (identidade
-  visual), ou mantido neutro se a pessoa não tinha nada ainda.
+  visual), ou mantido neutro se a pessoa não tinha nada ainda. A seção
+  Elementos-chave fica vazia, salvo pedido ou manual da marca.
 - `marca/tom-de-voz.md`, preenchido com a voz da marca do Passo 2 (o exemplo real
   colado entra inteiro na seção dele), ou com os campos em branco.
 - `marca/nomes.md`, copiado do `_modelo/` como está: a lista de nomes próprios da
@@ -1021,9 +1027,10 @@ qual é o próximo passo ao terminar cada etapa)".
      de aceite, já confirmados;
    - `{{COMANDOS}}` por um `<li>` por comando da lista final do Passo 6, na mesma
      linguagem simples;
-   - `{{PROXIMO_PASSO}}` pela primeira linha do `tarefas.md`.
+   - `{{PROXIMOS_PASSOS}}` por um `<li>` por linha, com as três primeiras linhas do
+     `tarefas.md` (as do topo, semeadas no item 2), na mesma ordem.
 
-   Todo texto que vem das respostas da pessoa (nome, fatos, comandos, próximo passo)
+   Todo texto que vem das respostas da pessoa (nome, fatos, comandos, próximos passos)
    entra com `&` trocado por `&amp;` e `<` por `&lt;`, senão o navegador lê como
    código e a página quebra. As tags que este passo manda pôr (`<link>`, `<img>`,
    `<li>`) ficam como estão.

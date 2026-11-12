@@ -26,7 +26,7 @@ mesma resposta.
 ## 2. Abra o Claude e diga oi
 
 No VS Code, procure o ícone do Claude na lateral e clique; no app, a conversa
-já fica aberta na aba Code. Escreva `oi` e aperte Enter. Ele faz as perguntas sobre você e o seu negócio ali mesmo, uma
+já fica aberta na aba Code. Escreva `oi` e aperte Enter. Leva coisa de meia hora a 40 minutos. Se parar no meio das perguntas, as respostas ficam guardadas e ele continua de onde parou; depois delas, o melhor é ir até o fim de uma vez. Ele faz as perguntas sobre você e o seu negócio ali mesmo, uma
 por vez, quase sempre com opções de clicar, e monta o seu sistema: pasta do
 projeto, memória, comandos sob medida pro seu negócio. Se você vende em marketplace, ele oferece também o pacote que cuida dos seus anúncios e o vídeo do produto. Se você edita ou posta vídeo em pé, oferece o pacote de vídeo. Se você posta em rede social, oferece o pacote de redes sociais, vendendo em marketplace ou não. Se vende direto pro cliente, pelo WhatsApp ou por encomenda, oferece o pacote de loja (atendimento, caixa, cobrança e, pra quem é MEI, o calendário do MEI). Se é MEI e vende só em marketplace, oferece o calendário do MEI do mesmo jeito. Se quer criar um app ou sistema seu, oferece o pacote criar app.
 Prefere escrever com calma? As mesmas perguntas estão no `RESPONDA-AQUI.txt`:

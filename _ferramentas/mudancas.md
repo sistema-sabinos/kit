@@ -985,3 +985,35 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto tem a pasta `.claude/skills/editar-video/`.
 **Como aplicar:** o `/atualizar-sabinos` já traz o motor novo junto com a skill; não precisa instalar nada de novo. Contar à pessoa, numa frase, que agora dá pra pedir "põe esse clipe com o som dele no meio do vídeo".
 **Como testar:** o arquivo `.claude/skills/editar-video/motor/scripts/buraco.py` existe no projeto.
+
+## modelo-sem-cor-herdada
+
+**O que é:** quando o guia visual da marca está vazio, os comandos de slide e de proposta passam a fazer um visual limpo e neutro, e cor e fonte novas só entram no guia com o seu ok.
+**Por quê:** todo projeto sem guia saía com a mesma cor e a mesma fonte, que você nunca escolheu.
+**Te afeta se:** o projeto tem `.claude/skills/slide/SKILL.md` com uma linha que começa com "Se estiver vazio, usar padrão", ou `.claude/skills/proposta-comercial/SKILL.md` com uma linha que começa com "- Se design guide estiver vazio, usar".
+**Como aplicar:** trocar só essa linha pela do modelo novo do kit: no slide, a linha que começa com "Se estiver vazio:" em `_modelo/templates/skills/slide.md`; na proposta, a que começa com "- Se o design guide estiver vazio:" em `_modelo/templates/skills/proposta-comercial.md`. O resto do comando foi ajustado pro seu negócio e fica. Mostrar o antes e o depois e gravar com o sim.
+**Como testar:** a linha velha sumiu do arquivo do projeto e a nova está no lugar dela.
+
+## contexto-sem-duplicata
+
+**O que é:** antes de gravar uma linha nova no `empresa.md`, no `estrategia.md`, no `ferramentas.md` ou em `pessoas/` (preço, fornecedor, prazo), a IA procura no arquivo uma linha sobre o mesmo assunto. Se for igual, não grava de novo; se mudou, troca a velha pela nova e te mostra o antes e o depois.
+**Por quê:** a regra antiga mandava sempre acrescentar linha, e o arquivo podia ficar com dois preços do mesmo produto, e a IA podia usar o velho.
+**Te afeta se:** a seção Tabela de destinos do `AGENTS.md` do projeto não tem o texto `mesmo assunto`.
+**Como aplicar:** na seção Tabela de destinos do `AGENTS.md`, trocar a frase "Sempre linha nova, mostrando o que entrou." (em projeto mais antigo, "Sempre linha nova, sem reformatar o arquivo, mostrando o que entrou.") pela frase do `_modelo/AGENTS.md` do kit que começa com "Linha nova, mostrando o que entrou". Mostrar o antes e o depois e gravar com o sim.
+**Como testar:** a seção Tabela de destinos do `AGENTS.md` tem `mesmo assunto` e não tem `Sempre linha nova`.
+
+## proposta-da-reuniao
+
+**O que é:** o comando de proposta passa a montar a proposta com o que você já tem (um texto solto ou a transcrição da reunião colada no chat) e com o `contexto.md` e o `andamento.md` da pasta do cliente, quando ela existe, e só pergunta o que falta, uma coisa por vez. A proposta pronta fica na pasta do cliente.
+**Por quê:** antes ele fazia cinco perguntas seguidas mesmo quando a resposta já estava na reunião ou na pasta do cliente, e guardava toda proposta numa pasta só.
+**Te afeta se:** o projeto tem `.claude/skills/proposta-comercial/SKILL.md` com a linha `1. "Nome do cliente e empresa?"`.
+**Como aplicar:** trocar só o "Passo 1" e a linha que começa com "Salvar" do "Passo 4" pelos do modelo novo do kit, em `_modelo/templates/skills/proposta-comercial.md`. O resto do comando foi ajustado pro seu negócio e fica. Mostrar o antes e o depois e gravar com o sim.
+**Como testar:** o arquivo do projeto não tem mais a linha `1. "Nome do cliente e empresa?"` e o Passo 1 cita o `andamento.md`.
+
+## guia-visual-so-a-marca
+
+**O que é:** o guia visual da marca ganha um aviso no topo dizendo que cor, fonte e logo valem pra tudo que sai pra fora, e a seção de cantos, sombra e botão vira opcional, vazia no normal. O visual tirado de um site traz só a marca (cores, fontes, logo e o clima), sem o jeito da página.
+**Por quê:** o visual tirado do site trazia junto canto, sombra e botão da página, e todo post e carrossel saía com cara de site.
+**Te afeta se:** o projeto tem `marca/design-guide.md` sem a linha que começa com `> **Pra IA:**`.
+**Como aplicar:** acrescentar a linha que começa com `> **Pra IA:**` do `_modelo/marca/design-guide.md` do kit logo depois do aviso do topo e, se o arquivo tiver o título `## Elementos-chave`, trocar por `## Elementos-chave (opcional)` com a nota que vem embaixo dele no modelo. O que você já preencheu fica. Mostrar o antes e o depois e gravar com o sim.
+**Como testar:** o `marca/design-guide.md` tem a linha que começa com `> **Pra IA:**`.
