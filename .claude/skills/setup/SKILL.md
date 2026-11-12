@@ -1028,12 +1028,22 @@ qual é o próximo passo ao terminar cada etapa)".
    - `{{COMANDOS}}` por um `<li>` por comando da lista final do Passo 6, na mesma
      linguagem simples;
    - `{{PROXIMOS_PASSOS}}` por um `<li>` por linha, com as três primeiras linhas do
-     `tarefas.md` (as do topo, semeadas no item 2), na mesma ordem.
+     `tarefas.md` (as do topo, semeadas no item 2), na mesma ordem;
+   - `{{BACKUP}}` pela frase do backup que vale hoje, pela escolha do auto-sync e pelo
+     GitHub. GitHub ligado é só quando, rodados na pasta do projeto, `git rev-parse
+     --show-prefix` sai vazio (a pasta tem backup próprio, e não o de uma pasta acima) e
+     `git remote get-url origin` devolve um endereço; qualquer outro resultado é GitHub
+     ainda não ligado, o normal no primeiro dia. Auto-sync ligado e GitHub ligado: "O backup
+     manda sozinho pro GitHub ao fim de cada resposta." Auto-sync ligado e sem GitHub: "O
+     backup no GitHub ainda não está ligado: o <b>/syncar</b> liga ele uma vez, e daí em
+     diante ele manda sozinho ao fim de cada resposta." Auto-sync recusado: "O backup
+     automático ficou desligado, como você escolheu: o <b>/syncar</b> guarda no GitHub
+     quando você chamar."
 
    Todo texto que vem das respostas da pessoa (nome, fatos, comandos, próximos passos)
    entra com `&` trocado por `&amp;` e `<` por `&lt;`, senão o navegador lê como
    código e a página quebra. As tags que este passo manda pôr (`<link>`, `<img>`,
-   `<li>`) ficam como estão.
+   `<li>`, `<b>`) ficam como estão.
 
    Antes de mostrar, conferir no arquivo gravado que não sobrou nenhum `{{` e
    nenhum travessão (os caracteres U+2014 e U+2013; resposta colada do

@@ -11,7 +11,8 @@ import { hashArquivo, ignorado, componenteDe, vaiNaTabelaMae, PERMISSOES_DO_KIT 
 // o backup dele seguraria
 import { caraDeChave } from '../_modelo/.claude/hooks/auto-sync.mjs'
 
-const CAMPOS_MUDANCA = ['O que é', 'Por quê', 'Te afeta se', 'Como aplicar', 'Como testar']
+// 5.60 (bloco 3): Desde e Pra você alimentam o "pendentes" do atualizar-projeto
+const CAMPOS_MUDANCA = ['Desde', 'Pra você', 'O que é', 'Por quê', 'Te afeta se', 'Como aplicar', 'Como testar']
 
 // A lista de termos proibidos do Gate 1 (nomes, marcas, ids da operacao de origem) mora na
 // bancada de desenvolvimento, em bancada/proibidos.json, fora do kit: este arquivo vai no zip
@@ -901,6 +902,10 @@ export function rodarGates(dirKit, opcoes = {}) {
       for (const b of blocos) {
         const id = b.split(/\r?\n/)[0].trim()
         for (const campo of CAMPOS_MUDANCA) if (!b.includes(`**${campo}:**`)) falha10('_ferramentas/mudancas.md', `${id} sem o campo "${campo}"`)
+        // "próxima" passa: o kit em desenvolvimento tem entrada nova entre uma release e outra, e quem
+        // recusa a sobra e o release.mjs, logo depois do carimbo
+        const desde = b.match(/^\*\*Desde:\*\* (.*?)\s*$/m)?.[1]
+        if (desde !== undefined && desde !== 'próxima' && !/^\d+\.\d+$/.test(desde)) falha10('_ferramentas/mudancas.md', `${id} com Desde "${desde}": vale a versao do kit (X.Y) ou "próxima"`)
         // o motor ja traz o nucleo respeitando o "fica a sua"; entrada que manda copiar a
         // pasta dele, ou que afeta "sempre", passa por cima da escolha da pessoa (5.7, C.2).
         // Pasta de pacote (mei, carrossel) segue valendo: oferece a quem ainda nao tem.

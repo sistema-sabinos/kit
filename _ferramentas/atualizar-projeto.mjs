@@ -9,6 +9,7 @@
 //   node atualizar-projeto.mjs registrar <projeto> <id-da-mudanca> aplicada|recusada
 //   node atualizar-projeto.mjs desfazer <projeto> [--backup <antes-...>]
 //   node atualizar-projeto.mjs settings <projeto> [--kit <kit>] [--gravar]
+//   node atualizar-projeto.mjs pendentes <projeto> [--kit <kit>] [--id <id-da-mudanca>]
 //   node atualizar-projeto.mjs mae <kit-novo> [--mae <pasta>]
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, copyFileSync, rmSync, rmdirSync, renameSync, realpathSync } from 'node:fs'
 import { join, dirname, resolve, relative, sep } from 'node:path'
@@ -340,6 +341,7 @@ function recusa(regra, motivo) {
 }
 
 export function aplicarPlano({ kit, projeto, plano, tambem = [], registro = false, agora = new Date() }) {
+  const tinhaRecibo = existsSync(join(projeto, RECIBO))
   const porCaminho = new Map(plano.itens.map(i => [i.caminho, i]))
   for (const c of tambem) {
     const i = porCaminho.get(c)
@@ -389,6 +391,11 @@ export function aplicarPlano({ kit, projeto, plano, tambem = [], registro = fals
     versao: plano.versaoKit, data: diaLocal(agora), arquivos, mudancas: anterior.mudancas ?? {},
     // 5.54 (C2): corte do aviso de fechamento; o recibo se regrava inteiro, entao vem do anterior
     avisoFechamentoDesde: anterior.avisoFechamentoDesde ?? diaLocal(agora),
+    // 5.60 (bloco 3): a partir de que versao do kit o "pendentes" oferece entrada do mudancas.md. O
+    // setup (--registro, sem recibo) nasce com o molde inteiro, entao a base e o kit dele; quem ja tinha
+    // recibo sem a base fica sem corte (null) e so o recibo filtra, como antes. Base preservada, nunca a
+    // versao de antes: quem parou no meio perderia as entradas que ainda nao decidiu.
+    versaoBase: anterior.versaoBase ?? (registro && !tinhaRecibo ? plano.versaoKit : null),
   }, null, 2) + '\n')
   return { backup, copiados: copiar.map(i => i.caminho), removidos: remover.map(i => i.caminho) }
 }
@@ -429,6 +436,30 @@ export function desfazer({ projeto, backup, agora = new Date() }) {
   let renomeado = true
   try { renameSync(pasta, join(projeto, '.sabinos', `desfeito-${backup}`)) } catch { renomeado = false }
   return { restaurados, apagados, seguranca, renomeado }
+}
+
+// 5.60 (bloco 3): o /atualizar-sabinos le so o que falta decidir, nunca o mudancas.md inteiro.
+// Entrada = titulo "## id"; o campo vale so em negrito no comeco da linha ("Desde a 5.49" na prosa fica).
+export function lerMudancas(texto) {
+  const blocos = texto.split('\r\n').join('\n').split(/\n(?=## )/)
+  const campo = (bloco, nome) => bloco.split('\n').find(l => l.startsWith(`**${nome}:** `))?.slice(nome.length + 6).trim() ?? null
+  const entradas = blocos.filter(b => /^## \S+\n/.test(b)).map(b => ({
+    id: b.match(/^## (\S+)/)[1], desde: campo(b, 'Desde'), teAfetaSe: campo(b, 'Te afeta se'), praVoce: campo(b, 'Pra você'), bloco: b.trim(),
+  }))
+  return { comoUsar: (blocos.find(b => b.startsWith('## Como usar')) ?? '').trim(), entradas }
+}
+
+// Pendente: id fora do recibo e Desde depois da versaoBase. Sem base, so o recibo filtra. Desde
+// "próxima" (entrada que o release ainda nao carimbou) ou sem o campo conta sempre.
+export function pendentes({ kit, projeto }) {
+  const arq = join(kit, '_ferramentas', 'mudancas.md')
+  if (!existsSync(arq)) throw new Error(`sem _ferramentas/mudancas.md em ${kit}: rode pelo motor do kit (node "<kit>/_ferramentas/atualizar-projeto.mjs"), nunca pela copia em .sabinos/`)
+  const recibo = lerJson(join(projeto, RECIBO), {})
+  const feitas = recibo.mudancas ?? {}
+  const base = recibo.versaoBase ?? null
+  const { comoUsar, entradas } = lerMudancas(readFileSync(arq, 'utf8'))
+  const depoisDaBase = d => !base || !d || !/^\d+\.\d+$/.test(d) || compararVersao(d, base) > 0
+  return { base, comoUsar, entradas, lista: entradas.filter(e => !Object.hasOwn(feitas, e.id) && depoisDaBase(e.desde)) }
 }
 
 export function registrarMudanca({ projeto, id, estado, agora = new Date() }) {
@@ -486,7 +517,7 @@ const TITULOS_DA_MAE = {
 
 // So as opcoes que o motor conhece, sempre com valor. Opcao digitada errada (--tambme)
 // para com erro: em silencio ela engolia o valor e nada era aprovado.
-const OPCOES = ['kit', 'componentes', 'tambem', 'backup', 'mae']
+const OPCOES = ['kit', 'componentes', 'tambem', 'backup', 'mae', 'id']
 const BANDEIRAS = ['registro', 'gravar']
 function lerArgs(argv) {
   const o = { _: [] }
@@ -504,7 +535,7 @@ function lerArgs(argv) {
 function principal(argv) {
   const a = lerArgs(argv)
   const [cmd, alvo] = a._
-  if (!cmd || !alvo) throw new Error('uso: plano|aplicar|conferir|registrar|desfazer|settings <projeto> ... ou mae <kit-novo> [--mae <pasta>]')
+  if (!cmd || !alvo) throw new Error('uso: plano|aplicar|conferir|registrar|desfazer|settings|pendentes <projeto> ... ou mae <kit-novo> [--mae <pasta>]')
   if (cmd === 'mae') {
     const kitNovo = resolve(alvo)
     const mae = resolve(a.mae ?? join(dirname(fileURLToPath(import.meta.url)), '..'))
@@ -603,6 +634,20 @@ function principal(argv) {
       writeFileSync(arqProjeto, texto)
       console.log('Gravado.')
     }
+  } else if (cmd === 'pendentes') {
+    // sem --id: o "Como usar" (migracao do CLAUDE.md, reavaliar por grupo; Codex comum do desenho) e a lista
+    const p = pendentes({ kit, projeto })
+    if (a.id) {
+      const e = p.entradas.find(x => x.id === a.id)
+      if (!e) throw new Error(`entrada desconhecida no mudancas.md: ${a.id}`)
+      console.log(e.bloco)
+      return
+    }
+    console.log(p.comoUsar)
+    console.log('')
+    console.log(`Pendentes (${p.base ? `entradas depois da ${p.base}` : 'sem versao base: so o recibo filtra'}), na ordem do arquivo:`)
+    for (const e of p.lista) console.log(`${e.id} | Desde ${e.desde ?? '?'} | Te afeta se: ${e.teAfetaSe ?? '?'} | Pra você: ${e.praVoce ?? '?'}`)
+    console.log(`faltam ${p.lista.length}`)
   } else throw new Error(`comando desconhecido: ${cmd}`)
 }
 

@@ -109,9 +109,15 @@ antes de mexer. Dizer isso à pessoa.
 
 ## Passo 5, mudanças que pedem conversa
 
-Seguir `<kit>/_ferramentas/mudancas.md` do jeito que a seção "Como usar" dele
-manda: no máximo 3 por vez, antes e depois na tela, aplicar com o sim, testar e
-registrar.
+1. Da pasta do projeto: `node "<kit>/_ferramentas/atualizar-projeto.mjs" pendentes .`
+   (o motor do kit baixado, nunca a cópia em `.sabinos/`). Ele imprime a seção
+   "Como usar" do `mudancas.md`, uma linha por mudança que falta decidir e, no
+   fim, `faltam N`. Nunca abrir o `mudancas.md` inteiro.
+2. Seguir o "Como usar" que saiu: no máximo 3 por vez, cada uma contada como
+   novidade pela frase do **Pra você**, antes e depois na tela, aplicar com o sim,
+   testar e registrar. Pra aplicar uma, `pendentes . --id <id>` traz a entrada
+   inteira.
+3. `faltam 0`: dizer que não tem mudança pra conversar e seguir pro Passo 6.
 
 ## Passo 6, conferir e fechar
 

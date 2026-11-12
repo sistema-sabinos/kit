@@ -7,8 +7,11 @@
 
 ## Como usar (instrução pro agente)
 
-1. Pular a entrada que já está no recibo (`.sabinos/instalado.json`, campo
-   `mudancas`), a não ser que a pessoa peça.
+1. Nunca abrir este arquivo inteiro. `node "<kit>/_ferramentas/atualizar-projeto.mjs" pendentes .`
+   (o motor do kit, nunca a cópia em `.sabinos/`) imprime este "Como usar" e uma linha por
+   entrada que falta decidir: fora do recibo (`.sabinos/instalado.json`, campo `mudancas`) e com
+   o **Desde** depois da versão em que o projeto nasceu. `--id <id>` imprime a entrada inteira;
+   entrada que já está no recibo só volta assim, se a pessoa pedir.
 2. Projeto no formato antigo: sem `AGENTS.md` e com um `CLAUDE.md` que tem
    conteúdo próprio (mais que a linha `@AGENTS.md`). Parar antes de qualquer
    entrada que mexe no `AGENTS.md` e perguntar à pessoa se quer migrar: o
@@ -21,7 +24,7 @@
    `regra-trava` depende da `trava-no-settings`).
 4. Mostrar as que sobraram com as que protegem primeiro (backup, chave, trava de
    comando, memória que se perde) e o resto na ordem deste arquivo, **no máximo 3 por vez**, cada
-   uma em uma frase de gente. Esperar a pessoa dizer quais entram.
+   uma pela frase do **Pra você**. Esperar a pessoa dizer quais entram.
 5. Pra cada uma aceita: mostrar o antes e o depois do trecho, aplicar com o sim,
    rodar o "Como testar" e registrar:
    `node .sabinos/atualizar-projeto.mjs registrar . <id> aplicada` (ou `recusada`).
@@ -35,9 +38,13 @@
    comando `settings` do motor tira sozinho as regras da lista `TIRADAS_DO_KIT`,
    letra por letra, e nenhuma entrada põe essas regras de volta. Conferir que
    continua JSON válido depois.
+8. Cada entrada abre com **Desde** (a versão do kit em que ela chegou; `próxima` enquanto essa
+   versão não saiu) e **Pra você** (a frase que se mostra à pessoa), antes do **O que é**.
 
 ## aviso-backup-falhou
 
+**Desde:** 3.5
+**Pra você:** Se o backup no GitHub falhar, a IA te avisa logo na primeira resposta da conversa, pra você agir a tempo.
 **O que é:** o `AGENTS.md` passa a mandar avisar, logo na primeira resposta, quando o backup automático no GitHub falhou.
 **Por quê:** backup que falha calado é pior que nenhum, porque a pessoa para de se proteger achando que está coberta.
 **Te afeta se:** o `AGENTS.md` do projeto não tem o texto `.backup-falhou`.
@@ -46,6 +53,8 @@
 
 ## regra-pesquisa-mundial
 
+**Desde:** 3.5
+**Pra você:** A IA pesquisa em qualquer idioma, principalmente inglês, e te entrega tudo em português, com respostas que vão além do que existe no Brasil.
 **O que é:** regra de buscar em qualquer idioma, principalmente inglês, e entregar em português.
 **Por quê:** conteúdo só em português limita a resposta ao que existe no Brasil.
 **Te afeta se:** o `AGENTS.md` não tem uma regra com o título `Pesquisa mundial.` em negrito (com ou sem número na frente, como `**10. Pesquisa mundial.**`).
@@ -54,6 +63,8 @@
 
 ## regra-camadas
 
+**Desde:** 3.5
+**Pra você:** Cada regra da sua IA fica guardada num lugar só e o arquivo de regras fica curto, então a IA presta mais atenção nelas.
 **O que é:** regra de cada regra morar num lugar só (global, pasta-mãe ou projeto), com o arquivo de regra curto.
 **Por quê:** regra copiada em várias pastas envelhece em todas menos na que foi arrumada, e arquivo de regra comprido faz o modelo prestar menos atenção.
 **Te afeta se:** o `AGENTS.md` não tem uma regra com o título `Camadas de regra.` em negrito (com ou sem número na frente, como `**10. Camadas de regra.**`).
@@ -62,6 +73,8 @@
 
 ## trava-no-settings
 
+**Desde:** 3.5
+**Pra você:** Uma trava segura comandos que apagam seu trabalho ou o disco e, antes de apagar uma pasta, pergunta mostrando o que vai sumir.
 **O que é:** liga a trava de comando destrutivo. Ela barra o Git que joga trabalho fora (`push --force`, `reset --hard`, `git clean`), o comando que apaga o disco e o comando escondido em código (`-EncodedCommand`). Antes de apagar pasta fora da pasta temporária, ela pergunta, mostrando o que vai sumir.
 **Por quê:** um comando digitado errado apaga semanas de trabalho, e a trava para isso antes de rodar.
 **Te afeta se:** o arquivo `.claude/hooks/barrar-perigoso.mjs` existe no projeto e o `.claude/settings.json` não cita `barrar-perigoso`.
@@ -70,6 +83,8 @@
 
 ## regra-trava
 
+**Desde:** 3.5
+**Pra você:** Quando uma trava barrar algo, a IA te diz qual foi e combina o próximo passo, sem tentar dar a volta nela.
 **O que é:** regra que diz o que fazer quando uma trava barrar: dizer o nome da trava e da regra e decidir o próximo passo, sem procurar outro caminho pra mesma ação. Só na regra erro-interno do `barrar-perigoso`, em que a trava não conseguiu ler o comando, dá pra reescrever ele mais simples ou usar uma ferramenta equivalente, avisando.
 **Por quê:** sem ela, o assistente tende a contornar a trava e fazer a mesma coisa por outra rota.
 **Te afeta se:** a entrada `trava-no-settings` está aplicada (ou o `settings.json` já cita `barrar-perigoso`) e o `AGENTS.md` não tem uma regra com o título `Travas.` nem `Trava de comando destrutivo.` em negrito (com ou sem número na frente, como `**10. Travas.**`).
@@ -78,6 +93,8 @@
 
 ## chave-protegida
 
+**Desde:** 3.5
+**Pra você:** Essa proteção foi aposentada numa versão nova do kit e não muda nada no seu projeto hoje.
 **O que é:** o assistente passa a pedir licença antes de ler o arquivo de chaves (`.env`) e nunca lê a pasta `secrets/`.
 **Por quê:** chave lida entra na conversa, e conversa pode ir parar em print, em log ou em outro lugar.
 **Te afeta se:** nunca. Aposentada na 5.49: a `travas-soltas` tirou a licença antes de ler o `.env` e o bloqueio de leitura da pasta `secrets/`, que esta entrada punha.
@@ -86,6 +103,8 @@
 
 ## backup-com-aviso
 
+**Desde:** 3.5
+**Pra você:** Quando o backup automático não consegue subir pro GitHub, ele deixa um aviso guardado, e você fica sabendo da falha.
 **O que é:** o backup automático passa a deixar um aviso (`.backup-falhou`) quando não consegue subir pro GitHub.
 **Por quê:** hoje, quando o envio falha, ninguém fica sabendo.
 **Te afeta se:** o `settings.json` tem hook `Stop` que roda `git push` direto na linha de comando, em vez de chamar o `.claude/hooks/auto-sync.mjs`.
@@ -94,6 +113,8 @@
 
 ## regra-bastao
 
+**Desde:** 3.5
+**Pra você:** Antes de continuar um assunto em conversa nova, a IA salva o ponto exato, e a conversa nova já sabe onde parou.
 **O que é:** a regra de economia de conversa passa a mandar rodar o `/bastao` antes de continuar um assunto em conversa nova.
 **Por quê:** sem ele, a conversa nova começa sem saber onde a anterior parou.
 **Te afeta se:** o projeto tem `.claude/skills/bastao/` e a regra "Economia de conversa" do `AGENTS.md` não cita `/bastao`.
@@ -102,6 +123,8 @@
 
 ## regra-licoes-pelo-atualizar
 
+**Desde:** 3.5
+**Pra você:** Ao fechar a sessão, a lição que se repetiu vira regra fixa, então o mesmo erro tem menos chance de voltar.
 **O que é:** a regra do loop de lições passa a dizer quem transforma lição repetida em regra: o `/atualizar`, ao fechar a sessão.
 **Por quê:** sem dono, a lição repetida fica só registrada e o erro volta.
 **Te afeta se:** a regra "Loop de lições" do `AGENTS.md` não cita `/atualizar`.
@@ -110,6 +133,8 @@
 
 ## criacao-de-skills
 
+**Desde:** 3.5
+**Pra você:** Quando a IA cria uma habilidade nova, ela mostra o plano antes e testa com um caso real, pra não nascer torta.
 **O que é:** a seção "Criação de skills" ganha três passos: mostrar o plano antes de criar, delegar a skill feita do zero pra `skill-creator` e testar com um caso real.
 **Por quê:** skill criada sem plano e sem teste costuma nascer torta e só aparecer quebrada no uso.
 **Te afeta se:** o `AGENTS.md` do projeto ainda tem a seção `## Criação de skills` e ela não cita `skill-creator`.
@@ -118,6 +143,8 @@
 
 ## caminho-da-biblioteca
 
+**Desde:** 3.5
+**Pra você:** Seu projeto passa a usar a biblioteca de modelos da pasta principal, que é a que as atualizações mantêm sempre nova.
 **O que é:** o `AGENTS.md` passa a apontar pra biblioteca de templates da pasta-mãe, e deixa de usar uma cópia dentro do projeto.
 **Por quê:** a cópia local para no tempo, e a da pasta-mãe é a que a atualização mantém nova.
 **Te afeta se:** o `AGENTS.md` cita `templates/skills/` num caminho que não resolve a partir do projeto, ou o projeto tem uma pasta `templates/` própria.
@@ -126,6 +153,8 @@
 
 ## ponte-codex-fora-do-git
 
+**Desde:** 3.5
+**Pra você:** O backup no GitHub deixa de guardar uma segunda cópia das suas habilidades que ficava desatualizada, sem apagar nada do seu computador.
 **O que é:** a ponte `.agents/` (que deixa o Codex enxergar as skills) sai do GitHub.
 **Por quê:** ela aponta pra `.claude/skills`; guardada no git, vira uma segunda cópia de todas as skills que envelhece.
 **Te afeta se:** `git ls-files .agents` lista algum arquivo, ou o `.gitignore` não tem `.agents/`.
@@ -134,6 +163,8 @@
 
 ## oferta-mercado-livre
 
+**Desde:** 3.6
+**Pra você:** Se você vende no Mercado Livre ou outro marketplace, a IA oferece um pacote que vai da pesquisa de produto ao anúncio publicado.
 **O que é:** oferece o pacote de marketplace (treze comandos, do "posso vender isso?" ao anúncio publicado e à conta auditada) pra quem vende em marketplace.
 **Por quê:** quem vende no Mercado Livre refaz na mão, todo produto, pesquisa, preço, anúncio e auditoria que o pacote faz.
 **Te afeta se:** o `_contexto/empresa.md` cita marketplace, Mercado Livre, Shopee, Amazon ou Magalu, e o projeto não tem `.claude/skills/mercado-livre/`.
@@ -142,6 +173,8 @@
 
 ## estrutura-mercado-livre
 
+**Desde:** 3.6
+**Pra você:** Seus anúncios ganham lugar certo no projeto e o login da sua conta do Mercado Livre fica fora do backup no GitHub.
 **O que é:** registra no projeto as pastas que o pacote de marketplace cria e protege o login do Chrome dedicado.
 **Por quê:** sem a linha no `AGENTS.md`, o assistente não sabe onde mora cada anúncio; sem a linha no `.gitignore`, o backup sobe o login da sua conta do Mercado Livre pro GitHub.
 **Te afeta se:** o projeto tem `.claude/skills/mercado-livre/` e o `.gitignore` não tem `dados/chrome-perfil/`, ou a seção "Estrutura de pastas" do `AGENTS.md` não cita `anuncios/`.
@@ -156,6 +189,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## estilo-por-categoria
 
+**Desde:** 3.9
+**Pra você:** Cada categoria de produto ganha seu estilo de foto, e a IA escolhe as cores e o clima das imagens do anúncio por ela.
 **O que é:** o guia de marca ganha a seção "Estilo por categoria", que diz qual estilo de foto (Limpo, Colorido ou Natural) cada categoria de produto usa.
 **Por quê:** a `/gerar-imagens` lê essa seção pra escolher as cores e o clima das fotos do anúncio; sem ela, todas saem no estilo Limpo.
 **Te afeta se:** nunca; substituída pela `estilo-do-anuncio` (4.9).
@@ -164,6 +199,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## permissao-escrita-ml
 
+**Desde:** 3.11
+**Pra você:** Sem Bling, a IA cria seu anúncio direto no Mercado Livre, já pausado, e confere com você se o aplicativo tem permissão pra isso.
 **O que é:** o `/publicar-marketplace` passa a criar o anúncio direto no Mercado Livre, já pausado, quando você não usa Bling.
 **Por quê:** pra isso o aplicativo do Mercado Livre que você criou no `/conectar` precisa de permissão de leitura e escrita; com só leitura, a auditoria funciona e a publicação volta erro de permissão.
 **Te afeta se:** `node .claude/skills/conectar/scripts/chave.mjs tem ML_CLIENT_ID` responde `tem` e o projeto tem `.claude/skills/publicar-marketplace/scripts/publicar-ml.mjs`.
@@ -172,6 +209,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## video
 
+**Desde:** 4.1
+**Pra você:** Você faz vídeo do produto sem filmar e edita o que gravou pelo sistema, sempre com aviso de custo antes de gastar.
 **O que é:** três skills novas de vídeo: `/configurar-video` (instala o motor de vídeo uma vez, medindo a máquina), `/video-produto` (vídeo do produto sem filmar, a partir das perguntas e opiniões do concorrente) e `/editar-video` (edita o vídeo que você gravou, com fundo verde ou no seu cenário). O teto padrão de gasto (`limite_gasto_usd`) passou de US$ 2 pra US$ 4.
 **Por quê:** vídeo é o que mais move venda e perfil, e agora sai pelo sistema com aviso de custo antes de qualquer gasto.
 **Te afeta se:** você quer fazer vídeo de produto ou editar vídeo gravado. O teto novo vale pra quem não escreveu `limite_gasto_usd` no `_contexto/mercado-livre.md`.
@@ -180,6 +219,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## pacote-midia-social
 
+**Desde:** 4.1
+**Pra você:** Você monta a pauta da semana com a IA, agenda posts no Instagram, TikTok e YouTube e vê o resultado de cada post no Instagram.
 **O que é:** pacote novo de redes sociais, com seis comandos: `/midia-social` (configura e mostra o estado), `/pauta` (posts da semana com roteiro), `/decupar-referencia` (ficha de vídeo que funcionou), `/publicar-social` (agenda no Instagram, TikTok e YouTube pelo Buffer), `/auditar-instagram` (raio-x da conta e resultado de cada post) e `/gerenciar-youtube` (canal pela API).
 **Por quê:** levar pro aluno o fluxo de redes sociais que roda na operação do criador do SabinOS, com perfil da loja como padrão e marca pessoal como opção.
 **Te afeta se:** o projeto vende ou quer vender e quer postar nas redes; pacote opcional, nada muda pra quem não instalar.
@@ -188,6 +229,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## aprender-curso
 
+**Desde:** 4.1
+**Pra você:** Um curso em vídeo que você assistiu vira consulta pro dia a dia, com a IA citando a aula e o minuto da explicação.
 **O que é:** comando novo `/aprender-curso`: o sistema estuda um curso em vídeo (playlist do YouTube ou vídeos no computador) e vira seu mentor no assunto, citando aula e minuto e conferindo na internet o que pode ter mudado. Vem junto com o `/assistir-video` e o `/transcribe`, que ele usa.
 **Por quê:** curso que você assistiu vira consulta pro dia a dia, aplicada ao seu negócio, em vez de ficar esquecido.
 **Te afeta se:** o projeto não tem `.claude/skills/aprender-curso/`.
@@ -196,6 +239,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## um-projeto-por-pasta
 
+**Desde:** 4.1
+**Pra você:** Quando você começa um projeto sem relação com o negócio, a IA sugere uma pasta própria pra memória e regras não se misturarem.
 **O que é:** o `AGENTS.md` ganha a regra "Um projeto por pasta": quando você começa ali um projeto sem relação com aquele negócio, o sistema recomenda criar uma pasta própria e avisa pra abrir ela no VS Code.
 **Por quê:** dois projetos na mesma pasta misturam memória e regras, e o sistema passa a errar nos dois.
 **Te afeta se:** o `AGENTS.md` do projeto não tem o título `Um projeto por pasta`.
@@ -204,6 +249,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## bastao-oferecer
 
+**Desde:** 4.1
+**Pra você:** Quando o assunto segue em outra conversa, a IA te oferece salvar o ponto e só faz isso se você pedir.
 **O que é:** a regra "Economia de conversa" do `AGENTS.md` passa a mandar oferecer o bastão quando o assunto continua em outra conversa, em vez de rodar ele sozinho.
 **Por quê:** a própria skill do bastão diz que nunca roda sem você pedir; as duas regras brigavam.
 **Te afeta se:** a regra "Economia de conversa" do `AGENTS.md` do projeto diz "rodar o" bastão "antes".
@@ -212,6 +259,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## voz-de-teste-no-backup
 
+**Desde:** 4.1
+**Pra você:** O teste rápido de vídeo passa a funcionar também quando você baixa o projeto do backup em outro computador.
 **O que é:** o `.gitignore` do projeto ganha uma exceção pra voz de teste do `/configurar-video`, que é arquivo do kit e ficava fora do backup por ser `.wav`.
 **Por quê:** num clone em outro computador, o teste rápido do vídeo quebrava por falta desse arquivo.
 **Te afeta se:** o projeto tem `.claude/skills/configurar-video/` e o `.gitignore` não tem `!.claude/skills/configurar-video/referencias/teste-voz.wav`.
@@ -220,6 +269,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## carrossel-na-producao
 
+**Desde:** 4.2
+**Pra você:** Carrossel pronto já fica salvo no lugar certo pra agendar no Instagram, sem você precisar mover arquivo na mão.
 **O que é:** o modelo de carrossel passa a salvar cada post em `producao/<data>-<assunto>/`, com os slides em `final/` e a legenda num `post.md`, o formato que a `/publicar-social` agenda. Antes ia pra `conteudo/carrosseis/`, onde o agendamento não acha. Também deixou de mandar rodar o `/setup` de dentro do projeto e de citar preço fixo de gerador de imagem.
 **Por quê:** carrossel pronto que não dá pra agendar obriga a pessoa a mover arquivo na mão.
 **Te afeta se:** o projeto tem `.claude/skills/carrossel/SKILL.md` e ele cita `conteudo/carrosseis`.
@@ -228,6 +279,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## gitignore-fechado
 
+**Desde:** 4.3
+**Pra você:** Só arquivo de tipo liberado, como texto, planilha, imagem e PDF, vai pro backup no GitHub; chave e vídeo pesado ficam de fora.
 **O que é:** o `.gitignore` do projeto passa a ser fechado por padrão: só o tipo liberado (texto, planilha, imagem, PDF, script) vai pro backup no GitHub, e o resto fica de fora.
 **Por quê:** a lista antiga só bloqueava o que alguém lembrou de bloquear, então uma chave, um vídeo pesado ou um arquivo de outra pessoa podia subir sem ninguém ver.
 **Te afeta se:** a primeira linha do `.gitignore` do projeto que não é comentário nem vazia não é `*`, ou a linha logo depois dela não é `!*/`.
@@ -236,6 +289,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## memoria-registro
 
+**Desde:** 4.3
+**Pra você:** O que você decidiu e fez fica guardado com data e motivo, e os avisos dos robôs viram recados que a IA lê.
 **O que é:** nasce a pasta `_memoria/` (`decisoes.md`, `diario/`, `recados/`, `arquivo/`). As "Decisões recentes" do `agora.md` vão pro `decisoes.md` com a data. Cada linha de `robos/avisos-pendentes.md` vira um recado em `_memoria/recados/`.
 **Por quê:** o que foi decidido e feito ficava só no `agora.md`, que se reescreve a cada sessão, e o aviso de robô ficava num arquivo que ninguém abria. Com `_memoria/` o sistema lembra o que foi feito e por quê.
 **Te afeta se:** o projeto não tem `_memoria/decisoes.md` (vale também sem "Decisões recentes" e sem avisos, porque ele precisa nascer com o cabeçalho).
@@ -244,6 +299,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## agents-md-mapa-tabela
 
+**Desde:** 4.3
+**Pra você:** A IA passa a saber onde guardar cada decisão, fato ou recado, e a memória do seu projeto deixa de ficar espalhada.
 **O que é:** o `AGENTS.md` do projeto ganha mapa, tabela de destinos, gatilhos, recall e rotinas, que dizem onde cada coisa mora e quando ler `_memoria/`.
 **Por quê:** sem a tabela, cada sessão decide de novo onde guardar uma decisão, um fato ou um recado, e a memória espalha.
 **Te afeta se:** o `AGENTS.md` do projeto não tem o título `## Tabela de destinos`.
@@ -252,6 +309,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## auto-sync-equipe
 
+**Desde:** 4.3
+**Pra você:** Com dois computadores no mesmo projeto, o backup junta o trabalho dos dois e, se houver choque, para e te avisa sem perder texto.
 **O que é:** o backup automático passa a ser um script em Node (`.claude/hooks/auto-sync.mjs`) que manda primeiro, assina o commit com o nome da máquina (`.origem`) e, se o outro lado mudou o mesmo trecho, para e deixa um recado em vez de perder texto.
 **Por quê:** com dois computadores no mesmo projeto, o envio antigo simplesmente falhava no segundo push e deixava só a marca `.backup-falhou`; o novo puxa quando o envio é recusado e, se der conflito, para com um recado que o /syncar resolve junto com a pessoa.
 **Te afeta se:** o hook `Stop` do `.claude/settings.json` ainda usa `bash -c`, ou o projeto não tem `.origem`, ou não tem `.gitattributes`.
@@ -260,6 +319,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## skills-faxina-compartilhar-segunda-opiniao
 
+**Desde:** 4.3
+**Pra você:** Três comandos novos: faxina mensal da memória do projeto, compartilhar pasta com cliente sem levar senha, e revisão antes de você dar o ok.
 **O que é:** três comandos novos em todo projeto. `/faxina` confere uma vez por mês se a memória do projeto apodreceu (diário e decisão velhos pra arquivar, senha ou CPF fora do `.env`, arquivo que nenhuma regra cita, decisões que brigam, "onde paramos" que não bate com o diário, robô sem sinal, fato do negócio guardado só na memória do assistente, arquivo fora do backup); só relata e mexe com o sim. `/compartilhar` prepara uma pasta de cliente ou sócio pra ir pro GitHub dela, sem senha e sem levar o projeto inteiro. `/segunda-opiniao` passa todo pedido de ok por um revisor que não viu a conversa.
 **Por quê:** memória que apodrece calada, pasta que sai sem senha e sem o projeto, e furo que quem montou a proposta não vê.
 **Te afeta se:** o projeto não tem `.claude/skills/faxina/`, `.claude/skills/compartilhar/` ou `.claude/skills/segunda-opiniao/`.
@@ -268,6 +329,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## auto-sync-segura
 
+**Desde:** 4.4
+**Pra você:** O backup segura arquivo com cara de chave e arquivo gigante, então sua chave não vai parar no GitHub por acidente.
 **O que é:** antes de mandar pro GitHub, o backup automático segura o arquivo que tem cara de chave (sk-, token do GitHub, chave da AWS, chave privada) ou passa de 50 MB, manda o resto e deixa um recado dizendo o que ficou e como resolver. Sem internet ele espera um dia antes de avisar, e login recusado ganha aviso próprio.
 **Por quê:** chave colada num texto ia pro GitHub segundos depois, e um arquivo grande no histórico travava todo envio seguinte pra sempre.
 **Te afeta se:** `git check-ignore -q _memoria/recados/x-auto-sync-segurou.md` falha no projeto.
@@ -276,6 +339,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## voz-da-marca
 
+**Desde:** 4.4
+**Pra você:** Anúncio, post e proposta pro seu cliente passam a sair na voz da sua marca, separada do jeito simples como a IA conversa com você.
 **O que é:** a marca passa a ter duas metades: o visual (`marca/design-guide.md`) e a voz (`marca/tom-de-voz.md`), que é como o sistema escreve no lugar da pessoa pro cliente dela. O jeito de falar com a pessoa no chat continua no `preferencias.md`, e os dois deixam de se misturar.
 **Por quê:** o tom do chat (simples, "como pra uma criança") vazava pra anúncio, post e proposta, e nenhum texto que sai pro cliente era relido contra a marca antes de entregar.
 **Te afeta se:** o projeto não tem `marca/tom-de-voz.md`.
@@ -284,6 +349,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## ferramentas-sete-assuntos
 
+**Desde:** 4.4
+**Pra você:** A IA passa a saber, em assuntos como mensagem com cliente, email, agenda e dinheiro, o que já está ligado e o que falta.
 **O que é:** o `ferramentas.md` passa a ter uma linha pra cada um dos sete assuntos de todo negócio (mensagem com cliente, tarefa e prazo, email, agenda, dinheiro entrando e saindo, ficha do cliente, reunião), com `não ligada` ou `só você` quando o sistema ainda não alcança.
 **Por quê:** o arquivo só listava o que já estava ligado, então o sistema não sabia o que existia e faltava ligar, e o "antes de dizer não consigo, ler o `ferramentas.md`" não achava nada.
 **Te afeta se:** o `_contexto/ferramentas.md` do projeto não tem o título `## Os sete assuntos de todo negócio`.
@@ -292,6 +359,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## memoria-regras-finas
 
+**Desde:** 4.4
+**Pra você:** Na memória do projeto, data sai sempre com dia, mês e ano, pendência só some com motivo e tarefa automática não mexe no seu trabalho.
 **O que é:** regras curtas que seguram a memória: data sempre absoluta, pendência que só sai com motivo, o que entra e o que não entra nas decisões, erro dito em linguagem de gente, e o contrato completo do que um robô pode escrever sozinho.
 **Por quê:** "semana passada" perde o sentido em uma semana, pendência que some calada vira esquecimento, decisão misturada com tarefa feita esconde o porquê, e robô rodando de madrugada não pode mexer em trabalho de ninguém nem criar memória que ninguém viu.
 **Te afeta se:** o `AGENTS.md` do projeto não tem o texto `data sempre absoluta` (sem diferenciar maiúscula).
@@ -300,6 +369,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## chave-de-rede-social
 
+**Desde:** 4.5
+**Pra você:** O backup agora reconhece chave de Instagram, Meta, Google e Mercado Livre e segura o arquivo antes de ele subir pro GitHub.
 **O que é:** o backup automático, a `/faxina`, o `/compartilhar` e o `/checar` passam a reconhecer a mesma lista de cara de chave, agora com token da Meta, do Instagram, do Google, do Telegram, do Slack, do Stripe e do Mercado Livre, mais sequência longa logo depois de "token", "chave" ou "senha". Também olham dentro do `.env.example`, que sobe pro GitHub, e o backup passa a ler texto de qualquer tamanho até 50 MB.
 **Por quê:** num teste com uma loja inventada, o token do Instagram colado numa nota foi pro GitHub sem nenhum aviso: a lista antiga só conhecia chave de OpenAI, GitHub e AWS. Resposta de API salva em `dados/` também carrega o token no link da próxima página.
 **Te afeta se:** o `.claude/hooks/auto-sync.mjs` do projeto não contém a palavra `conferirPreparados` (hook antigo). Nunca testar rodando o hook antigo: ele não conhece o `--conferir` e faria o backup de verdade.
@@ -308,6 +379,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## atualizador-fora-do-backup
 
+**Desde:** 4.5
+**Pra você:** Os arquivos internos do atualizador ficam só no seu computador, e o GitHub guarda apenas qual versão do SabinOS você tem instalada.
 **O que é:** a pasta `.sabinos/`, onde o atualizador guarda a cópia de segurança e o próprio motor, passa a ficar fora do backup, menos o recibo `instalado.json`, que diz qual versão está instalada.
 **Por quê:** o motor e o `.gitignore` interno subiam pro GitHub a cada atualização sem servir pra nada fora deste computador, e a `/faxina` achava que a pasta inteira estava fora.
 **Te afeta se:** `git check-ignore -q .sabinos/atualizar-projeto.mjs` falha no projeto.
@@ -316,6 +389,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## segunda-opiniao-na-dose
 
+**Desde:** 4.5
+**Pra você:** A revisão extra só entra antes de gastar, publicar, enviar, apagar ou mexer nas pastas, ou quando você pede, e a conversa fica mais rápida.
 **O que é:** a segunda opinião deixa de rodar antes de todo ok. Ela entra sozinha antes do ok do que gasta dinheiro, publica, envia pra fora, apaga ou muda a estrutura de pastas e skills, e quando a pessoa pede ("revisa", "se autoverifica"); o resto segue sem revisão. O `/iniciar` e o `/atualizar` param de reler o que já chegou no começo da conversa.
 **Por quê:** cada revisão com revisor separado custou perto de 100 mil tokens e um minuto e meio de espera num teste, e um dia comum tinha 18 pedidos de ok. Reler o `AGENTS.md` e os arquivos do começo de conversa custava mais de 4 mil tokens por sessão sem trazer nada novo.
 **Te afeta se:** o `AGENTS.md` do projeto tem, nos Gatilhos, a linha que começa com "- vai pedir o ok da pessoa".
@@ -324,6 +399,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## memoria-na-hora
 
+**Desde:** 4.5
+**Pra você:** Decisões e contatos de fornecedor são gravados na hora, e o que você decidiu não se perde se a conversa cair.
 **O que é:** decisão e fato do negócio passam a ser gravados na hora, como o diário, em vez de esperar o fim da sessão; fornecedor ou contato com telefone, email ou preço ganha ficha em `_contexto/pessoas/` já na primeira vez; e cliente, encomenda grande ou campanha que vai durar ganha pasta própria pela rota leve do `/novo-projeto`.
 **Por quê:** num teste com uma loja inventada, sessão que caísse antes do `/atualizar` perdia a decisão do dia; o fornecedor com telefone e preço ficou preso numa linha de diário que a `/faxina` arquivaria em 90 dias; e nada no projeto dizia como nasce a pasta de um cliente.
 **Te afeta se:** a Tabela de destinos do `AGENTS.md` do projeto não tem a frase "decisão e fato do negócio vão na hora".
@@ -332,6 +409,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## contatos-e-prazo
 
+**Desde:** 4.4
+**Pra você:** Fornecedor e parceiro que voltam ganham ficha própria, pra você não repetir quem são, e campanha temporária fica separada das prioridades de sempre.
 **O que é:** fornecedor, parceiro e outro contato que volta ganham ficha própria em `_contexto/pessoas/`, o `estrategia.md` ganha a seção "Contexto com prazo" (o que pesa por um tempo e depois some) e o `infra.md` ganha email da empresa, loja e "quem acessa como".
 **Por quê:** contato que aparece toda semana no diário e não tem ficha faz a pessoa repetir quem ele é; campanha ou regra temporária misturada com a prioridade de fundo nunca sai; e email e loja não tinham lugar.
 **Te afeta se:** o `AGENTS.md` do projeto não tem o texto `pessoas/`.
@@ -340,6 +419,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## triagem-vira-atendimento
 
+**Desde:** 4.6
+**Pra você:** O atendimento no WhatsApp só responde preço e prazo pela sua tabela de catálogo, então a IA não inventa preço de cabeça.
 **O que é:** a triagem de WhatsApp que o `/mapear` promovia de um template virou o `/atendimento`, do pacote de loja, que só responde preço e prazo pela tabela `dados/catalogo.csv` e confere o rascunho por script antes de mostrar.
 **Por quê:** na triagem antiga a tabela de preços era opcional, então o preço podia sair de cabeça; o template saiu da biblioteca pra não ficarem duas rotas pro mesmo trabalho.
 **Te afeta se:** o projeto tem a pasta `.claude/skills/triagem-atendimento/` e ainda não tem a `.claude/skills/atendimento/`.
@@ -348,6 +429,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## equipe-se-apresenta
 
+**Desde:** 4.8
+**Pra você:** Em equipe, cada computador se identifica logo no começo da conversa, e o diário e o backup não misturam o trabalho de duas máquinas.
 **O que é:** computador da equipe que ainda não tem o `.origem` pergunta, logo na primeira resposta da conversa, qual nome da linha "Equipe e máquinas" ele é e grava o `.origem` antes de escrever no diário; e o Mapa passa a dar o nome do diário de quem não é o `dono`.
 **Por quê:** a regra só estava no `/iniciar`, e conversa que começava sem ele escrevia o diário e fazia o backup assinados como `dono`, misturando o trabalho de duas máquinas.
 **Te afeta se:** o `_contexto/ferramentas.md` do projeto tem a linha "Equipe e máquinas" e a linha de começo de conversa do `AGENTS.md` ainda não fala do `.origem`.
@@ -356,6 +439,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## pasta-secrets-protegida
 
+**Desde:** 4.8
+**Pra você:** As chaves que algumas ferramentas guardam em pastas de segredo ficam fora do backup e não vão mais parar no GitHub sem você saber.
 **O que é:** as pastas `.secrets/` (onde algumas skills de fora guardam chave) e `secrets/` passam a ficar fora do backup.
 **Por quê:** o `.gitignore` não conhecia nenhuma das duas, e o `!*.json` liberava o arquivo de chave, então uma chave gravada em `.secrets/` ou `secrets/` subia pro GitHub no backup automático seguinte, sem aviso.
 **Te afeta se:** `git check-ignore -q .secrets/x.json` ou `git check-ignore -q secrets/x.json` falha no projeto.
@@ -364,6 +449,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## estilo-do-anuncio
 
+**Desde:** 4.9
+**Pra você:** As fotos do seu anúncio ganham cores e letras que combinam com a categoria do produto no Mercado Livre, sem depender do visual da loja.
 **O que é:** o estilo das fotos do anúncio (Limpo, Colorido ou Natural, cada um com cores e letras próprias) passa a sair da categoria do produto, numa linha por categoria no bloco `estilo-anuncio` do `_contexto/mercado-livre.md`. O guia da marca deixa de mandar nas fotos do anúncio e a pergunta dele sai da entrevista da `/mercado-livre`.
 **Por quê:** a foto de anúncio segue a cara da categoria no marketplace, sem cor, letra ou logo da loja. A seção antiga no guia da marca sumia em pasta com `marca/` própria, passava de um projeto pro outro junto com o guia e era reescrita pelo carrossel.
 **Te afeta se:** o projeto tem `.claude/skills/gerar-imagens/` e: o `_contexto/mercado-livre.md` não tem o bloco `estilo-anuncio`, ou algum `design-guide.md` do backup (`git ls-files '*design-guide.md'`) tem a seção `## Estilo por categoria`. Projeto sem essa skill fica como está: a seção velha no guia não atrapalha, porque nada a lê.
@@ -372,6 +459,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## fontes-do-anuncio-no-backup
 
+**Desde:** 4.9
+**Pra você:** As letras das fotos do anúncio passam a ir pro backup, então as peças com texto funcionam também em outro computador.
 **O que é:** o `.gitignore` do projeto ganha uma exceção pras letras das fotos do anúncio (Manrope, Fredoka e Lora, em `.claude/skills/gerar-imagens/scripts/fontes/`), que são arquivo do kit e ficavam fora do backup por serem `.ttf`.
 **Por quê:** num clone em outro computador, a peça com texto pararia por falta da letra.
 **Te afeta se:** o projeto tem `.claude/skills/gerar-imagens/scripts/fontes/` e `git check-ignore .claude/skills/gerar-imagens/scripts/fontes/Manrope.ttf` imprime o caminho.
@@ -380,6 +469,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## regra-pedido-vago
 
+**Desde:** 5.0
+**Pra você:** Quando você pede algo meio solto, a IA completa com o que já sabe do seu negócio, confirma e só pergunta o que falta.
 **O que é:** a regra "Pedido amplo ou ambíguo" do `AGENTS.md` vira "Pedido vago: completar, confirmar, perguntar por último": o sistema completa o pedido com o que já sabe do seu negócio, confirma em uma linha, espera o seu sim pra começar e só pergunta o que falta, com opções de clicar. "Só faz" desliga as perguntas até o fim da conversa, e a entrega fecha com "da próxima vez, pode pedir assim", dica que você desliga dizendo "para com as dicas".
 **Por quê:** pergunta aberta ("qual produto, público, tom?") trava quem ainda não sabe como pedir, e a dúvida voltava pro suporte.
 **Te afeta se:** o `AGENTS.md` do projeto não tem `Pedido vago: completar, confirmar, perguntar por último`.
@@ -388,6 +479,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## gatilho-da-pra
 
+**Desde:** 5.0
+**Pra você:** Quando você pergunta se a IA consegue algo, ela confere o que já tem e responde sim, em parte ou não, dizendo o que falta.
 **O que é:** quando você pergunta "dá pra..." ou "a IA consegue...", o sistema olha antes o que já está ligado e as skills do projeto, responde sim, em parte ou não, diz o que falta ligar e se custa, e fecha mostrando como pedir.
 **Por quê:** a resposta vinha como "depende" ou como um "não tenho acesso" que não era verdade, e a pessoa desistia.
 **Te afeta se:** o `AGENTS.md` do projeto tem `Pedido vago:` e a seção Gatilhos não tem `a IA consegue`.
@@ -396,6 +489,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## fecho-desconfianca
 
+**Desde:** 5.0
+**Pra você:** Texto que vai pro seu cliente chega com até duas linhas dizendo o que a IA supôs e o que você confere antes de usar.
 **O que é:** texto que sai pro seu cliente (anúncio, post, email, proposta) passa a vir com até duas linhas no fim: o que o sistema supôs e o que você confere antes de usar.
 **Por quê:** entrega com cara de pronta faz a pessoa conferir menos, e o erro chega no cliente.
 **Te afeta se:** a seção Gatilhos do `AGENTS.md` do projeto tem a linha que começa com `- vai entregar texto que sai pro cliente` e ela não tem `o que conferir antes de usar`.
@@ -404,6 +499,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## skill-ler-avaliacoes
 
+**Desde:** 5.1
+**Pra você:** Você cola as avaliações dos clientes do concorrente e a IA mostra o que mais reclamam e pedem, com a frase original e o link.
 **O que é:** comando novo nas skills base, `/ler-avaliacoes`: lê as avaliações reais dos clientes de um concorrente (coladas à mão da página do Mercado Livre, Amazon, Shopee, Reclame Aqui ou loja de app, ou do bruto da espionagem quando ele traz avaliações) e ranqueia o que eles mais reclamam, o que pedem e o que ninguém resolve, com a frase literal e o link de cada um.
 **Por quê:** a reclamação do cliente do concorrente é o diferencial mais barato que existe, pra anúncio de marketplace e pra quem quer criar um app melhor que o que já existe.
 **Te afeta se:** o projeto não tem `.claude/skills/ler-avaliacoes/`.
@@ -412,6 +509,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## skill-humanizar
 
+**Desde:** 5.3
+**Pra você:** A IA aponta ou arruma o que soa robô no seu texto, sem mexer em preço, prazo, número ou medida.
 **O que é:** comando novo nas skills base, `/humanizar`: confere um texto e aponta o que soa robô, por categoria, ou arruma o texto quando você pede, com número, preço, prazo, medida e marca intocados e uma trava que reprova se algum deles sumiu ou apareceu.
 **Por quê:** anúncio, post e resposta de cliente com cara de IA perdem confiança, e o pedido "sem cara de IA" nunca dizia o que era isso; reescrever sem trava ainda arriscava trocar um preço ou inventar um prazo.
 **Te afeta se:** o projeto não tem `.claude/skills/humanizar/`.
@@ -421,6 +520,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## preferencias-sem-robo
 
+**Desde:** 5.3
+**Pra você:** A IA deixa de usar frases de robô e de inventar número, depoimento, garantia ou prazo: o que falta fica marcado pra você preencher.
 **O que é:** o `_contexto/preferencias.md` passa a proibir também o fecho de robô ("espero ter ajudado"), o gerundismo ("vou estar enviando") e número, depoimento, garantia ou prazo inventado, que vira [PREENCHER].
 **Por quê:** são as marcas de texto de IA que mais aparecem em mensagem de cliente e anúncio, e o número inventado é o pior defeito, porque parece verdade.
 **Te afeta se:** o `_contexto/preferencias.md` do projeto não tem `fecho de robô`.
@@ -429,6 +530,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## pode-ir-com-risco
 
+**Desde:** 5.3
+**Pra você:** Antes de pedir sua autorização, a IA mostra em duas linhas o que vai acontecer, o risco e como desfazer quando dá.
 **O que é:** antes de pedir o "pode ir", o sistema mostra em duas linhas o que vai acontecer e o risco, e como desfazer quando tem volta.
 **Por quê:** o "pode ir" dado sem saber o risco vira carimbo; duas linhas bastam pra pessoa decidir de verdade.
 **Te afeta se:** o `AGENTS.md` do projeto tem a regra **Gate humano** e ela não tem `o risco`.
@@ -437,6 +540,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## pacote-criar-app
 
+**Desde:** 5.1
+**Pra você:** Se quiser criar seu próprio app pra vender, você encontra um caminho pronto em etapas, com custo avisado antes e a lei brasileira considerada.
 **O que é:** pacote novo pra criar um app ou SaaS próprio, com dez comandos na ordem que se segue: `/app-estudar`, `/app-planejar`, `/app-visual`, `/app-construir`, `/app-servidor`, `/app-testar`, `/app-comparar`, `/app-marca`, `/app-lancar` e `/app-publicar` (a `/ler-avaliacoes`, base, entra entre o estudo e o plano como etapa 2: onze etapas no total).
 **Por quê:** quem um dia quiser construir um sistema ou app pra vender já encontra o caminho pronto, do estudo de um app de referência até o seu no ar com marca própria, com custo avisado antes e a lei brasileira (INPI, LGPD, CDC) no meio do caminho.
 **Te afeta se:** o projeto quer criar um app, sistema ou SaaS; pacote opcional, nada muda pra quem não instalar.
@@ -445,6 +550,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## gitignore-criar-app
 
+**Desde:** 5.1
+**Pra você:** Se você criou um app, o backup ignora os arquivos temporários e guarda o ícone, as letras e as mudanças do banco de dados.
 **O que é:** o backup do projeto passa a deixar de fora o lixo de build e de teste do app (`.next/`, `.vercel/`, `.wrangler/`, `test-results/`, `playwright-report/`) e a levar o ícone, a fonte e as mudanças de banco dele (`.ico`, `.woff2` e `.sql` dentro de `app/codigo/`).
 **Por quê:** o código do app mora em `app/codigo/`, dentro do projeto, pra ir pro backup junto; sem isso, a pasta de build subiria inteira, e o ícone e as mudanças de banco ficariam de fora sem aviso.
 **Te afeta se:** o projeto instalou o pacote criar app.
@@ -453,6 +560,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## gitignore-fontes-curso
 
+**Desde:** 5.5
+**Pra você:** O material bruto dos cursos que a IA estuda, como apostila paga e PDF grande, fica só no seu computador e não vai pro GitHub.
 **O que é:** o backup do projeto passa a deixar de fora o material bruto dos cursos estudados pelo `/aprender-curso` (`inteligencia/cursos/<nome>/fontes/`: legenda, transcrição, texto do Gemini e o PDF da apostila). O resumo das aulas, o `mentor.md` e o `curso.md` continuam subindo.
 **Por quê:** o `/aprender-curso` agora lê apostila, ebook e livro em PDF. Material pago não pode ir pro GitHub, e PDF acima de 100 MB derruba o backup.
 **Te afeta se:** o projeto tem a pasta `.claude/skills/aprender-curso/`.
@@ -461,6 +570,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## skill-pedir
 
+**Desde:** 5.6
+**Pra você:** Pergunte se a IA consegue fazer algo no seu negócio e receba a resposta direta, os primeiros passos e o pedido já bem escrito.
 **O que é:** comando novo nas skills base, `/pedir`: responde se a IA consegue fazer algo no seu negócio (dá, dá em parte ou não dá, o que falta ligar e se custa, com 2 ou 3 primeiros passos pra escolher) e transforma pedido vago em pedido completo, mostrando o antes e o depois e perguntando "faço agora?". Vem com um cardápio de 6 exemplos de pedido de quem vende em marketplace.
 **Por quê:** quem ainda não sabe pedir travava no "dá pra?" e no pedido pela metade, e a dúvida voltava pro suporte; vendo o pedido bem escrito toda vez, a pessoa aprende sem aula.
 **Te afeta se:** o projeto não tem `.claude/skills/pedir/`.
@@ -469,6 +580,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## gatilho-pedir
 
+**Desde:** 5.6
+**Pra você:** Quando você pergunta se a IA consegue fazer algo, ela já responde com os primeiros passos e exemplos de pedido pra escolher.
 **O que é:** o "dá pra..." e o "a IA consegue..." passam a ser atendidos pela `/pedir`; num projeto sem ela, o sistema segue respondendo como antes.
 **Por quê:** a `/pedir` traz os primeiros passos com opção e o cardápio de exemplos, que a linha do `AGENTS.md` sozinha não dava.
 **Te afeta se:** a seção Gatilhos do `AGENTS.md` do projeto tem a linha com `a IA consegue` e ela não tem `` skill `/pedir`; sem ela no projeto ``.
@@ -477,6 +590,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## agents-enxuto
 
+**Desde:** 5.7
+**Pra você:** As instruções que a IA lê em toda conversa ficaram mais curtas, então cada conversa gasta menos e o detalhe aparece só quando precisa.
 **O que é:** o `AGENTS.md` do projeto fica mais curto. O formato do recado, o detalhe das rotinas, a seção Criação de skills, a nota do Codex e o texto inteiro de algumas regras passam pro `.claude/detalhe-regras.md`, que o kit atualiza e o `AGENTS.md` manda ler antes de escrever recado, rotina ou skill. A regra Auto-sync passa a lembrar o `/syncar` uma vez quando o backup ainda não está ligado, e a regra Camadas de regra diz que as regras repetidas do global ficam de propósito.
 **Por quê:** o `AGENTS.md` entra em toda conversa; formato e detalhe que só servem pra uma tarefa encareciam todas, e o `/checar` mandava cortar regra que veio do kit.
 **Te afeta se:** o `AGENTS.md` do projeto não cita `.claude/detalhe-regras.md`.
@@ -485,6 +600,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## pendencias-de-fora
 
+**Desde:** 5.7
+**Pra você:** As pendências guardam só o que espera alguém de fora, e suas tarefas ficam numa lista só, sem repetir nada em dois lugares.
 **O que é:** as Pendências do `agora.md` passam a guardar só o que espera alguém de fora (fornecedor, cliente, contador, plataforma); o que você mesmo ou o sistema vai fazer vai pro `tarefas.md`.
 **Por quê:** as duas listas guardavam a mesma coisa, e a tarefa anotada numa era esquecida na outra.
 **Te afeta se:** a Tabela de destinos do `AGENTS.md` do projeto não tem `esperando alguém de fora`.
@@ -493,6 +610,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## fontes-de-curso-na-raiz
 
+**Desde:** 5.7
+**Pra você:** O material das aulas que você estuda com a IA fica guardado só no seu computador e não sobe mais pro GitHub.
 **O que é:** o `/aprender-curso` mandava gravar a legenda, a transcrição e a análise do Gemini de cada aula em `fontes/`, na raiz do projeto; agora grava em `inteligencia/cursos/<nome>/fontes/`, que fica fora do backup.
 **Por quê:** na raiz o `.gitignore` não segura esses arquivos, e o material do curso (às vezes pago) subia pro GitHub.
 **Te afeta se:** o projeto tem `.claude/skills/aprender-curso/` e uma pasta `fontes/` na raiz com arquivo `.vtt`, `.whisper.txt` ou `.gemini.md`.
@@ -501,6 +620,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## carrossel-no-pacote
 
+**Desde:** 5.7
+**Pra você:** Depois de aprovar o roteiro do carrossel, a IA oferece montar os slides no Chrome do seu computador, sem baixar navegador extra.
 **O que é:** a `/carrossel` saiu da biblioteca de modelos e virou a sétima skill do pacote de mídia social. A `/pauta` passa a oferecer gerar os slides do roteiro aprovado, e os slides saem pelo `slides.mjs` da `/midia-social`, no Chrome do computador, sem baixar navegador.
 **Por quê:** o carrossel escolhido na `/pauta` ficava sem quem fizesse os slides, e o modelo antigo mandava baixar um navegador inteiro e montar caminho de arquivo à mão.
 **Te afeta se:** o projeto tem `.claude/skills/midia-social/` e não tem `.claude/skills/carrossel/`, ou tem `.claude/skills/carrossel/SKILL.md` que ainda cita `npx playwright`.
@@ -509,6 +630,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## publicar-instagram-chave-no-env
 
+**Desde:** 5.7
+**Pra você:** A IA não pede mais sua chave do Instagram no chat: ela fica guardada num lugar protegido e não aparece na conversa.
 **O que é:** o modelo `publicar-instagram` não pede mais chave, token nem App Secret no chat: cada um vai pro `.env`, e o `publish-graph-api.js --configurar` troca o token curto pelo de 60 dias e acha a conta sozinho. O comando passa a se chamar `/publicar-instagram` em todo o texto, os slides vêm de `producao/<slug>/final/` com a legenda do `post.md`, e a Graph API sai da v21.0 (vence em 21/01/2027) pra v25.0.
 **Por quê:** chave colada no chat fica gravada na conversa, e os comandos antigos punham o segredo na linha de comando.
 **Te afeta se:** o projeto tem `.claude/skills/publicar-instagram/` e o `SKILL.md` dela cita `Cola aqui` ou o `scripts/publish-graph-api.js` cita `v21.0`.
@@ -517,6 +640,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## auditoria-carimbada
 
+**Desde:** 5.7
+**Pra você:** Se o texto ou as imagens do anúncio mudarem depois da conferência, a IA não publica até o anúncio ser conferido de novo.
 **O que é:** o `ml-auditor` passa a carimbar a auditoria aprovada com o hash do `copy.json`, do `imagens.json` e da `decisao.json`, e o `--montar` da `/publicar-marketplace` e da `/cadastrar-bling` recusa quando algum deles mudou depois.
 **Por quê:** copy corrigido depois da auditoria ia pra publicação sem ninguém conferir de novo.
 **Te afeta se:** o projeto tem `dados/pipeline/<slug>/auditoria.json` com `"veredito": "aprovado"` e sem `carimbos`, de anúncio ainda não publicado.
@@ -525,6 +650,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## veredito-exemplo-whey
 
+**Desde:** 5.7
+**Pra você:** O produto de exemplo da sua lista do que pode vender deixa de valer como liberado, e a IA oferece tirar ele.
 **O que é:** o exemplo de veredito da `/pode-vender` ("Whey Exemplo 900 g") deixa de ter formato de entrada válida, e a skill passa a copiar só o cabeçalho e o molde quando cria o `_contexto/vereditos-legais.md`.
 **Por quê:** quem criou o arquivo copiando o exemplo inteiro ficou com um veredito de mentira valendo até 2027, e o Gate 0 o aceitava.
 **Te afeta se:** o `_contexto/vereditos-legais.md` do projeto contém `Whey Exemplo 900 g`.
@@ -533,6 +660,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## marca-generica-na-ficha
 
+**Desde:** 5.7
+**Pra você:** A marca do anúncio no Mercado Livre segue uma regra só: a real da embalagem, ou Genérica quando não há uma marca só.
 **O que é:** a Marca da ficha do anúncio passa a seguir uma regra só em todas as skills do Mercado Livre: a marca real do produto (a da embalagem), gravada em `marca` na `decisao.json`, também em revenda e dropshipping de produto original; `Genérica` só quando o produto não tem uma marca só, como o artesanal, o kit de itens sem marca ou o kit que mistura marcas; nunca o nome da loja. O `--montar` vira pendência com marca fora da regra.
 **Por quê:** a `/montar-anuncio`, a `/publicar-marketplace` e a `/cadastrar-bling` davam três regras diferentes, e o Mercado Livre pede "Informe sempre a marca real" e `Genérica` só pra produto sem marca (ajuda "Como preencher as características do produto", conferida em 2026-10-12).
 **Te afeta se:** algum anúncio ainda não publicado tem `dados/pipeline/<slug>/copy.json` e uma `decisao.json` sem a chave `marca` (decisão feita antes da 5.12), e a `Marca` da ficha não é o nome gravado em `marca_autorizada` (ou ali não tem nome).
@@ -541,6 +670,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## mei-venda-de-fora
 
+**Desde:** 5.7
+**Pra você:** Se você é MEI e vende no Mercado Livre, a conta do limite anual passa a incluir o que você vendeu lá.
 **O que é:** a `/mei` passa a somar no teto o total do ano vendido fora do `/caixa` (Mercado Livre, Shopee, loja virtual), anotado com `externo`, e guarda a declaração anual entregue com `declarei <ano>`, que faz o aviso parar. Ela serve também a quem é MEI e vende só em marketplace, e traz junto os scripts do `/caixa`, que ficam quietos até alguém chamar o `/caixa`.
 **Por quê:** o MEI que vende no Mercado Livre e não lança no `/caixa` via o teto em 0% calado, e a `/mei` só entrava pelo pacote loja.
 **Te afeta se:** a linha **Registro:** do `_contexto/empresa.md` começa com `MEI` e o projeto não tem `.claude/skills/mei/`; ou o projeto tem `.claude/skills/mei/` e o `dados/mei.json` não tem o campo `externo`.
@@ -549,6 +680,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## clonar-especialista
 
+**Desde:** 5.11
+**Pra você:** Escolha uma pessoa pública e a IA monta um conselheiro que pensa como ela, aplicado ao seu negócio e com fonte citada.
 **O que é:** comando novo `/clonar-especialista`: você diz uma pessoa pública e o sistema estuda o que ela publicou (em qualquer idioma, mais o livro ou curso que você tiver) e monta um conselheiro que pensa do jeito dela, aplicado ao seu negócio, que aparece em todos os seus projetos.
 **Por quê:** conselho de quem você admira, com fonte citada, sem depender de lembrar o que leu.
 **Te afeta se:** o projeto não tem `.claude/skills/clonar-especialista/`.
@@ -557,6 +690,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## terminal-da-ia
 
+**Desde:** 5.11
+**Pra você:** Você nunca precisa digitar comando na tela preta: a IA roda tudo e só te pede um clique ou uma resposta no chat.
 **O que é:** regra nova no `AGENTS.md`, a **Terminal é da IA**: a pessoa nunca digita no terminal. Quem roda comando é a IA; da pessoa só se pede clique (login, Autorizar, Instalar, senha do computador) ou o que ela escreve no chat. O detalhe chega no `.claude/detalhe-regras.md`.
 **Por quê:** pessoa que não é da área trava na tela preta, e as skills às vezes mandavam ela colar comando lá.
 **Te afeta se:** o `AGENTS.md` do projeto não tem a regra **Terminal é da IA**.
@@ -565,6 +700,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## marca-real-na-ficha
 
+**Desde:** 5.12
+**Pra você:** Seu anúncio de produto original passa a levar na ficha a marca real da embalagem, como o Mercado Livre pede.
 **O que é:** a regra da Marca da ficha mudou na 5.12. Antes: `Genérica` em kit, revenda e dropshipping. Agora: a marca real do produto (a da embalagem), gravada em `marca` na `decisao.json`, também em revenda e dropshipping de produto original; `Genérica` só quando o produto não tem uma marca só, como o artesanal, o kit de itens sem marca ou o kit que mistura marcas. O `--montar` passa a barrar `Genérica` em produto que tem marca na decisão.
 **Por quê:** o Mercado Livre pede "Informe sempre a marca real" e `Genérica` só pra produto sem marca (ajuda "Como preencher as características do produto", conferida em 2026-10-12); produto original anunciado como `Genérica` contraria a ficha.
 **Te afeta se:** o recibo `.sabinos/instalado.json` tem `marca-generica-na-ficha` no campo `mudancas` e algum anúncio ainda não publicado tem `Marca` `Genérica` no `dados/pipeline/<slug>/copy.json` e uma `decisao.json` sem a chave `marca`.
@@ -573,6 +710,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## marca-no-titulo
 
+**Desde:** 5.12
+**Pra você:** O título do seu anúncio passa a mostrar a marca do produto, na ordem que o Mercado Livre recomenda.
 **O que é:** produto com marca passa a levar a marca também no título do anúncio, na ordem produto + marca + modelo. Produto sem marca e kit que mistura marcas seguem sem marca no título. Produto compatível com outra marca usa "para" ou "compatível com", nunca "tipo" ou "igual a". O `--montar` e o `--enviar` passam a barrar título sem a marca da decisão. Anúncio já publicado não muda.
 **Por quê:** o Mercado Livre pede "No título: Informe a marca real do produto que você oferece", na estrutura "produto + marca + modelo" (Central de Vendedores, notas sobre título e propriedade intelectual, conferidas em 2026-10-12). A regra antiga do kit tirava a marca de todo título.
 **Te afeta se:** algum anúncio ainda não publicado tem nome em `marca` na `dados/pipeline/<slug>/decisao.json` (ou, em decisão sem a chave `marca`, nome em `marca_autorizada`) e o `titulo` do `copy.json` não contém esse nome. Rodar depois das entradas `marca-generica-na-ficha` e `marca-real-na-ficha`, que gravam a `marca`.
@@ -581,6 +720,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## node-22
 
+**Desde:** 5.12
+**Pra você:** O SabinOS passa a pedir uma versão recente do programa que roda tudo, que ainda recebe correção de segurança, e oferece instalar pra você.
 **O que é:** o SabinOS passa a pedir o Node 22 ou mais (antes aceitava o 20). O `/setup` e o `/novo-projeto` conferem a versão e oferecem a instalação, e a conferência do `/configurar-video` (que chega pelo atualizador) passa a marcar Node abaixo de 22 como faltando.
 **Por quê:** o Node 20 parou de receber correção de segurança em 2026-04-30, e partes do sistema (Mercado Livre, vídeo de produto) quebram nas primeiras versões dele.
 **Te afeta se:** `node -v` mostra versão abaixo de 22.
@@ -589,6 +730,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## env-example-do-app
 
+**Desde:** 5.14
+**Pra você:** O backup do seu app passa a guardar a lista com o nome de cada chave, sem valor, pra você publicar de outro computador.
 **O que é:** o backup do app passa a levar o `app/codigo/.env.example`, a lista com o nome de cada chave do app, sem nenhum valor.
 **Por quê:** o `.gitignore` que o Next.js cria em `app/codigo/` tem a linha `.env*`, que tira o `.env.example` do backup sem avisar; em outro computador a `/app-publicar` fica sem a lista de chaves.
 **Te afeta se:** existe `app/codigo/.gitignore` com a linha `.env*` e sem a linha `!.env.example`.
@@ -597,6 +740,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## regra-chave-no-env
 
+**Desde:** 5.14
+**Pra você:** A regra de guardar chave e senha só no lugar protegido passa a valer dentro do projeto, em qualquer IA ou computador.
 **O que é:** o `AGENTS.md` do projeto ganha a regra de chave e senha só no `.env`, que antes valia só no arquivo global e na pasta-mãe.
 **Por quê:** no Codex e em outro computador o projeto roda sem o arquivo global, e a regra que protege chave ficava de fora.
 **Te afeta se:** o `AGENTS.md` do projeto não tem uma regra com o título "Chave no `.env`." em negrito (com ou sem número na frente).
@@ -605,6 +750,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## gitignore-jsx-cjs
 
+**Desde:** 5.15
+**Pra você:** Dois tipos de arquivo de código do seu projeto que ficavam fora do backup no GitHub, sem aviso, passam a subir junto.
 **O que é:** o backup do projeto passa a levar código `.jsx` e `.cjs` (tela de app escrita em JavaScript e arquivo de configuração no formato antigo do Node).
 **Por quê:** o `.gitignore` fechado liberava `.js`, `.ts` e `.tsx`, mas não esses dois, e a `/app-construir` promete que o código do app sobe; o arquivo ficava fora do GitHub sem aviso.
 **Te afeta se:** a primeira linha do `.gitignore` do projeto que não é comentário nem vazia é `*` (o fechado) e falta a linha `!*.jsx` ou a linha `!*.cjs`.
@@ -613,6 +760,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## efeitos-pop-acende
 
+**Desde:** 5.17
+**Pra você:** Seu primeiro vídeo já sai com dois efeitos sonoros básicos, e quem pede vídeo sem efeito tem o pedido respeitado.
 **O que é:** o `/editar-video` agora cria sozinho dois efeitos sonoros básicos, o pop e o acende, na biblioteca de efeitos quando ela está sem nenhum som. Quem pede vídeo sem efeito tem o pedido anotado no `verificar-props.json` (campo `pedidoSemEfeito`), e o fiscal do fundo verde aceita o vídeo sem efeito com um aviso.
 **Por quê:** com a biblioteca vazia, o primeiro vídeo saía sem efeito nenhum, e o fiscal do fundo verde reprovava todo gráfico sem som, mesmo quando o aluno tinha pedido assim.
 **Te afeta se:** o projeto tem `.claude/skills/editar-video/` e ainda não tem `.claude/skills/editar-video/scripts/gerar-sfx.mjs`.
@@ -621,6 +770,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## trava-no-monitor
 
+**Desde:** 5.20
+**Pra você:** A trava que barra comando que apaga coisa passa a vigiar também o que a IA deixa rodando em segundo plano.
 **O que é:** a trava que barra comando destrutivo passa a olhar também a ferramenta Monitor, a que o assistente usa pra deixar um comando rodando em segundo plano e vigiar o que ele mostra.
 **Por quê:** o Monitor roda comando de terminal como o Bash e o PowerShell, mas a trava só era chamada pras duas. Um comando que apaga pasta, mandado pelo Monitor, passava sem a trava olhar.
 **Te afeta se:** o `.claude/settings.json` do projeto cita `barrar-perigoso` e o `matcher` desse bloco não tem `Monitor`.
@@ -629,6 +780,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## agents-mentor-conferencia
 
+**Desde:** 5.20
+**Pra você:** Quando você pergunta sobre um curso estudado, a IA confere no texto das aulas se o mentor disse mesmo aquilo antes de responder.
 **O que é:** a linha dos cursos estudados, no `AGENTS.md` do projeto, passa a mandar a pergunta pelo passo de orientar da `/aprender-curso`, que confere as citações do mentor no texto das aulas antes de mostrar a resposta.
 **Por quê:** com a linha antiga, a IA que lia o `mentor.md` direto pelo `AGENTS.md` respondia sem conferir se a aula diz mesmo o que a resposta cita.
 **Te afeta se:** a seção "Estrutura de pastas" do `AGENTS.md` do projeto tem a linha que começa com `- inteligencia/cursos/:` e essa linha não cita `--resposta`.
@@ -637,6 +790,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## gitignore-rascunho-conselheiro
 
+**Desde:** 5.20
+**Pra você:** O rascunho que o conselheiro refaz a cada resposta fica só no seu computador e para de lotar o histórico do backup.
 **O que é:** o backup do projeto passa a deixar de fora o rascunho que o conselheiro grava pra conferir as citações (`inteligencia/conselheiros/<apelido>/resposta.md`).
 **Por quê:** o rascunho é sobrescrito a cada resposta, inclusive antes da correção, e cada versão ia parar no histórico do GitHub.
 **Te afeta se:** a primeira linha do `.gitignore` do projeto que não é comentário nem vazia é `*` (o fechado) e falta a linha `**/inteligencia/conselheiros/*/resposta.md`.
@@ -645,6 +800,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## ponte-codex-copia
 
+**Desde:** 5.21
+**Pra você:** Se você usa o Codex com as habilidades copiadas, a conferência do sistema para de dar alerta falso a cada atualização.
 **O que é:** o verificador aceita a ponte do Codex feita por cópia quando o `.agents` da pasta-mãe só tem `skills` e cada item dela tem o nome de uma skill de `.claude/skills`.
 **Por quê:** a cópia acendia Gate 1 e Gate 11 em todo arquivo do `.agents`, e a `/atualizar-kit` precisava explicar isso como exceção a cada atualização.
 **Te afeta se:** `../.agents/skills` da pasta-mãe existe como pasta comum, e não como link.
@@ -653,6 +810,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## gate1-sem-isencao
 
+**Desde:** 5.21
+**Pra você:** A conferência que procura nome ou chave vazada passa a olhar também as próprias ferramentas que fazem essa conferência.
 **O que é:** o verificador e o teste dele passam pela conferência de vazamento (Gate 1) como qualquer outro arquivo.
 **Por quê:** a isenção deixava passar nome ou chave nesses dois arquivos (na 5.20 entrou um nome num comentário e nada pegou).
 **Te afeta se:** o `../_ferramentas/verificar-kit.mjs` da pasta-mãe ainda tem `ISENTOS_CONTEUDO`.
@@ -661,6 +820,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## env-na-raiz
 
+**Desde:** 5.21
+**Pra você:** Com arquivo de chaves solto na pasta principal, o sistema te avisa sem sugerir nada que levaria sua chave pro backup.
 **O que é:** o `.env` solto na raiz da pasta-mãe aparece só no Gate 1, como arquivo proibido, e sai do Gate 11. No `_modelo` ele também sai do Gate 11, e o Gate 10 segue acusando, porque é arquivo novo no `_modelo`.
 **Por quê:** o Gate 11 pedia pra liberar o `.env` no `.gitignore`, e seguir esse pedido levaria a chave pro backup.
 **Te afeta se:** existe `.env` na raiz da pasta-mãe (`../.env`).
@@ -669,6 +830,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## trava-git-exportada
 
+**Desde:** 5.22
+**Pra você:** A trava que impede a IA de jogar fora seu trabalho agora pega mais um jeito disfarçado de escrever o comando perigoso.
 **O que é:** a trava de comando destrutivo ganha uma função a mais, `ehGitPerigoso`, que olha só o comando de git perigoso. E passa a barrar o git que joga fora trabalho escrito com aspas vazias no meio da palavra (`git reset --ha""rd`), que a versão 5.21 deixava passar; o resto do que ela barra e deixa passar fica igual.
 **Por quê:** a bancada passou a usar a mesma leitura de git da trava num hook próprio; num comando com `rm` antes do git, a trava devolvia só o motivo do `rm`.
 **Te afeta se:** o `.claude/hooks/barrar-perigoso.mjs` do projeto não tem `ehGitPerigoso`.
@@ -677,6 +840,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## ponte-codex-copia-por-skill
 
+**Desde:** 5.22
+**Pra você:** Usando outra IA junto, a conferência do kit aponta só a habilidade fora do lugar e avisa se o arquivo de chaves foi copiado.
 **O que é:** na ponte do Codex feita por cópia, o verificador olha cada item de `.agents/skills` sozinho. Skill que só existe ali vira uma linha só do Gate 1 (`skill so na ponte`), com o nome dela; item com tipo diferente do `.claude/skills` vira uma linha `tipo diferente`; e `.env` dentro da cópia passa a ser acusado pelo Gate 1, sem mostrar o valor. O Gate 11 deixa de acusar o `.agents/`.
 **Por quê:** uma skill a mais na cópia acendia Gate 1 e Gate 11 em todo arquivo do `.agents`, e o Gate 11 pedia pra liberar o `.agents/` no `.gitignore`; o `.env` dentro da cópia passava calado.
 **Te afeta se:** `../.agents/skills` da pasta-mãe existe como pasta comum, e não como link.
@@ -685,6 +850,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## trava-git-por-familia
 
+**Desde:** 5.25
+**Pra você:** Mudança antiga que já foi desfeita numa versão seguinte, então não muda nada no seu dia a dia nem pede ação sua.
 **O que é:** a trava de comando destrutivo passa a barrar o git que joga trabalho fora escrito com variável, substituição (`$(...)`), crase, chaves, xargs, barra invertida ou apelido por `-c`. Passa a barrar também o uso legítimo com variável nos verbos que ela julga, como `git push origin $(git branch --show-current)` e `git checkout "$BR"`.
 **Por quê:** a versão publicada deixava passar nove jeitos de escrever o git que joga trabalho fora, como `git reset $(echo --hard)` e `echo --hard | xargs git reset`.
 **Te afeta se:** nunca. Aposentada na 5.49: a trava deixou de barrar o git escrito com variável ou substituição, que esta entrada testava. O `--force`, o `--hard` e o `-f` escritos por inteiro seguem barrando.
@@ -693,6 +860,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## trava-leitura-de-segredo
 
+**Desde:** 5.25
+**Pra você:** Mudança antiga já desfeita numa versão seguinte: o backup continua segurando sua senha fora do GitHub e você não precisa fazer nada.
 **O que é:** a trava de comando destrutivo passa a barrar ler ou copiar `.env`, perfil do navegador, sessão salva e cookie por código inline (`node -e`, `python -c`), `sqlite3`, cópia (`cp`, `Copy-Item`), `Get-Content`/`type` e download com cookie. É uma lombada: o script do kit segue lendo o `.env` sozinho, como sempre.
 **Por quê:** a regra de permissão que protege o `.env` não vê esses caminhos.
 **Te afeta se:** nunca. Aposentada na 5.49: a trava deixou de barrar a leitura de segredo pelo terminal, que esta entrada punha. O backup segue segurando a senha.
@@ -701,6 +870,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## trava-no-navegador
 
+**Desde:** 5.25
+**Pra você:** Você fica protegido da IA subir seu arquivo de senhas e chaves numa página da internet pelo navegador.
 **O que é:** uma trava nova olha toda ferramenta de fora (navegador, email, redes) antes de ela rodar. Desde a 5.49 (entrada `travas-soltas`) ela barra só subir arquivo de senha pelo navegador, o lote do navegador que ela não consegue ler e a chamada que ela não entende.
 **Por quê:** a trava de comando só olha o terminal, e nada segurava uma ferramenta do navegador subindo o seu `.env` pra uma página.
 **Te afeta se:** o `.claude/settings.json` do projeto não cita `barrar-mcp`.
@@ -709,6 +880,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## env-em-deny
 
+**Desde:** 5.25
+**Pra você:** Mudança antiga já desfeita numa versão seguinte, então não muda nada pra você nem pede nenhuma ação no projeto.
 **O que é:** o assistente deixa de conseguir ler o arquivo de chaves (`.env`, e também o `.env.local` do app) e os arquivos de login do navegador. Antes ele só pedia licença pra ler o `.env`.
 **Por quê:** a licença aparecia no meio do trabalho e era fácil dizer sim sem ler, e chave lida entra na conversa. Quem grava a chave no `.env` é você ou o script do kit, e a regra não alcança script.
 **Te afeta se:** nunca. Aposentada na 5.49: a `travas-soltas` tirou o bloqueio de leitura que esta entrada punha.
@@ -717,6 +890,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## segredo-de-sessao-fora-do-backup
 
+**Desde:** 5.25
+**Pra você:** Seu login do navegador salvo em arquivo fica fora do backup, assim ele não vai parar no GitHub nas mãos de outra pessoa.
 **O que é:** o backup passa a deixar de fora o login do navegador guardado em arquivo: cookie exportado, gravação de rede e a pasta de saída da ferramenta do navegador.
 **Por quê:** esses arquivos guardam a sessão da sua conta, e subir pro GitHub entrega o login a quem tiver acesso ao repositório.
 **Te afeta se:** o `.gitignore` do projeto não tem `dados/sessao/`.
@@ -725,6 +900,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## playwright-mcp-versao-fixa
 
+**Desde:** 5.25
+**Pra você:** A ferramenta de navegador que a IA usa pra testar seu app fica numa versão conferida, sem atualização surpresa que a trava ainda não conhece.
 **O que é:** a ferramenta de navegador que testa o app (o servidor `playwright` do Claude Code) passa a ser instalada numa versão fixa, conferida pelo kit, e isolada, com um navegador limpo a cada vez e a saída em `dados/navegador-saida/`.
 **Por quê:** instalada sempre na versão mais nova, cada atualização do pacote podia trazer ferramenta que a trava ainda não conhece.
 **Te afeta se:** `claude mcp get playwright` mostra o pacote com `@latest` ou sem versão.
@@ -733,6 +910,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## chave-sem-abrir
 
+**Desde:** 5.25
+**Pra você:** A IA confere se sua chave está guardada sem abrir o arquivo, então o valor dela nunca aparece na conversa.
 **O que é:** o assistente confere a chave do `.env` sem abrir o arquivo, por `node .claude/skills/conectar/scripts/chave.mjs`, que responde só `tem`, `falta`, `bate` ou `nao bate`, nunca o valor. Pra mover uma chave de um arquivo pro `.env`, você cola a chave no `.env` pelo editor e o assistente confere com `bate` antes de tirar ela do arquivo de origem. A consulta de comissão do Mercado Livre passa pelo `node .claude/skills/mercado-livre/scripts/consultar-ml.mjs`, que usa o token sem mostrar.
 **Por quê:** com o `.env` em deny (entrada `env-em-deny`), as skills que mandavam o assistente ler ou gravar o `.env` emperravam.
 **Te afeta se:** o projeto não tem `.claude/skills/conectar/scripts/chave.mjs`.
@@ -741,6 +920,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## semente-2fa-e-leitura-de-mcp
 
+**Desde:** 5.25
+**Pra você:** O código secreto da verificação em duas etapas salvo em arquivo fica fora do backup, protegendo o segundo passo de login da sua conta.
 **O que é:** a semente de 2FA salva em arquivo (qualquer `*totp*.json`) fica fora do backup. O detector de chave do backup para de segurar JSON de catálogo com produto chamado Cookie.
 **Por quê:** a semente gera o código de 2FA da conta, e subir pro GitHub entrega o segundo fator.
 **Te afeta se:** o `.gitignore` do projeto não tem `*totp*.json`.
@@ -749,6 +930,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## lib-de-navegador
 
+**Desde:** 5.25
+**Pra você:** Cada projeto abre o seu próprio Chrome e a IA confere que é dele, sem mexer por engano no navegador de outro projeto.
 **O que é:** os pacotes que abrem o Chrome dedicado passam a usar uma lib só, no núcleo (`.claude/skills/conectar/scripts/lib/navegador.mjs`), com porta própria por projeto e conferência de que o Chrome na porta é o deste projeto; os dois `chrome.mjs` de pacote viram casca que reexporta a lib.
 **Por quê:** as duas cópias abriam todo projeto na mesma porta e aceitavam qualquer Chrome que respondesse nela, até o de outro projeto.
 **Te afeta se:** o projeto tem `.claude/skills/mercado-livre/scripts/lib/chrome.mjs` e não tem `.claude/skills/conectar/scripts/lib/navegador.mjs`.
@@ -757,6 +940,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## escada-do-conectar
 
+**Desde:** 5.26
+**Pra você:** Site sem conexão oficial com a IA deixa de ficar de fora: você recebe as opções possíveis, com custo e cuidados ditos antes.
 **O que é:** o `/conectar` ganha a escada de caminhos (do conector oficial ao navegador logado e à nuvem paga, com "só você" e o robô guiando na tela como último degrau sem gasto) e o segundo servidor do navegador, `navegador`, que usa o Chrome dedicado do projeto pela porta dele. Os cuidados do navegador passam do pacote do Mercado Livre pro núcleo, em `.claude/skills/conectar/referencias/navegador.md`.
 **Por quê:** site sem porta oficial terminava em "não tem roteiro" ou ficava de fora, e cada caso agora cai num degrau com custo e cuidado ditos antes.
 **Te afeta se:** o projeto não tem `.claude/skills/conectar/referencias/escada.md`.
@@ -765,6 +950,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## regra-senha-de-site
 
+**Desde:** 5.26
+**Pra você:** Sua chave fica no arquivo de chaves, e a senha de site só fica guardada se você ligar o login automático daquela conta.
 **O que é:** a regra "Chave no `.env`." separa chave de API de senha de site: a chave fica no `.env`, e a senha de site não se guarda, salvo na conta em que você ligar o relogin automático (o `/conectar` explica).
 **Por quê:** a regra antiga mandava guardar senha no `.env` junto da chave, e quem pega o `.env` leva a conta.
 **Te afeta se:** o `AGENTS.md` do projeto tem o texto "Chave e senha só em arquivo `.env`".
@@ -773,6 +960,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## relogin-automatico
 
+**Desde:** 5.26
+**Pra você:** Quando a sessão do Mercado Livre cair, a IA entra de novo sozinha, se você ligar isso naquela conta.
 **O que é:** o robô pode entrar de novo sozinho numa conta quando a sessão do Chrome dedicado cai, só na conta em que a pessoa ligar (`.claude/skills/conectar/referencias/relogar.md`): usuário, senha e semente do 2FA dessa conta no `.env`, lidos pelo `node .claude/skills/conectar/scripts/relogar.mjs <CONTA>`, que responde uma palavra só e nunca mostra valor. Vem desligado, e só entra sozinho em site com receita de login testada ao vivo (hoje, o Mercado Livre, pela senha e pelo Google Authenticator).
 **Por quê:** a sessão do site cai de tempos em tempos e o robô parava o trabalho até a pessoa entrar de novo.
 **Te afeta se:** o projeto não tem `.claude/skills/conectar/scripts/relogar.mjs`.
@@ -781,6 +970,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## porteiro-do-perfil
 
+**Desde:** 5.27
+**Pra você:** Essa conferência do navegador entre projetos foi retirada numa versão seguinte, então nada muda no seu dia a dia.
 **O que é:** o robô agora confere, a cada uso do navegador, que o Chrome na porta é o deste projeto; se não for, ele para e diz o que rodar (abrir o Chrome dedicado com o `abrir-chrome.mjs`, ou ligar o `navegador` de novo pelo passo 3 do Degrau 5 do `/conectar` quando a porta mudou).
 **Por quê:** dois projetos podem cair na mesma porta, e com o Chrome de um fechado o `navegador` dele entrava calado no Chrome logado do outro.
 **Te afeta se:** nunca. Aposentada na 5.49: a `travas-soltas` tirou essa conferência a cada uso do `navegador`.
@@ -789,6 +980,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## anotacao-do-navegador
 
+**Desde:** 5.28
+**Pra você:** Esse aviso pra reabrir a IA depois de religar o navegador foi retirado numa versão seguinte, então nada muda pra você.
 **O que é:** quando o navegador da IA é ligado de novo, o robô pede pra fechar e abrir o Claude Code antes de usar, porque o navegador que já está rodando continua na porta antiga.
 **Por quê:** ligar o `navegador` de novo no meio da conversa troca a configuração, mas não o navegador que já roda; antes, o robô conferia a porta nova e deixava a chamada ir pro Chrome da porta velha.
 **Te afeta se:** nunca. Aposentada na 5.49: a `travas-soltas` tirou a anotação da porta na abertura do Claude Code, e o comando `settings` dela tira o bloco que chamava a trava ali.
@@ -797,6 +990,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## chrome-dedicado-sem-janela
 
+**Desde:** 5.29
+**Pra você:** O que a IA baixa no navegador, como anexo de email, cai na pasta do projeto, e quando trabalha sozinha ela nem abre janela.
 **O que é:** o Chrome dedicado do projeto passa a salvar o que baixa em `dados/navegador-saida/`, abre sem janela quando o robô trabalha sozinho (`abrir-chrome.mjs --sem-janela`) e fecha pelo `abrir-chrome.mjs --fechar`. O robô pode baixar o anexo de um email pelo Gmail do Chrome dedicado, e o Claude in Chrome pode ir nesse Chrome com a pessoa na frente.
 **Por quê:** antes o anexo caía na pasta Downloads, fora do projeto, e a página parada atrás de outra janela ou minimizada travava o clique do robô.
 **Te afeta se:** o projeto tem `.claude/skills/conectar/scripts/lib/navegador.mjs` sem o texto `apontarDownload`.
@@ -805,6 +1000,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## conexao-que-parou-se-conserta
 
+**Desde:** 5.30
+**Pra você:** Quando uma conexão para, a IA tenta consertar e te conta; com o Gmail ligado, ela lê sozinha o código que chega por email.
 **O que é:** quando uma conexão que funcionava para, o robô investiga o que mudou, tenta consertar ou passa pra outro caminho da escada do `/conectar`, e conta à pessoa o que fez. O código de verificação que o site manda pro email o robô lê sozinho pelo conector do Gmail, com limites (só na conversa, só do próprio site, até 10 minutos); SMS e captcha seguem com a pessoa. Os degraus 5 e 6 deixam de dizer "provisório" e passam a dizer onde foram testados.
 **Por quê:** antes, qualquer queda de conexão e todo código de verificação paravam o trabalho até a pessoa agir.
 **Te afeta se:** o projeto tem `.claude/skills/conectar/SKILL.md` sem o texto `lê sozinho pelo conector do Gmail`.
@@ -813,6 +1010,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## script-que-baixa-na-pasta-do-projeto
 
+**Desde:** 5.31
+**Pra você:** A rotina que baixa relatório ou planilha espera o arquivo chegar na pasta do projeto e avisa claro se ele não chegar.
 **O que é:** o script de rotina que baixa um arquivo (relatório, planilha) espera ele chegar em `dados/navegador-saida/` pelo `baixarNaSaida` da lib do navegador, um download por vez, e para com aviso claro se o arquivo não chega. Quem abre o Chrome dedicado do Mercado Livre ou da mídia social ganha os mesmos avisos do `/conectar` quando ele já estava aberto.
 **Por quê:** antes o script de rotina não tinha jeito seguro de pegar o que baixava.
 **Te afeta se:** o projeto tem `.claude/skills/conectar/scripts/lib/navegador.mjs` sem o texto `baixarNaSaida`.
@@ -821,6 +1020,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## trava-com-dono-e-download-pelo-chrome
 
+**Desde:** 5.32
+**Pra você:** Quando duas rotinas baixam arquivo ao mesmo tempo, cada uma pega só o próprio download, sem misturar relatório de uma com outra.
 **O que é:** o script de rotina que baixa passa a página onde clica pro `baixarNaSaida`, e ele só aceita o download que começou naquela página depois do clique, pelo aviso do próprio Chrome. Download que estourou o prazo deixa a página marcada, e o script abre página nova pra tentar de novo. Todo script do navegador liga do mesmo jeito, então um não tira mais o arquivo do outro, e a aba que fica atrás de outra continua clicando.
 **Por quê:** antes um download atrasado podia voltar como se fosse da chamada seguinte, e dois robôs juntos podiam baixar ao mesmo tempo.
 **Te afeta se:** o projeto tem `.claude/skills/conectar/scripts/lib/navegador.mjs` sem o texto `.sabinos-baixando-vencido`.
@@ -829,6 +1030,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## orcamento-do-mes
 
+**Desde:** 5.33
+**Pra você:** Você define quanto quer gastar por mês com IA paga, vê quantos vídeos isso rende, e a IA para antes de estourar.
 **O que é:** um orçamento do mês pro gasto com IA paga (imagem por IA, olho final do vídeo e vídeo do produto), em `_contexto/orcamento.md`, que o `/configurar-video` monta junto com a pessoa e que mostra quantos vídeos ele dá, em média. Quando um gasto não cabe no que sobrou do mês, o sistema para antes de gastar e explica. O "pode ir" de cada gasto continua.
 **Por quê:** antes só havia um teto por vez (o `limite_gasto_usd`), e várias rodadas pequenas no mesmo mês passavam sem ninguém somar.
 **Te afeta se:** o projeto tem `.claude/skills/configurar-video/` e não tem `_contexto/orcamento.md`.
@@ -837,6 +1040,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## travas-soltas
 
+**Desde:** 5.41
+**Pra você:** As travas param menos coisa que você mesmo pediu, seguram só o que não tem volta e dizem o nome de quem barrou.
 **O que é:** as travas do kit ficam mais leves. Sai do `.claude/settings.json` a lista que proibia o assistente de ler o `.env`, as pastas de chave, a sessão do navegador, a semente de 2FA e o perfil do Chrome do dia a dia, sai a licença antes de ler o `.env` e sai o bloco que chamava a trava das ferramentas de fora toda vez que o Claude Code abria. Essa trava (`barrar-mcp`) passa a barrar só subir arquivo de senha ou de sessão logada pelo navegador, o lote do navegador num formato que ela não lê e a chamada que ela não entende: código na página, ferramenta nova do navegador, print fora da pasta de saída, ação em conta e o Chrome de outro projeto na porta deixam de parar. A trava de comando (`barrar-perigoso`) segue barrando o Git que joga trabalho fora, o comando que apaga o disco e o comando escondido em código; apagar pasta fora da pasta temporária passa a perguntar antes, mostrando o que vai sumir, e baixar e rodar script da internet ou ler o `.env` pelo terminal deixam de parar. Ela também lê o comando que vai dentro de outro programa que roda comando (como `bash -c "..."`, `powershell -Command "..."` ou `eval`) e o que roda o apelido do Git que começa com `!`: se o de dentro é perigoso, barra igual. Texto só citado, como a mensagem de um commit, segue sem leitura. Toda trava que barra diz o nome dela e da regra, e o assistente repete esse nome pra você.
 **Por quê:** as travas paravam o trabalho em coisa que você mesmo pediu. Ficam as que seguram o que não tem volta.
 **Te afeta se:** `node "<kit>/_ferramentas/atualizar-projeto.mjs" settings .` imprime uma linha que começa com `Sai (o kit tirou)`.
@@ -845,6 +1050,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## regra-travas
 
+**Desde:** 5.41
+**Pra você:** Quando uma trava barrar algo, a IA te diz qual foi e segue sozinha pro próximo passo, sem travar o trabalho à toa.
 **O que é:** a regra da trava muda de nome e de jeito. Quando uma trava barrar, a IA diz o nome da trava e da regra ("Barrada pela trava X, regra Y") e decide sozinha o próximo passo, sem refazer a mesma ação por outro caminho. Só na regra erro-interno do `barrar-perigoso`, em que a trava não conseguiu ler o comando, ela pode reescrever ele mais simples ou usar uma ferramenta equivalente, e avisa você.
 **Por quê:** a regra antiga mandava parar a cada barrada, e o trabalho travava à toa. O nome da trava diz pra você o que aconteceu.
 **Te afeta se:** o `AGENTS.md` do projeto tem uma regra com o título `Trava de comando destrutivo.` em negrito (com ou sem número na frente) ou o texto "Barrou: parar e explicar".
@@ -853,6 +1060,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## regra-robo-agendado
 
+**Desde:** 5.41
+**Pra você:** Você aprova o robô agendado uma vez, vendo o que ele faz e quanto gasta, e ele roda sem pedir de novo.
 **O que é:** a regra do gate humano ganha o robô do `/agendar`: o "pode ir" se dá na hora de agendar e vale pra toda execução dele.
 **Por quê:** o robô roda sozinho, sem ninguém pra dizer "pode ir" a cada vez. Na hora de agendar, você vê o que ele faz e quanto gasta por rodada e por mês.
 **Te afeta se:** a regra com o título **Gate humano.** do `AGENTS.md` do projeto não cita o `/agendar`.
@@ -861,6 +1070,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## regra-senha-no-env
 
+**Desde:** 5.41
+**Pra você:** Sua senha de site fica guardada junto das chaves, e a IA usa ela pra entrar no site sem mostrar na conversa.
 **O que é:** a senha de site passa a ir no `.env`, e a IA lê ela pra fazer o login no site, sem mostrar o valor no chat.
 **Por quê:** com a senha no `.env`, a IA entra sozinha quando a sessão cai, e o captcha continua com você.
 **Te afeta se:** a regra com o título **Chave no `.env`.** do `AGENTS.md` do projeto tem o texto "senha de site: ver `/conectar`" ou "Senha de site não se guarda".
@@ -869,6 +1080,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## infra-senha-no-env
 
+**Desde:** 5.41
+**Pra você:** As anotações do projeto passam a dizer o mesmo que a regra: senha de site fica com as chaves, fora da conversa.
 **O que é:** o aviso do topo do `_contexto/infra.md` passa a dizer que a senha de site também vai no `.env`, e que a IA lê de lá pra fazer o login, sem mostrar no chat.
 **Por quê:** o aviso antigo dizia que senha de site não se guarda, e isso brigava com a regra **Chave no `.env`.** nova.
 **Te afeta se:** o `_contexto/infra.md` do projeto tem o texto "Senha de site não se guarda".
@@ -877,6 +1090,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## pode-ir-acima-do-teto
 
+**Desde:** 5.41
+**Pra você:** Quando um gasto com IA passa do seu limite por vez, a IA mostra o valor e segue com o seu sim.
 **O que é:** quando um gasto com IA paga passa do seu limite por vez (o `limite_gasto_usd`, ou US$ 4 sem ele), o sistema deixa de só parar: mostra o valor, pede o "pode ir" citando esse valor e, com o seu sim, segue. Vale pra imagem por IA, vídeo do produto, olho final do `/editar-video`, `/carrossel`, `/midia-social` e engenharia reversa. Vale também pro robô do `/agendar`: o "pode ir" que você dá na hora de agendar, com o valor por rodada na tela, libera cada rodada até esse valor, mesmo acima do limite por vez. Se o valor subir depois do sim, ele para: na conversa pergunta de novo, e o robô não gasta e te avisa. O orçamento do mês segue firme: o que não cabe no que sobrou do mês continua parando.
 **Por quê:** antes, passar do limite por vez obrigava a dividir o trabalho em pedaços ou mexer no arquivo de configuração, mesmo com você querendo gastar aquele valor.
 **Te afeta se:** o `.claude/skills/conectar/scripts/lib/orcamento.mjs` do projeto não tem o texto `acimaDoTetoUsd`, ou a cópia dele que o motor guardou nesta atualização (`.sabinos/antes-<versão nova>-*/arquivos/.claude/skills/conectar/scripts/lib/orcamento.mjs`) não tem esse texto. O motor troca o arquivo no Passo 4, antes desta lista, então é a cópia guardada que mostra que a mudança é nova pra pessoa.
@@ -885,6 +1100,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## regra-travas-apagar
 
+**Desde:** 5.42
+**Pra você:** Antes de apagar uma pasta ou algo sem volta, a IA te conta o que vai sumir e pergunta primeiro.
 **O que é:** a regra **Travas.** ganha duas frases. Antes de apagar uma pasta fora da lista que apaga livre (`node_modules`, `dist`, `build`, `.next`, `__pycache__`), a IA escreve no chat o que tem nela e se aquilo se refaz ou é dado seu. E o que apaga de vez, sem volta pelo Git nem pela lixeira (`git branch -D`, `git worktree remove`, esvaziar a lixeira e cia.), passa a perguntar antes.
 **Por quê:** a pergunta da trava aparece só pra você e não volta pra IA; com a avaliação escrita no chat, você decide sabendo o que vai sumir.
 **Te afeta se:** a regra com o título **Travas.** do `AGENTS.md` do projeto não tem o texto `apaga-de-vez`.
@@ -893,6 +1110,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## permissao-por-area
 
+**Desde:** 5.42
+**Pra você:** Você pode dar à IA uma permissão escrita pra gastar com imagem e vídeo até um limite seu, sem ela te perguntar toda vez.
 **O que é:** você passa a poder dar à IA uma permissão escrita, área por área, pra fazer uma coisa sem te perguntar a cada vez. Por enquanto ela vale pro gasto com IA paga (imagem, vídeo): até um limite em dólar que você escolhe, menor ou igual ao orçamento do mês, que segue valendo por cima, e a IA te avisa logo depois de cada gasto quanto foi e quanto sobra. A permissão mora num arquivo novo, o `_contexto/autonomia.md`, que nasce vazio (vazio quer dizer que a IA pergunta sempre, igual antes), e cada gravação nele mostra a caixinha de confirmar. Junto: a regra **Gate humano.** ganha as exceções escritas (a permissão, o uso dentro da assinatura do Claude e do Codex e atualizar ferramenta), a **Custo de API registrado.** avisa logo depois quando o gasto foi pela permissão, a **Camadas de regra.** ganha a ordem de quem vale mais, o "só faz" da **Pedido vago** pergunta uma vez se vale pra sempre, e o `.claude/settings.json` ganha a caixinha do `autonomia.md` e uma lista curta de comandos do kit que rodam direto, sem a caixinha de licença.
 **Por quê:** antes, todo gasto parava pra perguntar, mesmo o pequeno que você já tinha topado. Com a permissão escrita, a IA segue dentro do limite, e o orçamento do mês continua valendo por cima.
 **Te afeta se:** o projeto não tem o arquivo `_contexto/autonomia.md`, ou a regra com o título **Gate humano.** do `AGENTS.md` do projeto não tem o texto `autonomia.md`.
@@ -901,6 +1120,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## worktree-fora-do-backup
 
+**Desde:** 5.43
+**Pra você:** A cópia extra do projeto que o app do Claude cria deixa de ir pro backup no GitHub, que fica mais limpo.
 **O que é:** a cópia do projeto que o app do Claude cria quando o Worktree está ligado (a pasta `.claude/worktrees/`) sai do GitHub.
 **Por quê:** guardada no backup, ela entra como um ponteiro quebrado pra outra cópia do projeto, que não restaura nada e suja o GitHub.
 **Te afeta se:** o `.gitignore` do projeto não tem `.claude/worktrees/`, ou `git ls-files .claude/worktrees` lista algum arquivo.
@@ -909,6 +1130,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## mcp-pelo-script
 
+**Desde:** 5.43
+**Pra você:** O navegador da IA passa a ser ligado pelo próprio projeto, e a IA te ajuda a tirar uma configuração antiga que atrapalhava.
 **O que é:** os servidores do navegador (`playwright` e `navegador`) e o `context7` passam a ser ligados pelo script do kit `node .claude/skills/conectar/scripts/ligar-mcp.mjs ligar <nome>`, que grava a definição no `.mcp.json` do projeto e a aprovação no `settings.json` da pasta `.claude` do usuário, sem chave nenhuma.
 **Por quê:** o comando de adicionar do Claude Code grava no `.claude.json` do usuário, que guarda dado da conta e o próprio Claude Code reescreve com a sessão aberta. A definição antiga que ficou lá (o escopo local do projeto) vence a do `.mcp.json` pelo nome, inteira: quem ligou o `navegador` pelo comando antigo seguiria com a porta velha.
 **Te afeta se:** `node .claude/skills/conectar/scripts/ligar-mcp.mjs listar` imprime uma linha com `escopo local` ou com `escopo do usuario`, ou o `desligar` avisou que o servidor `segue carregando`.
@@ -917,6 +1140,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## aviso-fechamento
 
+**Desde:** 5.43
+**Pra você:** Ao abrir a conversa, a IA avisa quais dias ficaram sem fechar no diário e oferece fechar na hora.
 **O que é:** ao abrir a conversa, o assistente avisa quais dias do diário ficaram com trabalho sem fechar pelo `/atualizar` e oferece fechar agora ou dispensar; antes de compactar a conversa, ele guarda esses dias no resumo. Conta só os dias a partir desta atualização.
 **Por quê:** o que foi feito numa conversa que ninguém fechou fica fora do diário e do `agora.md`, e o app apaga a conversa antiga depois de um tempo.
 **Te afeta se:** o `.claude/settings.json` do projeto não cita `aviso-fechamento`.
@@ -925,6 +1150,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## backup-pasta-mae
 
+**Desde:** 5.43
+**Pra você:** O backup automático passa a cobrir a pasta-mãe e cada projeto dentro dela, e avisa quando algum arquivo ficou de fora.
 **O que é:** o backup automático da pasta-mãe passa a rodar pelo `_ferramentas/backup-pasta-mae.mjs`, que sobe a pasta-mãe e depois cada projeto que mora dentro dela, e avisa pelo `.backup-falhou` da pasta-mãe quando um arquivo dela fica fora do backup.
 **Por quê:** o `/atualizar-kit` e o `/novo-projeto` rodam pela pasta-mãe e deixam o projeto mexido, e o backup do projeto só rodava com o projeto aberto.
 **Te afeta se:** o `../.claude/settings.json` da pasta-mãe existe e o hook do fim de cada resposta dele não cita `backup-pasta-mae.mjs`.
@@ -933,6 +1160,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## dois-caminhos
 
+**Desde:** 5.45
+**Pra você:** O SabinOS funciona e te orienta certo tanto no VS Code quanto no app do Claude.
 **O que é:** O SabinOS agora funciona e fala certo nos dois programas: no VS Code com a extensão do Claude e no app do Claude (aba Code). Quem instalou pelo VS Code segue recebendo atualização como antes.
 **Por quê:** as frases de fechar o programa, abrir a pasta e achar a lista de conversas falavam só do VS Code, e quem usa o app ficava com o caminho errado.
 **Te afeta se:** o `.claude/skills/conectar/scripts/lib/navegador.mjs` do projeto não tem o texto `fraseSair`, ou a cópia dele que o motor guardou nesta atualização (`.sabinos/antes-<versão nova>-*/arquivos/.claude/skills/conectar/scripts/lib/navegador.mjs`) existe e não tem esse texto. O motor troca o arquivo no Passo 4, antes desta lista, então é a cópia guardada que mostra que a mudança é nova pra pessoa; sem a cópia, o arquivo não mudou nesta atualização e a entrada não afeta por ela.
@@ -941,6 +1170,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## gate-anuncio-e-pergunta-ml
 
+**Desde:** 5.46
+**Pra você:** Com sua permissão escrita, a IA pode criar anúncio pausado no Mercado Livre e responder perguntas de comprador sem te perguntar.
 **O que é:** a regra **Gate humano.** ganha duas ações no Mercado Livre que a permissão escrita do `_contexto/autonomia.md` pode cobrir: criar o anúncio já pausado (área `anuncio-ml`, ação `criar-pausado`) e responder a pergunta do comprador pelo `responder-ml.mjs` (área `atendimento-ml`, ação `responder-pergunta`). Sem essa permissão, nada muda: o anúncio espera o seu sim e a resposta fica de rascunho pra você mandar.
 **Por quê:** a regra antiga só tinha o gasto como exceção, e a IA ia perguntar de novo mesmo com a permissão dada por você.
 **Te afeta se:** a regra com o título **Gate humano.** do `AGENTS.md` do projeto não tem o texto `responder-ml.mjs`.
@@ -949,6 +1180,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## segunda-opiniao-risco-alto
 
+**Desde:** 5.46
+**Pra você:** A revisão extra da IA entra só no que é arriscado ou quando você pede, poupando tempo e uso do seu plano.
 **O que é:** a `/segunda-opiniao` passa a entrar sozinha só no que é de risco alto (o que não tem volta, gasto fora da permissão, publicar, mandar pra fora), uma vez quando nasce uma permissão nova no `_contexto/autonomia.md`, e quando você pede. O que tem volta segue sem revisão.
 **Por quê:** cada revisão demora e gasta do seu plano, e a linha antiga mandava revisar até o que se desfaz fácil.
 **Te afeta se:** a linha da seção Gatilhos do `AGENTS.md` do projeto que cita `/segunda-opiniao` não tem o texto `risco alto`.
@@ -957,6 +1190,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## marca-da-barrada
 
+**Desde:** 5.46
+**Pra você:** Quando uma trava atrapalha algo que você queria fazer de verdade, a IA anota e depois propõe soltar, com você decidindo.
 **O que é:** quando uma trava ou uma regra barra o que você queria de fato fazer, a IA anota uma lição com a marca `[trava X/regra Y]`. Com duas lições da mesma marca, o `/atualizar` propõe soltar a trava ou a regra, e quem decide é você. Entra uma frase na regra **Loop de lições.** e uma na regra **Travas.**.
 **Por quê:** sem a marca, a trava que atrapalha o uso de verdade nunca chega à proposta de soltar do `/atualizar`.
 **Te afeta se:** o `AGENTS.md` do projeto não tem o texto `[trava X/regra Y]`.
@@ -964,6 +1199,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Como testar:** o texto `[trava X/regra Y]` aparece duas vezes no `AGENTS.md`, uma na regra **Loop de lições.** e uma na regra **Travas.**.
 ## nomes-da-marca
 
+**Desde:** 5.47
+**Pra você:** Os nomes da sua marca e produtos saem escritos certinho na legenda dos seus vídeos, a partir de uma lista sua.
 **O que é:** arquivo novo `marca/nomes.md`, com os nomes próprios que aparecem na fala dos seus vídeos (marca, produto, loja, pessoa). A `/editar-video` passa a lista pro programa que transcreve e confere a legenda contra ela, pra cada nome sair escrito do jeito certo.
 **Por quê:** o programa que transcreve erra nome próprio ("Cláudio" no lugar de "Claude", nome em minúscula, nome partido em duas palavras), e o erro ia direto pra legenda.
 **Te afeta se:** o projeto tem a pasta `.claude/skills/editar-video/` e não tem o arquivo `marca/nomes.md`.
@@ -972,6 +1209,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## print-sem-voce
 
+**Desde:** 5.47
+**Pra você:** O print de página que vai pro seu vídeo é conferido pra não mostrar seu nome ou sua conta aberta.
 **O que é:** o print de página da `/editar-video` tenta primeiro sem janela. Se o site barra, tenta com a sua sessão no Chrome dedicado e, por último, com janela. Ele só usa a sua sessão quando sabe o que procurar no print pra conferir que ele não mostra você: o `ALUNO_NOME` ou o `ALUNO_EMAIL` do `.env` (os dois opcionais) ou o email de uma linha de login do `.env` (como o `ML_USUARIO`). Sem nada disso, ele pula a sua sessão. No Mercado Livre ele nunca usa a sua sessão: se as duas tentativas falham, ele te pede o print.
 **Por quê:** print tirado com a sua conta aberta pode mostrar o seu nome no canto da página, e esse print vai pro vídeo publicado.
 **Te afeta se:** o projeto tem a pasta `.claude/skills/editar-video/` e o `.env` do projeto não tem as linhas `ALUNO_NOME` e `ALUNO_EMAIL`.
@@ -980,6 +1219,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## clipe-com-som
 
+**Desde:** 5.47
+**Pra você:** Seu vídeo pode ganhar um clipe com o som original no meio da fala, com crédito na tela e voz certinha com a boca.
 **O que é:** a `/editar-video` passa a pôr no meio da fala um clipe com o som original (um trecho de entrevista, de filme, de outro vídeo): a sua fala para, o clipe toca com o som dele e a fala volta de onde parou. Antes de montar, ela pergunta de onde vem a permissão de usar o clipe e põe o crédito na tela. Junto veio o conserto da boca e voz descoladas no vídeo de celular.
 **Por quê:** clipe com o som original prende mais que o clipe mudo por cima da fala, e o vídeo de celular saía com a voz uns 70 milissegundos fora da boca.
 **Te afeta se:** o projeto tem a pasta `.claude/skills/editar-video/`.
@@ -988,6 +1229,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## modelo-sem-cor-herdada
 
+**Desde:** 5.48
+**Pra você:** Sem guia visual preenchido, seus slides e propostas saem com visual neutro, e cor ou fonte nova só entra com o seu ok.
 **O que é:** quando o guia visual da marca está vazio, os comandos de slide e de proposta passam a fazer um visual limpo e neutro, e cor e fonte novas só entram no guia com o seu ok.
 **Por quê:** todo projeto sem guia saía com a mesma cor e a mesma fonte, que você nunca escolheu.
 **Te afeta se:** o projeto tem `.claude/skills/slide/SKILL.md` com uma linha que começa com "Se estiver vazio, usar padrão", ou `.claude/skills/proposta-comercial/SKILL.md` com uma linha que começa com "- Se design guide estiver vazio, usar".
@@ -996,6 +1239,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## contexto-sem-duplicata
 
+**Desde:** 5.48
+**Pra você:** A IA não guarda o mesmo preço ou fornecedor duas vezes: quando algo muda, ela troca o dado velho pelo novo e te mostra.
 **O que é:** antes de gravar uma linha nova no `empresa.md`, no `estrategia.md`, no `ferramentas.md` ou em `pessoas/` (preço, fornecedor, prazo), a IA procura no arquivo uma linha sobre o mesmo assunto. Se for igual, não grava de novo; se mudou, troca a velha pela nova e te mostra o antes e o depois.
 **Por quê:** a regra antiga mandava sempre acrescentar linha, e o arquivo podia ficar com dois preços do mesmo produto, e a IA podia usar o velho.
 **Te afeta se:** a seção Tabela de destinos do `AGENTS.md` do projeto não tem o texto `mesmo assunto`.
@@ -1004,6 +1249,8 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## proposta-da-reuniao
 
+**Desde:** 5.48
+**Pra você:** Cole o texto da reunião e a proposta sai pronta, perguntando só o que falta e guardada na pasta do cliente.
 **O que é:** o comando de proposta passa a montar a proposta com o que você já tem (um texto solto ou a transcrição da reunião colada no chat) e com o `contexto.md` e o `andamento.md` da pasta do cliente, quando ela existe, e só pergunta o que falta, uma coisa por vez. A proposta pronta fica na pasta do cliente.
 **Por quê:** antes ele fazia cinco perguntas seguidas mesmo quando a resposta já estava na reunião ou na pasta do cliente, e guardava toda proposta numa pasta só.
 **Te afeta se:** o projeto tem `.claude/skills/proposta-comercial/SKILL.md` com a linha `1. "Nome do cliente e empresa?"`.
@@ -1012,8 +1259,20 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 
 ## guia-visual-so-a-marca
 
+**Desde:** 5.48
+**Pra você:** O visual copiado de um site traz só cores, fontes e logo, e seus posts e carrosséis deixam de sair com cara de site.
 **O que é:** o guia visual da marca ganha um aviso no topo dizendo que cor, fonte e logo valem pra tudo que sai pra fora, e a seção de cantos, sombra e botão vira opcional, vazia no normal. O visual tirado de um site traz só a marca (cores, fontes, logo e o clima), sem o jeito da página.
 **Por quê:** o visual tirado do site trazia junto canto, sombra e botão da página, e todo post e carrossel saía com cara de site.
 **Te afeta se:** o projeto tem `marca/design-guide.md` sem a linha que começa com `> **Pra IA:**`.
 **Como aplicar:** acrescentar a linha que começa com `> **Pra IA:**` do `_modelo/marca/design-guide.md` do kit logo depois do aviso do topo e, se o arquivo tiver o título `## Elementos-chave`, trocar por `## Elementos-chave (opcional)` com a nota que vem embaixo dele no modelo. O que você já preencheu fica. Mostrar o antes e o depois e gravar com o sim.
 **Como testar:** o `marca/design-guide.md` tem a linha que começa com `> **Pra IA:**`.
+
+## bem-vindo-backup-honesto
+
+**Desde:** 5.49
+**Pra você:** A página de boas-vindas só diz que o backup vai sozinho pro GitHub quando ele está ligado, então você sabe se está guardado.
+**O que é:** a página de boas-vindas (`bem-vindo.html`) passa a dizer a verdade sobre o backup: só fala que ele manda sozinho pro GitHub quando o GitHub está ligado e o backup automático também.
+**Por quê:** a página dizia que o backup mandava sozinho pro GitHub desde o primeiro dia, e quem ainda não ligou o GitHub achava que o trabalho já estava guardado na nuvem.
+**Te afeta se:** o projeto tem `bem-vindo.html` com a frase `O backup manda sozinho pro GitHub ao fim de cada resposta.` e o GitHub ainda não está ligado no projeto (`git rev-parse --show-prefix` sai com texto ou erro, porque a pasta está dentro de outra, ou `git remote get-url origin` dá erro) ou a regra 5 do `AGENTS.md` diz que não existe backup automático.
+**Como aplicar:** trocar só essa frase do `bem-vindo.html`. Com o backup automático ligado e sem GitHub: `O backup no GitHub ainda não está ligado: o <b>/syncar</b> liga ele uma vez, e daí em diante ele manda sozinho ao fim de cada resposta.` Com o backup automático desligado: `O backup automático ficou desligado, como você escolheu: o <b>/syncar</b> guarda no GitHub quando você chamar.` Mostrar o antes e o depois e gravar com o sim.
+**Como testar:** o `bem-vindo.html` não tem mais a frase `O backup manda sozinho pro GitHub ao fim de cada resposta.`

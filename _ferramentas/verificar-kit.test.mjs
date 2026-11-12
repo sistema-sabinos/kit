@@ -1197,7 +1197,7 @@ test('gate 9 aceita o _modelo completo, com as duas travas', () => {
 // ---------------------------------------------------------------------------
 
 const SKILL_INICIAR = '---\nname: iniciar\ndescription: Inicia.\n---\n\n# /iniciar\n'
-const MUDANCA_OK = '# Mudancas\n\n## Como usar (secao comum, sem campos)\n\ntexto\n\n## regra-x\n\n**O que é:** a.\n**Por quê:** b.\n**Te afeta se:** c.\n**Como aplicar:** d.\n**Como testar:** e.\n'
+const MUDANCA_OK = '# Mudancas\n\n## Como usar (secao comum, sem campos)\n\ntexto\n\n## regra-x\n\n**Desde:** 3.5\n**Pra você:** f.\n**O que é:** a.\n**Por quê:** b.\n**Te afeta se:** c.\n**Como aplicar:** d.\n**Como testar:** e.\n'
 
 function kitComAtualizador() {
   const dir = kitFalso()
@@ -1315,6 +1315,26 @@ test('gate 10 acusa VERSAO diferente do README, dependencia inexistente e mudanc
     assert.match(f, /README diz 3\.5/)
     assert.match(f, /fantasma/)
     assert.match(f, /regra-x sem o campo "Como testar"/)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// 5.60 (bloco 3): o "pendentes" do atualizar-projeto corta pelo Desde e mostra o Pra você
+test('gate 10: Desde fora de X.Y ou "próxima" reprova, "próxima" passa, e falta do Pra você reprova', () => {
+  const dir = kitComAtualizador()
+  try {
+    selarMae(dir)
+    assert.deepEqual(gate10(dir), [], 'canario: a entrada com Desde 3.5 passa')
+    for (const ruim of ['5.60 (rodada)', 'v5.49', '']) {
+      writeFileSync(join(dir, '_ferramentas/mudancas.md'), MUDANCA_OK.replace('**Desde:** 3.5', `**Desde:** ${ruim}`))
+      selarMae(dir)
+      assert.match(gate10(dir).map(x => x.detalhe).join(' | '), /regra-x com Desde/, ruim)
+    }
+    writeFileSync(join(dir, '_ferramentas/mudancas.md'), MUDANCA_OK.replace('**Desde:** 3.5', '**Desde:** próxima'))
+    selarMae(dir)
+    assert.deepEqual(gate10(dir), [])
+    writeFileSync(join(dir, '_ferramentas/mudancas.md'), MUDANCA_OK.replace('**Pra você:** f.\n', ''))
+    selarMae(dir)
+    assert.match(gate10(dir).map(x => x.detalhe).join(' | '), /regra-x sem o campo "Pra você"/)
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 

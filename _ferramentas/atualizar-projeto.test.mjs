@@ -7,7 +7,7 @@ import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { hashArquivo, montarPlano, aplicarPlano, desfazer, registrarMudanca, mesclarSettings, resumo, TIRADAS_DO_KIT, compararMae, PERMISSOES_DO_KIT } from './atualizar-projeto.mjs'
+import { hashArquivo, montarPlano, aplicarPlano, desfazer, registrarMudanca, mesclarSettings, resumo, TIRADAS_DO_KIT, compararMae, PERMISSOES_DO_KIT, lerMudancas } from './atualizar-projeto.mjs'
 
 // fileURLToPath, e nao URL.pathname: no Windows o pathname vem com barra sobrando.
 const MOTOR = fileURLToPath(new URL('./atualizar-projeto.mjs', import.meta.url))
@@ -389,6 +389,74 @@ test('linha de comando: registro do setup, depois atualizacao, desfazer sem --ba
   assert.equal(d.codigo, 0, d.saida)
   assert.ok(!/Outras:/.test(d.saida), d.saida)
   assert.equal(ler(projeto, INICIAR), 'novo\n')
+}))
+
+// 5.60 (bloco 3): o /atualizar-sabinos le so o que falta decidir. Entrada fora do recibo e com Desde
+// depois da versaoBase; "Desde a 5.49" na prosa nunca e lido como campo.
+const MUDANCAS_FALSO = [
+  '# Mudancas', '', '## Como usar (instrução pro agente)', '', '1. Migrar o CLAUDE.md antes do AGENTS.md.', '',
+  '## velha', '', '**Desde:** 3.4', '**Pra você:** pv velha.', '**O que é:** a.', '**Te afeta se:** t velha.', '**Como testar:** x.', '',
+  '## meio', '', '**Desde:** 3.5', '**Pra você:** pv meio.', '**O que é:** Desde a 9.9 na prosa.', '**Te afeta se:** t meio.', '**Como testar:** x.', '',
+  '## nova', '', '**Desde:** 3.6', '**Pra você:** pv nova.', '**O que é:** a.', '**Te afeta se:** t nova.', '**Como testar:** x.', '',
+  '## sem-carimbo', '', '**Desde:** próxima', '**Pra você:** pv sc.', '**O que é:** a.', '**Te afeta se:** t sc.', '**Como testar:** x.', '',
+].join(CRLF)
+function kitComMudancas(raiz) {
+  const kit = montarKit(raiz, { [INICIAR]: 'novo\n', 'AGENTS.md': 'kit\n' })
+  escrever(kit, { '_ferramentas/mudancas.md': MUDANCAS_FALSO })
+  return kit
+}
+const idsDe = saida => saida.split('\n').filter(l => / \| Desde /.test(l)).map(l => l.split(' | ')[0])
+const recibo = projeto => JSON.parse(ler(projeto, '.sabinos/instalado.json'))
+
+test('pendentes: corta pela versaoBase, pula o id do recibo, e proxima ou sem base sempre entra', () => comPasta(raiz => {
+  const kit = kitComMudancas(raiz)
+  const projeto = montarProjeto(raiz, { [INICIAR]: 'novo\n', 'AGENTS.md': 'kit\n' })
+  const semRecibo = rodar(['pendentes', projeto, '--kit', kit])
+  assert.equal(semRecibo.codigo, 0, semRecibo.saida)
+  assert.deepEqual(idsDe(semRecibo.saida), ['velha', 'meio', 'nova', 'sem-carimbo'], 'canario: sem base, todas entram')
+  assert.match(semRecibo.saida, /sem versao base/)
+  escrever(projeto, { '.sabinos/instalado.json': JSON.stringify({ versao: '3.5', arquivos: {}, mudancas: { nova: 'recusada 2026-11-12' }, versaoBase: '3.4' }) })
+  const r = rodar(['pendentes', projeto, '--kit', kit])
+  assert.deepEqual(idsDe(r.saida), ['meio', 'sem-carimbo'])
+  assert.ok(r.saida.includes('meio | Desde 3.5 | Te afeta se: t meio. | Pra você: pv meio.'), r.saida)
+  assert.match(r.saida, /faltam 2\s*$/)
+  assert.ok(r.saida.startsWith('## Como usar') && r.saida.includes('Migrar o CLAUDE.md'), 'o Como usar vem antes da lista')
+  escrever(projeto, { '.sabinos/instalado.json': JSON.stringify({ versao: '3.5', arquivos: {}, mudancas: {}, versaoBase: '3.6' }) })
+  assert.deepEqual(idsDe(rodar(['pendentes', projeto, '--kit', kit]).saida), ['sem-carimbo'], 'a prosa "Desde a 9.9" nao vira campo')
+}))
+
+test('pendentes --id imprime o bloco inteiro; id desconhecido ou kit sem mudancas.md sai 1', () => comPasta(raiz => {
+  const kit = kitComMudancas(raiz)
+  const projeto = montarProjeto(raiz, { [INICIAR]: 'novo\n' })
+  const r = rodar(['pendentes', projeto, '--kit', kit, '--id', 'meio'])
+  assert.equal(r.codigo, 0, r.saida)
+  assert.ok(r.saida.startsWith('## meio\n') && r.saida.trim().endsWith('**Como testar:** x.') && !r.saida.includes('## nova'), r.saida)
+  const x = rodar(['pendentes', projeto, '--kit', kit, '--id', 'fantasma'])
+  assert.equal(x.codigo, 1)
+  assert.match(x.saida, /entrada desconhecida no mudancas\.md: fantasma/)
+  rmSync(join(kit, '_ferramentas', 'mudancas.md'))
+  const s = rodar(['pendentes', projeto, '--kit', kit])
+  assert.equal(s.codigo, 1)
+  assert.match(s.saida, /sem _ferramentas\/mudancas\.md/)
+}))
+
+test('versaoBase: o setup (--registro) grava a do kit, o aplicar preserva, e recibo antigo sem base fica sem corte', () => comPasta(raiz => {
+  const kit = kitComMudancas(raiz)
+  const projeto = montarProjeto(raiz, { [INICIAR]: 'novo\n', 'AGENTS.md': 'kit\n' })
+  aplicarPlano({ kit, projeto, plano: montarPlano({ kit, projeto }), registro: true })
+  assert.equal(recibo(projeto).versaoBase, '3.5')
+  assert.deepEqual(idsDe(rodar(['pendentes', projeto, '--kit', kit]).saida), ['nova', 'sem-carimbo'], 'aluno novo nao recebe o que o molde ja trouxe')
+  const kit2 = montarKit(join(raiz, 'v2'), { [INICIAR]: 'mais novo\n', 'AGENTS.md': 'kit\n' }, { [INICIAR]: { 'novo\n': '3.5' } })
+  writeFileSync(join(kit2, 'VERSAO'), '3.6\n')
+  aplicarPlano({ kit: kit2, projeto, plano: montarPlano({ kit: kit2, projeto }) })
+  assert.equal(recibo(projeto).versaoBase, '3.5', 'a base fica, nunca vira a versao de antes')
+  const antigo = montarProjeto(join(raiz, 'antigo'), { [INICIAR]: 'novo\n', 'AGENTS.md': 'kit\n' })
+  escrever(antigo, { '.sabinos/instalado.json': JSON.stringify({ versao: '3.4', arquivos: {}, mudancas: {} }) })
+  aplicarPlano({ kit, projeto: antigo, plano: montarPlano({ kit, projeto: antigo }), registro: true })
+  assert.equal(recibo(antigo).versaoBase, null)
+  const sem = montarProjeto(join(raiz, 'sem'), { [INICIAR]: 'novo\n', 'AGENTS.md': 'kit\n' })
+  aplicarPlano({ kit, projeto: sem, plano: montarPlano({ kit, projeto: sem }) })
+  assert.equal(recibo(sem).versaoBase, null, 'projeto sem recibo atualizado sem --registro nao ganha corte')
 }))
 
 test('linha de comando: registrar rodado de outra pasta (a pasta-mae) grava no recibo do projeto', () => comPasta(raiz => {
@@ -886,6 +954,16 @@ test('mudancas.md: nenhuma entrada religa o que o kit tirou na 5.49', () => {
   const religam = entradas.filter(([id, campos]) => id !== 'travas-soltas' && proibidos.some(p => campos.includes(p)))
     .map(([id, campos]) => `${id}: ${proibidos.filter(p => campos.includes(p)).join(' | ')}`)
   assert.deepEqual(religam, [])
+})
+
+// 5.60 (bloco 3): o leitor do pendentes acha toda entrada do arquivo real com Desde e Pra você
+test('mudancas.md: o leitor do pendentes acha toda entrada com Desde e Pra você, e o Como usar', () => {
+  const md = readFileSync(fileURLToPath(new URL('./mudancas.md', import.meta.url)), 'utf8')
+  const { comoUsar, entradas } = lerMudancas(md)
+  const titulos = md.split(CRLF).filter(l => /^## \S+$/.test(l)).length
+  assert.ok(entradas.length > 50 && entradas.length === titulos, `canario: ${entradas.length} entradas, ${titulos} titulos`)
+  assert.deepEqual(entradas.filter(e => !/^(\d+\.\d+|próxima)$/.test(e.desde ?? '') || !e.praVoce).map(e => e.id), [])
+  assert.ok(comoUsar.startsWith('## Como usar') && comoUsar.includes('pendentes') && !comoUsar.includes('## aviso-backup-falhou'), comoUsar.slice(0, 80))
 })
 
 // 5.54 (C2): o aplicar nunca grava o settings, entao o hook do aviso so chega ao projeto ja instalado

@@ -126,6 +126,7 @@ atualiza pelo motor, que já sabe o que é do kit e o que é da pessoa.
    `node _ferramentas/atualizar-projeto.mjs plano <caminho-do-projeto>`.
    Os passos seguintes rodam todos daqui, pelo motor desta pasta-mãe:
    - `node _ferramentas/atualizar-projeto.mjs aplicar <caminho-do-projeto> --tambem <caminhos>`
+   - `node _ferramentas/atualizar-projeto.mjs pendentes <caminho-do-projeto>` (e `--id <id>` pra entrada inteira)
    - `node _ferramentas/atualizar-projeto.mjs registrar <caminho-do-projeto> <id> aplicada` (ou `recusada`)
    - `node _ferramentas/atualizar-projeto.mjs conferir <caminho-do-projeto>`
    - JSON do settings: `node -e "JSON.parse(require('fs').readFileSync('<caminho-do-projeto>/.claude/settings.json','utf8'))"`
