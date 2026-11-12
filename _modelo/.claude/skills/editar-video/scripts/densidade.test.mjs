@@ -141,3 +141,20 @@ test('P3: render segue com a densidade boa, e com --sem-densidade mesmo parado',
     assert.equal(c2.chamadas.length, 1)
   } finally { c2.limpar() }
 })
+
+test('5.58 D: buraco conta como clipe de video, como evento na entrada e na saida e sai do denominador', () => {
+  // 32 s: flash a cada 2 s, menos no buraco de 10 a 22 s (o clipe com o som original)
+  const flashes = [2, 4, 6, 8, 24, 26, 28, 30].map((seg) => ({ seg }))
+  const p = { duracaoSeg: 32, abertura: null, flashes, buracos: [{ deSeg: 10, ateSeg: 22, arquivo: 'clipes/c.mp4', audio: 'buraco/clipe-00.wav' }] }
+  const lim = { vaoMaxSeg: 5, porDezSegMin: 4.5, coberturaMin: 0.3 }
+  // canario: sem o buraco o trecho de 8 a 24 s fica parado
+  const sem = conferirDensidade({ ...p, buracos: [] }, fala(32), lim)
+  assert.equal(sem.ok, false)
+  assert.ok(sem.falhas.length > 0, 'a falha nao veio vazia')
+  assert.match(sem.falhas[0], /de 8,0 a 24,0 s/)
+  assert.deepEqual(eventos(p).filter((e) => e.tipo === 'buraco').map((e) => e.seg), [10, 22])
+  const r = conferirDensidade(p, fala(32), lim)
+  assert.equal(r.ok, true, r.falhas.join(' | '))
+  assert.equal(r.medidas.porDezSeg, 5, '10 novidades em 20 s de fala: o buraco sai do denominador')
+  assert.equal(r.medidas.cobertura, 0.375, 'o buraco cobre a pessoa')
+})

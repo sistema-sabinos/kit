@@ -269,7 +269,7 @@ const OBRIGATORIOS = [
   '_modelo/_contexto/empresa.md', '_modelo/_contexto/preferencias.md',
   '_modelo/_contexto/estrategia.md', '_modelo/_contexto/agora.md',
   '_modelo/_contexto/licoes.md', '_modelo/_contexto/ferramentas.md',
-  '_modelo/marca/design-guide.md', '_modelo/marca/tom-de-voz.md', '_modelo/dados/README.md',
+  '_modelo/marca/design-guide.md', '_modelo/marca/tom-de-voz.md', '_modelo/marca/nomes.md', '_modelo/dados/README.md',
   '_modelo/templates/bem-vindo.template.html',
   '_modelo/.claude/skills/iniciar/SKILL.md', '_modelo/.claude/skills/conectar/SKILL.md',
   '_modelo/.claude/skills/mapear/SKILL.md', '_modelo/.claude/skills/atualizar/SKILL.md',
@@ -1015,7 +1015,7 @@ export function rodarGates(dirKit, opcoes = {}) {
 // pelo nome: o Mapa manda skill e regra dizer "o diario" e "a marca", e o caminho sair dele.
 // A memoria fria (as duas pastas arquivo/) e lida pelo Recall e escrita pela /faxina, que
 // a secao Rotinas descreve: por isso as duas secoes tambem contam como quem usa.
-const APELIDOS_GAVETA = { 'diario': 'o diário', 'design-guide.md': 'a marca', 'tom-de-voz.md': 'a marca', 'arquivo': 'memória fria' }
+const APELIDOS_GAVETA = { 'diario': 'o diário', 'design-guide.md': 'a marca', 'tom-de-voz.md': 'a marca', 'nomes.md': 'a marca', 'arquivo': 'memória fria' }
 const RAIZES_GAVETA = ['_contexto/', '_memoria/', 'marca/']
 
 function secaoMd(txt, titulo) {

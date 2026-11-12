@@ -17,7 +17,7 @@ O `--midia` é a pasta de mídia da biblioteca (para achar os efeitos sonoros).
 Todos os nomes de arquivo dentro do `edicao.json` são relativos à pasta
 `producao/<slug>/public/`.
 
-## Os quatro truques do `preparar-props.py`
+## Os cinco truques do `preparar-props.py`
 
 **1. Tempo por palavra.** Qualquer campo de tempo (`deSeg`, `ateSeg`, `seg`,
 `aSeg`) pode ser um número, ou um objeto que aponta uma palavra da fala:
@@ -44,6 +44,10 @@ logo depois de ela ser falada, e anda pra frente todo o resto (veja
 **4. Onda medida.** Os `valores` de cada item de `ondas` saem da voz, 30 por
 segundo. Onda curta demais, fora da zona segura ou em cima da legenda derruba o
 script com a mensagem (veja `## ondas` abaixo).
+
+**5. Buraco na fala.** Cada item de `buracos` para a fala num ponto, põe ali um
+clipe com o som original dele e depois a fala volta de onde parou (veja
+`## buracos` abaixo).
 
 ## Campos obrigatórios
 
@@ -220,6 +224,49 @@ mais que isso cansa.
   `lentas`, pro `verificar-video.py` não confundir a repetição com boca fora da voz.
 - No fundo verde, a câmera lenta roda antes do recorte, pela linha de comando do
   `camera_lenta.py` (passo 4B do `SKILL.md`), e não entra no `edicao.json`.
+
+## `buracos`: o clipe com o som original no meio da fala
+
+A fala para num ponto, entra um clipe de outra pessoa com o som dele (um trecho
+de entrevista, de evento, de anúncio) e a fala volta de onde parou. Só entra
+depois da conversa sobre o direito de usar o clipe, na seção "Clipe com o som
+original" de `referencias/insercoes.md`, com a resposta do aluno.
+
+```json
+"buracos": [
+  { "seg": { "palavra": "cinema", "fim": true }, "arquivo": "clipes/evento.mp4", "tam": { "w": 1920, "h": 1080 },
+    "entradaSeg": 12.4, "saidaSeg": 21.5, "selo": "EVENTO DA LUMORA, 2026",
+    "legenda": "clipes/evento.paginas.json", "direito": { "tipo": "autorizacao", "fonte": "e-mail da Lumora" } }
+]
+```
+
+| Campo | O que é |
+|---|---|
+| `seg` | O ponto da fala em que o clipe entra: o fim de uma palavra (`"fim": true`) ou o começo da seguinte. Ponto no meio de palavra derruba o script |
+| `arquivo`, `tam` | O clipe, em `public/`, e o tamanho original dele |
+| `entradaSeg`, `saidaSeg` | De onde a onde do clipe entra, em segundos do próprio clipe; o trecho tem pelo menos 0,5 s |
+| `selo` | O crédito na tela: de quem é e de onde veio. Obrigatório |
+| `legenda` | As páginas da fala do clipe, contadas do começo do trecho, até 4 palavras por página: o arquivo `.json` das páginas ou a lista `[{ "ini", "fim", "palavras" }]`. Clipe sem fala leva `[]` |
+| `direito` | De onde vem a permissão de usar, como o aluno respondeu. Obrigatório |
+
+- O clipe aparece inteiro, em tela cheia com fundo preto, o selo no alto e a
+  legenda no lugar de sempre. O som dele entra no volume da voz: o script mede
+  os dois e imprime o ganho.
+- A pessoa fica parada embaixo do clipe e a voz ganha silêncio do tamanho dele.
+  Tudo que começa no ponto ou depois anda pra frente esse tamanho, e o que acaba
+  até o ponto fica onde está. Chave, cartão, onda ou inserção que começa antes do
+  ponto e acaba depois dele derruba o script: faça acabar no ponto ou começar
+  depois.
+- Legenda do clipe: tire o som do clipe com o ffmpeg, transcreva com o
+  `transcrever.mjs` (como no passo 3.5 do `SKILL.md`) e gere as páginas com
+  `paginas-legenda.py <transcrição> clipes/evento.paginas.json --de <entradaSeg> --ate <saidaSeg>`.
+  Clipe em outra língua: o Claude escreve a tradução nas páginas, no tempo das
+  frases, e mostra ao aluno antes de seguir.
+- Todos os tempos do `edicao.json` seguem sendo da fala original. A câmera lenta
+  roda antes e o ponto anda junto com ela.
+- O que sai fica em `public/buraco/` (pessoa, voz, legenda e o som de cada clipe)
+  e as props levam `buracos`, que o `verificar-video.py` lê pra não confundir a
+  pessoa parada com imagem travada.
 
 ## Exemplo completo
 

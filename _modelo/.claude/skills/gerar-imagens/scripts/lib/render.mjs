@@ -21,11 +21,13 @@ export function acharPlaywright(raiz = RAIZ) {
   throw new Error(`nao achei o Playwright, que desenha as imagens.\nQuem le esta mensagem e a IA: peca o sim da pessoa e rode uma vez, na pasta do projeto: ${INSTALAR}`)
 }
 
-export async function abrirNavegador({ raiz = RAIZ, carregar } = {}) {
+// headless: false abre com janela (o print de pagina usa quando o site barra o sem janela); sem ele,
+// sem janela, como o /gerar-imagens sempre abriu.
+export async function abrirNavegador({ raiz = RAIZ, carregar, headless } = {}) {
   const pw = carregar ? await carregar() : await import(pathToFileURL(acharPlaywright(raiz)).href)
   const chromium = pw.chromium || pw.default?.chromium
   try {
-    return await chromium.launch({ channel: 'chrome' })
+    return await chromium.launch(headless === false ? { channel: 'chrome', headless: false } : { channel: 'chrome' })
   } catch (e) {
     throw new Error(`nao consegui abrir o Google Chrome pra desenhar a imagem (${String(e.message).split('\n')[0]}).\nConfira se o Chrome esta instalado.`)
   }

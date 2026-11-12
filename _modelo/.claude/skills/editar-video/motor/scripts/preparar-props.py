@@ -13,6 +13,10 @@
   4. onda medida: cada item de "ondas" ({ "deSeg", "ateSeg", "topo", "altura", "largura" }) ganha "valores", o volume
      da voz quadro a quadro (30 por segundo, de 0 a 1). Onda com menos de 0,5 s, fora da zona segura ou em cima da
      legenda (topoLegenda, 1240 quando falta) derruba o script com a mensagem.
+  5. buraco: cada item de "buracos" ({ "seg", "arquivo", "entradaSeg", "saidaSeg", "selo", "legenda", "direito" })
+     abre a fala no ponto e poe ali o clipe com o som original (buraco.py), depois da camera lenta. Pessoa, voz e
+     legenda novas vao pra <public>/buraco/, todo tempo de depois do ponto anda o tamanho do clipe e as props levam
+     "buracos" (onde cada clipe entra, a legenda dele e o som no volume medido da voz).
 
 Todo o resto do edicao.json vai direto pras props (pessoa, voz, legendas, duracaoSeg, cortesSeg, segmentos, chaves,
 cartoes, flashes, palavras, ...). Padroes: alturaTela 0 e recorteTopoPessoa 0 (quadro inteiro), cortesSeg [],
@@ -88,6 +92,35 @@ def camera_lenta(ed, lentas, pub):
         print(f"camera lenta: {ini:.2f} a {fim:.2f} s volta a {fator} de {comeco:.2f} a {comeco + dur:.2f} s (+{dur:.2f} s)")
     return ed
 
+def abrir_buracos(ed, buracos, pub):
+    """buracos: grava pessoa parada, voz com silencio e legenda andada em buraco/, anda os tempos de depois de cada
+    ponto e grava o som de cada clipe no volume medido da voz."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import buraco as bu
+    caps = json.loads((pub / ed["legendas"]).read_text(encoding="utf-8"))
+    for x in buracos: x["legenda"] = bu.paginas_de(x.get("legenda"), pub)
+    plano = bu.planejar(buracos, caps, min(bu.duracao(pub / ed["pessoa"]), bu.duracao(pub / ed["voz"])))
+    for b in plano: bu.conferir_clipe(pub / b["arquivo"], b)
+    ed = {k: (v if k in ("cortesSeg", "duracaoSeg") else bu.mover(v, plano)) for k, v in ed.items()}
+    ed["cortesSeg"] = [bu.deslocar(c, plano) for c in ed.get("cortesSeg", [])]
+    if "duracaoSeg" in ed: ed["duracaoSeg"] = round(ed["duracaoSeg"] + sum(b["D"] for b in plano), 3)
+    (pub / "buraco").mkdir(parents=True, exist_ok=True)
+    bu.gravar_pessoa(str(pub / ed["pessoa"]), str(pub / "buraco" / "pessoa.mp4"), plano)
+    bu.gravar_voz(str(pub / ed["voz"]), str(pub / "buraco" / "voz.wav"), plano)
+    (pub / "buraco" / "legendas.json").write_text(json.dumps(bu.legenda(caps, plano), ensure_ascii=False, indent=1), encoding="utf-8")
+    alvo = bu.medir(pub / ed["voz"])["input_i"]
+    saidas = []
+    for i, b in enumerate(plano):
+        som = f"buraco/clipe-{i:02d}.wav"
+        ganho = bu.gravar_audio(pub / b["arquivo"], b.get("entradaSeg", 0), b["D"], alvo, pub / som)
+        item = {"deSeg": b["de"], "ateSeg": round(b["de"] + b["D"], 4), "arquivo": b["arquivo"], "entradaSeg": b.get("entradaSeg", 0)}
+        if "tam" in b: item["tam"] = b["tam"]
+        saidas.append({**item, "selo": b["selo"], "legenda": b["legenda"], "audio": som})
+        print(f"buraco: {b['arquivo']} de {item['entradaSeg']:.2f} a {b['saidaSeg']:.2f} s entra de {item['deSeg']:.2f} a {item['ateSeg']:.2f} s "
+              f"(+{b['D']:.2f} s), som a {alvo:.1f} LUFS como a voz (ganho {ganho:+.1f} dB)")
+    ed.update(pessoa="buraco/pessoa.mp4", voz="buraco/voz.wav", legendas="buraco/legendas.json", buracos=saidas)
+    return ed
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("edicao"); ap.add_argument("saida")
@@ -118,6 +151,8 @@ def main():
     ed = resolver(ed)
     lentas = sorted(ed.pop("cameraLenta", []), key=lambda x: x["deSeg"])
     if lentas: ed = camera_lenta(ed, lentas, pub)
+    buracos = ed.pop("buracos", [])
+    if buracos: ed = abrir_buracos(ed, buracos, pub)
     sfx_ed = ed.pop("sfx", [])
     # o Remotion mistura estas props com as do exemplo do Studio (Root.tsx): todo campo que o exemplo preenche
     # tem padrao aqui, senao o video do aluno herda o do exemplo (a chave PRAZO, achado C1 da 5.17)

@@ -2,7 +2,8 @@
 // e a legenda alinhada, e reprova trecho longo sem novidade na tela, dizendo o segundo e o que esta sendo falado.
 // Novidade: troca de plano (corte com escala diferente), chave, cartao, insercao (entra e sai), entrada da onda,
 // flash, abertura que assenta e inicio do empurrao. Efeito sonoro sozinho NAO conta: so o que se ve quebra o trecho
-// parado (decisao 5 da 5.17). Clipe de video por cima se mexe sozinho: o tempo dele nao e vao.
+// parado (decisao 5 da 5.17). Clipe de video por cima se mexe sozinho: o tempo dele nao e vao. O buraco (clipe com
+// o som original no meio da fala) entra e sai como insercao, cobre a pessoa e sai do denominador das novidades.
 // Limites PROVISORIOS, medidos em 8 Reels reais em cenario proprio: 7 passam e o vmeta reprova (vao de 7,84 s).
 // No vao a folga do pior aprovado e de so 0,25 s (vcaneta, 4,75 s). Calibrar no primeiro video.
 // Quem chama e o render.mjs, antes de gastar o render.
@@ -26,6 +27,8 @@ export function eventos(p) {
   for (const c of p.chaves ?? []) ev.push({ seg: c.deSeg, tipo: 'chave' })
   for (const c of p.cartoes ?? []) ev.push({ seg: c.deSeg, tipo: 'cartao' })
   for (const s of p.segmentos ?? []) { ev.push({ seg: s.deSeg, tipo: 'insercao' }); ev.push({ seg: s.ateSeg, tipo: 'insercao' }) }
+  // buraco: o clipe com o som original no meio da fala entra e sai como uma insercao
+  for (const b of p.buracos ?? []) { ev.push({ seg: b.deSeg, tipo: 'buraco' }); ev.push({ seg: b.ateSeg, tipo: 'buraco' }) }
   // so a entrada da onda e novidade: a onda mexendo depois e o mesmo elemento na tela, nao segura o trecho
   for (const o of p.ondas ?? []) ev.push({ seg: o.deSeg, tipo: 'onda' })
   for (const f of p.flashes ?? []) ev.push({ seg: f.seg, tipo: 'flash' })
@@ -34,9 +37,9 @@ export function eventos(p) {
   return ev.filter((e) => e.seg >= 0 && e.seg <= p.duracaoSeg).sort((a, b) => a.seg - b.seg)
 }
 
-// fracao do video com algo por cima da pessoa (chave, cartao ou insercao)
+// fracao do video com algo por cima da pessoa (chave, cartao, insercao ou buraco)
 export function cobertura(p) {
-  const iv = [...(p.chaves ?? []), ...(p.cartoes ?? []), ...(p.segmentos ?? [])]
+  const iv = [...(p.chaves ?? []), ...(p.cartoes ?? []), ...(p.segmentos ?? []), ...(p.buracos ?? [])]
     .map((x) => [Math.max(0, x.deSeg), Math.min(p.duracaoSeg, x.ateSeg)]).filter(([a, b]) => b > a).sort((a, b) => a[0] - b[0])
   let total = 0, fim = -1
   for (const [a, b] of iv) { if (b <= fim) continue; total += b - Math.max(a, fim); fim = b }
@@ -45,7 +48,7 @@ export function cobertura(p) {
 
 export function maiorVao(p) {
   const marcos = [0, ...eventos(p).map((e) => e.seg), p.duracaoSeg]
-  const vivos = (p.segmentos ?? []).filter((s) => s.tipo === 'video')
+  const vivos = [...(p.segmentos ?? []).filter((s) => s.tipo === 'video'), ...(p.buracos ?? [])]
   let melhor = { de: 0, ate: 0 }
   for (let i = 1; i < marcos.length; i++) {
     const de = marcos[i - 1], ate = marcos[i]
@@ -70,8 +73,10 @@ export function conferirDensidade(p, legendas, lim = LIMITES) {
     const fala = falado(legendas, vao.de, vao.ate)
     falhas.push(`de ${um(vao.de)} a ${um(vao.ate)} s (${um(vao.ate - vao.de)} s) nada novo entra na tela${fala ? `, so voce falando: "${fala}"` : ''}. Ponha ali uma troca de zoom, uma chave, um cartao ou um flash; efeito sonoro sozinho nao conta (limite ${um(lim.vaoMaxSeg)} s).`)
   }
-  const porDez = unicos.length / p.duracaoSeg * 10
-  if (porDez < lim.porDezSegMin) falhas.push(`${unicos.length} novidades em ${um(p.duracaoSeg)} s, ${um(porDez)} a cada 10 s (minimo ${um(lim.porDezSegMin)}).`)
+  // o clipe do buraco se mexe sozinho: o tempo dele sai da conta das novidades
+  const fala = p.duracaoSeg - (p.buracos ?? []).reduce((s, b) => s + (b.ateSeg - b.deSeg), 0)
+  const porDez = unicos.length / fala * 10
+  if (porDez < lim.porDezSegMin) falhas.push(`${unicos.length} novidades em ${um(fala)} s, ${um(porDez)} a cada 10 s (minimo ${um(lim.porDezSegMin)}).`)
   const cob = cobertura(p)
   if (cob < lim.coberturaMin) falhas.push(`so ${Math.round(cob * 100)}% do video tem chave, cartao ou insercao por cima (minimo ${Math.round(lim.coberturaMin * 100)}%).`)
   return { ok: falhas.length === 0, falhas, medidas: { vaoSeg: +(vao.ate - vao.de).toFixed(2), vaoDe: vao.de, porDezSeg: +porDez.toFixed(2), cobertura: +cob.toFixed(3), eventos: unicos.length } }

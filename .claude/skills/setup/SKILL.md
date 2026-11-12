@@ -816,6 +816,8 @@ uma pasta com esse nome na raiz, avisar e perguntar outro nome antes de seguir.
   visual), ou mantido neutro se a pessoa não tinha nada ainda.
 - `marca/tom-de-voz.md`, preenchido com a voz da marca do Passo 2 (o exemplo real
   colado entra inteiro na seção dele), ou com os campos em branco.
+- `marca/nomes.md`, copiado do `_modelo/` como está: a lista de nomes próprios da
+  legenda nasce vazia e cresce quando um nome sai errado num vídeo.
 - `dados/README.md` (e a pasta `dados/` que ele documenta).
 - `_memoria/` inteira (diário, decisões, recados e arquivo, com os `.gitkeep`): é o
   registro do que aconteceu e por quê, e nasce vazia.

@@ -202,8 +202,11 @@ Mova o original para `producao/<slug>/original/` e ponha o sincronizado em
 texto com o whisper:
 
 ```
-node .claude/skills/editar-video/scripts/py.mjs blocos.py producao/<slug>/bruto/<arquivo>.mp4 producao/<slug>/trab/blocos.md --modelo <modelo>
+node .claude/skills/editar-video/scripts/py.mjs blocos.py producao/<slug>/bruto/<arquivo>.mp4 producao/<slug>/trab/blocos.md --modelo <modelo> --nomes marca/nomes.md
 ```
+
+O `--nomes` passa ao whisper os nomes próprios da marca, e ele erra menos a
+grafia. Sem a lista, ou com ela vazia, o script avisa e segue sem ela.
 
 Saiu uma tabela (número, início, fim, duração e texto de cada bloco). Serve para
 gravação frase por frase e para gravação corrida: trecho longo se divide sozinho
@@ -255,19 +258,22 @@ node .claude/skills/editar-video/scripts/py.mjs tratar-voz.py producao/<slug>/tr
 Se ele avisar que usou o filtro simples no lugar do limpador de ruído, siga: o
 limpador de ruído só não foi instalado, e o resultado ainda fica bom.
 
-**3.5 Legenda palavra por palavra.** Transcreva e depois acerte o texto contra o
-que foi falado de verdade (o whisper erra nome próprio):
+**3.5 Legenda palavra por palavra.** Transcreva, confira os nomes e depois acerte
+o texto contra o que foi falado de verdade (o whisper erra nome próprio):
 
 ```
 node .claude/skills/editar-video/scripts/py.mjs transcrever.mjs producao/<slug>/public/voz.wav producao/<slug>/public/voz.legendas.json <modelo>
+node .claude/skills/editar-video/scripts/py.mjs conferir-nomes.py producao/<slug>/fala.txt --nomes marca/nomes.md
 node .claude/skills/editar-video/scripts/py.mjs alinhar.py producao/<slug>/public/voz.legendas.json producao/<slug>/fala.txt producao/<slug>/public/voz.alinhado.json
 ```
 
 O `fala.txt` é o roteiro como o aluno falou, bloco a bloco (use o texto da
-tabela do passo 3.2). Antes de alinhar, releia o `fala.txt` atrás de nome próprio
-(marca, pessoa, loja) e de maiúscula no começo da frase: o `alinhar.py` mantém
-exatamente o que está no arquivo, e o whisper escreve nome próprio em minúscula,
-então o erro vai direto pra legenda. Confira por amostra que as palavras estão certas.
+tabela do passo 3.2). O `conferir-nomes.py` acerta sozinho a caixa e o acento de
+nome da lista. Saída 4: mostre ao aluno cada linha `confira:`, pergunte qual
+grafia vale, corrija o `fala.txt` e só depois alinhe. O `alinhar.py` mantém
+exatamente o que está no arquivo: releia ainda a maiúscula no começo da frase e o
+nome fora da lista, e ofereça pôr no `marca/nomes.md` o nome que saiu errado.
+Confira por amostra que as palavras estão certas.
 
 ## Passo 4A: montagem em cenário próprio (`videov2`)
 
@@ -277,7 +283,9 @@ então o erro vai direto pra legenda. Confira por amostra que as palavras estão
    Isso decide onde cabe a palavra-chave.
 3. Leia `referencias/insercoes.md`, grave `producao/<slug>/trab/insercoes.md`
    (onde entra print, foto ou clipe por cima da fala, e de onde vem) e mostre ao
-   aluno. Cada inserção aprovada vira um item de `segmentos`.
+   aluno. Cada inserção aprovada vira um item de `segmentos`. Clipe que entra com
+   o som original no meio da fala vira um item de `buracos`, só depois das
+   perguntas de direito de `referencias/insercoes.md` respondidas pelo aluno.
 4. Escreva `producao/<slug>/edicao.json` seguindo `referencias/videov2.md`: os
    `cortesSeg` do passo 3.3, `escalasSeg` (1,0 no bloco com frase atrás da
    cabeça), `chaves`, `cartoes`, `flashes`, `ondas`, `sfx` e, se pedir, `cameraLenta` (a

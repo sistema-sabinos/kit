@@ -13,10 +13,38 @@ A pasta do whisper vem da variavel WHISPER_DIR (o orquestrador do kit define a p
 do video; sem ela o script para dizendo o que falta). O nome do programa vem de --whisper-bin (padrao "main",
 o nome do whisper.cpp 1.5.5) e e procurado dentro da WHISPER_DIR, sem extensao: o sistema completa.
 
-Uso: blocos.py BRUTO.mp4 SAIDA.md [--modelo medium] [--limiar-db 12] [--gap 0.45] [--min 0.5] [--max-frase 7] [--whisper-bin main]
+Com --nomes (o marca/nomes.md do projeto), os nomes da lista vao pro whisper como prompt ("Nomes: A, B, C."), sem
+acento (o whisper.cpp 1.5.5 no Windows pode receber o argumento fora de UTF-8; o conferir-nomes.py devolve o acento
+depois). Lista que nao existe ou sem nome segue sem prompt, com aviso.
+
+Uso: blocos.py BRUTO.mp4 SAIDA.md [--modelo medium] [--nomes marca/nomes.md] [--limiar-db 12] [--gap 0.45] [--min 0.5] [--max-frase 7] [--whisper-bin main]
 Sai uma tabela markdown (n, inicio, fim, duracao, texto do whisper) pra virar o cortes.md.
 """
 import argparse, os, shutil, subprocess, sys, tempfile
+
+def prompt_dos_nomes(linhas, teto=600):
+    """Linhas do marca/nomes.md -> (frase pro --prompt do whisper, aviso ou None). So as linhas "- Nome" da secao
+    "## Nomes", sem o "(avisa)", sem acento e sem repetir; passando do teto de caracteres, ficam os primeiros."""
+    import unicodedata
+    nomes, dentro = [], False
+    for linha in linhas:
+        s = linha.strip()
+        if s.startswith("## "):
+            dentro = s[3:].strip().lower() == "nomes"
+            continue
+        if not dentro or not s.startswith("- "): continue
+        nome = s[2:].strip()
+        if nome.lower().endswith("(avisa)"): nome = nome[:-7].strip()
+        nome = "".join(c for c in unicodedata.normalize("NFD", nome) if not unicodedata.combining(c))
+        if nome and nome not in nomes: nomes.append(nome)
+    cabem = []
+    for nome in nomes:
+        if len("Nomes: " + ", ".join(cabem + [nome]) + ".") > teto: break
+        cabem.append(nome)
+    aviso = None
+    if len(cabem) < len(nomes):
+        aviso = f"a lista de nomes passa de {teto} caracteres: o whisper recebe so os {len(cabem)} primeiros dos {len(nomes)}"
+    return ("Nomes: " + ", ".join(cabem) + "." if cabem else ""), aviso
 
 def run(cmd):
     r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
@@ -93,6 +121,7 @@ def main():
     p.add_argument("--min", type=float, default=0.5, help="duracao minima do trecho em s")
     p.add_argument("--max-frase", type=float, default=7.0, help="trecho mais longo que isso se divide nas pausas curtas (gravacao corrida)")
     p.add_argument("--whisper-bin", default="main", help="nome do programa do whisper.cpp dentro da WHISPER_DIR")
+    p.add_argument("--nomes", help="lista de nomes proprios da marca (marca/nomes.md), vai pro whisper como prompt")
     a = p.parse_args()
     os.makedirs(os.path.dirname(a.saida) or ".", exist_ok=True)
     whisper = os.environ.get("WHISPER_DIR")
@@ -102,6 +131,15 @@ def main():
     modelo = os.path.join(whisper, f"ggml-{a.modelo}.bin")
     if not prog or not os.path.exists(modelo):
         sys.exit(f"nao achei o programa '{a.whisper_bin}' ou o modelo {modelo} dentro da WHISPER_DIR. Rode a instalacao do whisper do kit.")
+    prompt = []
+    if a.nomes:
+        try:
+            frase, aviso = prompt_dos_nomes(open(a.nomes, encoding="utf-8").read().splitlines())
+        except (OSError, UnicodeDecodeError) as e:
+            frase, aviso = "", f"nao consegui ler a lista de nomes {a.nomes} ({e})"
+        if aviso: print(f"aviso: {aviso}", file=sys.stderr)
+        if frase: prompt = ["--prompt", frase]
+        elif not aviso: print(f"aviso: sem nome na lista {a.nomes}: o whisper roda sem prompt", file=sys.stderr)
     global np
     import numpy as np
     from scipy.io import wavfile
@@ -121,7 +159,7 @@ def main():
         for k, (i, f) in enumerate(trechos, 1):
             seg = os.path.join(tmp, f"seg{k}.wav")
             run(["ffmpeg", "-y", "-v", "error", "-i", wav, "-ss", f"{max(0, i - 0.2):.2f}", "-to", f"{f + 0.15:.2f}", seg])
-            txt = run([prog, "-m", modelo, "-l", "pt", "-nt", "-np", "-f", seg])
+            txt = run([prog, "-m", modelo, "-l", "pt", "-nt", "-np", *prompt, "-f", seg])
             txt = " ".join(txt.split())
             linhas.append(f"| {k} | {i:.2f} | {f:.2f} | {f - i:.2f} | {txt} |")
             print(linhas[-1], file=sys.stderr)

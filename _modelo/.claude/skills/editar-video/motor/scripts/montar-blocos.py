@@ -1,7 +1,7 @@
 """
 Monta a fala em blocos (corte seco) a partir dos trechos escolhidos na decupagem (trab/decupagem.md, passo 3.2b):
 cada INI:FIM e o corte final, sem folga somada (a decupagem ja traz a folga, acertada pela borda que a IA viu),
-saida 1080x1920 a 30 fps (o bruto 4K vertical e reduzido), audio 48 kHz. Depois mede os cortes reais por deteccao
+levado ao quadro mais perto (1/30 s, imagem e voz no mesmo ponto), saida 1080x1920 a 30 fps (o bruto 4K vertical e reduzido), audio 48 kHz. Depois mede os cortes reais por deteccao
 de cena (a soma dos tempos chega a atrasar 0,8 s).
 Recusa sem a decupagem, com trecho que falta nela ou sobra nela, com motivo vazio ou faltando assunto, gancho e
 arco, e com trechos que se sobrepoem (repetiriam fala).
@@ -90,10 +90,14 @@ def main():
     if erros: sys.exit("decupagem recusada:\n- " + "\n- ".join(erros))
     os.makedirs(os.path.dirname(a.saida) or ".", exist_ok=True)
     pre = preparo(a.bruto)
+    # corte na grade de 30 quadros por segundo do cru, video e audio no mesmo limite: cortar o video por segundo zera
+    # no primeiro quadro depois do corte e o audio no corte exato, e no cru de taxa variavel do celular (comeco fora
+    # do zero, quadro perdido) a imagem saia ate um quadro mais tarde que a voz e a montagem nascia com buraco
+    partes = [(round(i * 30) / 30, round(f * 30) / 30) for i, f in partes]
     fc = []
     for k, (i, f) in enumerate(partes):
-        fc.append(f"[0:v]trim=start={i:.3f}:end={f:.3f},setpts=PTS-STARTPTS,{pre},fps=30[v{k}];"
-                  f"[0:a]atrim=start={i:.3f}:end={f:.3f},asetpts=PTS-STARTPTS,"
+        fc.append(f"[0:v]fps=30:start_time=0,trim=start_frame={round(i * 30)}:end_frame={round(f * 30)},setpts=PTS-STARTPTS,{pre}[v{k}];"
+                  f"[0:a]atrim=start={i:.6f}:end={f:.6f},asetpts=PTS-STARTPTS,"
                   f"afade=t=in:d={RAMPA}:curve=tri,afade=t=out:st={max(0.0, f - i - RAMPA):.3f}:d={RAMPA}:curve=tri[a{k}]")
     fc.append("".join(f"[v{k}][a{k}]" for k in range(len(partes))) + f"concat=n={len(partes)}:v=1:a=1[v][a]")
     cmd = ["ffmpeg", "-y", "-v", "error", "-i", a.bruto, "-filter_complex", ";".join(fc), "-map", "[v]", "-map", "[a]",

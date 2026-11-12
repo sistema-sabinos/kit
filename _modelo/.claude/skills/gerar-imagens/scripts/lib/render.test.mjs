@@ -83,6 +83,14 @@ test('abrirNavegador pede o Chrome do computador', async () => {
   assert.deepEqual(r[0], ['launch', { channel: 'chrome' }])
 })
 
+// 5.58 C: o print de pagina pede janela no degrau com janela; o /gerar-imagens segue sem (o teste de cima)
+test('5.58 C: abrirNavegador com headless false abre com janela, e so com false', async () => {
+  const r = []
+  await abrirNavegador({ carregar: falso(r), headless: false })
+  await abrirNavegador({ carregar: falso(r), headless: true })
+  assert.deepEqual(r.map(x => x[1]), [{ channel: 'chrome', headless: false }, { channel: 'chrome' }])
+})
+
 test('abrirNavegador sem Chrome explica em uma linha o que conferir', async () => {
   await assert.rejects(abrirNavegador({ carregar: falso([], { launchFalha: true }) }), e => {
     assert.ok(e.message.includes('Chrome esta instalado'))

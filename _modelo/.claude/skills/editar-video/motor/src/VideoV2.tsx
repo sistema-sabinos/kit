@@ -3,11 +3,13 @@
 // Zoom em degraus usa o escalasSeg do V1; cor e empurrão usam filtroPessoa e empurrao do V1.
 
 import { z } from "zod";
-import { AbsoluteFill, Easing, Sequence, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { AbsoluteFill, Easing, Sequence, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { Audio, Video } from "@remotion/media";
 import { loadFont as loadAnton } from "@remotion/google-fonts/Anton";
 import { loadFont as loadMontserrat } from "@remotion/google-fonts/Montserrat";
 import { VideoV1, schemaVideoV1 } from "./VideoV1";
 import { tema } from "./tema";
+import { LegendaPeito, mont } from "./camadas/kit";
 
 const { fontFamily: anton } = loadAnton();
 const { fontFamily: montserrat } = loadMontserrat("normal", { weights: ["800", "900"] });
@@ -35,6 +37,17 @@ export const schemaVideoV2 = schemaVideoV1.extend({
         topo: z.number().default(1060), altura: z.number().positive().default(150), largura: z.number().positive().max(800).default(720),
         barras: z.number().int().min(4).max(64).default(28), cor: z.string().default(tema.legendaDestaque),
       }).refine((o) => o.topo >= tema.zonaTopo && o.topo + o.altura <= tema.baseUtil && o.ateSeg - o.deSeg >= 0.5, { message: "onda fora da zona segura: topo >= 250 e topo + altura <= 1436" }),
+    )
+    .default([]),
+  // clipe com o som original no meio da fala: o preparar-props (buraco.py) abre a fala, grava o som no volume da voz
+  // e as paginas da legenda contam do comeco do clipe
+  buracos: z
+    .array(
+      z.object({
+        deSeg: z.number(), ateSeg: z.number(), arquivo: z.string(), entradaSeg: z.number().default(0),
+        tam: z.object({ w: z.number(), h: z.number() }).optional(), selo: z.string().min(1),
+        legenda: z.array(z.object({ ini: z.number(), fim: z.number(), palavras: z.array(z.string()) })).default([]), audio: z.string(),
+      }),
     )
     .default([]),
 });
@@ -127,6 +140,22 @@ const Onda: React.FC<{ o: PropsVideoV2["ondas"][number]; duracao: number }> = ({
   );
 };
 
+// buraco: fundo preto, o clipe inteiro (contain) e mudo, o selo dentro da zona segura, a legenda da fala do clipe e
+// o som dele; desenhado depois do VideoV1, cobre a pessoa parada e o fim da legenda da voz
+const Buraco: React.FC<{ b: PropsVideoV2["buracos"][number] }> = ({ b }) => {
+  const { fps } = useVideoConfig();
+  return (
+    <AbsoluteFill style={{ backgroundColor: "#000" }}>
+      <Video src={staticFile(b.arquivo)} muted trimBefore={Math.round(b.entradaSeg * fps)} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+      <div style={{ position: "absolute", left: tema.zonaEsquerda, top: tema.zonaTopo, maxWidth: tema.largura - tema.zonaEsquerda - tema.zonaDireita, padding: "8px 14px", borderRadius: 12, background: "rgba(0,0,0,0.65)", fontFamily: mont, fontWeight: 800, fontSize: 30, color: "#fff" }}>
+        {b.selo}
+      </div>
+      <LegendaPeito paginas={b.legenda} />
+      <Audio src={staticFile(b.audio)} />
+    </AbsoluteFill>
+  );
+};
+
 export const VideoV2: React.FC<PropsVideoV2> = (p) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -168,6 +197,11 @@ export const VideoV2: React.FC<PropsVideoV2> = (p) => {
         {p.ondas.map((o, i) => (
           <Sequence key={`o${i}`} from={f(o.deSeg)} durationInFrames={dseg(o.deSeg, o.ateSeg)} layout="none">
             <Onda o={o} duracao={dseg(o.deSeg, o.ateSeg)} />
+          </Sequence>
+        ))}
+        {p.buracos.map((b, i) => (
+          <Sequence key={`b${i}`} from={f(b.deSeg)} durationInFrames={dseg(b.deSeg, b.ateSeg)} layout="none">
+            <Buraco b={b} />
           </Sequence>
         ))}
       </AbsoluteFill>

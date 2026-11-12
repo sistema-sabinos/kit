@@ -148,6 +148,8 @@ mais: seguir.
      `marca/design-guide.md` e `marca/tom-de-voz.md` a partir dos do
      `_modelo/`, preenchidos com o que ela disse (a metade que ela não citou
      fica de fora: vale a do projeto-pai). Sem marca própria, nada de `marca/`.
+     A lista de nomes (`marca/nomes.md`) fica só no projeto-pai, onde o vídeo
+     se edita: nome próprio desta pasta entra na lista de lá.
 3. Registrar a pasta na "Estrutura de pastas" do `AGENTS.md` do projeto-pai,
    uma linha, e, se for cliente, oferecer uma linha em `_contexto/empresa.md`
    do projeto-pai.
@@ -656,6 +658,8 @@ perguntar outro nome antes de seguir.
   fala com o cliente de outro jeito (outro público, outro tratamento). Mesma voz,
   copiar o `tom-de-voz.md` preenchido do projeto irmão; voz própria, as três
   perguntas da "Voz da marca" do `/setup` (Passo 2), aqui em uma mensagem.
+- `marca/nomes.md`: copiar o `nomes.md` do projeto irmão quando a marca é a
+  mesma; marca própria, o do `_modelo/` como está, com a lista vazia.
 - `dados/README.md` (e a pasta `dados/` que ele documenta).
 - `_memoria/` inteira, como está no molde: `diario/`, `recados/` e
   `arquivo/` com o `.gitkeep` e o `decisoes.md` só com o cabeçalho. Nunca o

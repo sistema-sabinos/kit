@@ -23,7 +23,7 @@ Pra saber X, leia Y. Única fonte de caminho do sistema: skill e regra dizem "a 
 - decisão e o porquê: `_memoria/decisoes.md`
 - recado de robô ou de outra máquina: `_memoria/recados/`
 - memória fria: `_contexto/arquivo/` e `_memoria/arquivo/AAAA/`
-- a marca: `marca/design-guide.md` (visual) e `marca/tom-de-voz.md` (como falar com o cliente); pasta de projeto com `marca/` própria usa o arquivo dela que existir, e o que faltar vem do projeto-pai
+- a marca: `marca/design-guide.md` (visual), `marca/tom-de-voz.md` (fala com o cliente) e `marca/nomes.md` (nome na legenda); pasta de projeto com `marca/` própria usa o arquivo que tiver, e o que faltar vem do projeto-pai
 - material pra análise: `dados/`
 - tarefa pra depois (sua ou do sistema): `tarefas.md`
 - um projeto: a pasta dele (`AGENTS.md`, `contexto.md`, `andamento.md`)

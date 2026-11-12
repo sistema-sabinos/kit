@@ -79,8 +79,8 @@ Montar a lista do que vai entrar e mostrar pra pessoa. Com o sim:
 1. **Marca.** Se a pasta não tem `marca/` própria, criar `marca/design-guide.md`
    com o resumo da marca do projeto que esta pasta usa (cores, fontes) e
    `marca/tom-de-voz.md` com o resumo da voz (tratamento, como soa, o que nunca),
-   e copiar o logo pra dentro. Resumo do que serve aqui, nunca a
-   marca inteira.
+   e copiar pra dentro o logo e, quando existe, o `marca/nomes.md` como está
+   (a lista de nomes da legenda). Resumo do que serve aqui, nunca a marca inteira.
    Se a marca do projeto ainda é o molde em branco, pular e dizer pra pessoa
    que a pasta vai sem marca.
 2. **`AGENTS.md` da pasta.** Primeira linha: "Quem recebe esta pasta abre ela

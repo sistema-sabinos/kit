@@ -5,7 +5,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync, readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync, copyFileSync, chmodSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -956,6 +956,17 @@ test('blocos acha os blocos de fala com o whisper', { skip: process.env.WHISPER_
   assert.equal(linhas.length, 2)
   // a 5a coluna e o texto que o whisper devolveu: vazia quer dizer que o whisper nao rodou ou a saida dele se perdeu
   for (const l of linhas) assert.match(l.split('|')[5], /[^ ]/, 'o whisper nao devolveu texto no trecho: ' + l)
+  // 5.58 B: com a lista de nomes no --prompt, o tom e o silencio nao viram nome (eco do prompt) nem voltam vazios
+  const lista = join(d, 'nomes.md'), comNomes = join(d, 'cortes-nomes.md')
+  writeFileSync(lista, ['## Nomes', '', '- Lumora', '- Casa Vexto', ''].join('\n'))
+  const r2 = py('blocos.py', [bruto, comNomes, '--modelo', modelos[0], '--nomes', lista])
+  assert.equal(r2.status, 0, semTraco(r2.stderr))
+  const linhas2 = readFileSync(comNomes, 'utf8').split(/\r?\n/).filter((l) => /^[|] [0-9]+ [|]/.test(l))
+  assert.equal(linhas2.length, 2)
+  for (const l of linhas2) {
+    assert.match(l.split('|')[5], /[^ ]/, 'com a lista o trecho voltou vazio: ' + l)
+    assert.doesNotMatch(l, /lumora|vexto/i, 'nome da lista no trecho sem fala (eco do prompt): ' + l)
+  }
 }))
 
 test('profundidade: sem o modelo recusa dizendo o que falta', () => comTemp((d) => {
@@ -1012,15 +1023,17 @@ test('nenhum .py tem caminho fixo, comando de sistema escrito ou termo que nao v
 })
 
 // Trecho de .py que roda sem o resto do script: pega so a funcao pelo nome (ast) e a executa.
-function funcaoDoPy(nomeArquivo, nomeFuncao, corpoTeste, d) {
+// outras: funcoes do mesmo arquivo que a testada chama (vao junto no exec)
+function funcaoDoPy(nomeArquivo, nomeFuncao, corpoTeste, d, outras = []) {
   const harness = join(d, 'harness.py')
+  const nomes = JSON.stringify([nomeFuncao, ...outras])
   writeFileSync(harness, [
     'import ast, sys',
     'import numpy as np',
     'from pathlib import Path',
     'src = open(sys.argv[1], encoding="utf-8").read()',
-    `fn = [n for n in ast.parse(src).body if isinstance(n, ast.FunctionDef) and n.name == "${nomeFuncao}"]`,
-    `assert fn, "sem a funcao ${nomeFuncao}"`,
+    `fn = [n for n in ast.parse(src).body if isinstance(n, ast.FunctionDef) and n.name in ${nomes}]`,
+    `assert len(fn) == ${1 + outras.length}, "sem a funcao ${nomeFuncao} ou uma das outras"`,
     'ns = {"np": np, "Path": Path}',
     'exec(compile(ast.Module(fn, []), "trecho", "exec"), ns)',
     `f = ns["${nomeFuncao}"]`,
@@ -1228,3 +1241,762 @@ test('P3: guias-olhada nao deixa __pycache__ no motor', () => comTemp((d) => {
   assert.equal(existsSync(join(s, '__pycache__')), false, 'o importlib gravou __pycache__ no motor')
   assert.equal(hashPasta(motor), antes)
 }))
+
+// 5.58: cru de celular com taxa variavel (o video comeca fora do zero e perde quadro, o carimbo de cada quadro fica).
+// Quadro preto, com um quadro branco em cada n de "brancos" e um clique no audio no instante real de cada um.
+function cruVariavel(d, { quedas = [45, 120], brancos = [60, 140], inicio = 0.06, dur = 6 } = {}) {
+  const arq = join(d, 'cru.mp4')
+  const branco = brancos.map((n) => `eq(n,${n})`).join('+')
+  const fica = quedas.map((n) => `not(eq(n,${n}))`).join('*')
+  const clique = brancos.map((n) => `between(t,${(n / 30 + inicio).toFixed(4)},${(n / 30 + inicio + 0.005).toFixed(4)})`).join('+')
+  ff('-f', 'lavfi', '-i', `color=c=black:s=320x568:r=30:d=${dur}`, '-f', 'lavfi', '-i', `aevalsrc='0.8*sin(2*PI*1000*t)*(${clique})':s=48000:d=${dur}`,
+    '-vf', `drawbox=c=white:t=fill:enable='${branco}',select='${fica}',settb=1/90000,setpts=PTS+${inicio}/TB`,
+    '-fps_mode', 'passthrough', '-enc_time_base:v', '1/90000', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', arq)
+  return arq
+}
+const carimbosDe = (arq) => spawnSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'packet=pts_time', '-of', 'csv=p=0', arq], { encoding: 'utf8' })
+  .stdout.split(/[\s,]+/).filter(Boolean).map(Number).sort((a, b) => a - b)
+const buracos = (ts) => ts.slice(1).map((t, i) => t - ts[i]).filter((g) => g > 1.5 / 30)
+
+test('5.58: montar-blocos corta na grade de quadro: cru de taxa variavel sai com os quadros certos, taxa fixa e o quadro branco no quadro do clique', () => comTemp((d) => {
+  const bruto = cruVariavel(d), sai = join(d, 'montado.mp4')
+  const tb = carimbosDe(bruto)
+  assert.ok(Math.abs(tb[0] - 0.06) < 0.003, `canario: o cru devia comecar em 0,06 s e comeca em ${tb[0]}`)
+  assert.equal(buracos(tb).length, 2, 'canario: o cru tem os dois buracos')
+  // fora da grade de proposito: 1,015 vai pro quadro 30 (1,000 s) e 3,515 pro 105 (3,500 s), 15 ms de diferenca
+  const trechos = ['1.015:3.015', '3.515:5.515']
+  const r = py('montar-blocos.py', [bruto, sai, ...trechos, ...decupagem(d, trechos)])
+  assert.equal(r.status, 0, semTraco(r.stderr))
+  const tm = carimbosDe(sai)
+  assert.equal(tm.length, 120, 'quadros da montagem contra a soma dos trechos (4 s a 30)')
+  assert.deepEqual(tm.slice(1).map((t, i) => Math.round((t - tm[i]) * 3000)).filter((x) => x !== 100), [], 'taxa fixa de 30')
+  const px = spawnSync('ffmpeg', ['-v', 'error', '-i', sai, '-vf', 'scale=8:8,format=gray', '-f', 'rawvideo', '-'], { maxBuffer: 1 << 24 }).stdout
+  const brancos = []
+  for (let k = 0; k * 64 < px.length; k++) if (px.subarray(k * 64, k * 64 + 64).reduce((s, v) => s + v, 0) / 64 > 128) brancos.push(k)
+  const x = amostras(sai, 0, 4, 48000), cliques = []
+  for (let i = 0; i < x.length; i++) if (Math.abs(x[i]) > 0.3 && (cliques.length === 0 || i / 48000 - cliques.at(-1) > 0.2)) cliques.push(i / 48000)
+  assert.equal(brancos.length, 2, 'canario: os dois quadros brancos chegaram a montagem')
+  assert.equal(cliques.length, 2, 'canario: os dois cliques chegaram a montagem')
+  assert.deepEqual(brancos, cliques.map((t) => Math.round(t * 30)), `quadro branco fora do quadro do clique (cliques em ${cliques.map((t) => t.toFixed(4))})`)
+  // a voz corta no mesmo quadro da imagem: o clique do cru (n/30 + 0,06) cai a cru - 1,000 e 2 + cru - 3,500
+  const esperado = [60 / 30 + 0.06 - 1.0, 2 + 140 / 30 + 0.06 - 3.5]
+  cliques.forEach((t, k) => assert.ok(Math.abs(t - esperado[k]) < 0.003, `clique ${k + 1} em ${t.toFixed(4)} s, devia cair em ${esperado[k].toFixed(4)} s (audio fora da grade)`))
+}))
+
+test('5.58: carimbos do verificar-video devolve o comeco fora do zero, o buraco e o comeco do audio', () => comTemp((d) => {
+  const cru = cruVariavel(d), aud = join(d, 'audio-depois.mov')
+  ff('-f', 'lavfi', '-i', 'color=c=black:s=320x568:r=30:d=2', '-itsoffset', '0.1', '-f', 'lavfi', '-i', 'sine=f=300:d=2', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'pcm_s16le', aud)
+  const r = funcaoDoPy('verificar-video.py', 'carimbos', [
+    `TB, ia = f(${JSON.stringify(cru)})`,
+    'assert len(TB) == 178, len(TB)',
+    'assert abs(TB[0] - 0.06) < 0.003, TB[0]',
+    'g = np.diff(TB)',
+    'assert (g > 1.5 / 30).sum() == 2 and abs(g.max() - 2 / 30) < 0.003, g.max()',
+    'assert ia == 0.0, ia',
+    `TB2, ia2 = f(${JSON.stringify(aud)})`,
+    'assert abs(TB2[0]) < 0.001 and abs(ia2 - 0.1) < 0.001, (TB2[0], ia2)',
+    'print("ok")',
+  ].join('\n'), d)
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.match(semTraco(r.stdout), /ok/)
+  const src = readFileSync(script('verificar-video.py'), 'utf8')
+  assert.ok(src.includes('TP, _ = carimbos(pub / P["pessoa"])'), 'a pessoa nao usa o carimbo')
+  assert.ok(src.includes('ts, ia = carimbos(p)') && src.includes('Bp, TB, ia = patches(BRUTO, box)'), 'o bruto nao usa o carimbo')
+}))
+
+test('5.58: a busca da imagem do verificar-video casa pelo carimbo onde a conta por indice erra mais de 1,5 quadro', () => comTemp((d) => {
+  const r = funcaoDoPy('verificar-video.py', 'casar_imagem', [
+    'TB = 0.06 + np.delete(np.arange(300), [50, 51, 120]) / 30',
+    'T0 = TB[150]; tk = T0 + np.arange(0, 30, 3) / 30',
+    'C = np.exp(-((TB[None, :] - tk[:, None]) * 30) ** 2)',
+    'sv, nota = f(C, tk, TB, T0)',
+    'assert abs(sv - T0) < 0.5 / 30 and nota > 0.9, (sv, T0, nota)',
+    '# a janela comeca em t0 e o primeiro quadro dela 40 ms depois: devolve o instante do bruto que vale t0',
+    'sv2, _ = f(C, tk, TB, T0 - 0.04)',
+    'assert abs(sv2 - (T0 - 0.04)) < 0.5 / 30, (sv2, T0)',
+    '# canario: a conta velha (indice dividido pela taxa media) erra neste cru',
+    'fb = len(TB) / (TB[-1] - TB[0] + 1 / 30); ks = np.arange(0, 30, 3)',
+    'offs = np.arange(0, len(TB) - int(fb) - 1)',
+    'idx = offs[None, :] + np.round(ks[:, None] / 30 * fb).astype(int)',
+    'velho = offs[int(np.argmax(C[np.arange(len(ks))[:, None], idx].mean(axis=0)))] / fb',
+    'assert abs(velho - T0) > 1.5 / 30, (velho, T0)',
+    'print("ok")',
+  ].join('\n'), d)
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.match(semTraco(r.stdout), /ok/)
+  const src = readFileSync(script('verificar-video.py'), 'utf8')
+  assert.ok(src.includes('casar_imagem(C, TP[ks], TB, t0)'), 'a funcao nao esta ligada a sincronia')
+}))
+
+test('5.58: a janela de 1 s da pessoa no verificar-video sai do carimbo, com o comeco fora do zero e o buraco', () => comTemp((d) => {
+  const r = funcaoDoPy('verificar-video.py', 'janela_quadros', [
+    'tp = 0.06 + np.delete(np.arange(90), [40, 41]) / 30',
+    'q0, q1 = f(tp, 1.0)',
+    'assert (q0, q1) == (29, 57), (q0, q1)',
+    'assert tp[q0] >= 1.0 > tp[q0 - 1] and tp[q1 - 1] < 2.0 <= tp[q1], (tp[q0], tp[q1])',
+    '# canario: a conta velha pelo indice erra neste carimbo',
+    'assert (int(1.0 * 30), int(1.0 * 30) + 30) != (q0, q1)',
+    'print("ok")',
+  ].join('\n'), d)
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.match(semTraco(r.stdout), /ok/)
+  const src = readFileSync(script('verificar-video.py'), 'utf8')
+  assert.ok(src.includes('q0, q1 = janela_quadros(TP, t0)'), 'a funcao nao esta ligada a sincronia')
+}))
+
+test('5.58: carimbos do verificar-video tira o pacote descartado do video cortado por copia', () => comTemp((d) => {
+  const x = join(d, 'x.mp4'), cut = join(d, 'cortado.mp4')
+  ff('-f', 'lavfi', '-i', 'testsrc=s=320x240:r=30:d=6', '-g', '60', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', x)
+  ff('-ss', '1.5', '-i', x, '-c', 'copy', cut)
+  const pacotes = carimbosDe(cut), nq = quadros(cut)
+  assert.ok(pacotes.length > nq && pacotes[0] < -1, `canario: o corte por copia leva pacote antes do ponto de corte (${pacotes.length} pacotes, ${nq} quadros, ${pacotes[0]})`)
+  const r = funcaoDoPy('verificar-video.py', 'carimbos', [
+    `TB, ia = f(${JSON.stringify(cut)})`,
+    `assert len(TB) == ${nq}, len(TB)`,
+    'assert abs(TB[0]) < 0.001, TB[0]',
+    'print("ok")',
+  ].join('\n'), d)
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.match(semTraco(r.stdout), /ok/)
+}))
+
+test('5.58: a voz do verificar-video soma o comeco do audio do bruto', () => comTemp((d) => {
+  const r = funcaoDoPy('verificar-video.py', 'casar_voz', [
+    'rng = np.random.default_rng(7); eb = rng.random(2000)',
+    'sa, nota = f(eb[700:800] * 2 + 1, eb, 0.25)',
+    'assert abs(sa - 7.25) < 1e-9 and nota > 0.99, (sa, nota)',
+    'print("ok")',
+  ].join('\n'), d)
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.match(semTraco(r.stdout), /ok/)
+  const src = readFileSync(script('verificar-video.py'), 'utf8')
+  assert.ok(src.includes('casar_voz(ev[int(t0 * 100):int(t0 * 100) + 100], eb, ia)'), 'a funcao nao esta ligada a sincronia')
+}))
+
+test('5.58: a duracao da pessoa no verificar-video sai do ultimo carimbo, sem perder o buraco', () => comTemp((d) => {
+  const r = funcaoDoPy('verificar-video.py', 'duracao_pessoa', [
+    'tp = 0.06 + np.delete(np.arange(90), [40, 41]) / 30',
+    'assert abs(f(tp, 30) - 3.06) < 1e-9, f(tp, 30)',
+    'print("ok")',
+  ].join('\n'), d)
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.match(semTraco(r.stdout), /ok/)
+  const src = readFileSync(script('verificar-video.py'), 'utf8')
+  assert.ok(src.includes('dp = duracao_pessoa(TP, FPS)'), 'a funcao nao esta ligada a duracao')
+}))
+
+test('5.58: camera lenta recusa pessoa a 30 com quadro faltando', () => comTemp((d) => {
+  fala(d)
+  const furada = join(d, 'furada.mp4')
+  ff('-i', join(d, 'pessoa.mp4'), '-vf', "select='not(eq(n,40))*not(eq(n,41))*not(eq(n,80))'", '-fps_mode', 'passthrough', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'copy', furada)
+  assert.equal(sonda(furada, { sel: 'v:0', campo: 'r_frame_rate' }), '30/1', 'canario: a taxa nominal segue 30')
+  assert.equal(quadros(furada), 117, 'canario: perdeu 3 quadros')
+  const r = py('camera_lenta.py', [furada, join(d, 'voz.wav'), join(d, 'voz.alinhado.json'), join(d, 'l', 'p.mp4'), join(d, 'l', 'v.wav'), join(d, 'l', 'l.json'), '--trecho', '1.0:1.5:0.5'])
+  assert.notEqual(r.status, 0, 'devia recusar')
+  assert.match(semTraco(r.stderr), /precisa estar a 30 quadros/)
+}))
+
+test('5.58: assistir-cru nao sai preto num alvo no meio de um buraco de 84 ms', () => comTemp((d) => {
+  const bruto = join(d, 'bruto.mp4'), blocos = join(d, 'blocos.md'), cru = join(d, 'cru')
+  // quadros 0 a 29 em k/30; do 30 em diante, 0,0507 s depois: buraco de 0,9667 a 1,0507
+  ff('-f', 'lavfi', '-i', 'color=c=white:s=320x568:r=30:d=4', '-f', 'lavfi', '-i', 'sine=f=300:d=4',
+    '-vf', "settb=1/90000,setpts='(N/30+gte(N,30)*0.0507)/TB'", '-fps_mode', 'passthrough', '-enc_time_base:v', '1/90000',
+    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', bruto)
+  const ts = carimbosDe(bruto), antes = ts.filter((t) => t < 1.01).at(-1), depois = ts.find((t) => t > 1.01)
+  assert.ok(depois - antes > 0.08 && Math.min(1.01 - antes, depois - 1.01) > 0.034, `canario: o alvo 1,01 cai num buraco de mais de 80 ms, longe dos dois quadros (${antes} e ${depois})`)
+  writeFileSync(blocos, ['| n | inicio (s) | fim (s) | dur (s) | whisper |', '|---|---|---|---|---|', '| 1 | 1.21 | 2.21 | 1.00 | frase |', ''].join('\n'))
+  const r = py('assistir-cru.py', [bruto, blocos, cru])
+  assert.equal(r.status, 0, semTraco(r.stderr))
+  assert.match(readFileSync(join(cru, 'bordas.md'), 'utf8'), /1[.]01:2[.]36/, 'canario: o corte sugerido cai no buraco')
+  const px = spawnSync('ffmpeg', ['-v', 'error', '-i', join(cru, 'tira-01.jpg'), '-f', 'rawvideo', '-pix_fmt', 'gray', '-'], { maxBuffer: 1 << 24 }).stdout
+  for (let k = 0; k < 6; k++) {
+    let soma = 0
+    for (let y = 50; y < 300; y++) for (let x = k * 216 + 20; x < k * 216 + 196; x++) soma += px[y * 1296 + x]
+    assert.ok(soma / (250 * 176) > 200, `quadro ${k + 1} da tira saiu escuro: ${soma / (250 * 176)}`)
+  }
+}))
+
+test('5.58: a pessoa do verificar-video conta do comeco do arquivo e o bruto segue absoluto', () => comTemp((d) => {
+  const pub = join(d, 'public'), base = join(d, 'base.mp4'), pessoa = join(pub, 'pessoa.mp4'), final = join(d, 'final.mp4')
+  mkdirSync(pub, { recursive: true })
+  ff('-f', 'lavfi', '-i', 'color=c=gray:s=320x568:r=30:d=2', '-f', 'lavfi', '-i', 'sine=f=300:d=2', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', base)
+  ff('-i', base, '-c', 'copy', '-output_ts_offset', '10', pessoa)
+  assert.ok(carimbosDe(pessoa)[0] > 9.9, `canario: a pessoa devia comecar em 10 s e comeca em ${carimbosDe(pessoa)[0]}`)
+  const cru = cruVariavel(d)
+  const r = funcaoDoPy('verificar-video.py', 'comeco_arquivo', [
+    `o = f(${JSON.stringify(pessoa)})`,
+    'assert 9.9 < o <= 10.0, o',
+    '# o cru de celular: formato em 0 e video em 0,06; o 0,06 fica no primeiro carimbo',
+    `assert f(${JSON.stringify(cru)}) == 0.0, f(${JSON.stringify(cru)})`,
+    'print("ok")',
+  ].join('\n'), d)
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.match(semTraco(r.stdout), /ok/)
+  const src = readFileSync(script('verificar-video.py'), 'utf8')
+  assert.ok(src.includes('ORIG = comeco_arquivo(pub / P["pessoa"])') && !src.includes('TB = TB - ORIG') && !src.includes('comeco_arquivo(BRUTO)'), 'a pessoa nao conta do comeco ou o bruto deixou de ser absoluto')
+  assert.equal(src.split('TP = TP - ORIG').length - 1, 2, 'os dois carimbos da pessoa (duracao e janelas) contam do comeco')
+  // ponta a ponta: 2 s de pessoa com o carimbo em 10 s e props de 3 s; a conta absoluta via 12 s e nao reprovava
+  ff('-f', 'lavfi', '-i', 'sine=f=300:d=3:r=48000', join(pub, 'voz.wav'))
+  ff('-f', 'lavfi', '-i', 'color=c=gray:s=320x568:r=30:d=3', '-f', 'lavfi', '-i', 'sine=f=300:d=3', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', final)
+  const props = join(d, 'props.json')
+  writeFileSync(props, JSON.stringify({ pessoa: 'pessoa.mp4', voz: 'voz.wav', duracaoSeg: 3, segmentos: [], sfx: [] }))
+  const v = py('verificar-video.py', [props, final, '--public-dir', pub])
+  const saida = semTraco(v.stdout) + semTraco(v.stderr)
+  assert.equal(v.status, 1, saida)
+  assert.match(saida, /pessoa tem 2[.][0-9][0-9] s e o video 3[.]00 s/)
+  assert.doesNotMatch(saida, /Traceback/)
+}))
+
+test('5.58: camera lenta recusa pessoa a 30 com carimbo fora da grade do indice', () => comTemp((d) => {
+  fala(d)
+  const torta = join(d, 'torta.mp4')
+  // do quadro 30 em diante 0,1 s depois, e os 30 seguintes encolhem de volta: taxa nominal 30, 120 quadros, mas o
+  // quadro 30 cai em 1,1 s e o corte por indice descola 100 ms da voz cortada em segundos
+  ff('-i', join(d, 'pessoa.mp4'), '-vf', "settb=1/90000,setpts='(N/30+gte(N,30)*0.1-min(max(N-60,0),30)*0.1/30)/TB'",
+    '-fps_mode', 'passthrough', '-enc_time_base:v', '1/90000', '-c:v', 'libx264', '-bf', '0', '-pix_fmt', 'yuv420p', '-c:a', 'copy', torta)
+  assert.equal(sonda(torta, { sel: 'v:0', campo: 'r_frame_rate' }), '30/1', 'canario: a taxa nominal segue 30')
+  assert.equal(quadros(torta), 120, 'canario: 120 quadros, a contagem bate com a duracao')
+  assert.ok(Math.abs(carimbosDe(torta)[30] - 1.1) < 0.002, `canario: o quadro 30 cai em 1,1 s (${carimbosDe(torta)[30]})`)
+  const args = (v) => [v, join(d, 'voz.wav'), join(d, 'voz.alinhado.json'), join(d, 'l', 'p.mp4'), join(d, 'l', 'v.wav'), join(d, 'l', 'l.json'), '--trecho', '1.0:1.5:0.5']
+  const r = py('camera_lenta.py', args(torta))
+  assert.notEqual(r.status, 0, 'devia recusar')
+  assert.match(semTraco(r.stderr), /precisa estar a 30 quadros/)
+  const ok = py('camera_lenta.py', args(join(d, 'pessoa.mp4')))
+  assert.equal(ok.status, 0, 'a pessoa na grade passa: ' + semTraco(ok.stderr))
+  // a grade conta do primeiro quadro, nao do zero: montagem que comeca 1 quadro depois do zero segue na grade
+  const tarde = join(d, 'tarde.mp4')
+  ff('-i', join(d, 'pessoa.mp4'), '-c', 'copy', '-output_ts_offset', String(1 / 30), tarde)
+  assert.ok(Math.abs(carimbosDe(tarde)[0] - 1 / 30) < 0.002, `canario: a pessoa comeca 1 quadro depois do zero (${carimbosDe(tarde)[0]})`)
+  const ok2 = py('camera_lenta.py', args(tarde))
+  assert.equal(ok2.status, 0, 'a pessoa na grade que comeca fora do zero passa: ' + semTraco(ok2.stderr))
+}))
+
+test('5.58: o verificar-video pula a janela que cruza corte da montagem e segue pegando a boca descolada', () => comTemp((d) => {
+  const r = funcaoDoPy('verificar-video.py', 'janela_cruza_corte', [
+    'casar_imagem = ns["casar_imagem"]',
+    'TB = 0.06 + np.delete(np.arange(6000), [500, 501, 1200]) / 30',
+    't0 = 7.5; tk = t0 + np.arange(0, 30, 3) / 30',
+    'def C_de(fonte): return np.exp(-((TB[None, :] - fonte[:, None]) * 30) ** 2)',
+    '# janela que cruza o corte: a primeira metade saiu de 24,5 s do bruto e a segunda de 151 s',
+    'fonte = np.where(np.arange(10) < 5, 24.5 + (tk - t0), 151.0 + (tk - t0))',
+    'assert f(C_de(fonte), tk, TB, t0, 30) is True',
+    '# canario: a janela inteira casa num lugar so e erra uma das metades',
+    'sv, _ = casar_imagem(C_de(fonte), tk, TB, t0)',
+    'assert min(abs(sv - 24.5), abs(sv - 151.0)) < 0.05 and max(abs(sv - 24.5), abs(sv - 151.0)) > 100, sv',
+    '# sem corte, com a imagem 200 ms fora da voz: as duas metades andam juntas, a janela nao pula',
+    'fonte2 = 24.7 + (tk - t0)',
+    'assert f(C_de(fonte2), tk, TB, t0, 30) is False',
+    'sv2, n2 = casar_imagem(C_de(fonte2), tk, TB, t0)',
+    'assert abs(sv2 - 24.7) < 0.5 / 30 and n2 > 0.9, (sv2, n2)',
+    '# dois quadros de folga ainda e a mesma tomada; quatro ja e corte',
+    'assert f(C_de(np.where(np.arange(10) < 5, 24.5 + (tk - t0), 24.5 + 2 / 30 + (tk - t0))), tk, TB, t0, 30) is False',
+    'assert f(C_de(np.where(np.arange(10) < 5, 24.5 + (tk - t0), 24.5 + 4 / 30 + (tk - t0))), tk, TB, t0, 30) is True',
+    '# metade sem certeza (imagem que nao casa com nada) nao decide corte',
+    'C3 = C_de(fonte); C3[5:] = 0.1',
+    'assert f(C3, tk, TB, t0, 30) is False',
+    'print("ok")',
+  ].join('\n'), d, ['casar_imagem'])
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.match(semTraco(r.stdout), /ok/)
+  const src = readFileSync(script('verificar-video.py'), 'utf8')
+  const laco = src.slice(src.indexOf('for t0 in np.arange(0, DUR - 1, 0.5):'), src.indexOf('if ruins: falhas.append'))
+  assert.ok(laco.includes('if janela_cruza_corte(C, TP[ks], TB, t0, FPS): pulou += 1; continue'), 'a funcao nao esta ligada a sincronia')
+  assert.ok(laco.indexOf('janela_cruza_corte') < laco.indexOf('ruins.append'), 'o pulo tem de vir antes da comparacao')
+  assert.ok(src.includes('avisos.append(f"{pulou} janelas puladas por cruzar corte da montagem")'), 'o pulo nao vira aviso')
+}))
+
+test('5.58: o verificar-video inteiro com a pessoa fora do zero passa sincronizada e reprova a voz 200 ms atrasada', () => comTemp((d) => {
+  // rosto de mentira (o YuNet nao acha rosto em imagem sintetica) e imagem de ruido por quadro, pra cada quadro casar
+  // num instante so do bruto; a voz tem envelope que nao se repete
+  const pub = join(d, 'public'), bruto = join(d, 'bruto.mp4'), base = join(d, 'base.mp4'), final = join(d, 'final.mp4')
+  mkdirSync(pub, { recursive: true })
+  const env = '(0.65+0.25*sin(2*PI*1.7*t)+0.2*sin(2*PI*2.9*t+1)+0.15*sin(2*PI*0.53*t))*sin(2*PI*220*t)'
+  ff('-f', 'lavfi', '-i', 'color=c=gray:s=32x58:r=30:d=10,noise=alls=100:allf=t+u,scale=320:568:flags=neighbor',
+    '-f', 'lavfi', '-i', `aevalsrc='${env}':s=48000:d=10`, '-c:v', 'libx264', '-crf', '12', '-pix_fmt', 'yuv420p', '-c:a', 'aac', bruto)
+  ff('-ss', '2', '-i', bruto, '-t', '5', '-c:v', 'libx264', '-crf', '12', '-pix_fmt', 'yuv420p', '-c:a', 'aac', base)
+  ff('-i', base, '-c', 'copy', '-output_ts_offset', '10', join(pub, 'pessoa.mp4'))
+  ff('-i', base, '-c', 'copy', final)
+  assert.ok(carimbosDe(join(pub, 'pessoa.mp4'))[0] > 9.9, 'canario: a pessoa comeca em 10 s')
+  writeFileSync(join(pub, 'props.json'), JSON.stringify({ pessoa: 'pessoa.mp4', voz: 'voz.wav', duracaoSeg: 5, segmentos: [], sfx: [] }))
+  const harness = join(d, 'rosto.py')
+  writeFileSync(harness, [
+    'import runpy, sys, numpy as np',
+    'ns = runpy.run_path(sys.argv[1], run_name="verificar")',
+    'real = ns["main"].__globals__["cv2"]',
+    'class Det:',
+    '    def detect(self, f): return 1, np.array([[60, 100, 200, 200]], dtype=np.float32)',
+    'class Yn:',
+    '    @staticmethod',
+    '    def create(*a, **k): return Det()',
+    'class Cv:',
+    '    FaceDetectorYN = Yn',
+    '    def __getattr__(self, n): return getattr(real, n)',
+    'ns["main"].__globals__["cv2"] = Cv()',
+    'sys.argv = sys.argv[1:]',
+    'ns["main"]()',
+  ].join('\n') + '\n')
+  const rodar = (inicioVoz) => {
+    ff('-ss', String(inicioVoz), '-i', bruto, '-t', '5', '-vn', '-ar', '48000', '-c:a', 'pcm_s24le', join(pub, 'voz.wav'))
+    const r = rodarPython(harness, [script('verificar-video.py'), join(pub, 'props.json'), final, '--bruto', bruto, '--public-dir', pub], { env: ENV })
+    return { r, saida: semTraco(r.stdout) + semTraco(r.stderr) }
+  }
+  const ok = rodar(2)
+  assert.doesNotMatch(ok.saida, /Traceback|nao achei rosto/, ok.saida)
+  assert.equal(ok.r.status, 0, ok.saida)
+  assert.match(ok.saida, /PASSOU/)
+  const torto = rodar(1.8)
+  assert.equal(torto.r.status, 1, torto.saida)
+  // a pessoa copiada comeca o formato no audio (priming do aac), 22 ms antes do video: a imagem sai 22 ms antes
+  assert.match(torto.saida, /boca fora da voz em: 0[.]0 s \(imagem de 1[.]9[0-9] s do bruto, voz de 1[.]80 s/)
+  const ms = [...torto.saida.matchAll(/: ([+-][0-9]+) ms\)/g)].map((m) => Number(m[1]))
+  assert.ok(ms.length >= 6 && ms.every((x) => x > 150 && x < 250), `toda janela falando acusa os 200 ms: ${ms}`)
+  assert.doesNotMatch(torto.saida, /janelas puladas/)
+}))
+
+// 5.58 B: glossario na legenda. Marca inventada (Lumora, Vexto, Lumetro); o conferir-nomes.py roda de verdade sobre
+// um fala.txt e uma lista no formato do marca/nomes.md (linha de citacao e outra secao nao contam)
+const LISTA = (...nomes) => ['# Nomes da marca', '', '> - Citado (fora da lista)', '', '## Nomes', '', ...nomes.map((n) => '- ' + n), ''].join('\n')
+function conferir(d, fala, nomes, { saida = true } = {}) {
+  const arq = join(d, 'fala.txt'), lista = join(d, 'nomes.md'), sai = join(d, 'fala.conferida.txt')
+  writeFileSync(arq, fala, 'utf8')
+  if (nomes === null) rmSync(lista, { force: true })
+  else writeFileSync(lista, nomes, 'utf8')
+  rmSync(sai, { force: true })
+  const r = py('conferir-nomes.py', [arq, '--nomes', lista, ...(saida ? ['--saida', sai] : [])])
+  const alvo = saida ? sai : arq
+  return { r, out: semTraco(r.stdout) + semTraco(r.stderr), texto: existsSync(alvo) ? readFileSync(alvo, 'utf8') : null }
+}
+
+test('5.58 B: conferir-nomes acerta a caixa do nome da lista e diz o que trocou', () => comTemp((d) => {
+  const c = conferir(d, 'a lumora chegou\nde novo a LUMORA\n', LISTA('Lumora'))
+  assert.equal(c.r.status, 0, c.out)
+  assert.equal(c.texto, 'a Lumora chegou\nde novo a Lumora\n')
+  assert.match(c.out, /corrigi: linha 1 "lumora" -> "Lumora"/)
+  assert.match(c.out, /corrigi: linha 2 "LUMORA" -> "Lumora"/)
+}))
+
+test('5.58 B: conferir-nomes acerta o acento, nos dois sentidos', () => comTemp((d) => {
+  const c = conferir(d, 'comprei na lume e na véxto\n', LISTA('Lumé', 'Vexto'))
+  assert.equal(c.r.status, 0, c.out)
+  assert.equal(c.texto, 'comprei na Lumé e na Vexto\n')
+}))
+
+test('5.58 B: conferir-nomes mantem a pontuacao colada, tambem em nome de duas palavras', () => comTemp((d) => {
+  const c = conferir(d, '(lumora), casa vexto! e "casa VEXTO."\n', LISTA('Lumora', 'Casa Vexto'))
+  assert.equal(c.r.status, 0, c.out)
+  assert.equal(c.texto, '(Lumora), Casa Vexto! e "Casa Vexto."\n')
+}))
+
+test('5.58 B: conferir-nomes avisa o nome parecido e nao troca', () => comTemp((d) => {
+  const fala = 'a lumara chegou\nsem nome aqui\n'
+  const c = conferir(d, fala, LISTA('Lumora'))
+  assert.equal(c.r.status, 4, c.out)
+  assert.match(c.out, /confira: linha 1 "lumara" parece "Lumora"/)
+  assert.equal(c.texto, fala)
+}))
+
+test('5.58 B: conferir-nomes acha "1 metro" contra um nome de 7 letras pela janela de uma palavra a mais', () => comTemp((d) => {
+  const c = conferir(d, 'fui no 1 metro, hoje\n', LISTA('Lumetro'))
+  assert.equal(c.r.status, 4, c.out)
+  assert.match(c.out, /confira: linha 1 "1 metro" parece "Lumetro"/)
+  assert.equal((c.out.match(/confira:/g) || []).length, 1, 'um aviso so pelo trecho: ' + c.out)
+}))
+
+test('5.58 B: conferir-nomes nao avisa palavra comum longe do nome (canario: a parecida avisa)', () => comTemp((d) => {
+  const comum = conferir(d, 'a memória da loja abre cedo e o dia passa\n', LISTA('Lumora', 'Vexto'))
+  assert.equal(comum.r.status, 0, comum.out)
+  assert.doesNotMatch(comum.out, /confira:/)
+  const canario = conferir(d, 'a lumoria da loja abre cedo e o dia passa\n', LISTA('Lumora', 'Vexto'))
+  assert.equal(canario.r.status, 4, canario.out)
+  assert.match(canario.out, /confira: linha 1 "lumoria" parece "Lumora"/)
+}))
+
+test('5.58 B: conferir-nomes com nome de ate 3 letras so acerta o exato; com 4 letras avisa a distancia 1 e nao a 2', () => comTemp((d) => {
+  const curto = conferir(d, 'o iko chegou e o ika saiu\n', LISTA('Iko'))
+  assert.equal(curto.r.status, 0, curto.out)
+  assert.equal(curto.texto, 'o Iko chegou e o ika saiu\n')
+  const quatro = conferir(d, 'a zuna e a zana\n', LISTA('Zuno'))
+  assert.equal(quatro.r.status, 4, quatro.out)
+  assert.match(quatro.out, /confira: linha 1 "zuna" parece "Zuno"/)
+  assert.doesNotMatch(quatro.out, /"zana"/)
+}))
+
+test('5.58 B: conferir-nomes com nome de 5 letras avisa a distancia 1 e nao a 2, que passa de 34% do tamanho', () => comTemp((d) => {
+  const um = conferir(d, 'a vexta chegou\n', LISTA('Vexto'))
+  assert.equal(um.r.status, 4, um.out)
+  assert.match(um.out, /confira: linha 1 "vexta" parece "Vexto"/)
+  const dois = conferir(d, 'a vesta chegou\n', LISTA('Vexto'))
+  assert.equal(dois.r.status, 0, dois.out)
+  assert.doesNotMatch(dois.out, /confira:/)
+}))
+
+test('5.58 B: conferir-nomes com (avisa) so avisa, mesmo com a grafia igual tirando a caixa', () => comTemp((d) => {
+  const fala = 'a lume acendeu\n'
+  const c = conferir(d, fala, LISTA('Lume (avisa)'))
+  assert.equal(c.r.status, 4, c.out)
+  assert.match(c.out, /confira: linha 1 "lume" parece "Lume"/)
+  assert.equal(c.texto, fala)
+  const certo = conferir(d, 'a Lume acendeu\n', LISTA('Lume (avisa)'))
+  assert.equal(certo.r.status, 0, certo.out)
+  assert.doesNotMatch(certo.out, /confira:/)
+}))
+
+test('5.58 B: conferir-nomes sem a lista e com a lista vazia sai 0 com a fala igual; fala que nao abre sai 1', () => comTemp((d) => {
+  const fala = 'a lumora chegou\n'
+  const sem = conferir(d, fala, null)
+  assert.equal(sem.r.status, 0, sem.out)
+  assert.match(sem.out, /nomes[.]md/)
+  assert.equal(sem.texto, fala, 'sem a lista, o --saida sai igual a fala')
+  const vazia = conferir(d, fala, LISTA())
+  assert.equal(vazia.r.status, 0, vazia.out)
+  assert.equal(vazia.texto, fala)
+  const r = py('conferir-nomes.py', [join(d, 'nao-existe.txt'), '--nomes', join(d, 'nomes.md')])
+  assert.equal(r.status, 1, semTraco(r.stderr))
+  assert.match(semTraco(r.stderr), /nao-existe[.]txt/)
+}))
+
+test('5.58 B: conferir-nomes sem --saida corrige no lugar, e rodar de novo nao muda nada', () => comTemp((d) => {
+  const um = conferir(d, 'a lumora e a casa vexto\n', LISTA('Lumora', 'Casa Vexto'), { saida: false })
+  assert.equal(um.r.status, 0, um.out)
+  assert.equal(um.texto, 'a Lumora e a Casa Vexto\n')
+  const r = py('conferir-nomes.py', [join(d, 'fala.txt'), '--nomes', join(d, 'nomes.md')])
+  assert.equal(r.status, 0, semTraco(r.stderr))
+  assert.doesNotMatch(semTraco(r.stdout), /corrigi/)
+  assert.equal(readFileSync(join(d, 'fala.txt'), 'utf8'), 'a Lumora e a Casa Vexto\n')
+}))
+
+test('5.58 B: conferir-nomes preserva o CRLF e a ultima linha sem quebra', () => comTemp((d) => {
+  const c = conferir(d, 'a lumora\r\nsem nome\r\na lumora', LISTA('Lumora').replace(/\n/g, '\r\n'))
+  assert.equal(c.r.status, 0, c.out)
+  assert.equal(c.texto, 'a Lumora\r\nsem nome\r\na Lumora')
+  assert.match(c.out, /corrigi: linha 3 /)
+}))
+
+test('5.58 B: conferir-nomes com nome que tem palavra so de simbolo acerta a caixa e nao avisa o nome certo', () => comTemp((d) => {
+  const c = conferir(d, 'na lumora & vexto\n', LISTA('Lumora & Vexto'))
+  assert.equal(c.r.status, 0, c.out)
+  assert.equal(c.texto, 'na Lumora & Vexto\n')
+  const certo = conferir(d, 'na Lumora & Vexto\n', LISTA('Lumora & Vexto'))
+  assert.equal(certo.r.status, 0, certo.out)
+  assert.doesNotMatch(certo.out, /confira:|corrigi:/)
+  const parecido = conferir(d, 'na lumara & vexto\n', LISTA('Lumora & Vexto'))
+  assert.equal(parecido.r.status, 4, parecido.out)
+  assert.match(parecido.out, /confira: linha 1 "lumara & vexto" parece "Lumora & Vexto"/)
+}))
+
+test('5.58 B: conferir-nomes nao dobra o simbolo colado do nome e o exato curto nao esconde o parecido maior', () => comTemp((d) => {
+  const mais = conferir(d, 'uso lumo++ hoje\n', LISTA('Lumo++'))
+  assert.equal(mais.r.status, 0, mais.out)
+  assert.equal(mais.texto, 'uso Lumo++ hoje\n')
+  const ponto = conferir(d, 'uso .vexto hoje\n', LISTA('.Vexto'))
+  assert.equal(ponto.texto, 'uso .Vexto hoje\n')
+  const maior = conferir(d, 'a lumora prox chegou\n', LISTA('Lumora', 'Lumora Pro'))
+  assert.equal(maior.r.status, 4, maior.out)
+  assert.match(maior.out, /confira: linha 1 "lumora prox" parece "Lumora Pro"/)
+  const canario = conferir(d, 'a lumora prox chegou\n', LISTA('Lumora Pro'))
+  assert.match(canario.out, /confira: linha 1 "lumora prox" parece "Lumora Pro"/)
+}))
+
+test('5.58 B: conferir-nomes avisa, sem trocar, o nome com simbolo que a fala trouxe sem o simbolo', () => comTemp((d) => {
+  const certo = conferir(d, 'uso C++, hoje\n', LISTA('C++'))
+  assert.equal(certo.r.status, 0, 'canario: o nome com o simbolo e a virgula passa calado ' + certo.out)
+  assert.doesNotMatch(certo.out, /confira:|corrigi:/)
+  // dois nomes que so o simbolo separa: o que a fala trouxe certo nao avisa o outro
+  for (const fala of ['uso C++ hoje\n', 'uso C# hoje\n']) {
+    const dois = conferir(d, fala, LISTA('C++', 'C#'))
+    assert.equal(dois.r.status, 0, dois.out)
+    assert.doesNotMatch(dois.out, /confira:|corrigi:/)
+  }
+  for (const [fala, nome, trecho] of [['uso c hoje\n', 'C++', 'c'], ['uso C hoje\n', 'C++', 'C'], ['comprei na casa vexto\n', 'Casa & Vexto', 'casa vexto']]) {
+    const c = conferir(d, fala, LISTA(nome))
+    assert.equal(c.r.status, 4, c.out)
+    assert.equal(c.texto, fala, 'a fala sem o simbolo nao se troca')
+    assert.doesNotMatch(c.out, /corrigi:/)
+    assert.match(c.out, new RegExp(`confira: linha 1 "${trecho}" parece "${nome.replace(/[+&]/g, (x) => '[' + x + ']')}"`))
+  }
+}))
+
+test('5.58 B: conferir-nomes le so a secao Nomes da lista', () => comTemp((d) => {
+  const fala = 'a vexto chegou\n'
+  const fora = conferir(d, fala, LISTA('Lumora') + '\n## Outra\n\n- Vexto\n')
+  assert.equal(fora.r.status, 0, fora.out)
+  assert.equal(fora.texto, fala, 'nome de outra secao nao troca: ' + fora.out)
+  const canario = conferir(d, fala, LISTA('Lumora', 'Vexto'))
+  assert.equal(canario.texto, 'a Vexto chegou\n')
+}))
+
+test('5.58 B: conferir-nomes com a lista que nao abre sai 1 e nao mexe na fala', () => comTemp((d) => {
+  const fala = 'a lumora chegou\n'
+  const arq = join(d, 'fala.txt'), lista = join(d, 'nomes.md')
+  writeFileSync(arq, fala, 'utf8')
+  writeFileSync(lista, Buffer.from([0x2d, 0x20, 0xff, 0xfe, 0x0a]))
+  const r = py('conferir-nomes.py', [arq, '--nomes', lista])
+  assert.equal(r.status, 1, semTraco(r.stdout) + semTraco(r.stderr))
+  assert.match(semTraco(r.stderr), /nomes[.]md/)
+  assert.equal(readFileSync(arq, 'utf8'), fala)
+}))
+
+test('5.58 B: prompt_dos_nomes monta a frase sem acento, sem o (avisa), so da secao Nomes, e corta no teto com aviso', () => comTemp((d) => {
+  const r = funcaoDoPy('blocos.py', 'prompt_dos_nomes', [
+    'linhas = ["# Nomes da marca", "> - Citado (fora da lista)", "## Nomes", "- Lumé", "- Casa Vexto", "- Copa (avisa)", "[um por linha]", "- Lumé", "## Outra", "- Fora"]',
+    'assert f(linhas) == ("Nomes: Lume, Casa Vexto, Copa.", None), f(linhas)',
+    'assert f([]) == ("", None) and f(["## Nomes", ""]) == ("", None)',
+    'muitos = ["## Nomes"] + ["- Nome%03d" % i for i in range(200)]',
+    'frase, aviso = f(muitos)',
+    'assert len(frase) <= 600 and frase.startswith("Nomes: Nome000, Nome001") and frase.endswith("."), frase',
+    'assert len(frase) > 580, len(frase)',
+    'assert aviso and "600" in aviso and "200" in aviso, aviso',
+    'print("ok")',
+  ].join('\n'), d)
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.match(r.stdout, /ok/)
+}))
+
+test('5.58 B: blocos passa a lista ao whisper pelo --prompt antes do -f, e sem lista roda como antes', () => comTemp((d) => {
+  // whisper de mentira: devolve como texto os argumentos que recebeu
+  const wdir = join(d, 'whisper')
+  mkdirSync(wdir)
+  writeFileSync(join(wdir, 'ggml-falso.bin'), '')
+  if (process.platform === 'win32') writeFileSync(join(wdir, 'eco.cmd'), '@echo off\r\necho %*\r\n')
+  else { writeFileSync(join(wdir, 'eco'), '#!/bin/sh\necho "$@"\n'); chmodSync(join(wdir, 'eco'), 0o755) }
+  const bruto = join(d, 'bruto.wav')
+  ff('-f', 'lavfi', '-i', 'sine=f=440:d=1:sample_rate=16000', '-f', 'lavfi', '-i', 'anullsrc=r=16000:cl=mono:d=2', '-f', 'lavfi', '-i', 'sine=f=440:d=1:sample_rate=16000', '-filter_complex', '[0][1][2]concat=n=3:v=0:a=1', '-ac', '1', bruto)
+  writeFileSync(join(d, 'nomes.md'), LISTA('Lumé', 'Casa Vexto', 'Copa (avisa)'))
+  writeFileSync(join(d, 'vazia.md'), LISTA())
+  const rodar = (extra) => {
+    const sai = join(d, 'blocos.md')
+    const r = py('blocos.py', [bruto, sai, '--modelo', 'falso', '--whisper-bin', 'eco', ...extra], { env: { ...ENV, WHISPER_DIR: wdir } })
+    assert.equal(r.status, 0, semTraco(r.stderr))
+    const linhas = readFileSync(sai, 'utf8').split(/\r?\n/).filter((l) => /^[|] [0-9]+ [|]/.test(l))
+    assert.equal(linhas.length, 2, 'canario: o envelope achou os 2 trechos')
+    return { stderr: semTraco(r.stderr), textos: linhas.map((l) => l.split('|')[5]) }
+  }
+  const com = rodar(['--nomes', join(d, 'nomes.md')])
+  for (const t of com.textos) {
+    assert.ok(t.includes('Nomes: Lume, Casa Vexto, Copa.'), t)
+    assert.ok(t.includes('--prompt') && t.indexOf('--prompt') < t.indexOf(' -f '), t)
+  }
+  const sem = rodar([])
+  for (const t of sem.textos) assert.ok(!t.includes('--prompt') && t.includes(' -f '), t)
+  const falta = rodar(['--nomes', join(d, 'nao-tem.md')])
+  assert.match(falta.stderr, /nao-tem[.]md/)
+  for (const t of falta.textos) assert.ok(!t.includes('--prompt') && t.includes(' -f '), t)
+  const vazia = rodar(['--nomes', join(d, 'vazia.md')])
+  assert.match(vazia.stderr, /vazia[.]md/)
+  for (const t of vazia.textos) assert.ok(!t.includes('--prompt') && t.includes(' -f '), t)
+}))
+
+test('5.58 B: alinhar aguenta a troca de duas palavras do whisper por um nome so', () => comTemp((d) => {
+  assert.deepEqual(alinhar(d, [['fui', 0, 400], ['no', 400, 800], ['1', 800, 1000], ['metro', 1000, 1400], ['hoje', 1400, 1800]], 'fui no Lumetro hoje'),
+    [['fui', 0, 400], ['no', 400, 800], ['Lumetro', 800, 1400], ['hoje', 1400, 1800]])
+}))
+
+// 5.58 D: buraco na fala (clipe com o som original no meio). Pessoa de 4 s com o numero do quadro no cinza (o quadro
+// k vale 2k), voz com "um" (440 Hz, 1,0 a 1,5 s) e "dois" (660 Hz, 2,5 a 3,0 s), clipe de 3,5 s com som a -30 dB
+function falaBuraco(pub) {
+  const tom = 'if(between(t,1,1.5),0.5*sin(2*PI*440*t),0)+if(between(t,2.5,3),0.5*sin(2*PI*660*t),0)'
+  ff('-f', 'lavfi', '-i', `aevalsrc='${tom}':s=48000:d=4`, '-c:a', 'pcm_s24le', join(pub, 'voz.wav'))
+  ff('-f', 'lavfi', '-i', "color=c=black:s=64x64:r=30:d=4,format=yuv420p,geq=lum='2*N':cb=128:cr=128", '-i', join(pub, 'voz.wav'),
+    '-c:v', 'libx264', '-qp', '0', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', join(pub, 'pessoa.mp4'))
+  writeFileSync(join(pub, 'voz.alinhado.json'), JSON.stringify([{ text: ' um', startMs: 1000, endMs: 1490 }, { text: ' ja', startMs: 1490, endMs: 1700 }, { text: ' dois', startMs: 2500, endMs: 3000 }]))
+  mkdirSync(join(pub, 'clipes'), { recursive: true })
+  ff('-f', 'lavfi', '-i', 'testsrc2=s=320x180:r=30:d=3.5', '-f', 'lavfi', '-i', "aevalsrc='0.0316*sin(2*PI*1000*t)':s=48000:d=3.5",
+    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', join(pub, 'clipes', 'c.mp4'))
+}
+// o ponto em 1,9667 s cai no quadro 59 (59/30 escrito com 4 casas passa do carimbo: o corte por segundo levaria o quadro 59)
+const BURACO = { seg: 1.9667, arquivo: 'clipes/c.mp4', tam: { w: 320, h: 180 }, entradaSeg: 0.25, saidaSeg: 3.25, selo: 'LUMORA, 2026', legenda: [{ ini: 0.2, fim: 1.4, palavras: ['ola', 'mundo'] }], direito: { tipo: 'licenca', fonte: 'contrato com a Lumora' } }
+const edicaoBuraco = (extra = {}, buraco = {}) => ({ pessoa: 'pessoa.mp4', voz: 'voz.wav', legendas: 'voz.alinhado.json', buracos: [{ ...BURACO, ...buraco }], ...extra })
+function prepararBuraco(d, edicao) {
+  const arq = join(d, 'edicao.json'), sai = join(d, 'props.json')
+  writeFileSync(arq, JSON.stringify(edicao))
+  const r = py('preparar-props.py', [arq, sai, '--public-dir', join(d, 'public')])
+  return { r, props: () => JSON.parse(readFileSync(sai, 'utf8')) }
+}
+// numero de cada quadro lido do cinza (plano Y cru do 64x64, sem scale: o scale mexe na faixa e erra o numero)
+function numerosDosQuadros(arq) {
+  const b = spawnSync('ffmpeg', ['-v', 'error', '-i', arq, '-vf', 'format=yuv420p,extractplanes=y', '-f', 'rawvideo', '-'], { maxBuffer: 1 << 26 }).stdout
+  const out = []
+  for (let i = 0; i + 4096 <= b.length; i += 4096) { let s = 0; for (let j = 0; j < 4096; j++) s += b[i + j]; out.push(Math.round(s / 4096 / 2)) }
+  return out
+}
+const rmsDe = (x) => Math.sqrt(x.reduce((s, v) => s + v * v, 0) / Math.max(1, x.length))
+function lufsDe(arq) {
+  const o = spawnSync('ffmpeg', ['-hide_banner', '-nostats', '-i', arq, '-af', 'ebur128', '-f', 'null', '-'], { encoding: 'utf8' }).stderr
+  // espaco literal depois do "I:" (letra, dois-pontos e barra invertida o Gate 6 le como caminho de Windows)
+  const m = [...o.matchAll(/I: +(-?[0-9.]+) LUFS/g)]
+  assert.ok(m.length > 0, 'canario: o ebur128 mediu ' + arq)
+  return Number(m[m.length - 1][1])
+}
+
+test('5.58 D: deslocar do buraco por ponta, com encaixe no quadro e soma de dois buracos', () => comTemp((d) => {
+  const r = funcaoDoPy('buraco.py', 'deslocar', [
+    'ns.update(FPS=30, MEIO=0.5 / 30)',
+    'q = ns["q"]',
+    'assert q(1.98) == 59 / 30 and q(2.0) == 2.0, "encaixe no quadro"',
+    'pl = [{"P": 10.0, "D": 3.0}]',
+    'assert f(9.9, pl) == 9.9 and f(10.1, pl, fim=True) == 13.1, "canario: longe do ponto"',
+    'assert f(8.0, pl) == 8.0 and f(10.0, pl, fim=True) == 10.0, "item de 8 a 10 com o ponto em 10 fica"',
+    'assert f(10.0, pl) == 13.0 and f(12.0, pl, fim=True) == 15.0, "item de 10 a 12 vira 13 a 15"',
+    'assert f(10.0 - 0.5 / 30, pl) == round(13.0 - 0.5 / 30, 4), "comeco meio quadro antes do ponto ja anda"',
+    'assert f(10.0 + 0.5 / 30, pl, fim=True) == round(10.0 + 0.5 / 30, 4), "fim meio quadro depois do ponto fica"',
+    'dois = [{"P": 2.0, "D": 1.5}, {"P": 5.0, "D": 2.0}]',
+    'assert f(1.0, dois) == 1.0 and f(3.0, dois) == 4.5 and f(6.0, dois) == 9.5, "soma de dois buracos"',
+    'print("ok")',
+  ].join('\n'), d, ['anda', 'q'])
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.match(semTraco(r.stdout), /ok/)
+}))
+
+test('5.58 D: preparar-props com buraco anda o que vem depois, congela a pessoa no quadro de antes e abre silencio na voz', () => comTemp((d) => {
+  const pub = join(d, 'public'); mkdirSync(pub)
+  falaBuraco(pub)
+  assert.deepEqual(numerosDosQuadros(join(pub, 'pessoa.mp4')), Array.from({ length: 120 }, (_, k) => k), 'canario: o cinza da o numero do quadro')
+  const { r, props } = prepararBuraco(d, edicaoBuraco({
+    cortesSeg: [1.5, 2.5],
+    chaves: [{ chave: 'UM', deSeg: 1.0, ateSeg: 1.9667, topo: 400 }, { chave: 'DOIS', deSeg: { palavra: 'dois' }, ateSeg: 3.0, topo: 400 }],
+    cartoes: [{ deSeg: 3.1, ateSeg: 3.6, linhas: [{ texto: 'X', aSeg: 0.3 }] }],
+    sfx: [{ arquivo: 'sfx/pop.wav', seg: { palavra: 'dois' } }],
+    ondas: [{ deSeg: 2.5, ateSeg: 3.2 }],
+  }))
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.match(semTraco(r.stdout), /ganho [+-][0-9]/, 'o ganho do som do clipe sai impresso')
+  const p = props()
+  assert.deepEqual(p.cortesSeg, [1.5, 5.5])
+  assert.deepEqual(p.chaves.map((c) => [c.deSeg, c.ateSeg]), [[1.0, 1.9667], [5.5, 6.0]], 'a chave que acaba no ponto fica; a de depois anda 3 s')
+  assert.deepEqual([p.cartoes[0].deSeg, p.cartoes[0].ateSeg, p.cartoes[0].linhas[0].aSeg], [6.1, 6.6, 0.3])
+  assert.equal(p.sfx[0].seg, 5.5)
+  assert.deepEqual([p.ondas[0].deSeg, p.ondas[0].ateSeg], [5.5, 6.2])
+  assert.ok(Math.max(...p.ondas[0].valores) > 0.5, 'a onda le a voz nova, com o "dois" ja andado')
+  assert.equal(p.duracaoSeg, 7)
+  assert.deepEqual([p.pessoa, p.voz, p.legendas], ['buraco/pessoa.mp4', 'buraco/voz.wav', 'buraco/legendas.json'])
+  for (const a of [p.pessoa, p.voz, p.legendas, p.buracos[0].audio]) assert.ok(existsSync(join(pub, a)), a)
+  assert.deepEqual(p.buracos, [{ deSeg: 1.9667, ateSeg: 4.9667, arquivo: 'clipes/c.mp4', entradaSeg: 0.25, tam: { w: 320, h: 180 }, selo: 'LUMORA, 2026', legenda: BURACO.legenda, audio: 'buraco/clipe-00.wav' }])
+  // imagem: 59 quadros de antes, 90 do quadro 58 parado e o resto a partir do quadro 59
+  const esperado = [...Array.from({ length: 59 }, (_, k) => k), ...Array(90).fill(58), ...Array.from({ length: 61 }, (_, k) => 59 + k)]
+  assert.deepEqual(numerosDosQuadros(join(pub, p.pessoa)), esperado)
+  // voz: silencio no buraco e o "dois" 3 s depois, no mesmo tom
+  const v = join(pub, p.voz)
+  assert.ok(Math.abs(duracao(v) - 7) < 0.002, `voz com ${duracao(v)} s`)
+  assert.equal(sonda(v, { sel: 'a:0', campo: 'sample_rate' }), '48000')
+  assert.ok(Math.abs(dominante(amostras(v, 1.1, 1.4)) - 440) <= 4, 'canario: o "um" ficou no lugar')
+  assert.ok(rmsDe(amostras(v, 2.0, 4.95)) < 1e-4, 'silencio no buraco')
+  assert.ok(Math.abs(dominante(amostras(v, 5.6, 5.9)) - 660) <= 4, 'o "dois" andou 3 s')
+  assert.ok(Math.abs(duracao(join(pub, p.buracos[0].audio)) - 3) < 0.01, 'o som do clipe tem o tamanho do buraco')
+  const leg = JSON.parse(readFileSync(join(pub, p.legendas), 'utf8'))
+  assert.deepEqual(leg.map((c) => [c.text.trim(), c.startMs, c.endMs]), [['um', 1000, 1490], ['ja', 1490, 1700], ['dois', 5500, 6000]])
+  assert.equal(leg[1].pageBreakAfter, true, 'a palavra de antes do buraco fecha a pagina')
+}))
+
+test('5.58 D: preparar-props recusa buraco que atravessa item, cai no meio de palavra, vem sem direito ou selo, com pagina fora do clipe, clipe curto e segunda passada', () => comTemp((d) => {
+  const pub = join(d, 'public'); mkdirSync(pub)
+  falaBuraco(pub)
+  const recusa = (edicao, re, nome) => {
+    const { r } = prepararBuraco(d, edicao)
+    const err = semTraco(r.stderr)
+    assert.ok(err.trim().length > 0, `${nome}: o stderr veio vazio`)
+    assert.notEqual(r.status, 0, nome)
+    assert.match(err, re, nome)
+  }
+  recusa(edicaoBuraco({ chaves: [{ chave: 'X', deSeg: 1.5, ateSeg: 2.5, topo: 400 }] }), /atravessa/, 'chave que atravessa o ponto')
+  recusa(edicaoBuraco({}, { seg: 1.25 }), /meio da palavra 'um'/, 'meio de palavra')
+  recusa(edicaoBuraco({}, { direito: undefined }), /direito/, 'sem direito')
+  recusa(edicaoBuraco({}, { selo: ' ' }), /selo/, 'selo vazio')
+  recusa(edicaoBuraco({}, { legenda: [{ ini: 2.5, fim: 3.5, palavras: ['fim'] }] }), /pagina/, 'pagina fora do clipe')
+  recusa(edicaoBuraco({}, { legenda: [{ ini: 0, fim: 1, palavras: ['a', 'b', 'c', 'd', 'e'] }] }), /pagina/, 'pagina com 5 palavras')
+  recusa(edicaoBuraco({}, { saidaSeg: 4.0 }), /curto/, 'clipe curto')
+  recusa(edicaoBuraco({}, { saidaSeg: 0.45, legenda: [] }), /pelo menos 0,5 s/, 'trecho curto demais pra medir o volume')
+  const { r } = prepararBuraco(d, edicaoBuraco())
+  assert.equal(r.status, 0, 'canario: o buraco certo passa ' + semTraco(r.stderr))
+  recusa(edicaoBuraco({ pessoa: 'buraco/pessoa.mp4', voz: 'buraco/voz.wav', legendas: 'buraco/legendas.json' }), /ja passou/, 'segunda passada')
+}))
+
+test('5.58 D: preparar-props recusa dois buracos no mesmo quadro e ponto no fim ou depois do video', () => comTemp((d) => {
+  const pub = join(d, 'public'); mkdirSync(pub)
+  falaBuraco(pub)
+  const roda = (buracos) => {
+    const { r } = prepararBuraco(d, { pessoa: 'pessoa.mp4', voz: 'voz.wav', legendas: 'voz.alinhado.json', buracos: buracos.map((b) => ({ ...BURACO, ...b })) })
+    return { r, err: semTraco(r.stderr) }
+  }
+  const ok = roda([{ seg: 1.0 }, { seg: 3.5 }])
+  assert.equal(ok.r.status, 0, 'canario: dois buracos em quadros diferentes e dentro do video passam ' + ok.err)
+  for (const [buracos, re, nome] of [
+    [[{ seg: 1.0 }, { seg: 1.0 }], /mesmo quadro/, 'mesmo ponto'],
+    [[{ seg: 1.0 }, { seg: 1.01 }], /mesmo quadro/, 'pontos que caem no mesmo quadro'],
+    [[{ seg: 5 }], /depois do video/, 'ponto depois do fim'],
+    [[{ seg: 4 }], /depois do video/, 'ponto no fim'],
+  ]) {
+    const { r, err } = roda(buracos)
+    assert.ok(err.trim().length > 0, `${nome}: o stderr veio vazio`)
+    assert.notEqual(r.status, 0, nome)
+    assert.match(err, re, nome)
+  }
+}))
+
+test('5.58 D: camera lenta e buraco juntos, o ponto anda pela lenta e a lenta anda pelo buraco', () => comTemp((d) => {
+  const pub = join(d, 'public'); mkdirSync(pub)
+  falaBuraco(pub)
+  const um = { saidaSeg: 1.25, entradaSeg: 0.25, legenda: [] }
+  const { r, props } = prepararBuraco(d, {
+    pessoa: 'pessoa.mp4', voz: 'voz.wav', legendas: 'voz.alinhado.json',
+    cameraLenta: [{ deSeg: { palavra: 'um' }, ateSeg: { palavra: 'um', fim: true }, fator: 0.5 }],
+    buracos: [{ ...BURACO, ...um, seg: 0.5 }, { ...BURACO, ...um, seg: { palavra: 'dois' } }],
+  })
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  const p = props()
+  assert.deepEqual(p.lentas, [{ deSeg: 2.5, ateSeg: 3.5 }], 'a lenta anda pelo buraco de 0,5 s')
+  assert.deepEqual(p.buracos.map((b) => [b.deSeg, b.ateSeg]), [[0.5, 1.5], [4.5, 5.5]], 'o "dois" anda 1 s pela lenta e 1 s pelo primeiro buraco')
+  assert.equal(p.duracaoSeg, 7)
+  assert.equal(quadros(join(pub, p.pessoa)), 210)
+}))
+
+test('5.58 D: o som do clipe sai no volume medido da voz', () => comTemp((d) => {
+  const pub = join(d, 'public'); mkdirSync(pub)
+  falaBuraco(pub)
+  ff('-f', 'lavfi', '-i', "aevalsrc='0.25*sin(2*PI*300*t)':s=48000:d=4", '-c:a', 'pcm_s24le', join(pub, 'voz.wav'))
+  const voz = lufsDe(join(pub, 'voz.wav'))
+  assert.ok(Math.abs(lufsDe(join(pub, 'clipes', 'c.mp4')) - voz) > 5, 'canario: o clipe cru fica longe da voz')
+  const { r, props } = prepararBuraco(d, edicaoBuraco())
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  const som = join(pub, props().buracos[0].audio)
+  const lu = lufsDe(som)
+  assert.ok(Math.abs(lu - voz) <= 1, `som do clipe a ${lu} LUFS e a voz a ${voz}`)
+  assert.ok(Math.max(...amostras(som, 0, 3).map(Math.abs)) < 0.9, 'pico limitado')
+}))
+
+test('5.58 D: o verificar-video conta o buraco como trecho coberto e como clipe que se mexe sozinho', () => comTemp((d) => {
+  const r = funcaoDoPy('verificar-video.py', 'trechos_cobertos', [
+    'P = {"segmentos": [{"deSeg": 0.5, "ateSeg": 1.0, "tipo": "video", "cheia": True}, {"deSeg": 6, "ateSeg": 7, "tipo": "imagem", "cheia": False}],',
+    '     "cartoes": [{"deSeg": 2, "ateSeg": 2.5}], "buracos": [{"deSeg": 3, "ateSeg": 5}]}',
+    't = f(P)',
+    'assert (0.5, 1.0) in t and (2, 2.5) in t, "canario: insercao cheia e cartao cobrem"',
+    'assert (6, 7) not in t, "insercao fora da tela cheia nao cobre"',
+    'assert (3, 5) in t, "o buraco cobre a pessoa parada"',
+    'sem = {"segmentos": [{"deSeg": 3.2, "ateSeg": 4.0, "tipo": "video"}], "buracos": [{"deSeg": 3, "ateSeg": 5}]}',
+    'assert (3, 5) in f(sem), "segmento sem cheia nao esconde o buraco"',
+    'assert f({"segmentos": []}) == [], "sem nada, nada coberto"',
+    'c = ns["clipes_vivos"](P)',
+    'assert (0.5, 1.0) in c and (3, 5) in c and (6, 7) not in c, "o clipe do buraco se mexe sozinho"',
+    'print("ok")',
+  ].join('\n'), d, ['clipes_vivos'])
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.match(semTraco(r.stdout), /ok/)
+  const src = readFileSync(script('verificar-video.py'), 'utf8')
+  assert.ok(src.includes('cobre = trechos_cobertos(P)'), 'a funcao nao esta ligada ao calculo de onde a pessoa aparece')
+  assert.ok(src.includes('clipes = clipes_vivos(P)'), 'a funcao nao esta ligada ao freezedetect')
+  assert.ok(src.includes('for b in P.get("buracos", []):'), 'a duracao do clipe do buraco nao se confere')
+}))
+
+test('5.58 D: o VideoV2 tem buracos com padrao vazio e desenha o clipe por cima do VideoV1, dentro da camada com escala', () => {
+  const src = readFileSync(join(AQUI, '..', 'src', 'VideoV2.tsx'), 'utf8').replace(/\r\n/g, '\n')
+  const i = src.indexOf('  buracos: z')
+  assert.ok(i > 0, 'buracos no schema')
+  const bloco = src.slice(i, src.indexOf('\n});', i))
+  assert.ok(bloco.trimEnd().endsWith('.default([]),'), 'buracos com padrao vazio: o exemplo do Studio segue sem buraco')
+  for (const k of ['deSeg', 'ateSeg', 'arquivo', 'entradaSeg', 'tam', 'selo', 'legenda', 'audio']) assert.ok(bloco.includes(k + ':'), `o schema dos buracos tem ${k}`)
+  const v1 = src.indexOf('<VideoV1'), bu = src.indexOf('<Buraco'), flash = src.indexOf('{flashAgora')
+  assert.ok(v1 > 0 && flash > 0, 'canario: VideoV1 e flash achados')
+  assert.ok(bu > v1 && bu < flash, 'o clipe vem depois do VideoV1 (cobre a pessoa parada) e antes do flash (pega a escala)')
+  assert.ok(src.includes('from "./camadas/kit"') && src.includes('<LegendaPeito'), 'a legenda do clipe e a do kit')
+  assert.ok(/<Video[^>]*muted/.test(src) && src.includes('objectFit: "contain"'), 'o clipe aparece inteiro e mudo (o som vem do audio medido)')
+  assert.ok(src.includes('top: tema.zonaTopo'), 'o selo fica dentro da zona segura')
+})

@@ -1594,6 +1594,20 @@ test('gate 13 acusa gaveta que a Tabela de destinos e os Gatilhos nao citam', ()
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
+test('5.58 B: gate 13 aceita o marca/nomes.md pelo apelido "a marca", como as outras metades da marca', () => {
+  const dir = kitComGavetas()
+  try {
+    const mapa = '- a marca: `marca/tom-de-voz.md`; projeto com `marca/` propria usa a dela'
+    assert.ok(AGENTS_GAVETAS.includes(mapa), 'canario: a linha da marca do Mapa de teste')
+    writeFileSync(join(dir, '_modelo/AGENTS.md'), AGENTS_GAVETAS.replace(mapa, '- a marca: `marca/tom-de-voz.md` e `marca/nomes.md`'))
+    writeFileSync(join(dir, '_modelo/marca/nomes.md'), '')
+    assert.deepEqual(gate13(dir), [])
+    // canario: sem o apelido na Tabela de destinos, o mesmo Mapa reprova pelos dois arquivos da marca
+    writeFileSync(join(dir, '_modelo/AGENTS.md'), AGENTS_GAVETAS.replace(mapa, '- a marca: `marca/tom-de-voz.md` e `marca/nomes.md`').replace('- jeito de falar → a marca\r\n', ''))
+    assert.deepEqual(gate13(dir).map(d => d.split(':')[0]).sort(), ['marca/nomes.md', 'marca/tom-de-voz.md'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
 test('gate 13 reprova quando o titulo do Mapa muda, em vez de passar sem conferir', () => {
   const dir = kitComGavetas()
   try {

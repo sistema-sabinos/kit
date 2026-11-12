@@ -70,12 +70,30 @@ def fps_de(video):
                        capture_output=True, text=True).stdout.strip().strip(",").split("/")
     return round(int(r[0]) / int(r[1])) if len(r) == 2 and int(r[1]) else 0
 
+def quadros_batem(video):
+    """A taxa nominal 30 nao basta: o cru de celular perde quadro e segue declarando 30. Conta os quadros contra a
+    duracao do video (folga de 1) e confere que o quadro k cai em k/30 a partir do primeiro (desvio menor que meio
+    quadro): a imagem se corta pelo numero do quadro e a voz em segundos, e um carimbo fora da grade descola as duas
+    mesmo com a contagem certa."""
+    o = json.loads(subprocess.run(["ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0", "-show_entries",
+                                   "stream=nb_read_frames,duration:format=duration", "-of", "json", video],
+                                  capture_output=True, text=True).stdout or "{}")
+    s = (o.get("streams") or [{}])[0]
+    dur = s.get("duration") or o.get("format", {}).get("duration")
+    if not dur or not s.get("nb_read_frames"): return False
+    if abs(int(s["nb_read_frames"]) - round(float(dur) * FPS)) > 1: return False
+    p = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "packet=pts_time,flags", "-of", "csv=p=0", video],
+                       capture_output=True, text=True).stdout
+    lin = [l.strip().split(",") for l in p.splitlines() if l.strip()]
+    ts = sorted(float(c[0]) for c in lin if c[0] != "N/A" and "D" not in "".join(c[1:]))
+    return bool(ts) and max(abs(t - ts[0] - k / FPS) for k, t in enumerate(ts)) < 0.5 / FPS
+
 def rodar(cmd):
     r = subprocess.run(cmd, capture_output=True, text=True, errors="replace")
     if r.returncode != 0: sys.exit("camera lenta: o ffmpeg falhou\n" + r.stderr[-1500:])
 
 def gravar_video(video, saida, plano):
-    if fps_de(video) != FPS: sys.exit(f"camera lenta: o video precisa estar a {FPS} quadros (o montar-blocos.py ja entrega assim): {video}")
+    if fps_de(video) != FPS or not quadros_batem(video): sys.exit(f"camera lenta: o video precisa estar a {FPS} quadros (o montar-blocos.py ja entrega assim): {video}")
     pc = pedacos(plano); com_audio = tem_audio(video)
     fc = [filtro_video(k, de, ate, f, d) for k, (de, ate, f, d) in enumerate(pc)]
     if com_audio: fc += [filtro_audio("0:a", k, de, ate, f, d) for k, (de, ate, f, d) in enumerate(pc)]

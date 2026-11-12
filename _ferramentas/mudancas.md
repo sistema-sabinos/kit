@@ -962,3 +962,26 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o `AGENTS.md` do projeto não tem o texto `[trava X/regra Y]`.
 **Como aplicar:** achar a regra pelo título **Loop de lições.** e acrescentar no fim a frase do `_modelo/AGENTS.md` do kit que começa com "Barrada de uso legítimo"; achar a regra pelo título **Travas.** e acrescentar no fim a frase que começa com "Uso legítimo barrado". Sem tirar o que a pessoa escreveu e sem mudar número. Mostrar o antes e o depois e gravar com o sim.
 **Como testar:** o texto `[trava X/regra Y]` aparece duas vezes no `AGENTS.md`, uma na regra **Loop de lições.** e uma na regra **Travas.**.
+## nomes-da-marca
+
+**O que é:** arquivo novo `marca/nomes.md`, com os nomes próprios que aparecem na fala dos seus vídeos (marca, produto, loja, pessoa). A `/editar-video` passa a lista pro programa que transcreve e confere a legenda contra ela, pra cada nome sair escrito do jeito certo.
+**Por quê:** o programa que transcreve erra nome próprio ("Cláudio" no lugar de "Claude", nome em minúscula, nome partido em duas palavras), e o erro ia direto pra legenda.
+**Te afeta se:** o projeto tem a pasta `.claude/skills/editar-video/` e não tem o arquivo `marca/nomes.md`.
+**Como aplicar:** copiar o `_modelo/marca/nomes.md` do kit pra `marca/nomes.md` do projeto, como está. Pasta aberta pelo `/novo-projeto` dentro do projeto não leva o arquivo: a lista fica só no projeto-pai, onde o vídeo é editado. Outra loja da mesma marca, em projeto próprio, copia o `marca/nomes.md` do projeto irmão. Perguntar à pessoa quais nomes ela fala nos vídeos e pôr um por linha embaixo de `## Nomes`, começando com "- ", com o sim dela.
+**Como testar:** o arquivo `marca/nomes.md` existe e tem a linha `## Nomes`.
+
+## print-sem-voce
+
+**O que é:** o print de página da `/editar-video` tenta primeiro sem janela. Se o site barra, tenta com a sua sessão no Chrome dedicado e, por último, com janela. Ele só usa a sua sessão quando sabe o que procurar no print pra conferir que ele não mostra você: o `ALUNO_NOME` ou o `ALUNO_EMAIL` do `.env` (os dois opcionais) ou o email de uma linha de login do `.env` (como o `ML_USUARIO`). Sem nada disso, ele pula a sua sessão. No Mercado Livre ele nunca usa a sua sessão: se as duas tentativas falham, ele te pede o print.
+**Por quê:** print tirado com a sua conta aberta pode mostrar o seu nome no canto da página, e esse print vai pro vídeo publicado.
+**Te afeta se:** o projeto tem a pasta `.claude/skills/editar-video/` e o `.env` do projeto não tem as linhas `ALUNO_NOME` e `ALUNO_EMAIL`.
+**Como aplicar:** contar à pessoa que ela pode pôr o nome e o email dela no `.env` como `ALUNO_NOME` e `ALUNO_EMAIL`, e que ela mesma escreve os dois no arquivo. A IA nunca pede o valor na conversa, nunca escreve no `.env` e nunca mostra o que está lá. Sem as duas linhas e sem email de login no `.env`, o print nunca usa a sua sessão.
+**Como testar:** o arquivo `.claude/skills/editar-video/scripts/print-pagina.mjs` do projeto tem o texto `ALUNO_NOME`.
+
+## clipe-com-som
+
+**O que é:** a `/editar-video` passa a pôr no meio da fala um clipe com o som original (um trecho de entrevista, de filme, de outro vídeo): a sua fala para, o clipe toca com o som dele e a fala volta de onde parou. Antes de montar, ela pergunta de onde vem a permissão de usar o clipe e põe o crédito na tela. Junto veio o conserto da boca e voz descoladas no vídeo de celular.
+**Por quê:** clipe com o som original prende mais que o clipe mudo por cima da fala, e o vídeo de celular saía com a voz uns 70 milissegundos fora da boca.
+**Te afeta se:** o projeto tem a pasta `.claude/skills/editar-video/`.
+**Como aplicar:** o `/atualizar-sabinos` já traz o motor novo junto com a skill; não precisa instalar nada de novo. Contar à pessoa, numa frase, que agora dá pra pedir "põe esse clipe com o som dele no meio do vídeo".
+**Como testar:** o arquivo `.claude/skills/editar-video/motor/scripts/buraco.py` existe no projeto.

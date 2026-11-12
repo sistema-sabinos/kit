@@ -58,11 +58,11 @@ def quadros(bruto, tempos, pasta):
     alvos = sorted({round(max(0.0, t), 3) for t in tempos})
     filtro = os.path.join(pasta, "filtro.txt")
     # soma em arvore balanceada: a soma em fila com centenas de termos estoura o leitor de expressao do ffmpeg.
-    # Janela de 0,034 s pra cada lado: meio quadro a 15 fps (celular que perde quadro); a 25 fps os vizinhos de um
-    # tempo entre dois quadros ficavam fora de 0,017 s e a borda saia preta (achado da comum). Sobra quadro a 30 fps,
-    # e fica o mais perto
+    # Janela de 0,045 s pra cada lado: o celular perde quadro e deixa buraco de ate 84 ms, e com 0,034 um tempo no
+    # meio do buraco ficava sem quadro e a borda saia preta; a 25 fps os vizinhos de um tempo entre dois quadros
+    # ficavam fora de 0,017 s (achado da comum). Sobra quadro a 30 fps, e fica o mais perto
     def soma(ts):
-        if len(ts) == 1: return f"between(t,{ts[0] - 0.034:.3f},{ts[0] + 0.034:.3f})"
+        if len(ts) == 1: return f"between(t,{ts[0] - 0.045:.3f},{ts[0] + 0.045:.3f})"
         return f"({soma(ts[:len(ts) // 2])}+{soma(ts[len(ts) // 2:])})"
     expr = soma(alvos)
     open(filtro, "w", encoding="utf-8").write(f"select='{expr}',showinfo,scale={LARG}:{ALT}")
