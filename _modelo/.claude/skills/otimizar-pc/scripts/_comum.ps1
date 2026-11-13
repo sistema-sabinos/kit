@@ -9,7 +9,9 @@ if (-not (Test-Path -LiteralPath $Global:OtimLogDir)) {
 function Iniciar-Log($nome) {
     $carimbo = Get-Date -Format 'yyyy-MM-dd_HH-mm-ss'
     $Global:OtimLog = Join-Path $Global:OtimLogDir ("{0}-{1}.txt" -f $carimbo, $nome)
-    Set-Content -LiteralPath $Global:OtimLog -Value ("=== {0} | {1} ===" -f $nome, (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')) -Encoding UTF8
+    # o nome do script que abriu o log vai no cabecalho: o elevar.ps1 so aceita log do script que ele disparou
+    $quem = Split-Path -Leaf ((Get-PSCallStack)[1].ScriptName)
+    Set-Content -LiteralPath $Global:OtimLog -Value ("=== {0} | {1} | {2} ===" -f $nome, (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $quem) -Encoding UTF8
     return $Global:OtimLog
 }
 
@@ -24,6 +26,93 @@ function Bytes($caminho) {
     $m = Get-ChildItem -LiteralPath $caminho -Recurse -File -Force -ErrorAction SilentlyContinue | Measure-Object Length -Sum
     if ($m.Sum) { return $m.Sum }
     return 0
+}
+
+# Mede pasta grande sem estourar tempo e sem seguir junction (o Bytes comum devolve 0 pra C:\Users
+# e trava em Temp\claude). $Dias > 0 devolve so o que foi gravado nesses ultimos dias.
+# -Estrito: pra medida que decide se apaga. Robocopy com codigo 8 ou mais nao leu tudo (16 em pasta
+# sem permissao), e o zero dele pode ser so o que nao conseguiu ler: volta $null.
+function BytesRapido($caminho, $Dias = 0, [switch]$Estrito) {
+    if (-not (Test-Path -LiteralPath $caminho)) { return 0 }
+    $alvo = $caminho
+    if ($alvo.EndsWith('\')) { $alvo += '.' }
+    $a = @($alvo, 'NUL', '/L', '/S', '/NFL', '/NDL', '/NJH', '/BYTES', '/XJ', '/R:0', '/W:0')
+    if ($Dias -gt 0) { $a += ('/MAXAGE:' + $Dias) }
+    $saida = & robocopy @a 2>$null
+    $rc = $LASTEXITCODE
+    $global:LASTEXITCODE = 0   # robocopy em /L sai com 1, 9, 16... e a ferramenta leria isso como falha do script
+    if ($Estrito -and $rc -ge 8) { return $null }
+    foreach ($l in $saida) {
+        if ($l -match '^\s*Bytes\s*:\s*(\d+)\s+(\d+)') {
+            if ($Dias -gt 0) { return [int64]$Matches[2] }
+            return [int64]$Matches[1]
+        }
+    }
+    return $null   # nao mediu. Soma como 0, mas ($null -eq 0) e falso: falha de medicao nunca libera apagar.
+}
+
+# Perfis de navegador que o Playwright MCP largou, parados ha mais de $dias.
+# A data da pasta raiz nao basta: login recente la dentro (em Default) nao mexe nela.
+# Parado e sem NENHUM arquivo gravado nesses dias; falha de medida ($null) nunca entra.
+function PerfisMcpVelhos($dias = 90) {
+    $corte = (Get-Date).AddDays(-$dias)
+    foreach ($base in 'ms-playwright', 'ms-playwright-mcp') {
+        foreach ($p in (Get-ChildItem -LiteralPath (Join-Path $env:LOCALAPPDATA $base) -Directory -Filter 'mcp-chrome-*' -ErrorAction SilentlyContinue)) {
+            if ($p.LastWriteTime -ge $corte) { continue }
+            $novo = BytesRapido $p.FullName $dias -Estrito
+            if ($null -ne $novo -and $novo -eq 0) { $p }
+        }
+    }
+}
+
+# Rascunho (scratchpad) de chat do Claude Code sem arquivo novo ha mais de $dias.
+# Chat aberto e ocioso NAO grava nada, entao idade sozinha nao basta: pula toda sessao que o
+# Claude Code ainda lista como viva em ~/.claude/sessions (pid existente).
+# Sessao e a pasta com nome de UUID dentro de TEMP\claude\<projeto>; o resto fica.
+function SessoesClaudeParadas($dias = 7) {
+    $corte = (Get-Date).AddDays(-$dias)
+    $vivas = @()
+    # Sem saber quais estao vivas, nao apaga nenhuma: pasta de registros ausente ou registro
+    # ilegivel deixaria um chat aberto fora da lista.
+    $pastaSessoes = Join-Path $env:USERPROFILE '.claude\sessions'
+    if (-not (Test-Path -LiteralPath $pastaSessoes)) { return }
+    $registros = $null
+    try { $registros = @(Get-ChildItem -LiteralPath $pastaSessoes -Filter '*.json' -ErrorAction Stop) } catch { return }
+    foreach ($j in $registros) {
+        $s = $null
+        try { $s = Get-Content -LiteralPath $j.FullName -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop } catch { return }
+        if (-not $s -or -not $s.sessionId -or -not $s.pid) { return }
+        if (Get-Process -Id $s.pid -ErrorAction SilentlyContinue) { $vivas += $s.sessionId }
+    }
+    $raiz = Join-Path $env:TEMP 'claude'
+    foreach ($proj in (Get-ChildItem -LiteralPath $raiz -Directory -Force -ErrorAction SilentlyContinue)) {
+        foreach ($sess in (Get-ChildItem -LiteralPath $proj.FullName -Directory -Force -ErrorAction SilentlyContinue)) {
+            # so pasta com nome de sessao (UUID); pasta interna do Claude Code (bash-edit-diff e outras) fica
+            if ($sess.Name -notmatch '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$') { continue }
+            if ($sess.Name -in $vivas) { continue }
+            $novo = BytesRapido $sess.FullName $dias -Estrito
+            if ($null -ne $novo -and $novo -eq 0 -and $sess.LastWriteTime -lt $corte) { $sess }
+        }
+    }
+}
+
+# Versoes de extensao que o proprio VS Code ja marcou pra apagar (arquivo .obsolete)
+function ExtensoesVscodeObsoletas() {
+    $ext = Join-Path $env:USERPROFILE '.vscode\extensions'
+    $obs = Join-Path $ext '.obsolete'
+    if (-not (Test-Path -LiteralPath $obs)) { return }
+    $lista = Get-Content -LiteralPath $obs -Raw -ErrorAction SilentlyContinue | ConvertFrom-Json
+    if (-not $lista) { return }
+    foreach ($nome in $lista.PSObject.Properties.Name) {
+        $alvo = Join-Path $ext $nome
+        if (Test-Path -LiteralPath $alvo) { Get-Item -LiteralPath $alvo }
+    }
+}
+
+# O Chrome so para de baixar o modelo de IA (4 GB) com esta politica em 1
+function ChromeIaTravada() {
+    $v = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Google\Chrome' -Name 'GenAILocalFoundationalModelSettings' -ErrorAction SilentlyContinue).GenAILocalFoundationalModelSettings
+    return ($v -eq 1)
 }
 
 function LivreNoSistema() {
@@ -80,7 +169,7 @@ function MostrarSobras() {
 function TopPastas($base, $n) {
     if (-not (Test-Path -LiteralPath $base)) { return }
     Get-ChildItem -LiteralPath $base -Directory -Force -ErrorAction SilentlyContinue | ForEach-Object {
-        [PSCustomObject]@{ GB = [math]::Round((Bytes $_.FullName) / 1GB, 2); Nome = $_.Name }
+        [PSCustomObject]@{ GB = [math]::Round((BytesRapido $_.FullName) / 1GB, 2); Nome = $_.Name }
     } | Sort-Object GB -Descending | Select-Object -First $n
 }
 

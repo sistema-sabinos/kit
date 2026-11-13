@@ -1,8 +1,9 @@
 # Blocos 1 (caches, risco zero) e 3 (sobras de programa antigo, so os ids escolhidos),
 # e a lixeira a parte. Escopo do usuario, nao precisa admin.
 # Uso: .\limpar.ps1 -Blocos 1    .\limpar.ps1 -Lixeira    .\limpar.ps1 -Blocos 1,3 -Itens gradle,fortnite
+#      .\limpar.ps1 -Blocos 1 -ManterHuggingFace   (poupa os modelos de transcricao da /pauta)
 # Sem bloco padrao: cada coisa apagada tem de vir pedida (a lixeira aprovada sozinha nao leva os caches junto)
-param([int[]]$Blocos = @(), [string[]]$Itens = @(), [switch]$Lixeira)
+param([int[]]$Blocos = @(), [string[]]$Itens = @(), [switch]$Lixeira, [switch]$ManterHuggingFace)
 
 . (Join-Path $PSScriptRoot '_comum.ps1')
 $ErrorActionPreference = 'SilentlyContinue'
@@ -56,7 +57,24 @@ if ($Blocos -contains 1) {
 
     # --- ferramentas ---
     [void](Remover (Join-Path $env:ProgramData 'NVIDIA Corporation\NVIDIA app\UpdateFramework\ota-artifacts') 'pacotes de driver NVIDIA ja instalados')
-    [void](Remover (Join-Path $env:USERPROFILE '.cache\huggingface') 'cache HuggingFace')
+    [void](Remover (Join-Path $env:ProgramData 'NVIDIA Corporation\Downloader') 'instaladores NVIDIA antigos (Downloader)')
+    if ($ManterHuggingFace) { Diga '        --   cache HuggingFace poupado (-ManterHuggingFace)' }
+    else { [void](Remover (Join-Path $env:USERPROFILE '.cache\huggingface') 'cache HuggingFace') }
+
+    # --- sobras de automacao e de chat ---
+    $soma = 0; $n = 0
+    foreach ($x in @(PerfisMcpVelhos)) { $soma += (BytesRapido $x.FullName); Remove-Item -LiteralPath $x.FullName -Recurse -Force; $n++ }
+    Diga ('{0,9:N0} MB  {1} perfis do Playwright MCP parados ha 90+ dias (login deles se refaz)' -f ($soma / 1MB), $n)
+    $soma = 0; $n = 0
+    foreach ($x in @(SessoesClaudeParadas)) { $soma += (BytesRapido $x.FullName); Remove-Item -LiteralPath $x.FullName -Recurse -Force; $n++ }
+    Diga ('{0,9:N0} MB  {1} rascunhos de chat do Claude fechado ha 7+ dias' -f ($soma / 1MB), $n)
+
+    # --- modelo de IA do Chrome: so com a trava ligada, senao ele baixa os 4 GB de novo ---
+    $ia = Join-Path $env:LOCALAPPDATA 'Google\Chrome\User Data\OptGuideOnDeviceModel'
+    if (Test-Path -LiteralPath $ia) {
+        if (ChromeIaTravada) { [void](Remover $ia 'modelo de IA do Chrome (Gemini Nano)') }
+        else { Diga ('        --   modelo de IA do Chrome ({0:N0} MB) NAO apagado: falta a politica que trava o download (precisa admin)' -f ((Bytes $ia) / 1MB)) }
+    }
     [void](Remover (Join-Path $env:LOCALAPPDATA 'npm-cache') 'cache npm')
     [void](Remover (Join-Path $env:LOCALAPPDATA 'pip\Cache') 'cache pip')
     [void](Remover (Join-Path $env:LOCALAPPDATA 'CrashDumps') 'crash dumps')
@@ -67,9 +85,17 @@ if ($Blocos -contains 1) {
     # scratchpad em %TEMP%\claude; apagar mata a saida do proprio comando em execucao.
     $protegidas = @('claude')
     $tmp = $env:TEMP
-    $sAntes = Bytes $tmp
+    # mede sem entrar na pasta claude (dezenas de milhares de arquivo de chat aberto estouram o tempo)
+    function TempSemClaude {
+        $t = 0
+        foreach ($x in (Get-ChildItem -LiteralPath $tmp -Force | Where-Object { $_.Name -notin $protegidas })) {
+            if ($x.PSIsContainer) { $t += (BytesRapido $x.FullName) } else { $t += $x.Length }
+        }
+        return $t
+    }
+    $sAntes = TempSemClaude
     Get-ChildItem -LiteralPath $tmp -Force | Where-Object { $_.Name -notin $protegidas } | Remove-Item -Recurse -Force
-    Diga ('{0,9:N0} MB  TEMP do usuario (pasta "claude" preservada de proposito)' -f (($sAntes - (Bytes $tmp)) / 1MB))
+    Diga ('{0,9:N0} MB  TEMP do usuario (pasta "claude" preservada de proposito)' -f (($sAntes - (TempSemClaude)) / 1MB))
 
     $tmpWin = Join-Path $env:SystemRoot 'Temp'
     $sWin = Bytes $tmpWin

@@ -10,6 +10,13 @@ $log = Iniciar-Log 'dism'
 
 if (-not (EhAdmin)) { Diga 'ERRO: precisa rodar como administrador. Abortado.'; exit 1 }
 
+# reinicio pendente (ex.: recurso do Windows desligado na mesma sessao) faz o DISM perguntar
+# "reiniciar agora? (S/N)" escondido pelo Out-String e travar pra sempre.
+if (Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending') {
+    Diga 'ABORTADO: o Windows tem reinicio pendente. Reiniciar o PC e rodar o bloco 4 de novo.'
+    exit 2
+}
+
 $antes = LivreNoSistema
 Diga ('Livre no inicio: {0:N1} GB' -f ($antes / 1GB))
 
@@ -20,21 +27,21 @@ function SemBarra($texto) {
 
 Diga ''
 Diga '########## ANTES ##########'
-Diga (SemBarra (dism /online /cleanup-image /analyzecomponentstore 2>&1 | Out-String))
+Diga (SemBarra (dism /online /cleanup-image /analyzecomponentstore /norestart 2>&1 | Out-String))
 
 Diga ''
 Diga '########## LIMPANDO ##########'
 if ($SemResetBase) {
     Diga 'Modo conservador (sem /ResetBase): limpa menos, preserva desinstalacao de update.'
-    $saida = dism /online /cleanup-image /startcomponentcleanup 2>&1 | Out-String
+    $saida = dism /online /cleanup-image /startcomponentcleanup /norestart 2>&1 | Out-String
 } else {
-    $saida = dism /online /cleanup-image /startcomponentcleanup /resetbase 2>&1 | Out-String
+    $saida = dism /online /cleanup-image /startcomponentcleanup /resetbase /norestart 2>&1 | Out-String
 }
 Diga (SemBarra $saida)
 
 Diga ''
 Diga '########## DEPOIS ##########'
-Diga (SemBarra (dism /online /cleanup-image /analyzecomponentstore 2>&1 | Out-String))
+Diga (SemBarra (dism /online /cleanup-image /analyzecomponentstore /norestart 2>&1 | Out-String))
 
 $depois = LivreNoSistema
 Diga ''

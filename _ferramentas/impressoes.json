@@ -1,5 +1,5 @@
 {
- "versao": "5.49",
+ "versao": "5.50",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -2828,6 +2828,7 @@
   },
   ".claude/skills/otimizar-pc/SKILL.md": {
    "0823092854c7e759": "3.0",
+   "1f898c28dc3d2f6f": "5.50",
    "31846af0ae8c7a1a": "5.7",
    "403cf6a925ceab94": "5.46",
    "538532e7d0008dad": "anterior-5.7",
@@ -2836,34 +2837,54 @@
    "81163950414e9cab": "5.18",
    "8661504aea8275b2": "anterior-5.14",
    "97347cbdfde91c56": "anterior-5.18",
-   "a17386985ea39c2f": "anterior-5.18"
+   "a17386985ea39c2f": "anterior-5.18",
+   "e2d2ba881d5ee8c3": "5.50"
   },
   ".claude/skills/otimizar-pc/scripts/_comum.ps1": {
    "20d84191f769beae": "3.0",
    "262d47840718d819": "5.7",
    "42a930021168060e": "5.15",
-   "c2d4ace660402fda": "5.14"
+   "7784829a29d435ed": "5.50",
+   "940395a8533ada37": "5.50",
+   "a29272d9d9c808cc": "5.50",
+   "c2d4ace660402fda": "5.14",
+   "fad63960faa406ea": "5.50"
   },
   ".claude/skills/otimizar-pc/scripts/atualizar-apps.ps1": {
+   "0ff3dc07971384b1": "5.50",
    "7fb123e79f4b94eb": "5.15",
    "a24b98c8bd2edac3": "3.0",
    "d8cfd76cd4099457": "5.46"
   },
   ".claude/skills/otimizar-pc/scripts/diagnostico.ps1": {
    "31e4ecbfe4ee8b4b": "3.0",
+   "a3f88ab4f78e2142": "5.50",
+   "c96435fb52e2be50": "5.50",
    "e64a66cf8e1c3c09": "5.7"
   },
   ".claude/skills/otimizar-pc/scripts/dism.ps1": {
    "0de481cbb6795eba": "3.0",
+   "4d038e1b8d13579e": "5.50",
    "ae36437bb793bb36": "5.15"
+  },
+  ".claude/skills/otimizar-pc/scripts/elevar.ps1": {
+   "72dd28be173dd7d2": "5.50",
+   "7db7e9b063608f85": "5.50",
+   "e53469804c0b7412": "5.50"
+  },
+  ".claude/skills/otimizar-pc/scripts/limpar-vscode.ps1": {
+   "3f26e60ff61a35f0": "5.50",
+   "53838916759e53e0": "5.50"
   },
   ".claude/skills/otimizar-pc/scripts/limpar.ps1": {
    "0399dbe6f79088f5": "5.7",
+   "11967e5fba934d97": "5.50",
    "68dc94069df63702": "anterior-5.7",
    "a9bcf1151b6b3d5f": "3.0"
   },
   ".claude/skills/otimizar-pc/scripts/quarentena-installer.ps1": {
    "4380bc1f28418735": "5.14",
+   "97a0fe1012e2a5a6": "5.50",
    "a2610d81797c0657": "3.0",
    "c879c5a0424439e0": "5.15"
   },
@@ -3783,6 +3804,7 @@
    "4792b961317f63f2": "4.6",
    "4b4dc94433599ba1": "3.7",
    "4b5f08e24ab8f859": "3.4",
+   "4ecaca044f9e3f46": "5.50",
    "51f90314a0c25b86": "5.11",
    "5394c9b5bf150c78": "5.45",
    "5ac40d45bf579041": "5.37",
@@ -3885,6 +3907,7 @@
    "b79844ec715d8892": "5.43",
    "b9b5579a161f7aad": "5.9",
    "ba639ab79c7470c6": "4.3",
+   "ba8110b89f22da03": "5.50",
    "bc33529cc1b1e692": "4.4",
    "bd6dcf46a2af8658": "5.3",
    "c84057e14bca4c90": "4.2",
@@ -4030,6 +4053,7 @@
    "84f282b5b3900f8e": "5.29",
    "86c440dcc6855de0": "5.31",
    "8a4a1ad2f25c51f1": "5.33",
+   "8bdce28840e1f65c": "5.50",
    "8eaf731c58be893e": "4.3",
    "934dd59c37085c60": "4.6",
    "9a9a2df1a4228237": "4.8",

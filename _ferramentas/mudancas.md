@@ -1276,3 +1276,13 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto tem `bem-vindo.html` com a frase `O backup manda sozinho pro GitHub ao fim de cada resposta.` e o GitHub ainda não está ligado no projeto (`git rev-parse --show-prefix` sai com texto ou erro, porque a pasta está dentro de outra, ou `git remote get-url origin` dá erro) ou a regra 5 do `AGENTS.md` diz que não existe backup automático.
 **Como aplicar:** trocar só essa frase do `bem-vindo.html`. Com o backup automático ligado e sem GitHub: `O backup no GitHub ainda não está ligado: o <b>/syncar</b> liga ele uma vez, e daí em diante ele manda sozinho ao fim de cada resposta.` Com o backup automático desligado: `O backup automático ficou desligado, como você escolheu: o <b>/syncar</b> guarda no GitHub quando você chamar.` Mostrar o antes e o depois e gravar com o sim.
 **Como testar:** o `bem-vindo.html` não tem mais a frase `O backup manda sozinho pro GitHub ao fim de cada resposta.`
+
+## otimizar-pc-faxina-funda
+
+**Desde:** 5.50
+**Pra você:** O `/otimizar-pc` acha mais lixo, descobre quem enche o disco sozinho e não pede mais a senha de administrador à toa.
+**O que é:** a skill `/otimizar-pc` ganha um raio-X mais rápido (uns 2 minutos) que mostra o que foi gravado nos últimos 7 dias e as travas que deixam o disco encher de novo, mais caches no bloco 1, três blocos novos (VS Code, dado frio pro HD e programa sem uso) e um jeito único de rodar o que pede administrador, que confere o script antes de abrir o UAC e mostra só o resultado desta rodada. O modelo que a `/pauta` usa pra transcrever passa a ser poupado e só sai se você aprovar à parte.
+**Por quê:** o raio-X antigo não enxergava parte do perfil do usuário nem quem enchia o disco de novo depois da faxina, e um erro no script de administrador só aparecia depois de você aprovar o UAC, sem log nenhum.
+**Te afeta se:** o projeto tem a pasta `.claude/skills/otimizar-pc/` e não tem o arquivo `.claude/skills/otimizar-pc/scripts/elevar.ps1`.
+**Como aplicar:** trocar a pasta `.claude/skills/otimizar-pc/` do projeto inteira pela `_modelo/.claude/skills/otimizar-pc/` do kit. Mostrar à pessoa que a pasta vai ser trocada e trocar com o sim.
+**Como testar:** existem `.claude/skills/otimizar-pc/scripts/elevar.ps1` e `.claude/skills/otimizar-pc/scripts/limpar-vscode.ps1`, e o `SKILL.md` da skill cita `-ManterHuggingFace`.

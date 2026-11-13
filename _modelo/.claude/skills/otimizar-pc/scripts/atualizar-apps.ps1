@@ -1,7 +1,7 @@
 # Bloco 5 e Windows Update, um por vez: -Parte apps atualiza os programas (winget);
 # -Parte windows aplica o Windows Update, que pode pedir reinicio e por isso se pergunta a parte.
 # PRECISA DE ADMIN. Feche o navegador antes, senao o update dele falha.
-param([string]$LogDir,   # pasta do log, passada pela SKILL.md
+param([string]$LogDir,   # pasta do log, passada pelo elevar.ps1
       [ValidateSet('apps','windows')][string]$Parte)
 . (Join-Path $PSScriptRoot '_comum.ps1')
 $ErrorActionPreference = 'SilentlyContinue'

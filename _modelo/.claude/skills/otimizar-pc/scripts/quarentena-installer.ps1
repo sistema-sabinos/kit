@@ -1,7 +1,8 @@
 # Bloco 2: move os instaladores ORFAOS de C:\Windows\Installer pra quarentena em outro disco.
 # NAO APAGA NADA. Grava manifesto CSV pra dar pra desfazer.
-# PRECISA DE ADMIN. Disparar como a SKILL.md manda (caminho inteiro entre aspas e -LogDir).
-# Pra desfazer: o mesmo comando, com "-Desfazer" no fim da lista.
+# PRECISA DE ADMIN. Disparar pelo elevar.ps1, como a SKILL.md manda (ele confere a sintaxe,
+# poe as aspas e passa o -LogDir):  .\elevar.ps1 -Script "<caminho inteiro deste arquivo>"
+# Pra desfazer: o mesmo comando, com -Argumentos '-Desfazer' no fim.
 param(
     [string]$Destino,
     [switch]$Desfazer,
