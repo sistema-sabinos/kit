@@ -1,5 +1,5 @@
 {
- "versao": "5.50",
+ "versao": "5.51",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -1683,13 +1683,17 @@
    "b2c742716dfbf1b3": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/verificar-video.py": {
+   "0f6b68809632ba57": "5.51",
    "15869062e4da6c2b": "anterior-5.47",
+   "1ca34705f21eeacd": "5.51",
    "21b89d12d43fb2d9": "5.17",
    "25e2e0123c08b6da": "5.47",
    "50351e24f0630014": "anterior-5.47",
    "55bf2abae0b6bfff": "anterior-5.47",
    "7ec30dcd6b5770b9": "anterior-5.47",
    "9578ee9667627e19": "4.1",
+   "c7af191ceaed59db": "5.51",
+   "d65257d3caa597a7": "5.51",
    "f00c23635e238126": "anterior-4.1"
   },
   ".claude/skills/editar-video/motor/scripts/zona-segura.py": {
@@ -2838,17 +2842,17 @@
    "8661504aea8275b2": "anterior-5.14",
    "97347cbdfde91c56": "anterior-5.18",
    "a17386985ea39c2f": "anterior-5.18",
-   "e2d2ba881d5ee8c3": "5.50"
+   "e2d2ba881d5ee8c3": "anterior-5.50"
   },
   ".claude/skills/otimizar-pc/scripts/_comum.ps1": {
    "20d84191f769beae": "3.0",
    "262d47840718d819": "5.7",
    "42a930021168060e": "5.15",
-   "7784829a29d435ed": "5.50",
+   "7784829a29d435ed": "anterior-5.50",
    "940395a8533ada37": "5.50",
-   "a29272d9d9c808cc": "5.50",
+   "a29272d9d9c808cc": "anterior-5.50",
    "c2d4ace660402fda": "5.14",
-   "fad63960faa406ea": "5.50"
+   "fad63960faa406ea": "anterior-5.50"
   },
   ".claude/skills/otimizar-pc/scripts/atualizar-apps.ps1": {
    "0ff3dc07971384b1": "5.50",
@@ -2859,7 +2863,7 @@
   ".claude/skills/otimizar-pc/scripts/diagnostico.ps1": {
    "31e4ecbfe4ee8b4b": "3.0",
    "a3f88ab4f78e2142": "5.50",
-   "c96435fb52e2be50": "5.50",
+   "c96435fb52e2be50": "anterior-5.50",
    "e64a66cf8e1c3c09": "5.7"
   },
   ".claude/skills/otimizar-pc/scripts/dism.ps1": {
@@ -2869,11 +2873,11 @@
   },
   ".claude/skills/otimizar-pc/scripts/elevar.ps1": {
    "72dd28be173dd7d2": "5.50",
-   "7db7e9b063608f85": "5.50",
-   "e53469804c0b7412": "5.50"
+   "7db7e9b063608f85": "anterior-5.50",
+   "e53469804c0b7412": "anterior-5.50"
   },
   ".claude/skills/otimizar-pc/scripts/limpar-vscode.ps1": {
-   "3f26e60ff61a35f0": "5.50",
+   "3f26e60ff61a35f0": "anterior-5.50",
    "53838916759e53e0": "5.50"
   },
   ".claude/skills/otimizar-pc/scripts/limpar.ps1": {
@@ -3793,6 +3797,7 @@
    "24f51a405b1b8b64": "5.25",
    "2618e2fb4d5ae57e": "5.5",
    "27085768eeae0cd5": "5.32",
+   "2e9cf9664b720540": "5.51",
    "32130589c7e7fa90": "3.6",
    "332bc97f889928da": "5.6",
    "3407dce7762c7f73": "5.33",
@@ -3858,6 +3863,7 @@
    "01d0b2eba879dda9": "5.2",
    "054af1562309074f": "5.41",
    "088038870ec91f8e": "5.37",
+   "0ff3f14094de8126": "5.51",
    "10b07ce4d0049650": "5.44",
    "11deb160570a0435": "5.12",
    "1815b1ee45d7d760": "5.48",
@@ -4486,6 +4492,7 @@
    "163eaacf6965de99": "5.42",
    "3392610d96ead989": "5.41",
    "590aa90922e8ad04": "5.40",
+   "65db12de0af05b8a": "5.51",
    "67fdc8f68133178b": "5.39",
    "909d3cf566b3c085": "5.47",
    "b0781a23a4a4d945": "4.1",
@@ -4525,6 +4532,7 @@
   },
   "_modelo/.claude/skills/editar-video/scripts/print-pagina.test.mjs": {
    "6a5fcce82c7d7412": "5.40",
+   "d1d75a9abbbc14ef": "5.51",
    "f7c791102be66470": "5.47"
   },
   "_modelo/.claude/skills/editar-video/scripts/py.test.mjs": {

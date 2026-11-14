@@ -28,7 +28,9 @@ const carregar = async () => pw
 // largura e altura do PNG pelo cabecalho IHDR
 const tamanhoPng = (arq) => { const b = readFileSync(arq); return [b.readUInt32BE(16), b.readUInt32BE(20)] }
 
-const PAGINA = '<!doctype html><meta name="viewport" content="width=device-width"><body style="font:18px sans-serif">'
+// 5.62: sem o charset, o Chrome adivinha a codificacao, e so os testes com acento na frase (1 e 3) reprovavam de vez
+// em quando
+const PAGINA = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><body style="font:18px sans-serif">'
   + '<p>' + 'Texto de enchimento. '.repeat(200) + '</p><p id="alvo">O dinheiro   na conta não possui a cobertura direta do FGC.</p>'
   + '<p>' + 'Mais texto. '.repeat(200) + '</p></body>'
 

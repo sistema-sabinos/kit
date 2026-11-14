@@ -103,15 +103,35 @@ def janela_cruza_corte(C, tk, TB, t0, fps):
     a, na = casar_imagem(C[:h], tk[:h], TB, t0)
     b, nb = casar_imagem(C[h:], tk[h:], TB, float(tk[h]))
     return bool(na >= 0.6 and nb >= 0.6 and abs((b - a) - (float(tk[h]) - t0)) > 3 / fps)
-def casar_voz(jan, eb, inicio):
+def casar_voz(jan, eb, inicio, de=0, ate=None):
     """Instante do bruto de onde veio a voz de uma janela de 1 s (envelopes a 100 por segundo). inicio: o comeco do
-    audio do bruto, que a amostra 0 do audio decodificado vale. Devolve (instante, nota)."""
+    audio do bruto, que a amostra 0 do audio decodificado vale. de/ate: limita a busca a esses indices do envelope
+    (sem eles, o bruto inteiro). Devolve (instante, nota)."""
     jan = (jan - jan.mean()) / (jan.std() + 1e-9)
     best, o_ = -2, 0
-    for o in range(0, len(eb) - 100):
+    fim = len(eb) - 100 if ate is None else min(len(eb) - 100, ate)
+    for o in range(max(0, de), fim):
         e = eb[o:o + 100]; c = float(np.dot(jan, (e - e.mean()) / (e.std() + 1e-9))) / 100
         if c > best: best, o_ = c, o
     return o_ / 100 + inicio, best
+def voz_da_janela(jan, eb, inicio, sv, fps, margem=0.05):
+    """Decide a voz de uma janela contra a imagem, que veio de sv no bruto. A busca no bruto inteiro decide; se ela cai
+    longe da imagem e a voz tem, no proprio lugar da imagem, um pico de casamento quase tao alto, o audio sozinho nao
+    diz qual dos dois e a janela e ambigua (fala que se repete, frase dita duas vezes). Devolve (estado, instante,
+    nota), estado "ok", "ambigua" ou "descolada"."""
+    tol = 1.5 / fps
+    sa, best = casar_voz(jan, eb, inicio)
+    if abs(sv - sa) <= tol: return "ok", sa, best
+    # so as posicoes que o proprio teste de cima aceitaria: arredondar pra fora reencontraria o casamento descolado
+    lo, hi = int(np.floor((sv - inicio - tol) * 100)), int(np.ceil((sv - inicio + tol) * 100))
+    while lo <= hi and abs(sv - (lo / 100 + inicio)) > tol: lo += 1
+    while hi >= lo and abs(sv - (hi / 100 + inicio)) > tol: hi -= 1
+    nota = lambda o: casar_voz(jan, eb, inicio, o, o + 1)[1] if 0 <= o < len(eb) - 100 else -2
+    c = {o: nota(o) for o in range(lo - 1, hi + 2)}
+    # so pico conta: a encosta do pico descolado (envelope de voz e suave) tira nota alta e nao e outra fala
+    picos = [c[o] for o in range(lo, hi + 1) if c[o] >= c[o - 1] and c[o] >= c[o + 1]]
+    if picos and max(picos) >= best - margem: return "ambigua", sa, best
+    return "descolada", sa, best
 def patches(p, box, lado=24):
     """Boca e queixo de cada quadro, normalizados, com o carimbo de cada quadro e o comeco do audio."""
     cap, out = cv2.VideoCapture(str(p)), []
@@ -208,7 +228,7 @@ def main():
             Bp, TB, ia = patches(BRUTO, box)
             ev, eb = envelope(pub / P["voz"]), envelope(BRUTO)
             limiar = 0.1 * np.percentile(ev, 95)
-            ruins, pulou = [], 0
+            ruins, pulou, ambiguas, conferidas = [], 0, 0, 0
             for t0 in np.arange(0, DUR - 1, 0.5):
                 q0, q1 = janela_quadros(TP, t0)
                 if q1 <= q0 or visivel[q0:q1].mean() < 1 or (ev[int(t0 * 100):int(t0 * 100) + 100] > limiar).mean() < 0.6: continue
@@ -217,12 +237,18 @@ def main():
                 if len(ks) == 0: continue
                 C = F[ks] @ Bp.T / F.shape[1]                    # correlacao de cada quadro com cada quadro do bruto
                 sv, nota = casar_imagem(C, TP[ks], TB, t0)       # instante do bruto de onde veio a imagem em t0
-                sa, best = casar_voz(ev[int(t0 * 100):int(t0 * 100) + 100], eb, ia)   # e de onde veio a voz
+                estado, sa, best = voz_da_janela(ev[int(t0 * 100):int(t0 * 100) + 100], eb, ia, sv, FPS)   # e a voz
                 if nota < 0.6 or best < 0.6: continue            # janela sem certeza nas duas pontas
                 if janela_cruza_corte(C, TP[ks], TB, t0, FPS): pulou += 1; continue
-                if abs(sv - sa) > 1.5 / FPS:
+                if estado == "ambigua": ambiguas += 1; continue
+                conferidas += 1
+                if estado == "descolada":
                     ruins.append(f"{t0:.1f} s (imagem de {sv:.2f} s do bruto, voz de {sa:.2f} s: {1000 * (sv - sa):+.0f} ms)")
             if pulou: avisos.append(f"{pulou} janelas puladas por cruzar corte da montagem")
+            if ambiguas and not conferidas:
+                avisos.append(f"sincronia boca x voz nao conferida: voz ambigua em {ambiguas} janelas (o audio casa igual em dois lugares do bruto)")
+            elif ambiguas:
+                avisos.append(f"{ambiguas} janelas com voz ambigua puladas (o audio casa igual em dois lugares do bruto)")
             if ruins: falhas.append("boca fora da voz em: " + "; ".join(ruins))
 
         # ---------- 3a) pessoa parada onde aparece

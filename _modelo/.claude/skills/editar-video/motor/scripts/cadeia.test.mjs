@@ -1369,8 +1369,78 @@ test('5.58: a voz do verificar-video soma o comeco do audio do bruto', () => com
   ].join('\n'), d)
   assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
   assert.match(semTraco(r.stdout), /ok/)
+}))
+
+// 5.62: a busca no bruto inteiro casava a voz num lugar errado com nota alta (frase que se repete) e reprovava video
+// bom; agora o empate com o lugar da imagem pula a janela, e voz descolada de verdade continua reprovando
+const FALA_PY = [
+  'def fala(n, seed):',
+  '    r = np.random.default_rng(seed); e = np.zeros(n); i = 0',
+  '    while i < n:',
+  '        d = int(r.integers(8, 30)); e[i:i + d] = r.random() * 2 + 0.5; i += d + int(r.integers(3, 25))',
+  '    return e + 0.05 * r.random(n)',
+]
+
+test('5.62: voz_da_janela do verificar-video pula a frase repetida no bruto em vez de reprovar', () => comTemp((d) => {
+  const r = funcaoDoPy('verificar-video.py', 'voz_da_janela', [
+    ...FALA_PY,
+    'cv = ns["casar_voz"]',
+    'eb = fala(3000, 5); eb[300:400] = eb[2000:2100]',
+    'jan = eb[2000:2100]',
+    'sa, nota = cv(jan, eb, 0)',
+    'assert abs(sa - 3.0) < 1e-9 and nota > 0.99, ("canario: a busca global casa na copia", sa, nota)',
+    'assert f(jan, eb, 0, 20.0, 30)[0] == "ambigua", f(jan, eb, 0, 20.0, 30)',
+    'print("ok")',
+  ].join('\n'), d, ['casar_voz'])
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.match(semTraco(r.stdout), /ok/)
+}))
+
+test('5.62: voz_da_janela do verificar-video da ambigua no envelope que se repete', () => comTemp((d) => {
+  const r = funcaoDoPy('verificar-video.py', 'voz_da_janela', [
+    'rng = np.random.default_rng(42)',
+    'eb = 2 + np.tile(rng.random(150), 12) + 0.05 * rng.random(1800)',
+    'ev = eb[150:1150]',
+    'est = [f(ev[int(t * 100):int(t * 100) + 100], eb, 0, t, 30)[0] for t in np.arange(0, 9, 0.5)]',
+    'assert len(est) == 18 and all(e == "ambigua" for e in est), est',
+    'eb2 = np.tile(np.random.default_rng(42).uniform(0.2, 1, 50), 8)',
+    'assert f(eb2[50:150], eb2, 0, 0.5, 30)[0] == "ambigua", f(eb2[50:150], eb2, 0, 0.5, 30)',
+    // ritmo de 0,2 s com a voz certa: o pico da global cai 0,2 s antes, perto (achado da 2a volta da final)
+    'eb3 = np.tile(np.random.default_rng(42).uniform(0.2, 1, 20), 20)',
+    'assert f(eb3[20:120], eb3, 0, 0.2, 30)[0] == "ambigua", f(eb3[20:120], eb3, 0, 0.2, 30)',
+    'print("ok")',
+  ].join('\n'), d, ['casar_voz'])
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.match(semTraco(r.stdout), /ok/)
+}))
+
+test('5.62: voz_da_janela do verificar-video segue pegando voz descolada de 0,2 s, 1,5 s e 8 s', () => comTemp((d) => {
+  const r = funcaoDoPy('verificar-video.py', 'voz_da_janela', [
+    ...FALA_PY,
+    'eb = fala(3000, 1)',
+    'for k, esp in ((0, "ok"), (20, "descolada"), (150, "descolada"), (800, "descolada")):',
+    '    est = [f(eb[i + k:i + k + 100], eb, 0, i / 100, 30)[0] for i in range(500, 2000, 100)]',
+    '    assert len(est) == 15 and all(e == esp for e in est), (k, est)',
+    // descolamento logo acima da tolerancia (70 ms a 24 fps, 54 ms a 30 fps): a busca no lugar da imagem nao pode
+    // reencontrar o proprio casamento descolado (achado da comum)
+    'eu = np.random.default_rng(42).uniform(0.2, 1, 3000)',
+    'assert f(eu[507:607], eu, 0, 5.0, 24)[0] == "descolada", f(eu[507:607], eu, 0, 5.0, 24)',
+    'assert f(eu[506:606], eu, 0, 5.006, 30)[0] == "descolada", f(eu[506:606], eu, 0, 5.006, 30)',
+    'assert f(eu[506:606], eu, 0, 5.0, 24)[0] == "ok", ("canario: 60 ms cabe em 1,5 quadro a 24 fps", f(eu[506:606], eu, 0, 5.0, 24))',
+    // envelope suave (como a voz de verdade): o vizinho do mesmo pico tira nota alta e nao pode virar ambigua
+    // (achado da final)
+    'w = np.hanning(21)',
+    'es = np.convolve(np.random.default_rng(42).uniform(0.2, 1, 3020), w / w.sum(), mode="valid")',
+    'sa, nota = ns["casar_voz"](es[506:606], es, 0, 505, 506)',
+    'assert nota > 0.95, ("canario: o vizinho do pico casa alto no envelope suave", nota)',
+    'assert f(es[506:606], es, 0, 5.0, 30)[0] == "descolada", f(es[506:606], es, 0, 5.0, 30)',
+    'assert f(es[520:620], es, 0, 5.0, 30)[0] == "descolada", f(es[520:620], es, 0, 5.0, 30)',
+    'print("ok")',
+  ].join('\n'), d, ['casar_voz'])
+  assert.equal(r.status, 0, semTraco(r.stderr) + semTraco(r.stdout))
+  assert.match(semTraco(r.stdout), /ok/)
   const src = readFileSync(script('verificar-video.py'), 'utf8')
-  assert.ok(src.includes('casar_voz(ev[int(t0 * 100):int(t0 * 100) + 100], eb, ia)'), 'a funcao nao esta ligada a sincronia')
+  assert.ok(src.includes('voz_da_janela(ev[int(t0 * 100):int(t0 * 100) + 100], eb, ia, sv, FPS)'), 'a funcao nao esta ligada a sincronia')
 }))
 
 test('5.58: a duracao da pessoa no verificar-video sai do ultimo carimbo, sem perder o buraco', () => comTemp((d) => {
