@@ -1,5 +1,5 @@
 {
- "versao": "5.51",
+ "versao": "5.52",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -95,6 +95,7 @@
    "ac4ccca8f230e2f3": "anterior-5.42",
    "c71e1df6845bbb2e": "anterior-5.11",
    "ce575b6c3d645616": "5.45",
+   "ce9a00426353959c": "5.52",
    "d9147c4896623057": "5.7",
    "de7d3da465e45547": "anterior-5.41",
    "e176acebbf67f734": "5.46",
@@ -1683,7 +1684,7 @@
    "b2c742716dfbf1b3": "4.1"
   },
   ".claude/skills/editar-video/motor/scripts/verificar-video.py": {
-   "0f6b68809632ba57": "5.51",
+   "0f6b68809632ba57": "anterior-5.51",
    "15869062e4da6c2b": "anterior-5.47",
    "1ca34705f21eeacd": "5.51",
    "21b89d12d43fb2d9": "5.17",
@@ -1692,8 +1693,8 @@
    "55bf2abae0b6bfff": "anterior-5.47",
    "7ec30dcd6b5770b9": "anterior-5.47",
    "9578ee9667627e19": "4.1",
-   "c7af191ceaed59db": "5.51",
-   "d65257d3caa597a7": "5.51",
+   "c7af191ceaed59db": "anterior-5.51",
+   "d65257d3caa597a7": "anterior-5.51",
    "f00c23635e238126": "anterior-4.1"
   },
   ".claude/skills/editar-video/motor/scripts/zona-segura.py": {
@@ -2282,6 +2283,7 @@
   ".claude/skills/iniciar/SKILL.md": {
    "125b0d71fd20698f": "anterior-3.0",
    "277acdba56845c48": "4.4",
+   "2d037be72aa48ec0": "5.52",
    "463dd3b295ef70c8": "3.7",
    "4cfe5288be5dce49": "3.0",
    "58d747b708c19793": "4.1",
@@ -3020,7 +3022,8 @@
    "918f2e8d419ea383": "anterior-5.6",
    "bb9b269f318f0916": "anterior-5.42",
    "c294f762e0d969f0": "5.42",
-   "ce19ebec4a3b559a": "5.6"
+   "ce19ebec4a3b559a": "5.6",
+   "edb9a7c069f8abda": "5.52"
   },
   ".claude/skills/pedir/cardapio.md": {
    "9977a71e8af037e2": "5.6"
@@ -3590,6 +3593,7 @@
   "marca/design-guide.md": {
    "76ae402a0b96f7d8": "5.48",
    "a631ffd3876ece59": "3.9",
+   "de8e57f6a84df931": "5.52",
    "e83b1f226cf0fa54": "3.0",
    "f1c4df489fe7b555": "4.9"
   },
@@ -3800,6 +3804,7 @@
    "2e9cf9664b720540": "5.51",
    "32130589c7e7fa90": "3.6",
    "332bc97f889928da": "5.6",
+   "33462ceb1a0e3ae7": "5.52",
    "3407dce7762c7f73": "5.33",
    "34168a70a9fb9dc6": "5.7",
    "3598c318ca538062": "3.8",
@@ -3911,6 +3916,7 @@
    "b713364289f7e7bc": "5.28",
    "b72893848eed8d13": "5.14",
    "b79844ec715d8892": "5.43",
+   "b807de83cb4c8968": "5.52",
    "b9b5579a161f7aad": "5.9",
    "ba639ab79c7470c6": "4.3",
    "ba8110b89f22da03": "5.50",
@@ -4983,9 +4989,11 @@
    "a058475105352be7": "3.0"
   },
   "_modelo/templates/marca/exemplos/design-guide-agencia.md": {
+   "0a73c17df7d4f66a": "5.52",
    "0e76a153085e09ff": "3.0"
   },
   "_modelo/templates/marca/exemplos/design-guide-solopreneur.md": {
+   "be8ef5ccebd7246f": "5.52",
    "c146479ee12aee54": "3.0"
   },
   "_modelo/templates/perfis/agents-md-agencia.md": {

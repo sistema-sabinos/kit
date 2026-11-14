@@ -40,7 +40,7 @@
 > Fica vazio no caso comum. Só se preenche quando você pede ou o manual da marca fixa canto, sombra ou botão.
 
 - Bordas:
-- Border-radius dos cards:
+- Cantos dos cards (mais redondo ou mais reto):
 - Botões:
 - Sombras:
 

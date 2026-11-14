@@ -31,9 +31,9 @@ Quente, humano e editorial. Tons terrosos com fundo off-white. Parece um livro b
 
 ## Elementos-chave
 
-- Bordas: dashed, arredondadas (border-radius: 20px)
-- Border-radius dos cards: 20px
-- Botões: pill com border-radius: 50px, fundo terracota
+- Bordas: dashed, arredondadas
+- Cantos dos cards: bem arredondados (20px)
+- Botões: pill bem redondo nas pontas, fundo terracota
 - Sombras: sutil (0 4px 20px rgba(0,0,0,0.06))
 
 ---
