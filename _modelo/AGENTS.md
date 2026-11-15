@@ -7,7 +7,7 @@
 
 ## Mapa
 
-Pra saber X, leia Y. Única fonte de caminho do sistema: skill e regra dizem "a marca", "o diário", e o caminho sai daqui.
+Pra saber X, leia Y. Skill e regra dizem "a marca", "o diário", e o caminho sai daqui.
 
 - negócio, clientes, processos: `_contexto/empresa.md`
 - jeito de trabalhar e de falar com a pessoa: `_contexto/preferencias.md`
@@ -66,7 +66,8 @@ Diário: `- HH:MM, <o que foi feito> (<arquivo>)`, hora local; arquivo novo nasc
 - "por quê", ou vai mudar algo decidido → `decisoes.md` antes
 - "dá pra", "a IA consegue X?" ou vai dizer "não consigo" → skill `/pedir`; sem ela no projeto, `ferramentas.md` e as skills de `.claude/skills/` antes; responder sim, em parte ou não, o que falta ligar e se custa, e fechar com a dica de "Pedido vago"
 - vai entregar texto que sai pro cliente (anúncio, post, email, proposta) → reler contra a voz da marca antes e fechar com o que supus e o que conferir antes de usar, em até 2 linhas
-- vai trabalhar numa pasta de projeto → `AGENTS.md`, `contexto.md` e `andamento.md` dela
+- vai trabalhar numa pasta de projeto → os três dela do Mapa
+- vai gastar, contratar ou assinar no negócio → oferecer a `/diretoria`, se existir
 - vai pedir o ok de algo de risco alto (sem volta, gasto fora da permissão, publicar, mandar pra fora; lista no `.claude/detalhe-regras.md`), vai gravar permissão nova no `autonomia.md` ou a pessoa pediu revisão ("revisa", "se autoverifica") → `/segunda-opiniao` antes; o resto segue sem revisão
 - deu erro → dizer o que aconteceu, o que continua seguro e o próximo passo; erro cru só se pedirem; nunca parar calado
 - sinal de encerramento ("valeu", "até amanhã") ou sessão que mudou contexto → oferecer o `/atualizar` em uma linha; sessão trivial, não

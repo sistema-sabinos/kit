@@ -14,6 +14,9 @@ import { caraDeChave } from '../_modelo/.claude/hooks/auto-sync.mjs'
 // 5.60 (bloco 3): Desde e Pra você alimentam o "pendentes" do atualizar-projeto
 const CAMPOS_MUDANCA = ['Desde', 'Pra você', 'O que é', 'Por quê', 'Te afeta se', 'Como aplicar', 'Como testar']
 
+// 5.65: agente do _modelo que so le arquivo, com a lista exata de ferramentas (Gate 2)
+export const SO_LEITURA = { 'diretoria-cadeira.md': ['Read', 'Grep', 'Glob'] }
+
 // A lista de termos proibidos do Gate 1 (nomes, marcas, ids da operacao de origem) mora na
 // bancada de desenvolvimento, em bancada/proibidos.json, fora do kit: este arquivo vai no zip
 // e no repositorio publico, e a lista escrita aqui seria ela mesma o vazamento. Na pasta-mae
@@ -363,6 +366,15 @@ const OBRIGATORIOS = [
   '_modelo/.claude/agents/ml-copywriter.md', '_modelo/.claude/agents/ml-designer.md',
   '_modelo/.claude/agents/ml-auditor.md', '_modelo/.claude/agents/ml-publicador.md',
   '_modelo/.claude/agents/pauta-leitor.md',
+  // 5.65: a /diretoria e a cadeira que ela despacha (so leitura, Gate 2)
+  '_modelo/.claude/skills/diretoria/SKILL.md', '_modelo/.claude/agents/diretoria-cadeira.md',
+  '_modelo/.claude/skills/diretoria/referencias/cadeira-dinheiro.md',
+  '_modelo/.claude/skills/diretoria/referencias/cadeira-vendas.md',
+  '_modelo/.claude/skills/diretoria/referencias/cadeira-operacao.md',
+  '_modelo/.claude/skills/diretoria/referencias/cadeira-regras.md',
+  '_modelo/.claude/skills/diretoria/referencias/cadeira-pessoas.md',
+  '_modelo/.claude/skills/diretoria/referencias/cadeira-marca.md',
+  '_modelo/.claude/skills/diretoria/referencias/cadeira-pe-no-chao.md',
   'VERSAO', '_ferramentas/atualizar-projeto.mjs', '_ferramentas/componentes.json',
   '_ferramentas/impressoes.json', '_ferramentas/mudancas.md',
   '_modelo/.claude/skills/atualizar-sabinos/SKILL.md',
@@ -566,6 +578,13 @@ export function rodarGates(dirKit, opcoes = {}) {
     if (!m) { falhas.push({ gate: 2, arquivo: rel, detalhe: 'agente sem frontmatter' }); continue }
     for (const campo of ['name', 'description', 'tools']) {
       if (!new RegExp(`^${campo}:\\s*\\S`, 'm').test(m[1])) falhas.push({ gate: 2, arquivo: rel, detalhe: `agente sem ${campo}` })
+    }
+    // 5.65: agente so de leitura tem a lista exata; frase de prompt nao segura injecao, a lista segura
+    const exatas = SO_LEITURA[rel.split('/').pop()]
+    if (exatas) {
+      const t = /^tools:\s*(.+)$/m.exec(m[1])
+      const lista = t ? t[1].split(',').map(s => s.trim()).filter(Boolean) : []
+      if (lista.join(',') !== exatas.join(',')) falhas.push({ gate: 2, arquivo: rel, detalhe: `agente so de leitura com tools fora da lista exata (${exatas.join(', ')}): ${lista.join(', ') || 'sem tools'}` })
     }
   }
 

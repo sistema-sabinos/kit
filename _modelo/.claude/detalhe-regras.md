@@ -4,7 +4,7 @@
 
 ## Diário e decisão
 
-Diário: `- HH:MM, <o que foi feito> (<arquivo>)`; origem diferente de `dono` escreve em `AAAA-MM-DD-<origem>.md`; o arquivo do dia, se não existir, nasce com `# AAAA-MM-DD` na primeira linha, e data e hora são as locais. Decisão: `- AAAA-MM-DD, <origem>: <decisão>. Por quê: <motivo>.`; mudar uma velha é linha nova terminando em `substitui: AAAA-MM-DD "<começo da velha>"`; decisão de projeto: `- AAAA-MM-DD, <origem>, [projeto] <pasta>: <decisão>. Por quê: <motivo>.`, com `<pasta>` sendo o último pedaço do caminho (`clientes/doceria-da-bia` vira `doceria-da-bia`). Os dois só recebem acréscimo.
+Diário: `- HH:MM, <o que foi feito> (<arquivo>)`; origem diferente de `dono` escreve em `AAAA-MM-DD-<origem>.md`; o arquivo do dia, se não existir, nasce com `# AAAA-MM-DD` na primeira linha, e data e hora são as locais. Decisão: `- AAAA-MM-DD, <origem>: <decisão>. Por quê: <motivo>.`; mudar uma velha é linha nova terminando em `substitui: AAAA-MM-DD "<começo da velha>"`; decisão de projeto: `- AAAA-MM-DD, <origem>, [projeto] <pasta>: <decisão>. Por quê: <motivo>.`, com `<pasta>` sendo o último pedaço do caminho (`clientes/doceria-da-bia` vira `doceria-da-bia`). Os dois só recebem acréscimo. Decisão tomada depois de uma reunião da `/diretoria` leva `[diretoria]` logo depois da origem, e a volta dela, `[diretoria] como foi "<começo da original>"` (formato no Passo 7 da skill). Cada reunião da `/diretoria` fica em `_memoria/diretoria/AAAA-MM-DD-<tema>.md`, gravada em pedaços enquanto ela roda.
 
 ## Tabela de destinos, por extenso
 
@@ -42,7 +42,7 @@ O `AGENTS.md` traz estas regras na forma curta; aqui fica o texto inteiro, com o
 
 ## Risco alto
 
-Uma lista só: a `/segunda-opiniao`, o `AGENTS.md` e as skills seguem esta. É risco alto o que não tem volta (apagar de vez, mandar uma pasta pra fora); gasto que passa do teto ou que a permissão do `_contexto/autonomia.md` não cobre, com o crédito avulso do Codex junto, que pede o "pode ir"; domínio e cartão; publicar o que vai pro ar; a primeira mensagem pra cliente num formato novo; campanha nova, verba total maior ou objetivo de campanha trocado; e, na pasta-mãe, a estrutura de pasta e o pacote de skills que o `/setup` e o `/novo-projeto` criam. Risco alto pede o sim na hora, em qualquer modo, e passa antes pela `/segunda-opiniao` na dose completa. O resto (o que tem volta, o que a permissão já cobre) segue sem revisão.
+Uma lista só: a `/segunda-opiniao`, o `AGENTS.md` e as skills seguem esta. É risco alto o que não tem volta (apagar de vez, mandar uma pasta pra fora); gasto que passa do teto ou que a permissão do `_contexto/autonomia.md` não cobre, com o crédito avulso do Codex junto, que pede o "pode ir"; domínio e cartão; publicar o que vai pro ar; a primeira mensagem pra cliente num formato novo; campanha nova, verba total maior ou objetivo de campanha trocado; e, na pasta-mãe, a estrutura de pasta e o pacote de skills que o `/setup` e o `/novo-projeto` criam. Risco alto pede o sim na hora, em qualquer modo, e passa antes pela `/segunda-opiniao` na dose completa. Dentro de uma reunião da `/diretoria`, o revisor da `/segunda-opiniao` entra na vaga do Pé no Chão, numa volta só, e as outras voltas da dose completa só rodam se a proposta mudar depois da revisão, por quem for (Passo 5 da `/diretoria`). O resto (o que tem volta, o que a permissão já cobre) segue sem revisão.
 
 ## Codex
 

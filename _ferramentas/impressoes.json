@@ -1,5 +1,5 @@
 {
- "versao": "5.52",
+ "versao": "5.53",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -9,6 +9,9 @@
   },
   ".claude/agents/designer.md": {
    "ee7eac4c0b50520d": "anterior-3.6"
+  },
+  ".claude/agents/diretoria-cadeira.md": {
+   "0a67d875e4666b84": "5.53"
   },
   ".claude/agents/espiao.md": {
    "ced97c5e410d2d79": "anterior-3.6"
@@ -89,10 +92,12 @@
    "192e30e56cb6b423": "5.14",
    "1a5cac3833e96dca": "5.48",
    "25130c1222651fe1": "5.11",
+   "3800300bd226095a": "5.53",
    "5c9f23b0ee26c871": "5.41",
    "a207d0ca0847e383": "anterior-5.41",
    "a50d4bbc6d7e3829": "5.42",
    "ac4ccca8f230e2f3": "anterior-5.42",
+   "acef678822b94227": "5.53",
    "c71e1df6845bbb2e": "anterior-5.11",
    "ce575b6c3d645616": "5.45",
    "ce9a00426353959c": "5.52",
@@ -100,7 +105,8 @@
    "de7d3da465e45547": "anterior-5.41",
    "e176acebbf67f734": "5.46",
    "e271cdb7d4bb10db": "anterior-5.46",
-   "f6adafe56229494e": "anterior-5.11"
+   "f6adafe56229494e": "anterior-5.11",
+   "f9239b045c0029cf": "5.53"
   },
   ".claude/hooks/auto-sync.mjs": {
    "0450007a06f7dec4": "5.43",
@@ -679,6 +685,8 @@
    "847b1c82510b9fb7": "4.1",
    "86f229e656258c90": "anterior-4.4",
    "8c584a09e89228ce": "4.5",
+   "9b58ecccceb50148": "5.53",
+   "ab878a4d099e53da": "5.53",
    "aec1cb70945b3a81": "4.8",
    "b677b70d4a65230d": "anterior-5.43",
    "c3fc333186e32f9d": "5.45",
@@ -991,6 +999,7 @@
   ".claude/skills/clonar-especialista/scripts/checar-apelido.mjs": {
    "007cef7722652a2e": "5.15",
    "1b3c7ee957dadc81": "5.11",
+   "9ad18def9386337c": "5.53",
    "beb1fc5ce5dcc437": "anterior-5.11",
    "feddb8df711604e5": "5.20"
   },
@@ -1480,6 +1489,33 @@
   ".claude/skills/decupar-referencia/prompt-decupagem.md": {
    "0c572de570e9c39b": "4.1",
    "96c10818f5139efc": "5.2"
+  },
+  ".claude/skills/diretoria/SKILL.md": {
+   "35896dc3e03a5105": "5.53",
+   "9d96646138c700e4": "5.53",
+   "a3eca5c46929d406": "5.53",
+   "b6c0fcc7762013d0": "5.53"
+  },
+  ".claude/skills/diretoria/referencias/cadeira-dinheiro.md": {
+   "f6bd84591b8314fd": "5.53"
+  },
+  ".claude/skills/diretoria/referencias/cadeira-marca.md": {
+   "85f42decdac7928f": "5.53"
+  },
+  ".claude/skills/diretoria/referencias/cadeira-operacao.md": {
+   "f95c73b884151113": "5.53"
+  },
+  ".claude/skills/diretoria/referencias/cadeira-pe-no-chao.md": {
+   "55fa5385c6a85ebf": "5.53"
+  },
+  ".claude/skills/diretoria/referencias/cadeira-pessoas.md": {
+   "0820814e33eebdb1": "5.53"
+  },
+  ".claude/skills/diretoria/referencias/cadeira-regras.md": {
+   "83b71b09d0fd1a3c": "5.53"
+  },
+  ".claude/skills/diretoria/referencias/cadeira-vendas.md": {
+   "52a20662328b0d9e": "5.53"
   },
   ".claude/skills/editar-video/SKILL.md": {
    "0830ddc8462f9823": "5.42",
@@ -2303,6 +2339,7 @@
    "abd9ecd25d36ed53": "5.11",
    "bcaea1aa7cb0f35b": "anterior-4.8",
    "c9e24c717aa054aa": "anterior-3.0",
+   "dea6e29f080e1949": "5.53",
    "e51d6dcb94ed19e3": "anterior-3.0",
    "e5d4f045eef169c3": "4.3",
    "f04d308f5895aa64": "4.8",
@@ -3492,7 +3529,8 @@
    "e1de1ad21ed4f5d9": "anterior-4.3",
    "ea5a25380f7e2c6b": "anterior-4.4",
    "f244bd12e8c2b4d7": "5.41",
-   "f94c05738fce3489": "anterior-5.42"
+   "f94c05738fce3489": "anterior-5.42",
+   "fb1870fa879924d0": "5.53"
   },
   "CLAUDE.md": {
    "14230e4bca5ae346": "anterior-3.0",
@@ -3655,6 +3693,7 @@
    "15f819b72e6833e6": "5.11",
    "1a940fc0ae981fb5": "5.7",
    "1bae5e68f32c4e99": "5.3",
+   "1c80a809672fed0b": "5.53",
    "30f69a3aaf4f1698": "3.1",
    "37f3245373ea81ce": "4.3",
    "3988d541d6dce979": "5.2",
@@ -3709,6 +3748,7 @@
    "3bbb01d01fc46095": "3.8",
    "467820122fa682a4": "5.48",
    "4b6f97c80d0b6c93": "3.3",
+   "527043ce87ee71c9": "5.53",
    "5a9b184f3cffe6c7": "4.8",
    "5d3c24d00496f4b3": "4.9",
    "5ddf4efb0fc5465e": "5.9",
@@ -3826,6 +3866,7 @@
    "6b870d6cef86e220": "5.12",
    "6babb0a0c9e886b2": "5.10",
    "712e9703a91e8dfc": "5.14",
+   "759c3399ad639421": "5.53",
    "760e7144fba6ec74": "5.8",
    "78dcc9a83fb44214": "5.49",
    "84390315012ff0e6": "3.5",
@@ -3884,6 +3925,7 @@
    "3ec15f7f82d24dbc": "3.9",
    "41094b6c78e8e5e2": "5.22",
    "43358284da827b38": "5.15",
+   "46ddf28762d070de": "5.53",
    "49a506dd32096b01": "3.11",
    "4c673c95a8dcd8ad": "5.32",
    "4da33b375501651a": "5.5",
@@ -3975,6 +4017,7 @@
    "5bdb543fb3faa77f": "4.6",
    "608d255a974aa608": "5.11",
    "7d32988319818612": "5.17",
+   "8e7bc055b22c3d25": "5.53",
    "91e6c1b2982d6c40": "3.7",
    "9b1bf4c4aca2e486": "3.6",
    "a4dc0a3edb408e54": "3.5",
@@ -4062,6 +4105,7 @@
    "704042b811351430": "5.28",
    "78293e8eaa246253": "5.22",
    "79d8117d1ca6b9dd": "4.1",
+   "824a0b61421c7233": "5.53",
    "84f282b5b3900f8e": "5.29",
    "86c440dcc6855de0": "5.31",
    "8a4a1ad2f25c51f1": "5.33",
@@ -4101,6 +4145,7 @@
    "307210c96ab699c9": "5.8",
    "36151f9d5a89fa69": "4.8",
    "475cd602c6c9e593": "5.11",
+   "48fbba0dad6ffb79": "5.53",
    "4d3e38edf35cd066": "5.21",
    "5bb4c7778a37f9eb": "5.18",
    "627b322ab232fd9c": "5.26",
@@ -4139,6 +4184,7 @@
    "548fa53c7a8da0d3": "3.6",
    "5cc6c5f8c0df0301": "4.3",
    "78b070ff0ca5f0e5": "5.28",
+   "7c139054c0e177e3": "5.53",
    "91b0374deb83d658": "5.25",
    "95eac014aad0935c": "5.7",
    "9c508519df48931c": "5.43",
@@ -4348,6 +4394,7 @@
    "d988cd42538e6705": "5.48"
   },
   "_modelo/.claude/skills/clonar-especialista/scripts/checar-apelido.test.mjs": {
+   "2e157927c4b3715b": "5.53",
    "a748024ab92f107e": "5.11"
   },
   "_modelo/.claude/skills/clonar-especialista/scripts/instalar.test.mjs": {

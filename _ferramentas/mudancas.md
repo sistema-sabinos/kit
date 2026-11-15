@@ -1286,3 +1286,13 @@ Se `dados/chrome-perfil/` já estiver no git (`git ls-files dados/chrome-perfil`
 **Te afeta se:** o projeto tem a pasta `.claude/skills/otimizar-pc/` e não tem o arquivo `.claude/skills/otimizar-pc/scripts/elevar.ps1`.
 **Como aplicar:** trocar a pasta `.claude/skills/otimizar-pc/` do projeto inteira pela `_modelo/.claude/skills/otimizar-pc/` do kit. Mostrar à pessoa que a pasta vai ser trocada e trocar com o sim.
 **Como testar:** existem `.claude/skills/otimizar-pc/scripts/elevar.ps1` e `.claude/skills/otimizar-pc/scripts/limpar-vscode.ps1`, e o `SKILL.md` da skill cita `-ManterHuggingFace`.
+
+## skill-diretoria
+
+**Desde:** 5.53
+**Pra você:** Antes de gastar, contratar ou assinar, a IA pode reunir a Diretoria do seu negócio: dinheiro, vendas, operação e regras olham o seu projeto e você recebe uma resposta só, com a conta e o risco à vista.
+**O que é:** comando novo, `/diretoria`, com o agente `diretoria-cadeira`, que só lê arquivo. Até quatro cadeiras leem o projeto cada uma pelo seu ângulo, o Pé no Chão procura o que todas deixaram passar, e a resposta sai em quatro partes (o que eu vejo, o que eu faria, o que pode dar errado, próximo passo). Ela só roda com o seu sim, depois do aviso de tempo (uns 3 minutos) e de custo (umas 6 conversas normais). A IA oferece quando você vai gastar, contratar ou assinar, no check-up do mês do negócio, quando o negócio muda de fase e no "Como foi?" de uma decisão antiga da Diretoria. Cada reunião fica guardada em `_memoria/diretoria/`.
+**Por quê:** quem toca o negócio sozinho decide preço, gasto e contratação olhando de um ângulo só; num teste com 12 negócios inventados, a reunião achou o problema escondido em 10 casos, contra 7 de uma conversa comum.
+**Te afeta se:** o projeto não tem `.claude/skills/diretoria/`.
+**Como aplicar:** dizer em uma frase o que a Diretoria faz e quanto custa cada reunião, e perguntar se entra. Com o sim, refazer o plano do Passo 3 com `--componentes diretoria` (somado a qualquer outro componente já escolhido) e aplicar. Se existir `~/.claude/skills/diretoria/` (um conselheiro com esse apelido, feito antes), avisar que ele roda no lugar do `/diretoria` do projeto e oferecer trocar o apelido dele pela `/clonar-especialista`. Sem o sim, nada muda.
+**Como testar:** `.claude/skills/diretoria/SKILL.md` e `.claude/agents/diretoria-cadeira.md` existem no projeto.

@@ -29,6 +29,11 @@ export function checarApelido(apelido, { projeto = '.', casa = homedir(), atuali
   const doSistema = [join(projeto, '.claude', 'skills')]
   if (mae) doSistema.push(join(mae, '_modelo', '.claude', 'skills'), join(mae, '.claude', 'skills'))
   for (const l of doSistema) if (pastas(l).includes(apelido)) return { codigo: 1, linha: `ja e nome de skill do sistema (${l}): escolha outro apelido` }
+  // 5.65: nome de agente do sistema tambem (o conselheiro vira ~/.claude/agents/<apelido>.md, e o
+  // pessoal ganharia do agente de projeto que a /diretoria despacha)
+  const agentesDoSistema = [join(projeto, '.claude', 'agents')]
+  if (mae) agentesDoSistema.push(join(mae, '_modelo', '.claude', 'agents'))
+  for (const l of agentesDoSistema) if (existsSync(join(l, `${apelido}.md`))) return { codigo: 1, linha: `ja e nome de agente do sistema (${l}): escolha outro apelido` }
 
   const pastaSkill = join(casa, '.claude', 'skills', apelido)
   const agente = join(casa, '.claude', 'agents', `${apelido}.md`)

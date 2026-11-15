@@ -1408,6 +1408,23 @@ test('gate 2 exige name, description e tools em agente do _modelo', () => {
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
+// 5.65: a cadeira da /diretoria so le; Bash, Write ou internet a mais (ou tools sumida) reprova
+test('gate 2 exige a lista exata de tools no agente so de leitura', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '_modelo/.claude/agents'), { recursive: true })
+    const rel = '_modelo/.claude/agents/diretoria-cadeira.md'
+    const com = tools => writeFileSync(join(dir, rel), `---\nname: diretoria-cadeira\ndescription: Le.\n${tools}---\n\nTexto.\n`)
+    const g2 = () => rodarGates(dir).falhas.filter(f => f.gate === 2 && f.arquivo === rel)
+    com('tools: Read, Grep, Glob\n')
+    assert.equal(g2().length, 0, 'canario: a lista certa passa')
+    for (const errada of ['tools: Read, Grep, Glob, Bash\n', 'tools: Read, Grep, Glob, Write\n', 'tools: Read, Grep, Glob, WebFetch\n', 'tools: Read, Grep\n', '']) {
+      com(errada)
+      assert.ok(g2().some(f => /lista exata/.test(f.detalhe)), `passou: ${errada || 'sem tools'}`)
+    }
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
 // Gate 11: o .gitignore do _modelo e fechado por padrao (nega tudo e libera por tipo).
 // Arquivo do kit de tipo fora da lista nasceria fora do backup do aluno, calado.
 const GITIGNORE_MODELO = readFileSync(fileURLToPath(new URL('../_modelo/.gitignore', import.meta.url)), 'utf8')

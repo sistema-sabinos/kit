@@ -54,6 +54,23 @@ test('nome de skill do projeto, do molde ou da pasta-mae sai 1', () => {
   } finally { rmSync(c.raiz, { recursive: true, force: true }) }
 })
 
+// 5.65: o conselheiro vira agente pessoal com o apelido, e o pessoal ganharia do agente do sistema
+test('nome de agente do projeto ou do molde sai 1', () => {
+  const c = cenario()
+  try {
+    mkdirSync(join(c.mae, '_modelo', '.claude', 'agents'), { recursive: true })
+    writeFileSync(join(c.mae, '_modelo', '.claude', 'agents', 'diretoria-cadeira.md'), '---\nname: diretoria-cadeira\n---\n')
+    mkdirSync(join(c.projeto, '.claude', 'agents'), { recursive: true })
+    writeFileSync(join(c.projeto, '.claude', 'agents', 'ml-espiao.md'), '---\nname: ml-espiao\n---\n')
+    for (const a of ['diretoria-cadeira', 'ml-espiao']) {
+      const r = checarApelido(a, { projeto: c.projeto, casa: c.casa })
+      assert.equal(r.codigo, 1, a)
+      assert.match(r.linha, /ja e nome de agente do sistema/)
+    }
+    assert.equal(checarApelido('diretoria-cadeira-x', { projeto: c.projeto, casa: c.casa }).codigo, 0, 'canario: nome parecido segue livre')
+  } finally { rmSync(c.raiz, { recursive: true, force: true }) }
+})
+
 test('projeto fora da pasta-mae: confere projeto e casa, sem quebrar', () => {
   const c = cenario({ dentroDaMae: false })
   try {
