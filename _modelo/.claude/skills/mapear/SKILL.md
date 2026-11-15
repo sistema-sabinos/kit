@@ -101,7 +101,7 @@ Quando não há template nem skill externa, não escrever na mão: montar um bri
 - **Passo a passo** exatamente como o usuário descreveu, sem etapa inventada
 - **Entregável**: formato e pasta de destino, se houver
 - **Ferramentas** que se aplicam, do catálogo
-- **Contexto do negócio** que importa: tom, restrições de ramo regulado (pergunta 7 do questionário), produtos
+- **Contexto do negócio** que importa: tom, restrições de ramo regulado (seção `## Regra do ramo` do `_contexto/empresa.md`), produtos
 - **Identidade visual**: o guia visual da marca (caminho pelo Mapa do `AGENTS.md`), se o output for visual de marca; imagem de anúncio de marketplace segue o estilo da categoria do produto (`/gerar-imagens`)
 - **Onde salvar**: `.claude/skills/<nome>/SKILL.md`. Skill que só serve a uma pasta de projeto (um cliente, uma campanha) vai pra `<pasta>/.claude/skills/<nome>/SKILL.md`, e o `AGENTS.md` da pasta ganha a linha dela na seção "Habilidades desta pasta" (que nasce com a primeira): assim ela viaja junto quando o `/compartilhar` leva a pasta
 

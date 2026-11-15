@@ -23,8 +23,8 @@ Saturação de mercado não se avalia aqui: isso é da pesquisa, com dado real.
 
 - `_contexto/mercado-livre.md`: a lista `fornecedores` (cada nome é uma pasta
   em `fornecedores/`)
-- `_contexto/empresa.md`: as regras do negócio (seção "Produtos bloqueados" e
-  restrições do ramo, quando existirem)
+- `_contexto/empresa.md`: as regras do negócio (seção `## Regra do ramo`, com as
+  restrições do ramo e os produtos bloqueados, quando existirem)
 - `_contexto/vereditos-legais.md`: vereditos da `/pode-vender`
 - `.claude/skills/mercado-livre/referencias/contratos.md`, seção 0: as colunas
   do CSV que sai daqui

@@ -255,6 +255,10 @@ const OBRIGATORIOS = [
   '_ferramentas/verificar-kit.mjs', '_ferramentas/backup-pasta-mae.mjs',
   // 5.54 (C4): o /setup e o /atualizar-kit chamam no fim pro historico de 30 dias do app
   '_ferramentas/historico-app.mjs',
+  // 5.66: o /setup grava pelo importar a resposta que a pessoa trouxe de outra IA
+  '_ferramentas/respostas.mjs',
+  // 5.66: o settings da pasta-mae chama o hook da hora no UserPromptSubmit e no PostToolUse da AskUserQuestion
+  '_ferramentas/hora-local.mjs',
   '_ferramentas/lib/README.md', '_ferramentas/lib/watchdog.mjs',
   '_ferramentas/lib/fetch-timeout.mjs', '_ferramentas/lib/boot-guard.mjs',
   '_ferramentas/lib/backup-env.mjs',

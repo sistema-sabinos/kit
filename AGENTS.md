@@ -18,7 +18,7 @@ Antes de qualquer coisa, listar as pastas desta raiz. Projeto é pasta com
 
 - Nenhum projeto: seguir a skill `setup` já nesta resposta, seja qual for a
   primeira mensagem (até "oi"), salvo pedido de outra linha desta lista. Com
-  resposta no `RESPONDA-AQUI.txt`, é retomada do `setup`. Com ele em branco e a
+  resposta no `RESPONDA-AQUI.txt` (a hora entre colchetes no rótulo não conta), é retomada do `setup`. Com ele em branco e a
   identidade global do SabinOS (bloco sabinos) já na mesa, perguntar antes, com
   botão, se é um projeto novo (`novo-projeto`) ou recomeçar.
 - Já tem projeto: "Adicionar projeto novo? (Se quiser refazer ou ajustar um que

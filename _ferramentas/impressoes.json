@@ -1,5 +1,5 @@
 {
- "versao": "5.53",
+ "versao": "5.54",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -97,7 +97,7 @@
    "a207d0ca0847e383": "anterior-5.41",
    "a50d4bbc6d7e3829": "5.42",
    "ac4ccca8f230e2f3": "anterior-5.42",
-   "acef678822b94227": "5.53",
+   "acef678822b94227": "anterior-5.53",
    "c71e1df6845bbb2e": "anterior-5.11",
    "ce575b6c3d645616": "5.45",
    "ce9a00426353959c": "5.52",
@@ -106,7 +106,7 @@
    "e176acebbf67f734": "5.46",
    "e271cdb7d4bb10db": "anterior-5.46",
    "f6adafe56229494e": "anterior-5.11",
-   "f9239b045c0029cf": "5.53"
+   "f9239b045c0029cf": "anterior-5.53"
   },
   ".claude/hooks/auto-sync.mjs": {
    "0450007a06f7dec4": "5.43",
@@ -323,6 +323,7 @@
    "8baf6636e36706df": "5.7",
    "a374e9a55941b540": "anterior-3.6",
    "c398ee39f15fc1a6": "5.14",
+   "eb9166379cfb84b1": "5.54",
    "f74338832024c2cf": "3.6"
   },
   ".claude/skills/aplicar-estilo/SKILL.md": {
@@ -685,7 +686,7 @@
    "847b1c82510b9fb7": "4.1",
    "86f229e656258c90": "anterior-4.4",
    "8c584a09e89228ce": "4.5",
-   "9b58ecccceb50148": "5.53",
+   "9b58ecccceb50148": "anterior-5.53",
    "ab878a4d099e53da": "5.53",
    "aec1cb70945b3a81": "4.8",
    "b677b70d4a65230d": "anterior-5.43",
@@ -1491,10 +1492,10 @@
    "96c10818f5139efc": "5.2"
   },
   ".claude/skills/diretoria/SKILL.md": {
-   "35896dc3e03a5105": "5.53",
-   "9d96646138c700e4": "5.53",
+   "35896dc3e03a5105": "anterior-5.53",
+   "9d96646138c700e4": "anterior-5.53",
    "a3eca5c46929d406": "5.53",
-   "b6c0fcc7762013d0": "5.53"
+   "b6c0fcc7762013d0": "anterior-5.53"
   },
   ".claude/skills/diretoria/referencias/cadeira-dinheiro.md": {
    "f6bd84591b8314fd": "5.53"
@@ -2402,6 +2403,7 @@
    "3562251338e486db": "anterior-3.6",
    "358cc7008a186c99": "anterior-3.0",
    "3943a5e1d6463145": "anterior-4.1",
+   "434a92a097f962cd": "5.54",
    "4e81de44bc05239c": "5.45",
    "5352c3e61aed01d3": "3.3",
    "7b2ad825ceecbdd4": "5.7",
@@ -3561,13 +3563,16 @@
    "c00fc9dcfed9c51b": "5.42"
   },
   "_contexto/empresa.md": {
+   "4109e6fc40c16780": "5.54",
+   "63e84c23f76d412b": "5.54",
    "a2ab81acb5cfa8ec": "3.0",
    "deedee56bb708156": "3.1"
   },
   "_contexto/estrategia.md": {
    "0c653e3971d038c3": "3.1",
    "7ec9f1dfcea61184": "4.4",
-   "c55f4fc16750f499": "3.0"
+   "c55f4fc16750f499": "3.0",
+   "fa9d30043992338c": "5.54"
   },
   "_contexto/ferramentas.md": {
    "3a821f8c4b2e0e99": "5.26",
@@ -3675,7 +3680,8 @@
    "e9a851874daaa3f5": "5.10",
    "f05f9206f0a04291": "3.5",
    "f386e848807e3017": "5.7",
-   "f96e37bc398ac8f5": "5.48"
+   "f96e37bc398ac8f5": "5.48",
+   "fa385b945950f7ad": "5.54"
   },
   ".claude/skills/find-skills/SKILL.md": {
    "5924ba36058bcb50": "3.0",
@@ -3695,6 +3701,7 @@
    "1bae5e68f32c4e99": "5.3",
    "1c80a809672fed0b": "5.53",
    "30f69a3aaf4f1698": "3.1",
+   "36a0a299e24f5fc8": "5.54",
    "37f3245373ea81ce": "4.3",
    "3988d541d6dce979": "5.2",
    "3add9c4113801610": "3.8",
@@ -3769,6 +3776,7 @@
    "c883152d7ffd9c6b": "5.47",
    "cbdbf72bad884233": "5.1",
    "d7cdd71fb9142702": "5.49",
+   "d811247a6aaa2583": "5.54",
    "d9c826198b6ad223": "5.33",
    "de5f5a296c2e13d9": "5.3",
    "de9893f3296a77c0": "5.14",
@@ -3797,6 +3805,7 @@
    "5636bea6f42b1e8f": "3.1",
    "6a81d1027cb4fd41": "5.7",
    "6e1b9d80a4715093": "5.43",
+   "79e61a08d31ffbc3": "5.54",
    "7b633259cbe17637": "5.14",
    "92d2770dc74f0952": "3.5",
    "9d81266cf5916c78": "3.0",
@@ -3840,6 +3849,7 @@
    "215f486290f01770": "5.42",
    "24f51a405b1b8b64": "5.25",
    "2618e2fb4d5ae57e": "5.5",
+   "2694754476985dc2": "5.54",
    "27085768eeae0cd5": "5.32",
    "2e9cf9664b720540": "5.51",
    "32130589c7e7fa90": "3.6",
@@ -3928,6 +3938,7 @@
    "46ddf28762d070de": "5.53",
    "49a506dd32096b01": "3.11",
    "4c673c95a8dcd8ad": "5.32",
+   "4ccf541be996cb55": "5.54",
    "4da33b375501651a": "5.5",
    "54353cf4d0f7e379": "5.6",
    "584a356c1cd859c2": "5.34",
@@ -4035,6 +4046,12 @@
    "02f4064fe355f17a": "5.43",
    "61211aa1484db1d6": "5.44"
   },
+  "_ferramentas/hora-local.mjs": {
+   "02c0d16630ee7ece": "5.54"
+  },
+  "_ferramentas/hora-local.test.mjs": {
+   "c06062714ba4586e": "5.54"
+  },
   "_ferramentas/lib/README.md": {
    "25cc4928bd8a5810": "5.11",
    "4041f19185d56aec": "3.7",
@@ -4091,6 +4108,7 @@
    "0f25b925468f0d48": "5.42",
    "17d6e30cca54e787": "4.4",
    "2129cd546b974357": "3.5",
+   "292d9d4296046ee1": "5.54",
    "2e17d23af6d41ab1": "5.41",
    "42d093ebd80b180e": "5.7",
    "43aba6c19e903b60": "5.21",
@@ -4133,6 +4151,12 @@
    "f4dec7e16452a8c5": "5.27",
    "fff43e193076d9c0": "5.3"
   },
+  "_ferramentas/respostas.mjs": {
+   "0228c892dd81f4f7": "5.54"
+  },
+  "_ferramentas/respostas.test.mjs": {
+   "8fc90529fb4ac8c7": "5.54"
+  },
   "_ferramentas/verificar-kit.mjs": {
    "060d91ba0ce69ff5": "5.41",
    "0ba4d7ef1ab98ad3": "5.7",
@@ -4151,6 +4175,7 @@
    "627b322ab232fd9c": "5.26",
    "67b17693c12dce70": "3.0",
    "73ce0f969bc2fb62": "5.33",
+   "7651b5c4fad9c25c": "5.54",
    "80d688f30459e491": "5.43",
    "8511f61b8c9e66e8": "4.4",
    "8b9a219c0afc7dcb": "3.3",
@@ -5061,7 +5086,8 @@
   "_modelo/templates/perfis/agents-md-solopreneur.md": {
    "2dffc6805a42ccdc": "4.2",
    "465c965ec72f42da": "3.0",
-   "4ab01358f6e21098": "4.3"
+   "4ab01358f6e21098": "4.3",
+   "539137d322b0c84b": "5.54"
   },
   "_modelo/templates/skills/analisar-dados.md": {
    "59aa267597b084fa": "3.0",
@@ -5105,6 +5131,7 @@
    "2e877cbfb0cabcae": "3.0"
   },
   "_modelo/templates/skills/copy-venda.md": {
+   "015a802190324fdb": "5.54",
    "269156e9c8a4dc1c": "5.3",
    "7e0ce9109e907ef7": "3.0",
    "adeba91ec27797a7": "4.4",

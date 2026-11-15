@@ -8,11 +8,27 @@
 
 ## Quem é
 
-[nome, negócio, o que faz e pra quem]
+[nome, negócio, o que faz e pra quem; e a linha "Perfil:" com o perfil que o setup tirou]
 
 ## Como o negócio funciona
 
-[o que vende ou entrega, como o cliente chega, como o trabalho sai]
+[o que vende ou entrega, por onde vende e aparece, como o cliente chega, como o trabalho sai]
+
+## Cliente e concorrência
+
+[quem é o cliente típico e o que ele quer resolver; concorrentes e referências que a pessoa olha]
+
+## Diferencial
+
+[por que o cliente escolhe esta pessoa e não o concorrente, numa linha]
+
+## Números
+
+[faturamento, ticket médio e volume, aproximados, numa linha]
+
+## Regra do ramo
+
+[conselho ou órgão que limita o que se diz ou promete, dado sensível de cliente, produto que não se vende; sem nada disso, "sem regra especial"]
 
 ## O que mais toma tempo hoje
 

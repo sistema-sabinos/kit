@@ -14,6 +14,10 @@
 
 [o que precisa acontecer nos próximos meses]
 
+## Gargalo
+
+[o que mais trava o crescimento hoje, diferente do que só toma tempo]
+
 ## O que pode esperar
 
 [o que foi decidido deixar pra depois, pra ninguém reabrir sem querer]

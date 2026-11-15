@@ -83,10 +83,10 @@ Sua resposta:
 
 
 ==================================================
-[9] Você atende cliente externo, usa o sistema só pro seu próprio negócio, ou as duas coisas
+[9] Você atende cliente externo, usa o sistema só pro seu próprio negócio, as duas coisas, ou ainda não tem negócio
 Por que pergunto: isso muda o tipo de estrutura que eu monto, se é uma operação voltada pra atender terceiros ou só pra rodar o seu próprio negócio.
 Exemplos: "Só uso pra tocar minha própria loja, não tenho cliente de consultoria." / "Sou gestor de tráfego, cuido de campanha de vários clientes ao mesmo tempo."
-Opções (no chat viram botão): Só o meu negócio / Atendo clientes de fora / As duas coisas
+Opções (no chat viram botão): Só o meu negócio / Atendo clientes de fora / As duas coisas / Ainda não tenho negócio
 
 Sua resposta:
 

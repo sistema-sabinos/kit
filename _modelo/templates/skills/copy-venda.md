@@ -13,21 +13,21 @@ description: >
 
 ## Dependências
 
-- `_contexto/empresa.md`: o que vende, pra quem, diferencial, restrições do ramo
+- `_contexto/empresa.md`: o que vende, pra quem, o diferencial (`## Diferencial`), as restrições do ramo (`## Regra do ramo`)
 - a voz da marca (Mapa do `AGENTS.md`): o tom do texto entregue
 - `_contexto/preferencias.md`: o que evitar (as proibições de escrita valem pro texto entregue também, não só pro chat)
 - o guia visual da marca (linha "a marca" do Mapa no `AGENTS.md`; pasta de projeto com `marca/` própria usa a dela): só se o texto for pra peça visual
-- Concorrentes ou referências anotadas no `empresa.md`, se houver
+- Concorrentes ou referências da seção `## Cliente e concorrência` do `empresa.md`, se houver
 - `marca/voz-do-cliente.md`: frases reais do cliente já registradas; pode não existir ainda na primeira vez (a própria skill cria)
 
 ## Antes de escrever (formato de 4 partes, só o que ainda não estiver na memória)
 
 1. "Esse texto é pra quem, e o que essa pessoa está tentando resolver quando encontra você?" (por que pergunto: copy boa fala da dor do leitor antes do produto; exemplos: "mãe que precisa de bolo pra festa de amanhã e não tem tempo" / "dono de loja pequena que gasta com anúncio e não vê retorno")
 2. "Onde esse texto vai aparecer?" (por que pergunto: anúncio de marketplace, legenda de Instagram, página e mensagem de WhatsApp têm tamanho, formato e regra diferentes; exemplos: "título e descrição do anúncio no marketplace" / "resposta no WhatsApp pra quem pediu preço")
-3. "O que faz o cliente escolher você em vez do concorrente, na sua opinião?" (por que pergunto: sem diferencial real o texto vira genérico; exemplos: "entrego no mesmo dia na região" / "sou a única que faz sem glúten aqui")
+3. "O que faz o cliente escolher você em vez do concorrente, na sua opinião?" (por que pergunto: sem diferencial real o texto vira genérico; exemplos: "entrego no mesmo dia na região" / "sou a única que faz sem glúten aqui"). A resposta, quando a `## Diferencial` do `empresa.md` estava vazia ou dizia "ainda não sabe" ou "ainda não contou", se grava lá numa linha, no lugar disso, com o ok
 4. "Tem alguma prova que dá pra usar: número, depoimento, tempo de mercado, garantia?" (por que pergunto: prova concreta vende mais que adjetivo; exemplos: "300 festas entregues em 2025" / "garantia de 30 dias, devolvo o dinheiro")
 
-Se o ramo é regulado (pergunta 7 do questionário do `/setup`), reler a restrição antes de escrever e listar o que **não** pode aparecer: promessa de resultado, "cura", "melhor do mercado" sem prova, captação disfarçada, antes e depois onde é proibido.
+Se o ramo é regulado (seção `## Regra do ramo` do `empresa.md`), reler a restrição antes de escrever e listar o que **não** pode aparecer: promessa de resultado, "cura", "melhor do mercado" sem prova, captação disfarçada, antes e depois onde é proibido.
 
 ## A temperatura de quem vai ler
 

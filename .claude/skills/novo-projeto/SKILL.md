@@ -201,9 +201,18 @@ Perguntas no formato de 4 partes de cima, uma por mensagem:
    regra especial" / "vende suplemento, tem regra da ANVISA que proíbe
    alegar cura de qualquer coisa")
 
-A pergunta 4 repete a pergunta 7 do questionário do `/setup`, agora por
+A pergunta 4 repete a regra do ramo do `/setup`, agora por
 projeto: cada pasta pode ter um ramo, um cliente e uma regra diferente do
 projeto principal.
+
+Onde cada resposta mora no projeto novo (resumo de no máximo duas linhas por gaveta):
+
+| Pergunta | Arquivo | Seção |
+|---|---|---|
+| 1 | `_contexto/empresa.md` | `## Quem é` |
+| 2 | `_contexto/empresa.md` | `## Como o negócio funciona` |
+| 3 | `_contexto/estrategia.md` | `## Prioridade principal` |
+| 4 | `_contexto/empresa.md` | `## Regra do ramo` |
 
 ## Passo 2, descoberta de skills
 
@@ -214,11 +223,15 @@ Aqui só se pergunta e se anota a resposta; a cópia continua no Passo 3. A esco
 e `roteiro-post` da biblioteca ficam fora (o pacote já posta, e a `/pauta` faz roteiro e
 carrossel em `producao/`), senão ficam duas rotas pro mesmo trabalho.
 
-Detectar o perfil do projeto novo a partir das respostas do Passo 1:
+Perfil do projeto novo: quando o `empresa.md` do projeto irmão tem a linha
+`Perfil:` no `## Quem é`, mostrar esse perfil em palavra simples (as do Passo 0
+do `/setup`) e perguntar com botão se este projeto é do mesmo tipo. Sem a linha,
+ou com um não, detectar a partir das respostas do Passo 1:
 `agencia` (múltiplos clientes com processo de entrega), `freelancer` (solo,
 vende serviço), `solopreneur` (negócio próprio, produto ou audiência),
 `criador` (conteúdo e canal), `empresa` (equipe organizada por setor),
-`profissional` (produtividade pessoal e carreira).
+`profissional` (produtividade pessoal e carreira). O perfil escolhido vira a
+linha `Perfil: <perfil>` no `## Quem é` do `empresa.md` do projeto novo.
 
 Antes de buscar fora, consultar a biblioteca local em
 `_modelo/templates/skills/`: o que já existe pronto ali cobre boa parte dos
@@ -629,8 +642,9 @@ perguntar outro nome antes de seguir.
   pastas `arquivo/` e `pessoas/`), preenchidos
   com o que já se sabe da pessoa pelas leituras do Passo 0 (nome, tom,
   ferramentas que já valem pra ela em qualquer projeto) mais o que é
-  específico deste projeto novo (respostas do Passo 1), nunca deixando o
-  aviso `NOT CONFIGURED` no projeto final. O `orcamento.md` e o `autonomia.md` também
+  específico deste projeto novo (respostas do Passo 1, cada uma na gaveta da tabela do
+  Passo 1), nunca deixando o aviso `NOT CONFIGURED` no projeto final. Gaveta que o Passo 1
+  não alimenta e que não vem do Passo 0 fica com "ainda não contou". O `orcamento.md` e o `autonomia.md` também
   vão, mas nascem em branco, como estão no `_modelo`. No `ferramentas.md`, uma linha pra
   cada um dos sete assuntos, como o `/setup` faz (Passo 5): o que já vale pra
   pessoa em qualquer projeto vem do `ferramentas.md` do projeto irmão; o que
@@ -664,7 +678,8 @@ perguntar outro nome antes de seguir.
   copiar o `tom-de-voz.md` preenchido do projeto irmão; voz própria, as três
   perguntas da "Voz da marca" do `/setup` (Passo 2), aqui em uma mensagem.
 - `marca/nomes.md`: copiar o `nomes.md` do projeto irmão quando a marca é a
-  mesma; marca própria, o do `_modelo/` como está, com a lista vazia.
+  mesma; marca própria, o do `_modelo/` semeado com o nome do projeto da pergunta 1 (do jeito que deve sair na
+  legenda, com " (avisa)" quando também é palavra comum).
 - `dados/README.md` (e a pasta `dados/` que ele documenta).
 - `_memoria/` inteira, como está no molde: `diario/`, `recados/` e
   `arquivo/` com o `.gitkeep` e o `decisoes.md` só com o cabeçalho. Nunca o

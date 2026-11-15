@@ -7,7 +7,7 @@
 Sou [nome]. [O que você faz em uma frase]. Meu negócio é [descrição do negócio, canal ou projeto].
 Principalmente: [atividade 1], [atividade 2], [atividade 3].
 Público: [quem acompanha o que você cria ou compra o que você vende].
-Posicionamento: [o que você defende e o que te diferencia].
+Posicionamento: [o que você defende; o que te diferencia mora na `## Diferencial` do `_contexto/empresa.md`].
 
 ## Estrutura de pastas
 
