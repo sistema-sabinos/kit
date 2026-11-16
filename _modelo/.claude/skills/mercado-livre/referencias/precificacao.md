@@ -27,6 +27,7 @@ margem = preço que o cliente paga
   `gold_pro` é Premium, `gold_special` é Clássico.
 - A comissão exata sai de graça por API:
   `GET /sites/MLB/listing_prices?price=<preço>&category_id=<cat>&listing_type_id=<tipo>`.
+  A margem inteira, com a comissão já com a tarifa fixa, sai do `scripts/margem.mjs`.
 - O frete também: `GET /users/<seu-id>/shipping_options/free?dimensions=<alt>x<larg>x<comp>,<peso_g>&listing_type_id=<tipo>&item_price=<preço>&verbose=true&condition=new&logistic_type=drop_off`.
   `list_cost` é o que sai do seu bolso; `billable_weight` é o peso cobrado
   (o maior entre o real e o cubado). Caixa folgada vira dinheiro perdido.

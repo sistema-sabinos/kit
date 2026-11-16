@@ -80,5 +80,5 @@ As skills são o roteiro: nunca improvisar o fluxo.
 escrever), `_modelo/` (molde, nunca lugar de trabalhar), `_ferramentas/`
 (verificador do kit e biblioteca antitrava), `docs/` (guias), `agentes/` (cópia-mestra dos conselheiros da `/clonar-especialista`, do aluno; o que vale é a cópia instalada em `~/.claude`) e uma pasta por projeto. O conteúdo real mora neste `AGENTS.md`; o `CLAUDE.md` é só o
 ponteiro `@AGENTS.md`. Funciona também no Codex, sem o backup automático (lá é
-`/syncar` no fim da sessão); a ponte `.agents/skills` e a rota do Hermes Agent
-estão no `docs/roadmap-avancado.md`.
+`/syncar` no fim da sessão); a ponte `.agents/skills` está no
+`docs/roadmap-avancado.md`.

@@ -63,13 +63,17 @@ Entra no plano quem tem, ao mesmo tempo:
   piso só continua como candidato a kit (passo 3A), nunca como individual
 - veredito válido do produto ou do tipo dele (Gate 0 da `/mercado-livre`)
 
-A margem projetada se calcula pela `precificacao.md`: preço na mediana, menos a
-comissão da categoria (Clássico; a do Premium é maior e sai da mesma API), menos o custo de
-envio, menos `imposto_pct` sobre o preço, menos o custo. A comissão exata sai
-da API que a `precificacao.md` cita, por
-`node .claude/skills/mercado-livre/scripts/consultar-ml.mjs "/sites/MLB/listing_prices?price=<preço>&category_id=<cat>&listing_type_id=<tipo>"`
-(renova o token sozinho, e o token nunca aparece no chat); sem autorização, a
-pessoa lê a comissão na Central de Vendedores, e a data entra no plano. Nunca
+A margem projetada sai do script, nunca de cabeça:
+`node .claude/skills/mercado-livre/scripts/margem.mjs --preco <mediana> --custo <custo> --frete <envio> --categoria <cat> --tipo classico`
+(o Premium com `--tipo premium`; o imposto vem do `imposto_pct` da configuração; a logística
+muda a tarifa fixa: Flex leva `--logistica self_service`, Full `--logistica fulfillment` e
+Coleta `--logistica cross_docking`, e sem ela vale a de agência, `drop_off`). Ele pega a comissão, já com a tarifa fixa,
+na API pelo `consultar-ml.mjs` (renova o token sozinho, e o token nunca aparece no chat) e
+devolve `margem_rs` e `margem_pct`. O `margem_rs` vai pro `margem_projetada_rs` do
+`decisao.json`, e o `comissao_pct` com a `data` vai pro cabeçalho do plano. O envio é o
+`list_cost` que a `precificacao.md` ensina a buscar. Sem autorização do ML (o script sai 1), a
+pessoa lê a comissão na Central de Vendedores, a conta segue a `precificacao.md` (preço,
+menos comissão, envio, `imposto_pct` sobre o preço e custo) e a data entra no plano. Nunca
 comissão de memória.
 
 ### 3. Quatro decisões por candidato
@@ -199,8 +203,8 @@ Markdown e JSON contem a mesma coisa.
 
 ## Regras
 
-- Margem nunca inventada: custo do catálogo, mediana real da pesquisa, comissão
-  com fonte e data, imposto da configuração.
+- Margem nunca inventada: a do `margem.mjs`, com o custo do catálogo, a mediana real
+  da pesquisa e o imposto da configuração; sem ele, comissão com fonte e data.
 - Cada anúncio ou kit leva justificativa; sem ela, não entra no plano.
 - Categoria sem candidato viável: o plano diz isso e para. Não se força.
 - Kit com componente `fora` ou `desafiador` só se a composição final passa no

@@ -78,7 +78,7 @@ Pergunta sobre o passado ("o que fizemos", "quando foi", "por que a gente") se r
 
 ## Rotinas
 
-Rotina (robô do `/agendar`, Hermes, agente agendado) escreve só no próprio diário, nos recados e no que ela mesma criou; o resto vira recado. Sessão sem gente na frente nunca grava sozinha em `_contexto/`, nas decisões nem na memória automática.
+Rotina (robô do `/agendar` ou agente agendado) escreve só no próprio diário, nos recados e no que ela mesma criou; o resto vira recado. Sessão sem gente na frente nunca grava sozinha em `_contexto/`, nas decisões nem na memória automática.
 
 ## Regras de operação
 

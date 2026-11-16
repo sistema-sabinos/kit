@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 5.54 (2026-11-15)
+Versão 5.55 (2026-11-15)
 
 Um sistema de trabalho com IA pro seu negócio, rodando no Claude Code, pelo VS Code ou pelo app do Claude.
 
@@ -35,7 +35,7 @@ Todo o passo a passo de leigo está no [COMECE-AQUI.md](COMECE-AQUI.md): abrir a
 - `AGENTS.md`, o cérebro desta sala de controle (como ela conduz o onboarding); `CLAUDE.md` é só o ponteiro pro Claude Code ler o mesmo arquivo
 - `_modelo/`, o molde completo de um projeto (skills, contexto, estrutura de pastas), de onde cada projeto novo nasce. Não é pasta de trabalho
 - `_ferramentas/`, o verificador do kit e uma biblioteca pronta contra automação que trava
-- `docs/`, o guia avançado (Codex e Hermes Agent) e o roteiro de próximos passos. Os dois guias em PDF, de instalação (`Guia-SabinOS-Instalacao`) e de comandos (`Guia-SabinOS-Comandos`), vêm junto com o zip, fora desta pasta
+- `docs/`, o guia avançado (Codex) e o roteiro de próximos passos. Os dois guias em PDF, de instalação (`Guia-SabinOS-Instalacao`) e de comandos (`Guia-SabinOS-Comandos`), vêm junto com o zip, fora desta pasta
 - `<projeto>/`, uma pasta por projeto que você criar, cada uma aberta sozinha, como pasta própria, no VS Code ou no app do Claude
 
 **Comandos desta pasta-mãe** (digite `/` na conversa pra ver):
@@ -67,9 +67,9 @@ Todo projeto também vem com a `/humanizar`: ela aponta o que soa robô num anú
 
 E com a `/pedir`, a porta de entrada de quem ainda não sabe pedir: pergunte "dá pra...?" ou "a IA consegue...?" e ela responde o que dá, o que falta ligar e se custa; escreva o pedido do seu jeito e ela devolve o pedido completo, com o antes e o depois. Grátis.
 
-E com a `/diretoria`, a reunião antes da decisão cara: quando você vai gastar, contratar ou assinar, até quatro cadeiras (dinheiro, vendas, operação, regras) leem o seu projeto cada uma pelo seu ângulo, um olhar de fora procura o que todas deixaram passar, e você recebe uma resposta só, com a conta e o risco à vista. Cada reunião leva uns 3 minutos e gasta umas 6 conversas normais do seu plano, e só roda com o seu sim.
+E com a `/diretoria`, a reunião antes da decisão cara: quando você vai gastar, contratar ou assinar, até quatro cadeiras (dinheiro, vendas, operação, regras) leem o seu projeto cada uma pelo seu ângulo, um olhar de fora procura o que todas deixaram passar, e você recebe uma resposta só, com a conta e o risco à vista. Cada reunião gasta umas 6 conversas normais do seu plano e só roda com o seu sim.
 
-O kit também funciona com o Codex (CLI da OpenAI, login pela sua conta ChatGPT), e a estrutura de skills que ele monta segue o padrão aberto que outros agentes leem, como o Hermes Agent. O guia avançado em `docs/roadmap-avancado.md` explica as rotas.
+O kit também funciona com o Codex (CLI da OpenAI, login pela sua conta ChatGPT), e a estrutura de skills que ele monta segue o padrão aberto que outros agentes leem. O guia avançado em `docs/roadmap-avancado.md` explica a rota.
 
 ## Uma regra de ouro
 

@@ -447,7 +447,32 @@ node .claude/skills/editar-video/scripts/conferir-final.mjs --slug <slug> --tipo
 Ele mede a zona segura da legenda (`referencias/zona-segura.md`), o volume geral
 (-14 LUFS) e, no `videov2`, a sincronia da boca com a voz, a duração e se a
 imagem travou. Reprovou: o próprio gate diz o conserto. Corrija, renderize de novo
-e confira de novo. Depois olhe quadros do vídeo com o
+e confira de novo. **Até 3 voltas.** Na terceira reprovação, mostre a saída ao
+aluno e pergunte o que fazer.
+
+**Boca numa janela só.** Quando o resumo diz `REPROVADO em: verificar-video.` e a
+única linha debaixo do `FALHOU:` começa com `boca fora da voz em:` com um segundo
+só (sem `;` na linha), olhe antes de refazer. Crie `producao/<slug>/quadros/` e tire
+o quadro do segundo apontado e o de meio segundo depois:
+
+```
+ffmpeg -y -ss <segundo> -i producao/<slug>/final/<slug>.mp4 -frames:v 1 producao/<slug>/quadros/<segundo>.png
+```
+
+Abra os dois (ferramenta de leitura de imagem). A medida compara a pessoa e a voz com
+o bruto, e quadro parado não mostra boca descolada: o quadro só acha a causa quando
+ela aparece na imagem. O gate de boca só diz o segundo e a diferença (imagem de X s
+do bruto, voz de Y s), sem conserto escrito. Corte, salto ou imagem travada no segundo
+apontado: o corte dali desalinhou imagem e voz; acerte esse corte no 3.3 e o
+`cortesSeg` do `edicao.json`, e renderize. Quadro normal: antes de refazer, mostre
+ao aluno o segundo e peça pra ele assistir aquele trecho com som. Boca certa pra ele:
+siga a conferência pelo `checklist-qc.md` (abaixo) e o passo 8, com o segundo e o ok
+dele no status. Boca descolada: meça o bruto pelo 3.1 Sincronia; com diferença maior
+que 0,1 s, sincronize e refaça dali. Bruto já dentro de 0,1 s: o deslocamento entrou
+na montagem; refaça do 3.3 (a fala e a voz saem do mesmo corte) e renderize.
+Olhar e perguntar não contam como volta; volta é renderizar de novo.
+
+Depois olhe quadros do vídeo com o
 `referencias/checklist-qc.md`.
 
 **No fundo verde, o fiscal** (confere quadro a quadro: respiro de 40 px entre as

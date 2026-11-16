@@ -189,64 +189,6 @@ o Codex ou quer os dois disponíveis:
    cópia do conteúdo dele) faz o Codex te reconhecer fora desta pasta-mãe
    também.
 
-## Rota Hermes Agent
-
-O Hermes Agent (Nous Research, código aberto sob licença MIT) é outro programa de
-agente, do mesmo tipo do Claude Code e do Codex. Ele aparece aqui por dois motivos
-bem diferentes, um barato e um caro.
-
-### O barato: a pasta do projeto já serve pra ele
-
-O Hermes procura skill de projeto em `<pasta>/.hermes/skills/` e em
-`<pasta>/.agents/skills/`. A segunda é exatamente a junction que o `/setup` e o
-`/novo-projeto` já criam pra ponte do Codex. E o formato de skill é o mesmo
-`SKILL.md` com frontmatter do padrão aberto agentskills.io que o Claude Code usa.
-
-Não tem conversão a fazer: quem instalar o Hermes e abrir uma pasta de projeto do
-SabinOS tende a enxergar os mesmos comandos. Ressalva honesta: isso vem da
-documentação dele, conferida em 2026-09-18, e ainda não foi testado de ponta a
-ponta aqui. Quem testar primeiro registra o resultado no `_contexto/licoes.md`.
-
-### O caro: robô agendado e bot de mensagem já montados
-
-O Padrão 2 desta página descreve o robô agendado que o `/agendar` cadastra no
-Agendador de Tarefas do Windows ou no cron do Mac. O Hermes já vem com isso de
-fábrica: agendador próprio mais um gateway que liga o agente a mais de 30 canais
-de mensagem, entre eles Telegram, Discord, Slack, Signal e a API do WhatsApp. É o
-caminho mais curto pra "todo domingo à noite chega no meu Telegram o resumo da
-semana".
-
-Ele traz também um modelo de segurança em camadas que vale copiar mesmo pra quem
-nunca for instalar nada dele: lista de comandos proibidos que nenhum modo
-permissivo derruba, bloqueio de escrita em pasta de credencial (`~/.ssh`, `~/.aws`,
-`.env`), bloqueio de acesso a endereço de rede interna, e execução dentro de
-container isolado.
-
-### O alerta de custo, que é o que decide
-
-**O Hermes não usa a sua assinatura do Claude.** Conferido nas issues do próprio
-repositório em 2026-09-18: mesmo quem assina Pro ou Max precisa bancar uma chave
-de API por cima do plano. O login por OAuth só funciona no plano Max e só consome
-crédito extra comprado à parte, nunca a franquia da assinatura. No Pro não
-funciona.
-
-Isso muda a natureza da conta. O SabinOS rodando no Claude Code tem custo fixo, a
-assinatura. Rodando no Hermes, passa a ter custo por token, que sobe com o uso e
-não avisa antes. Pra um robô que dispara sozinho todo dia, é exatamente o tipo de
-coisa que precisa de limite escrito em arquivo de configuração e de alguém olhando
-a fatura na primeira semana.
-
-### O sinal de que chegou a hora
-
-Você já tem um robô agendado de leitura rodando há semanas pelo agendador do
-sistema, ele funciona, e o incômodo virou "preciso estar no computador pra ver o
-resultado". Aí um canal de mensagem compensa. Antes disso, não.
-
-Ordem segura: primeiro o agendador do sistema operacional com aviso no Telegram (ou recado no projeto),
-pelo `/agendar` (custo zero, descrito acima), e só depois o Hermes, se o canal de mensagem virar
-necessidade de verdade. E nunca com o agente respondendo mensagem de terceiro
-sozinho: a regra do gate humano não muda de lugar porque o programa mudou.
-
 ## A ordem certa
 
 Básico rodando (skills + conexões) → primeiro robô agendado de LEITURA (relatório semanal) → multiagente quando um pipeline de produção estiver maduro → robô com ação só por último, com freio e histórico.

@@ -2,8 +2,8 @@
 name: conectar
 description: >
   Guia o usuário a ligar as contas e ferramentas do negócio no sistema (navegador,
-  plugins, email, Drive, IA de mídia, anúncios, WhatsApp, Mercado Livre e Bling, e o
-  Hermes Agent pra tarefa que roda sozinha e avisa por app de mensagem, e qualquer site
+  plugins, email, Drive, IA de mídia, anúncios, WhatsApp, Mercado Livre e Bling, a
+  tarefa que roda sozinha e avisa no celular pelo /agendar, e qualquer site
   ou painel, pela escada de caminhos), explicando pra
   cada uma o que destrava, se é grátis ou paga, o que precisa pra ligar e se dá pra usar
   hoje.
@@ -121,20 +121,9 @@ Pra cada um, responder sempre as mesmas 4 coisas: **o que te deixa fazer**, **é
 - **Precisa de quê:** conta Meta Business verificada, um número dedicado e um provedor. É a maior fricção desta lista, leva dias, não minutos.
 - **Hoje ou depois:** **depois, e sem frustração.** Enquanto a API não sai, existe o caminho manual que já funciona hoje: você cola aqui os prints ou o texto das conversas, e eu classifico, priorizo e rascunho as respostas no seu tom, com preço e prazo tirados da sua tabela (o `/atendimento`, do pacote de loja, que o `/mapear` instala). Resolve 80% da dor sem custo nenhum.
 
-### 7. Hermes Agent (pra quando você quiser que o sistema trabalhe sozinho)
+### 7. Tarefa que roda sozinha e aviso no celular
 
-Quem só quer receber aviso de um robô no Telegram não precisa de nada deste item: o `/agendar` monta isso sem custo.
-
-- **O que te deixa fazer:** é outro programa de agente, alternativo a este aqui, que lê a mesma pasta e os mesmos comandos que já montamos. Ele traz duas coisas que este não tem: agendar tarefa pra rodar sozinha no horário marcado (o relatório da semana toda segunda, a checagem dos anúncios todo dia) e te encontrar por app de mensagem, como Telegram, Discord, Slack ou WhatsApp. Na prática: o resultado chega no seu celular sem você abrir o computador.
-- **Grátis ou pago:** o programa é grátis e de código aberto (licença MIT), mas **o uso é pago, por token**. Preste atenção nesta parte, porque ela surpreende: ele **não usa a sua assinatura do Claude**. Mesmo quem assina o Pro ou o Max precisa criar e bancar uma chave de API à parte. A assinatura tem valor fixo no mês; aqui a conta sobe conforme o uso, e um robô que dispara sozinho todo dia usa mais do que parece.
-- **Precisa de quê:** instalar o programa (eu confiro no site oficial hermes-agent.nousresearch.com o comando do dia e rodo com o seu sim; você não digita nada), criar uma chave de API num provedor de modelo e colar no `.env` dele, e autorizar o canal de mensagem escolhido. No Telegram é criar um bot, uns 5 minutos. No WhatsApp é a mesma burocracia do item 6.
-- **Hoje ou depois:** **depois, e a ordem importa.** O caminho barato vem primeiro: um robô agendado pelo próprio Windows ou Mac, montado pelo `/agendar` e avisando no Telegram (ou, sem ele, num recado no projeto), custa zero e resolve a maior parte. Quando ele já estiver rodando há semanas e o incômodo virar "preciso estar no computador pra ver o resultado", aí o canal de mensagem compensa o custo. O desenho completo está em `docs/roadmap-avancado.md` na pasta-mãe, seção "Rota Hermes Agent".
-
-Três coisas a dizer ao usuário quando este item entrar na conversa:
-
-1. **A ponte já está pronta.** As skills deste projeto moram em `.claude/skills/`, e a junction `.agents/skills`, criada no setup, é um dos lugares onde o Hermes procura por skill de projeto. Pela documentação dele, os comandos do usuário aparecem lá sem nenhuma conversão. Ressalva honesta, que se diz em voz alta: isso ainda não foi testado de ponta a ponta. Quem testar primeiro registra o resultado no `_contexto/licoes.md`.
-2. **O gate humano fica na hora de ligar.** Robô que roda sozinho pode gastar, publicar e responder cliente, mas antes de ligar você fica sabendo o que ele executa e quanto gasta por rodada e por mês; o seu "pode ir" ali vale pra toda execução (a mesma regra do `/agendar`). Trocar de programa não troca essa regra.
-3. **O Hermes também é robô sozinho.** Ele pode abrir o Chrome dedicado logado quando a tarefa pedir, como o robô das Regras abaixo.
+Quem quer que uma tarefa rode sozinha no horário marcado (o relatório da semana toda segunda, a checagem dos anúncios todo dia) e que o resultado chegue no celular usa o `/agendar`: um robô agendado pelo próprio Windows ou Mac, avisando no Telegram (ou, sem ele, num recado no projeto), sem custo. O gate humano fica na hora de agendar: antes de ligar, você fica sabendo o que ele executa e quanto gasta por rodada e por mês, e o seu "pode ir" ali vale pra toda execução (a regra do `/agendar`).
 
 ### 8. Mercado Livre e Bling (pra quem instalou o pacote de marketplace)
 

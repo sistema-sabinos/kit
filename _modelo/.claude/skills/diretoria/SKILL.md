@@ -5,7 +5,7 @@ description: >
   Regras e, quando a dúvida pede, Pessoas ou Marca e Conteúdo) leem o projeto cada
   uma pelo seu ângulo, o Pé no Chão procura o que todas deixaram passar, e a
   resposta sai em quatro partes, com o risco à vista. Custa umas 6 conversas
-  normais e uns 3 minutos, então só roda com o sim, depois do aviso. Oferecer
+  normais, então só roda com o sim, depois do aviso. Oferecer
   (nunca rodar sozinha) quando a pessoa vai gastar, contratar ou assinar algo do
   negócio, no check-up do mês do negócio, quando ela diz que o negócio mudou de
   fase e no "Como foi?" de uma decisão antiga da Diretoria. Rodar quando a pessoa
@@ -54,8 +54,8 @@ Não existe versão curta da reunião. Quem quer só uma opinião segue na conve
 Antes de qualquer leitura, uma mensagem curta:
 
 "Posso levar isso pra Diretoria: até cinco leituras do seu projeto, cada uma de um ângulo
-(dinheiro, vendas, operação, regras e um olhar de fora no fim). Leva uns 3 minutos e gasta
-umas 6 conversas normais da sua cota. Quer?"
+(dinheiro, vendas, operação, regras e um olhar de fora no fim). Gasta umas 6
+conversas normais da sua cota. Quer?"
 
 (Os números vêm do teste de 2026-11-14: uma reunião completa gastou uns 250 mil tokens
 novos, umas 6 vezes uma conversa comum com o mesmo material. Cota é dado que muda com o
@@ -72,7 +72,13 @@ Sem o sim, a conversa segue normal. Com o sim, Passo 2.
    de cabeça: com a pasta `.claude/skills/caixa/`, `node .claude/skills/caixa/scripts/caixa.mjs
    mes <AAAA-MM>` do mês atual e do anterior e `... caixa.mjs aberto`; com a
    `.claude/skills/mei/` e o `dados/mei.json`, `node .claude/skills/mei/scripts/mei.mjs
-   proximos`. Saída de script entra no pacote como está, com o comando ao lado.
+   proximos`; com a `.claude/skills/mercado-livre/` e um produto do Mercado Livre na dúvida,
+   `node .claude/skills/mercado-livre/scripts/margem.mjs --preco <preço> --custo <custo>
+   --frete <frete> --categoria <MLB...> --tipo <classico|premium>`, quando os arquivos trazem
+   os cinco (o tipo é Clássico ou Premium); faltando algum, a falta entra no pacote com o nome
+   do que faltou, sem chutar. A logística muda a tarifa fixa: Flex leva `--logistica
+   self_service`, Full `--logistica fulfillment` e Coleta `--logistica cross_docking`; sem ela
+   nos arquivos, vale a de agência (`drop_off`) e o pacote diz que a logística foi suposta. Saída de script entra no pacote como está, com o comando ao lado.
 3. Decidir a fase e o chapéu (seções abaixo). Faltou dado pra decidir: uma pergunta só pra
    pessoa, com as opções.
 4. Montar a lista de arquivos do pacote, por caminho. Ficam fora sempre: `.env` e qualquer

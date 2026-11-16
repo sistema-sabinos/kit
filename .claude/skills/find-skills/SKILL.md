@@ -62,8 +62,7 @@ Onde procurar, na ordem que costuma render mais:
    e finanças, funciona em vários agentes).
 4. **skillsmp.com** é uma vitrine grande pra explorar por categoria, mas sem
    número de instalação por skill; usar como complemento, não como termômetro.
-5. **Agregadores de outros agentes** (ClawHub, LobeHub, e o hub do Hermes
-   Agent) juntam várias dessas fontes numa busca só. Servem pra descobrir o
+5. **Agregadores de outros agentes** (ClawHub e LobeHub) juntam várias dessas fontes numa busca só. Servem pra descobrir o
    que existe quando as quatro acima não acharam nada. O formato `SKILL.md` é
    o mesmo padrão aberto, então a skill encontrada lá lê igual aqui.
 

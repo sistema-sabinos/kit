@@ -7,5 +7,7 @@ teto do MEI contra o faturamento do ano.
 
 Faça a conta com os números dos arquivos e dos NÚMEROS DE SCRIPT, e mostre a conta linha a
 linha. Número de script vale mais que número solto num texto; se os dois brigam, diga.
+Margem de item do Mercado Livre é a do `margem.mjs` nos NÚMEROS DE SCRIPT; sem ela, é
+"falta no pacote", nunca conta de cabeça.
 Custo que o plano esqueceu (desgaste, devolução, parcela, hora do dono) entra na conta com a
 fonte, ou como "falta no pacote".
