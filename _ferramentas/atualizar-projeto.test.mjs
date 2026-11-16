@@ -878,6 +878,16 @@ test('mae: separa novo, mudou sem mexer, editado e o que some, e igual nao apare
   assert.ok(!todos.some(r => r.includes('minha-skill') || r.includes('templates/meu') || r.endsWith('.pyc')), 'o que e da pessoa nao vira "saiu do kit"')
 }))
 
+// 5.68: o agente do kit na .claude/agents/ da pasta-mae chega como novo; o que a pessoa criou la fica fora
+test('mae: agente novo do kit na pasta-mae entra no novo, e o da pessoa nao aparece', () => comMae(({ mae, kitNovo }) => {
+  escrever(kitNovo, { '.claude/agents/conselho-conselheiro.md': 'agente do kit\n' })
+  escrever(mae, { '.claude/agents/meu-agente.md': 'meu\n' })
+  const g = compararMae({ kitNovo, mae })
+  assert.ok(g.novo.includes('_ferramentas/novo.mjs'), 'canario: o novo de sempre segue la')
+  assert.ok(g.novo.includes('.claude/agents/conselho-conselheiro.md'), JSON.stringify(g.novo))
+  assert.ok(!Object.values(g).flat().includes('.claude/agents/meu-agente.md'), 'agente da pessoa virou "saiu do kit"')
+}))
+
 test('linha de comando mae: lista os quatro grupos e recusa pasta que nao e kit', () => comMae(({ raiz, mae, kitNovo }) => {
   const r = rodar(['mae', kitNovo, '--mae', mae])
   assert.equal(r.codigo, 0, r.saida)

@@ -24,6 +24,8 @@ Antes de qualquer coisa, listar as pastas desta raiz. Projeto é pasta com
 - Já tem projeto: "Adicionar projeto novo? (Se quiser refazer ou ajustar um que
   já existe, me diga qual.)" Adicionar é a skill `novo-projeto`.
 - Versão nova do kit, zip novo ou atualizar pelo GitHub: skill `atualizar-kit`.
+- Como os projetos se ligam, ou `/conselho`: skill `conselho` (aqui ela só lê os
+  projetos e deixa recado neles).
 - "Baixa o projeto <pasta> do GitHub" (segundo computador ou sócio): seção "Outro
   computador no mesmo projeto" de `_modelo/.claude/skills/syncar/SKILL.md`.
 - Existe `.backup-falhou` nesta raiz: ler o arquivo e avisar na primeira resposta,

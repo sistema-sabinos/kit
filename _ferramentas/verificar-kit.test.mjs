@@ -1425,6 +1425,23 @@ test('gate 2 exige a lista exata de tools no agente so de leitura', () => {
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
+// 5.68: agente na .claude/agents/ da pasta-mae passa pelo mesmo Gate 2, lista exata incluida
+test('gate 2 confere agente da pasta-mae como o do _modelo', () => {
+  const dir = kitFalso()
+  try {
+    mkdirSync(join(dir, '.claude/agents'), { recursive: true })
+    const rel = '.claude/agents/diretoria-cadeira.md'
+    writeFileSync(join(dir, rel), '---\nname: diretoria-cadeira\ndescription: Le.\ntools: Read, Grep, Glob\n---\n\nTexto.\n')
+    const g2 = () => rodarGates(dir).falhas.filter(f => f.gate === 2)
+    assert.equal(g2().filter(f => f.arquivo === rel).length, 0, 'canario: a lista certa passa na mae')
+    writeFileSync(join(dir, rel), '---\nname: diretoria-cadeira\ndescription: Le.\ntools: Read, Grep, Glob, Bash\n---\n\nTexto.\n')
+    assert.ok(g2().some(f => f.arquivo === rel && /lista exata/.test(f.detalhe)), 'Bash no agente so de leitura da mae passou')
+    // agente que a pessoa criou na mae, sem tools (opcional no Claude Code), nao e do kit e nao reprova
+    writeFileSync(join(dir, '.claude/agents/meu-agente.md'), '---\nname: meu-agente\ndescription: Ajuda nas tarefas.\n---\n\nTexto.\n')
+    assert.deepEqual(g2().filter(f => f.arquivo === '.claude/agents/meu-agente.md'), [], 'agente da pessoa na mae reprovou')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
 // Gate 11: o .gitignore do _modelo e fechado por padrao (nega tudo e libera por tipo).
 // Arquivo do kit de tipo fora da lista nasceria fora do backup do aluno, calado.
 const GITIGNORE_MODELO = readFileSync(fileURLToPath(new URL('../_modelo/.gitignore', import.meta.url)), 'utf8')
@@ -1527,6 +1544,37 @@ test('gate 11 acusa arquivo do kit fora do _modelo que o .gitignore da pasta-mae
     const g11 = rodarGates(dir, { proibidos: [] }).falhas.filter(f => f.gate === 11)
     assert.ok(g11.length > 0, 'canario: o gate rodou e achou alguma coisa')
     assert.deepEqual(g11.map(f => f.arquivo), ['docs/aula.mp4'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// 5.68: a ata do /conselho na pasta-mae mora em _memoria/ e entra no backup
+test('a _memoria/ da pasta-mae entra no backup, menos o aviso do auto-sync deste computador', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'mae-memoria-'))
+  try {
+    const rels = ['.gitignore', '_memoria/conselho/2026-11-16-organizar.md', '_memoria/conselho/antes/LISTA.md',
+      '_memoria/recados/2026-11-16-dono-auto-sync-segurou.md', '_memoria/recados/2026-11-16-dono-auto-sync-parado.md']
+    const fora = conteudo => {
+      writeFileSync(join(dir, '.gitignore'), conteudo)
+      return foraDoBackup(dir, rels)
+    }
+    const semMemoria = GITIGNORE_MAE.split(/\r?\n/).filter(l => !l.startsWith('!/_memoria/')).join('\r\n')
+    assert.ok(fora(semMemoria).includes('_memoria/conselho/2026-11-16-organizar.md'), 'canario: sem a linha, a ata fica fora')
+    assert.deepEqual(fora(GITIGNORE_MAE).sort(), ['_memoria/recados/2026-11-16-dono-auto-sync-parado.md', '_memoria/recados/2026-11-16-dono-auto-sync-segurou.md'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+// 5.68 (interna do ramo): ata e copia do /conselho sao texto da pessoa; os gates de conteudo do kit nao valem nelas
+test('gates de conteudo nao varrem a _memoria/ da pasta-mae', () => {
+  const dir = kitFalso()
+  try {
+    const travessao = String.fromCharCode(0x2014)
+    mkdirSync(join(dir, '_memoria/conselho'), { recursive: true })
+    mkdirSync(join(dir, 'docs'), { recursive: true })
+    writeFileSync(join(dir, '_memoria/conselho/2026-11-16-organizar.md'), `# ata\n\nO cliente escreveu: preco ${travessao} prazo.\n`)
+    writeFileSync(join(dir, 'docs/nota.md'), `# nota\n\npreco ${travessao} prazo.\n`)
+    const falhas = rodarGates(dir, { proibidos: [] }).falhas
+    assert.ok(falhas.some(f => f.arquivo === 'docs/nota.md'), 'canario: o mesmo texto em arquivo do kit reprova')
+    assert.deepEqual(falhas.filter(f => f.arquivo.startsWith('_memoria/')), [])
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 

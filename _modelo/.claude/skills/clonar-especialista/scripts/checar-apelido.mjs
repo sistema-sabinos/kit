@@ -32,7 +32,8 @@ export function checarApelido(apelido, { projeto = '.', casa = homedir(), atuali
   // 5.65: nome de agente do sistema tambem (o conselheiro vira ~/.claude/agents/<apelido>.md, e o
   // pessoal ganharia do agente de projeto que a /diretoria despacha)
   const agentesDoSistema = [join(projeto, '.claude', 'agents')]
-  if (mae) agentesDoSistema.push(join(mae, '_modelo', '.claude', 'agents'))
+  // 5.68: e o da pasta-mae, que tambem tem agente do kit
+  if (mae) agentesDoSistema.push(join(mae, '_modelo', '.claude', 'agents'), join(mae, '.claude', 'agents'))
   for (const l of agentesDoSistema) if (existsSync(join(l, `${apelido}.md`))) return { codigo: 1, linha: `ja e nome de agente do sistema (${l}): escolha outro apelido` }
 
   const pastaSkill = join(casa, '.claude', 'skills', apelido)

@@ -47,7 +47,8 @@ CLT, estudante, carreira). A versão pra carreira ainda não existe.
 Robô do `/agendar`, rotina agendada e sessão sem gente na frente nunca rodam a reunião: ela
 precisa da pessoa pra dizer sim no aviso e pra decidir no fim.
 
-Não existe versão curta da reunião. Quem quer só uma opinião segue na conversa normal.
+Não existe versão curta da reunião. Quem quer só uma opinião segue na conversa normal. Organizar
+como as áreas e os processos do negócio se ligam é o `/conselho`, outra reunião.
 
 ## Passo 1, o aviso
 

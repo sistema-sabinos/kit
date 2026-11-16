@@ -1,8 +1,11 @@
 {
- "versao": "5.55",
+ "versao": "5.56",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
+  },
+  ".claude/agents/conselho-conselheiro.md": {
+   "7a241a0b68e764d5": "5.56"
   },
   ".claude/agents/copywriter.md": {
    "c8a7c2ee22a5a5f7": "anterior-3.6"
@@ -1002,6 +1005,7 @@
   ".claude/skills/clonar-especialista/scripts/checar-apelido.mjs": {
    "007cef7722652a2e": "5.15",
    "1b3c7ee957dadc81": "5.11",
+   "3e861736be6fc98d": "5.56",
    "9ad18def9386337c": "5.53",
    "beb1fc5ce5dcc437": "anterior-5.11",
    "feddb8df711604e5": "5.20"
@@ -1463,6 +1467,33 @@
    "f445a9cc3d81c229": "5.12",
    "ff75ecd69edf1585": "4.1"
   },
+  ".claude/skills/conselho/SKILL.md": {
+   "2901b4ccd3136f82": "5.56",
+   "543fe12d2c329003": "5.56",
+   "63f889daf171c485": "5.56",
+   "66b6d46d88693c2d": "5.56",
+   "ec22182472083c5a": "5.56"
+  },
+  ".claude/skills/conselho/referencias/dono-tempo.md": {
+   "87ba6a73efad8435": "5.56"
+  },
+  ".claude/skills/conselho/referencias/ferramentas-dados.md": {
+   "c1e10afd6544fe33": "5.56"
+  },
+  ".claude/skills/conselho/referencias/fluxo.md": {
+   "eaf8b5a340ba54af": "5.56"
+  },
+  ".claude/skills/conselho/referencias/ponto-de-falha.md": {
+   "81a71a13568396a3": "5.56"
+  },
+  ".claude/skills/conselho/scripts/copia.mjs": {
+   "5654df0f4d8a4c7a": "5.56",
+   "7dd5e5d5948b5f95": "5.56",
+   "88e1bcd707e863ae": "5.56",
+   "ac3c23e789333053": "5.56",
+   "b71cd4d07a8a1e48": "5.56",
+   "fefb94294d41de13": "5.56"
+  },
   ".claude/skills/decidir-anuncio/SKILL.md": {
    "029b44e5fbab2166": "3.6",
    "0e09a5fef193a3f3": "5.25",
@@ -1473,7 +1504,7 @@
    "3ceb55756c7d615e": "5.46",
    "3fbfb3ffa4874b8f": "anterior-3.6",
    "41d0275df2b76c21": "4.1",
-   "47964c8c424a0842": "5.55",
+   "47964c8c424a0842": "anterior-5.55",
    "80f00cc483584f5b": "5.41",
    "84fad1af7affcbff": "anterior-3.6",
    "9bc04e919bc4200f": "5.18",
@@ -1498,11 +1529,12 @@
   },
   ".claude/skills/diretoria/SKILL.md": {
    "35896dc3e03a5105": "anterior-5.53",
-   "9281004fadea9912": "5.55",
+   "9281004fadea9912": "anterior-5.55",
    "9d96646138c700e4": "anterior-5.53",
    "a3eca5c46929d406": "5.53",
    "b6c0fcc7762013d0": "anterior-5.53",
-   "cc8b686d0a11c234": "5.55",
+   "b733b27be767de51": "5.56",
+   "cc8b686d0a11c234": "anterior-5.55",
    "f7a1a83b650b68c9": "5.55"
   },
   ".claude/skills/diretoria/referencias/cadeira-dinheiro.md": {
@@ -1546,10 +1578,10 @@
    "62b3bfd574d0bfc1": "anterior-4.1",
    "67f43cb18e1dcbd8": "anterior-5.17",
    "68dc4951e02208ef": "anterior-5.43",
-   "6d0a4e89cbac87cb": "5.55",
+   "6d0a4e89cbac87cb": "anterior-5.55",
    "78b09168e8d94994": "anterior-5.33",
    "80f5ceb16b9fa1ea": "anterior-5.17",
-   "87aa63c39e6708a1": "5.55",
+   "87aa63c39e6708a1": "anterior-5.55",
    "8f30ce1fb8f68e80": "anterior-5.17",
    "9262d2054927206b": "anterior-5.14",
    "96056ce4978851d4": "anterior-5.17",
@@ -1564,7 +1596,7 @@
    "cc4c1a38be498e3f": "5.43",
    "cdf3ee33e63fb063": "anterior-5.47",
    "df0097b3f3560d30": "5.14",
-   "dfdcf872358c4d3d": "5.55",
+   "dfdcf872358c4d3d": "anterior-5.55",
    "e71c68251a902c87": "anterior-5.41"
   },
   ".claude/skills/editar-video/motor/.gitignore": {
@@ -2694,8 +2726,8 @@
   },
   ".claude/skills/mercado-livre/scripts/margem.mjs": {
    "08a0d356feea2ce4": "5.55",
-   "0b56a0b0e341d0db": "5.55",
-   "360b9d74fab66c30": "5.55"
+   "0b56a0b0e341d0db": "anterior-5.55",
+   "360b9d74fab66c30": "anterior-5.55"
   },
   ".claude/skills/mercado-livre/scripts/responder-ml.mjs": {
    "18554406b287faac": "anterior-5.46",
@@ -3539,6 +3571,7 @@
    "99784d6fef25933b": "anterior-5.42",
    "99c9c8a351548bb1": "4.4",
    "9aaad516c45d4136": "5.11",
+   "a0048bb00495a8f9": "5.56",
    "a2472a4de5c2c1fd": "anterior-3.0",
    "a25184ad3cff1991": "5.55",
    "adc463790267930f": "anterior-5.42",
@@ -3673,12 +3706,16 @@
   }
  },
  "mae": {
+  ".claude/agents/conselho-conselheiro.md": {
+   "7a241a0b68e764d5": "5.56"
+  },
   ".claude/skills/.gitkeep": {
    "e3b0c44298fc1c14": "3.0"
   },
   ".claude/skills/atualizar-kit/SKILL.md": {
    "117a8911a84840b3": "3.4",
    "1927540836678015": "5.21",
+   "1a87f2c7ee41e0fe": "5.56",
    "241a910e20452331": "3.3",
    "348ef986cccc1fcc": "5.0",
    "35a5dc70b01e6a17": "5.18",
@@ -3706,6 +3743,27 @@
    "f96e37bc398ac8f5": "5.48",
    "fa385b945950f7ad": "5.54"
   },
+  ".claude/skills/conselho/SKILL.md": {
+   "ec22182472083c5a": "5.56"
+  },
+  ".claude/skills/conselho/referencias/dono-tempo.md": {
+   "87ba6a73efad8435": "5.56"
+  },
+  ".claude/skills/conselho/referencias/ferramentas-dados.md": {
+   "c1e10afd6544fe33": "5.56"
+  },
+  ".claude/skills/conselho/referencias/fluxo.md": {
+   "eaf8b5a340ba54af": "5.56"
+  },
+  ".claude/skills/conselho/referencias/ponto-de-falha.md": {
+   "81a71a13568396a3": "5.56"
+  },
+  ".claude/skills/conselho/scripts/copia.mjs": {
+   "7dd5e5d5948b5f95": "5.56"
+  },
+  ".claude/skills/conselho/scripts/copia.test.mjs": {
+   "5393fd9d1ab6b359": "5.56"
+  },
   ".claude/skills/find-skills/SKILL.md": {
    "5924ba36058bcb50": "3.0",
    "776168a237982338": "5.41",
@@ -3731,6 +3789,7 @@
    "3add9c4113801610": "3.8",
    "3cf39d837075587c": "4.4",
    "3d00456b92b45792": "3.6",
+   "40c2557790b99bab": "5.56",
    "55e521866f0b26c9": "4.1",
    "5b1918c08f191298": "5.6",
    "5b9a7cf17aabf393": "5.9",
@@ -3799,6 +3858,7 @@
    "bea6f73d2cf36adf": "5.42",
    "c883152d7ffd9c6b": "5.47",
    "cbdbf72bad884233": "5.1",
+   "cd0d2007d34f1638": "5.56",
    "d7cdd71fb9142702": "5.49",
    "d811247a6aaa2583": "5.54",
    "d9c826198b6ad223": "5.33",
@@ -3829,6 +3889,7 @@
    "5636bea6f42b1e8f": "3.1",
    "6a81d1027cb4fd41": "5.7",
    "6e1b9d80a4715093": "5.43",
+   "79c4739042e1bf0b": "5.56",
    "79e61a08d31ffbc3": "5.54",
    "7b633259cbe17637": "5.14",
    "92d2770dc74f0952": "3.5",
@@ -3914,6 +3975,7 @@
    "91c9392f022373e2": "5.23",
    "94de31a24a0cefea": "3.11",
    "96953a9063d76861": "5.27",
+   "9b292fa7d447cd1f": "5.56",
    "9e81ee72267323ea": "5.39",
    "a12d2a329d9e1742": "3.1",
    "a6c61f4251f8323e": "5.30",
@@ -3960,6 +4022,7 @@
    "391e74c981d43c7e": "5.29",
    "3ec15f7f82d24dbc": "3.9",
    "41094b6c78e8e5e2": "5.22",
+   "4287cea87d5fa989": "5.56",
    "43358284da827b38": "5.15",
    "46ddf28762d070de": "5.53",
    "49a506dd32096b01": "3.11",
@@ -4018,6 +4081,7 @@
   "_ferramentas/atualizar-projeto.mjs": {
    "0abba6a3edb1514a": "5.7",
    "2099f0569ccff6ae": "3.5",
+   "351ae1b8fd6c631b": "5.56",
    "3857fa5c3e4c3037": "5.20",
    "41dce7067bcc89d3": "5.42",
    "6a320240619378aa": "5.25",
@@ -4029,6 +4093,7 @@
    "d60b19b33fdef532": "5.41"
   },
   "_ferramentas/atualizar-projeto.test.mjs": {
+   "23f3ff6868dfd6a9": "5.56",
    "373b2c5f8be3d182": "5.41",
    "3a650c374b51b9ca": "4.5",
    "3c18e3a4d06f99ac": "5.43",
@@ -4059,6 +4124,7 @@
    "91e6c1b2982d6c40": "3.7",
    "9b1bf4c4aca2e486": "3.6",
    "a4dc0a3edb408e54": "3.5",
+   "b912772b3494b5c3": "5.56",
    "c55ebf44bf2b38ff": "3.9",
    "c823868c5c9774a9": "5.2",
    "ec75b5363daa8f2f": "3.8",
@@ -4155,6 +4221,7 @@
    "84f282b5b3900f8e": "5.29",
    "86c440dcc6855de0": "5.31",
    "8a4a1ad2f25c51f1": "5.33",
+   "8aacc706ce9bb108": "5.56",
    "8bdce28840e1f65c": "5.50",
    "8eaf731c58be893e": "4.3",
    "934dd59c37085c60": "4.6",
@@ -4211,6 +4278,7 @@
    "a021f78108294632": "3.8",
    "a2a61bacec22537e": "3.7",
    "a384240dcea65a39": "5.42",
+   "b0705bb88cdcc7d6": "5.56",
    "b206aa6a8c9cd0cb": "5.49",
    "bf7eb9ddeecd933f": "3.6",
    "c737dddc540a52c5": "3.5",
@@ -4252,6 +4320,7 @@
    "ddc457125349264d": "4.1",
    "de7f8113fc5f832b": "5.8",
    "ef7f3cd657999dcc": "4.9",
+   "f5dd4204fa51e29d": "5.56",
    "f706e8d2d13772a5": "5.18",
    "f92441ac5ecd78cd": "4.8",
    "fb11754f9c8f5295": "5.10",
@@ -4448,6 +4517,7 @@
   },
   "_modelo/.claude/skills/clonar-especialista/scripts/checar-apelido.test.mjs": {
    "2e157927c4b3715b": "5.53",
+   "9133deedee4d747d": "5.56",
    "a748024ab92f107e": "5.11"
   },
   "_modelo/.claude/skills/clonar-especialista/scripts/instalar.test.mjs": {
@@ -4592,6 +4662,9 @@
   "_modelo/.claude/skills/configurar-video/scripts/teste-rapido.test.mjs": {
    "021b9ade89d61c2c": "4.1",
    "39e768ed8e393d3d": "5.17"
+  },
+  "_modelo/.claude/skills/conselho/scripts/copia.test.mjs": {
+   "5393fd9d1ab6b359": "5.56"
   },
   "_modelo/.claude/skills/editar-video/motor/scripts/cadeia.test.mjs": {
    "0e84e8261795fb13": "5.17",

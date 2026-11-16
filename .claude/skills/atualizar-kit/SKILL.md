@@ -22,8 +22,9 @@ O kit instalado é uma foto do dia em que foi baixado. Toda melhoria nova (skill
 - Toda pasta de projeto (as que têm `_contexto/` dentro) e tudo dentro delas
 - `RESPONDA-AQUI.txt` preenchido
 - `.git/`, `.env`, `.agents/`
+- `_memoria/` da pasta-mãe (ata do `/conselho` e as cópias que ele guardou antes de mexer)
 - `~/.claude/CLAUDE.md` (identidade global), fora a linha do gate humano entre os marcadores, que o passo "Bloco global" propõe trocar com o sim
-- `agentes/` (cópia-mestra dos conselheiros da `/clonar-especialista`) e, em `~/.claude/skills/` e `~/.claude/agents/`, tudo que tem `origem: clonar-especialista` no frontmatter
+- `agentes/` (cópia-mestra dos conselheiros da `/clonar-especialista`) e, em `~/.claude/skills/` e `~/.claude/agents/`, tudo que tem `origem: clonar-especialista` no frontmatter; se um deles se chama `conselho`, avisar que ele roda no lugar do `/conselho` do kit e oferecer trocar o apelido pela `/clonar-especialista`
 
 ## O que é do kit e pode ser atualizado
 

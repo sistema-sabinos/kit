@@ -71,6 +71,19 @@ test('nome de agente do projeto ou do molde sai 1', () => {
   } finally { rmSync(c.raiz, { recursive: true, force: true }) }
 })
 
+// 5.68: a pasta-mae tambem tem agente do kit (.claude/agents/ da raiz)
+test('nome de agente da pasta-mae sai 1', () => {
+  const c = cenario()
+  try {
+    assert.equal(checarApelido('conselho-conselheiro', { projeto: c.projeto, casa: c.casa }).codigo, 0, 'canario: sem o arquivo, o nome passa')
+    mkdirSync(join(c.mae, '.claude', 'agents'), { recursive: true })
+    writeFileSync(join(c.mae, '.claude', 'agents', 'conselho-conselheiro.md'), '---\nname: conselho-conselheiro\n---\n')
+    const r = checarApelido('conselho-conselheiro', { projeto: c.projeto, casa: c.casa })
+    assert.equal(r.codigo, 1)
+    assert.match(r.linha, /ja e nome de agente do sistema/)
+  } finally { rmSync(c.raiz, { recursive: true, force: true }) }
+})
+
 test('projeto fora da pasta-mae: confere projeto e casa, sem quebrar', () => {
   const c = cenario({ dentroDaMae: false })
   try {

@@ -476,7 +476,9 @@ export function registrarMudanca({ projeto, id, estado, agora = new Date() }) {
 // (a lista do SKILL dele) pelas impressoes do kit novo. Igual nao entra. Mudou-sem-mexer: o conteudo da
 // pasta-mae e um que o kit ja entregou. Sem impressao, a regra segura e editado.
 // Revisao do bloco B: a tabela "mae" (caminho da pasta-mae, mesma forma) cobre o resto.
-export const AREAS_DA_MAE = ['_modelo/', '.claude/skills/', '_ferramentas/', 'docs/', 'VERSAO', 'README.md', 'COMECE-AQUI.md', 'AGENTS.md', 'CLAUDE.md']
+// 5.68: .claude/agents/ entra, porque a pasta-mae passa a ter agente do kit (o Claude Code na mae so ve
+// os agentes da propria pasta, nunca os do _modelo); agente que a pessoa criou la segue fora, sem impressao
+export const AREAS_DA_MAE = ['_modelo/', '.claude/skills/', '.claude/agents/', '_ferramentas/', 'docs/', 'VERSAO', 'README.md', 'COMECE-AQUI.md', 'AGENTS.md', 'CLAUDE.md']
 // 5.49 (bloco 13, 2026-11-03): quem entra na tabela "mae". O gerar-impressoes grava e o Gate 10
 // confere por esta mesma conta. Fica fora o _modelo que a tabela "arquivos" ja cobre e a propria
 // impressoes.json, que muda a cada vez que se gera.

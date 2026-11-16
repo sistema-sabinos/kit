@@ -1,6 +1,6 @@
 # SabinOS
 
-Versão 5.55 (2026-11-15)
+Versão 5.56 (2026-11-16)
 
 Um sistema de trabalho com IA pro seu negócio, rodando no Claude Code, pelo VS Code ou pelo app do Claude.
 
@@ -46,6 +46,7 @@ Todo o passo a passo de leigo está no [COMECE-AQUI.md](COMECE-AQUI.md): abrir a
 - `/syncar`, salva o estado da pasta-mãe no GitHub
 - `/atualizar-kit`, traz uma versão nova do SabinOS (do GitHub ou de um zip) sem tocar nos seus projetos
 - `/segunda-opiniao`, um revisor que não viu a conversa confere a proposta antes do seu ok; o `/setup` e o `/novo-projeto` chamam ele sozinhos
+- `/conselho`, mostra como os seus projetos se ligam (fornecedor, conta, rotina e pessoa que mais de um usa) e deixa recado no projeto que precisa mudar
 
 Dentro de cada projeto criado, outro conjunto de comandos entra em ação (`/iniciar`, `/conectar`, `/mapear`, `/atualizar`, `/checar` e mais), explicados no PDF `Guia-SabinOS-Comandos`, que veio junto com este zip (ele fica fora da pasta); dentro do projeto, digite `/` pra ver a lista.
 
@@ -68,6 +69,8 @@ Todo projeto também vem com a `/humanizar`: ela aponta o que soa robô num anú
 E com a `/pedir`, a porta de entrada de quem ainda não sabe pedir: pergunte "dá pra...?" ou "a IA consegue...?" e ela responde o que dá, o que falta ligar e se custa; escreva o pedido do seu jeito e ela devolve o pedido completo, com o antes e o depois. Grátis.
 
 E com a `/diretoria`, a reunião antes da decisão cara: quando você vai gastar, contratar ou assinar, até quatro cadeiras (dinheiro, vendas, operação, regras) leem o seu projeto cada uma pelo seu ângulo, um olhar de fora procura o que todas deixaram passar, e você recebe uma resposta só, com a conta e o risco à vista. Cada reunião gasta umas 6 conversas normais do seu plano e só roda com o seu sim.
+
+E com o `/conselho`, a reunião de organização: quatro papéis olham como as áreas e os processos do projeto se ligam (quem passa o quê pra quem, as ferramentas, o que depende só de você e o que quebra junto), a IA arruma o que é seguro guardando uma cópia antes e te pergunta o resto; "volta o que o conselho mudou" desfaz. Na pasta-mãe, ele olha como os seus projetos se ligam. Só roda com o seu sim, depois do aviso de custo.
 
 O kit também funciona com o Codex (CLI da OpenAI, login pela sua conta ChatGPT), e a estrutura de skills que ele monta segue o padrão aberto que outros agentes leem. O guia avançado em `docs/roadmap-avancado.md` explica a rota.
 

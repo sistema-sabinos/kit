@@ -15,7 +15,7 @@ import { caraDeChave } from '../_modelo/.claude/hooks/auto-sync.mjs'
 const CAMPOS_MUDANCA = ['Desde', 'Pra você', 'O que é', 'Por quê', 'Te afeta se', 'Como aplicar', 'Como testar']
 
 // 5.65: agente do _modelo que so le arquivo, com a lista exata de ferramentas (Gate 2)
-export const SO_LEITURA = { 'diretoria-cadeira.md': ['Read', 'Grep', 'Glob'] }
+export const SO_LEITURA = { 'diretoria-cadeira.md': ['Read', 'Grep', 'Glob'], 'conselho-conselheiro.md': ['Read', 'Grep', 'Glob'] }
 
 // A lista de termos proibidos do Gate 1 (nomes, marcas, ids da operacao de origem) mora na
 // bancada de desenvolvimento, em bancada/proibidos.json, fora do kit: este arquivo vai no zip
@@ -379,6 +379,14 @@ const OBRIGATORIOS = [
   '_modelo/.claude/skills/diretoria/referencias/cadeira-pessoas.md',
   '_modelo/.claude/skills/diretoria/referencias/cadeira-marca.md',
   '_modelo/.claude/skills/diretoria/referencias/cadeira-pe-no-chao.md',
+  // 5.68: o /conselho, o papel que ele despacha (so leitura, Gate 2) e a copia da pasta-mae
+  '_modelo/.claude/skills/conselho/SKILL.md', '_modelo/.claude/agents/conselho-conselheiro.md',
+  '_modelo/.claude/skills/conselho/scripts/copia.mjs',
+  '_modelo/.claude/skills/conselho/referencias/fluxo.md',
+  '_modelo/.claude/skills/conselho/referencias/ferramentas-dados.md',
+  '_modelo/.claude/skills/conselho/referencias/dono-tempo.md',
+  '_modelo/.claude/skills/conselho/referencias/ponto-de-falha.md',
+  '.claude/skills/conselho/SKILL.md', '.claude/agents/conselho-conselheiro.md',
   'VERSAO', '_ferramentas/atualizar-projeto.mjs', '_ferramentas/componentes.json',
   '_ferramentas/impressoes.json', '_ferramentas/mudancas.md',
   '_modelo/.claude/skills/atualizar-sabinos/SKILL.md',
@@ -433,8 +441,10 @@ export function foraDoBackup(dirModelo, rels) {
 // pasta-mae a deixa fora do backup, entao varrer ela deixava o Gate 11 vermelho pra quem ja edita video.
 // O agentes/ tambem: a /clonar-especialista grava ali o conselheiro, com citacao literal do
 // especialista nas fichas e o material bruto em fontes/, fora do backup de proposito.
+// A _memoria/ da pasta-mae tambem (5.68): ata e copia do /conselho, texto da pessoa com o que ela
+// colou; entra no backup, mas os gates de conteudo do kit nao valem nela (interna do ramo).
 function ehDoAluno(dir, nome) {
-  if (/^_kit-anterior-/.test(nome) || nome === '_video' || nome === 'agentes') return true
+  if (/^_kit-anterior-/.test(nome) || nome === '_video' || nome === 'agentes' || nome === '_memoria') return true
   return nome !== '_modelo' && existsSync(join(dir, nome, '_contexto'))
 }
 
@@ -574,9 +584,12 @@ export function rodarGates(dirKit, opcoes = {}) {
   }
 
   // Gate 2 (agentes): todo .claude/agents/*.md do _modelo precisa de name, description e tools,
-  // senao o Claude Code ignora o agente calado e a esteira despacha pro vazio
+  // senao o Claude Code ignora o agente calado e a esteira despacha pro vazio.
+  // 5.68: a pasta-mae tambem tem agente do kit (.claude/agents/ da raiz), e a lista exata vale la
+  // igual; agente que a pessoa criou na mae fica fora, porque tools e opcional no Claude Code (comum do B1)
   for (const rel of arquivos) {
-    if (!/^_modelo\/\.claude\/agents\/[^/]+\.md$/.test(rel)) continue
+    if (!/^(_modelo\/)?\.claude\/agents\/[^/]+\.md$/.test(rel)) continue
+    if (!rel.startsWith('_modelo/') && !SO_LEITURA[rel.split('/').pop()]) continue
     const txt = readFileSync(join(dirKit, rel), 'utf8')
     const m = txt.match(/^---\r?\n([\s\S]*?)\r?\n---/)
     if (!m) { falhas.push({ gate: 2, arquivo: rel, detalhe: 'agente sem frontmatter' }); continue }

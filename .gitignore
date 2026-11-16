@@ -15,6 +15,9 @@
 # copia-mestra dos conselheiros da /clonar-especialista (do aluno, nunca do kit)
 !/agentes/
 !/agentes/**/
+# memoria da pasta-mae (ata do /conselho e o que ele guardou antes de mexer), da pessoa, nunca do kit
+!/_memoria/
+!/_memoria/**/
 
 # texto e estrutura
 !*.md
@@ -52,4 +55,7 @@ storage-state*.json
 # material bruto dos conselheiros (livro, legenda, transcricao): fica so neste computador
 /agentes/*/fontes/
 /agentes/*/prova/fontes-prova/
+# aviso do auto-sync na _memoria/ da pasta-mae: vale so neste computador (como no _modelo/.gitignore)
+_memoria/recados/*-auto-sync-parado.md
+_memoria/recados/*-auto-sync-segurou.md
 # pastas de projeto criadas pelo setup entram aqui, uma linha cada (o /setup adiciona)
