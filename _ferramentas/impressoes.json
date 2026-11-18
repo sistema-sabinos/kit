@@ -1,5 +1,5 @@
 {
- "versao": "5.57",
+ "versao": "5.58",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -31,9 +31,13 @@
    "3b7b37f849811b57": "anterior-5.12",
    "509f0235f98e0b25": "anterior-3.8",
    "563640d696ed2e32": "anterior-3.6",
+   "66bc9a5288e07542": "5.58",
    "875c838f8871925e": "anterior-5.12",
    "896a90d939508e2d": "3.6",
+   "d689db73d1b4f0fa": "5.58",
+   "d8bf2566ab6cda1b": "5.58",
    "e180a758f9f5209d": "anterior-3.6",
+   "ee5f4f2d5da396b8": "5.58",
    "fae4a079ecf55ab6": "5.15"
   },
   ".claude/agents/ml-copywriter.md": {
@@ -45,6 +49,7 @@
    "2f564640acc9fa9e": "5.14",
    "3cafe53b3db2e792": "anterior-3.6",
    "4d06895fd789c4e4": "5.3",
+   "57f6397897e8a4b9": "5.58",
    "607a3c592eb32f8e": "5.12",
    "80b55834546aeda1": "5.7",
    "e4606b9929b99b01": "4.4"
@@ -935,7 +940,7 @@
    "9370a990257ba6a6": "anterior-5.11",
    "991acb4800114e4c": "anterior-5.11",
    "9f8b00ffddca4747": "anterior-5.11",
-   "b40fbee4fc43c78d": "5.57",
+   "b40fbee4fc43c78d": "anterior-5.57",
    "ba9080fefad6289a": "anterior-5.15",
    "c19c64927cd9eb3d": "anterior-5.15",
    "c5281102be54d763": "anterior-5.14",
@@ -970,7 +975,7 @@
    "bca724b3740f5bc1": "anterior-5.15",
    "c4bc437362d110aa": "5.20",
    "cb1d5c8d986b0ec5": "anterior-5.11",
-   "d057baef97cfdbbf": "5.57",
+   "d057baef97cfdbbf": "anterior-5.57",
    "f8509656b7bed0e0": "anterior-5.15"
   },
   ".claude/skills/clonar-especialista/referencias/conflitos-molde.md": {
@@ -978,10 +983,10 @@
   },
   ".claude/skills/clonar-especialista/referencias/crivo.md": {
    "3385d71b9b4ce709": "5.11",
-   "923cc6c03bcc982b": "5.57",
+   "923cc6c03bcc982b": "anterior-5.57",
    "b447d176a1731479": "5.18",
    "c887f2a5e8da9f93": "5.57",
-   "d21c88f63d1ed5b6": "5.57",
+   "d21c88f63d1ed5b6": "anterior-5.57",
    "fc01d8a5c648ec43": "anterior-5.11"
   },
   ".claude/skills/clonar-especialista/referencias/esqueleto-persona.md": {
@@ -1013,7 +1018,7 @@
    "c3997ea16086be14": "5.15"
   },
   ".claude/skills/clonar-especialista/referencias/lacunas-molde.md": {
-   "3ede7c60b8786869": "5.57",
+   "3ede7c60b8786869": "anterior-5.57",
    "73a937d16d5fddb7": "5.57"
   },
   ".claude/skills/clonar-especialista/scripts/checar-apelido.mjs": {
@@ -1037,10 +1042,10 @@
    "e507795949627423": "5.11"
   },
   ".claude/skills/clonar-especialista/scripts/lacunas.mjs": {
-   "009d174d2df1c47c": "5.57",
+   "009d174d2df1c47c": "anterior-5.57",
    "1e739e78df4cb5e7": "5.57",
-   "3968542e8663da07": "5.57",
-   "b519a016b7374dde": "5.57"
+   "3968542e8663da07": "anterior-5.57",
+   "b519a016b7374dde": "anterior-5.57"
   },
   ".claude/skills/clonar-especialista/scripts/lib/carimbo.mjs": {
    "85a3f1e695305497": "5.11",
@@ -2516,13 +2521,18 @@
   },
   ".claude/skills/mercado-ads/SKILL.md": {
    "0bace000b62da161": "anterior-3.6",
+   "0c08aac45aced2eb": "5.58",
+   "2578f816c25677ff": "5.58",
+   "6701618d9bb60612": "5.58",
    "6cbfb6e36bc2b537": "5.11",
    "6ef53747e8b38eba": "anterior-3.6",
    "7f30157a06dd37eb": "5.46",
    "816c9b88089c2f75": "5.42",
    "8b05478405a64010": "5.7",
    "8e1ec4283727ac91": "3.6",
-   "a8b1fc4dd7781380": "4.1"
+   "a5148d846832943a": "5.58",
+   "a8b1fc4dd7781380": "4.1",
+   "ef2ed4531997b6ac": "5.58"
   },
   ".claude/skills/mercado-ads/referencias/estrategia.md": {
    "2f895f8750f59ec6": "3.6",
@@ -2558,6 +2568,7 @@
    "2a433ba29c96fdd3": "anterior-4.9",
    "362a16db38753dc3": "anterior-5.42",
    "3d3284bc731bccdd": "3.7",
+   "43dc9067c62ea131": "5.58",
    "510b3ef18a0bda57": "5.20",
    "63401f20e683f3d1": "anterior-3.6",
    "6dc320a626f9d035": "anterior-4.9",
@@ -2578,6 +2589,7 @@
    "d01a3c306251a3d6": "5.11",
    "d7ea2d6bdc66a22a": "3.8",
    "e3d24ddb4c89fea9": "3.6",
+   "e8fba1a6032a5630": "5.58",
    "f340dafbfc94d36e": "anterior-3.6",
    "f3924f28ed8ddf39": "anterior-3.6",
    "f7b46d82c671513e": "anterior-3.8",
@@ -2636,6 +2648,7 @@
    "2748f4d1d5313904": "anterior-3.6",
    "39b5513ee21f6c46": "5.18",
    "6125ed0a540a3b1b": "3.6",
+   "a882b23dd88fc14c": "5.58",
    "f8723815f444d670": "5.55"
   },
   ".claude/skills/mercado-livre/referencias/regras-ml.md": {
@@ -2903,6 +2916,9 @@
   ".claude/skills/montar-anuncio/SKILL.md": {
    "02807594f55cc682": "5.14",
    "0b9ad82089bdfb8e": "anterior-3.6",
+   "211896118e7b0a14": "5.58",
+   "265d1fa14da43cb2": "5.58",
+   "526004355ed2180b": "5.58",
    "5732b7a729196abf": "anterior-5.12",
    "68e2644cc6437ac6": "4.4",
    "9645f468cf70d8c9": "5.7",
@@ -2915,7 +2931,8 @@
    "e058583e7c189ede": "5.18",
    "eabc7e78382f3971": "5.12",
    "eef8e6b6842d0656": "anterior-3.6",
-   "f98d322b55db3d0f": "5.3"
+   "f98d322b55db3d0f": "5.3",
+   "fe0e6dbe404bf317": "5.58"
   },
   ".claude/skills/montar-anuncio/referencias/modelo-descricao.md": {
    "1d3db511f2cac1c8": "anterior-5.12",
@@ -3973,6 +3990,7 @@
    "3407dce7762c7f73": "5.33",
    "34168a70a9fb9dc6": "5.7",
    "3598c318ca538062": "3.8",
+   "38c72dcb11713140": "5.58",
    "3934f6ccc3806a28": "5.38",
    "3ad0d1feb4542c0f": "5.20",
    "43396d7fe369f57d": "4.4",
@@ -4106,7 +4124,8 @@
    "e69adfdeaa200c3e": "3.7",
    "eb942b0fa972d210": "5.13",
    "efb40e3217c7abfb": "5.46",
-   "fa451cbe4278e071": "4.5"
+   "fa451cbe4278e071": "4.5",
+   "fe109b85647a4afb": "5.58"
   },
   "_ferramentas/atualizar-projeto.mjs": {
    "0abba6a3edb1514a": "5.7",

@@ -29,6 +29,8 @@ margem = preço que o cliente paga
   `GET /sites/MLB/listing_prices?price=<preço>&category_id=<cat>&listing_type_id=<tipo>`.
   A margem inteira, com a comissão já com a tarifa fixa, sai do `scripts/margem.mjs`.
 - O frete também: `GET /users/<seu-id>/shipping_options/free?dimensions=<alt>x<larg>x<comp>,<peso_g>&listing_type_id=<tipo>&item_price=<preço>&verbose=true&condition=new&logistic_type=drop_off`.
+  O `logistic_type` vai igual ao `--logistica` do `margem.mjs` (o `drop_off` é
+  só o da agência): frete de uma logística com comissão de outra dá margem errada.
   `list_cost` é o que sai do seu bolso; `billable_weight` é o peso cobrado
   (o maior entre o real e o cubado). Caixa folgada vira dinheiro perdido.
 - A margem se calcula sobre o preço promocional, que é o que o cliente paga e

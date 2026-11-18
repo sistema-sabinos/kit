@@ -220,11 +220,18 @@ pra tocar agora, oferecer continuar o mais avançado.
 ler `dados/pipeline/<slug>/status.json` e continuar da etapa atual:
 
 1. Copy pendente: o `ml-copywriter` não roda comando (lê texto de concorrente),
-   então a conversa principal roda por ele. Antes do despacho, com o Chrome
-   dedicado aberto, rodar o simulador da `/montar-anuncio` no `alvo_pos_desconto`
-   da decisão, nas duas modalidades, e mandar no despacho a `tarifa_venda` e o
-   `custo_envio` de cada uma, com a data; sem Chrome, despachar sem, e o copy
-   leva a comissão como pendência. Depois do recibo, com a /humanizar no
+   então a conversa principal roda por ele. Antes do despacho, rodar o
+   `margem.mjs` nas duas modalidades como manda a seção 5 da `/montar-anuncio`
+   (Clássico no `alvo_pos_desconto` da decisão, Premium no ,90 que segura a
+   mesma margem, com a logística da pessoa) e mandar no despacho o preço, a
+   logística, o `comissao_pct`, o `margem_rs` e a `data` de cada uma. O título
+   ainda não existe: a busca da categoria vai com as `titulo_keywords` da
+   decisão, e o auditor refaz com o título final. A logística vai sempre no
+   despacho (sem ela, perguntar à pessoa antes); sem autorização do ML (o
+   `consultar-ml.mjs` ou o script sai 1), despachar sem o resto, e o copy leva
+   a comissão como pendência. O número oficial segue no simulador, no gate do
+   auditor.
+   Depois do recibo, com a /humanizar no
    projeto, rodar `node .claude/skills/humanizar/scripts/varrer.mjs
    dados/humanizar/copy-<slug>.txt` e juntar o achado ao recibo como aviso.
    Mostrar o recibo em 5 linhas e seguir (se a pessoa quiser revisar, pausar).

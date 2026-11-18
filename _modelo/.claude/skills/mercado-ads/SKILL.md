@@ -49,8 +49,20 @@ e cola no chat o endereço da barra do navegador, como nos passos 3 e 4 da `/con
 ### O freio (antes do primeiro raio-X que for virar ação)
 
 O ACOS de empate de um produto é a margem dele: acima disso, cada venda por
-anúncio dá prejuízo. Calcular com a pessoa, a partir da margem real (o
-simulador da `/montar-anuncio` e o imposto da configuração), e gravar
+anúncio dá prejuízo. A margem sai do script, nunca de cabeça: o tipo
+(`gold_special` é `classico`, `gold_pro` é `premium`), a categoria e a
+logística vêm de `node .claude/skills/mercado-livre/scripts/consultar-ml.mjs "/items/<id>"`
+(`listing_type_id`, `category_id` e `shipping.logistic_type`); o preço é o
+`amount` de `consultar-ml.mjs "/items/<id>/sale_price?context=channel_marketplace"`,
+o que o comprador paga com a promoção em vigor (o `price` do `/items` está saindo
+da API, Mercado Livre, conferido em 2026-11-18), e com desconto por nível de
+comprador ligado a conta roda também no menor preço; o custo
+do produto vem do Bling, do catálogo ou da pessoa, e o envio é o `list_cost`
+da `precificacao.md`, buscado com o `logistic_type` do anúncio; com isso,
+`node .claude/skills/mercado-livre/scripts/margem.mjs --preco <amount> --custo <custo> --frete <envio> --categoria <category_id> --tipo <tipo> --logistica <logistic_type>`
+devolve o `margem_pct`, e o ACOS de empate é ele dividido por 100 (30% é
+0,30). Sem autorização do ML (o `consultar-ml.mjs` ou o script sai 1), a margem vem do simulador da
+`/montar-anuncio`. Calcular com a pessoa e gravar
 `dados/ads/guard-rails.json`:
 
 ```json
@@ -107,9 +119,12 @@ node .claude/skills/mercado-ads/scripts/rodar.mjs --promocoes
 
 Lista o que está aberto pra conta, com prazo de adesão. `candidate` é campanha
 que a conta pode entrar e ainda não entrou. Nas cofinanciadas, o Mercado Livre
-banca parte do desconto. Antes de entrar: refazer a margem com o desconto no
-simulador e baixar o `acos_teto` do freio na mesma hora, porque desconto e
-anúncio pago saem da mesma margem.
+banca parte do desconto. Antes de entrar: rodar o `margem.mjs` de novo com o
+preço com desconto no `--preco` e o `list_cost` buscado de novo com esse preço
+(o envio muda com ele, e o desconto pode cruzar o degrau dos R$ 79), o resto
+igual ao do freio, e baixar o
+`acos_teto` do freio na mesma hora, porque desconto e anúncio pago saem da
+mesma margem.
 
 ## A ata
 

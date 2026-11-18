@@ -106,24 +106,44 @@ pendência "NCM: pedir à contadora", porque classificação fiscal é assunto d
 ### 5. O preço, provisório
 
 Base: `preco.alvo_pos_desconto` de `decisao.json` (o que o cliente paga, sobre
-o qual a comissão incide); `preco.tabela` é a lista inflada. A conta é a da
-`precificacao.md`: preço menos comissão da categoria (Clássico ou Premium, cada
-uma com a sua), menos custo de envio (nunca zero abaixo de R$ 79), menos
-`imposto_pct` sobre o preço, menos custo. A comissão sai da API que a `precificacao.md` cita ou da Central de
-Vendedores, com data. Clássico no alvo da decisão; Premium no preço que
-segura a mesma margem com a comissão do Premium, terminado em ,90 e abaixo de
-`preco.tabela` (a publicação desconta da tabela até o preço de cada
-modalidade). Respeitar o degrau dos R$ 79 e terminar em ,90. O degrau
-dos R$ 79 e a comissão estão datados na `precificacao.md`; conferir ao vivo
-antes de cravar preço.
+o qual a comissão incide); `preco.tabela` é a lista inflada. A margem sai do
+script, nunca de cabeça:
+`node .claude/skills/mercado-livre/scripts/margem.mjs --preco <alvo_pos_desconto> --custo <custo_total> --frete <envio> --categoria <cat> --tipo classico --logistica <logística>`.
+A categoria é o `category_id` da primeira linha de
+`node .claude/skills/mercado-livre/scripts/consultar-ml.mjs "/sites/MLB/domain_discovery/search?limit=1&q=<título codificado>"`,
+a mesma que a publicação vai escolher; o título vai codificado pra endereço
+como o `encodeURIComponent` faz (espaço vira `%20`, `&` vira `%26`, `+` vira
+`%2B`, `#` vira `%23`, `%` vira `%25`), senão a busca corta ou troca letra e
+acha outra categoria. O envio é o `list_cost` que a `precificacao.md` ensina a buscar,
+com o mesmo preço, o mesmo tipo e a mesma logística de cada rodada do script
+(o `logistic_type` da consulta igual ao `--logistica`), porque ele muda com
+os três (nunca zero abaixo de R$ 79). A logística é a
+que a pessoa usa no envio, a mesma da `/decidir-anuncio` (agência `drop_off`,
+Coleta `cross_docking`, Flex `self_service`, Full `fulfillment`); sem ela,
+perguntar, porque ela muda a tarifa fixa. O script pega a comissão, já com a
+tarifa fixa, e o imposto da configuração, e devolve `margem_rs`, `margem_pct`,
+`comissao_pct` e `data`. Clássico no alvo da decisão; Premium com `--tipo
+premium`, rodando em preços terminados em ,90 a partir do Clássico e subindo
+até o `margem_rs` alcançar o do Clássico, sempre abaixo de `preco.tabela` (a
+publicação desconta da tabela até o preço de cada modalidade). Se nenhum ,90
+abaixo de `preco.tabela` alcançar, o Premium fica no último deles, com a
+pendência "Premium não segura a margem do Clássico" na tabela, e o simulador
+decide a modalidade. Respeitar o
+degrau dos R$ 79 e terminar em ,90; o degrau está datado na `precificacao.md`,
+conferir ao vivo antes de cravar preço. Sem autorização do ML (o
+`consultar-ml.mjs` ou o `margem.mjs` sai 1) ou com a busca da categoria vazia, a
+comissão vem da Central de Vendedores, com data, e a conta segue a
+`precificacao.md`; nunca comissão de memória. A logística entra na tabela do
+mesmo jeito, com ou sem o script. O `margem_rs` do Clássico vai
+pro `margem_provisoria_rs` do `copy.json`.
 
 Tabela no `copy.md`:
 
 ```
-| Modalidade  | Preço   | Comissão usada          | Margem provisória |
-|-------------|---------|--------------------------|-------------------|
-| ML Clássico | R$ X    | N% (fonte, AAAA-MM-DD)  | R$ Y (validar no simulador) |
-| ML Premium  | R$ X    | N% (fonte, AAAA-MM-DD)  | R$ Y (validar no simulador) |
+| Modalidade  | Preço   | Logística | Comissão usada          | Margem provisória |
+|-------------|---------|-----------|--------------------------|-------------------|
+| ML Clássico | R$ X    | drop_off  | N% (fonte, AAAA-MM-DD)  | R$ Y (validar no simulador) |
+| ML Premium  | R$ X    | drop_off  | N% (fonte, AAAA-MM-DD)  | R$ Y (validar no simulador) |
 ```
 
 A margem daqui é provisória e vai marcada assim. Quem crava o número oficial é
