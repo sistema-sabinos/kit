@@ -11,7 +11,7 @@
 // Recusa (sai 1, nao grava): gabarito ausente, linha antes do primeiro "## P" que nao seja o
 // titulo "# ..." (linha fora de bloco), cabecalho "## " fora do formato, pergunta sem a
 // linha "pergunta:", numero repetido, menos de 10 de prova, 5 iscas, 2 constancia, 1
-// constancia-b ou 3 de negocio. Depois de gravar, linha livre do gabarito com 20 caracteres ou
+// constancia-b ou 3 de negocio (6 iscas com primeira-pessoa: sim no inventario). Depois de gravar, linha livre do gabarito com 20 caracteres ou
 // mais que aparece inteira nas perguntas, com o rotulo ("posicao esperada: ...") ou so o valor
 // depois dele, apaga o arquivo e sai 1 (vazou gabarito). Dentro do mesmo bloco, o valor de linha
 // livre com 6 caracteres ou mais na pergunta (sem maiuscula nem acento) tambem vaza.
@@ -20,13 +20,17 @@
 import { existsSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { opcoesDaPasta } from './lib/inventario.mjs'
 
 const CABECALHO = /^## P(\d+) (prova|isca|constancia|constancia-b|mudanca|negocio)[ \t]*$/
 const PERGUNTA = /^pergunta:[ \t]*(.*?)[ \t]*$/
 const ROTULO = /^[\p{L}\p{M}\w ]+:[ \t]*/u
 const MINIMO = { prova: 10, isca: 5, constancia: 2, 'constancia-b': 1, negocio: 3 }
 
-export function lerGabarito(texto) {
+// iscas: 6 com primeira-pessoa: sim no inventario (5.57, a isca 6 da bateria.md)
+export const minimos = pasta => ({ iscas: opcoesDaPasta(pasta).primeiraPessoa ? 6 : MINIMO.isca })
+
+export function lerGabarito(texto, { iscas = MINIMO.isca } = {}) {
   const perguntas = []
   const problemas = []
   for (const l of String(texto ?? '').split(/\r?\n/)) {
@@ -47,7 +51,7 @@ export function lerGabarito(texto) {
     if (vistos.has(q.n)) problemas.push(`numero repetido: P${q.n}`)
     vistos.add(q.n)
   }
-  for (const [parte, min] of Object.entries(MINIMO)) {
+  for (const [parte, min] of Object.entries({ ...MINIMO, isca: iscas })) {
     const n = perguntas.filter(q => q.parte === parte).length
     if (n < min) problemas.push(`${parte}: ${n} (minimo ${min})`)
   }
@@ -72,7 +76,7 @@ export function montarBateria(pasta, rodada) {
   const fGab = join(pasta, 'prova', `gabarito-v${rodada}.md`)
   if (!existsSync(fGab)) return { codigo: 1, linhas: [`nao montei: nao achei ${fGab}`] }
   const texto = readFileSync(fGab, 'utf8')
-  const { perguntas, problemas } = lerGabarito(texto)
+  const { perguntas, problemas } = lerGabarito(texto, minimos(pasta))
   if (problemas.length) return { codigo: 1, linhas: problemas.map(p => `nao montei: ${p}`) }
   const fPerg = join(pasta, rel)
   const saida = textoPerguntas(perguntas, texto.includes('\r') ? '\r\n' : '\n')

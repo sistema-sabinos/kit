@@ -23,8 +23,8 @@ palestra, artigo, post), separa o jeito de decidir, os princípios, os casos e a
 projeto enxerga. Ele aconselha aplicando o jeito de pensar da pessoa ao negócio aberto, cita a fonte
 de cada ideia e marca o que é dedução.
 
-Ele não é a pessoa. Nunca se apresenta como a pessoa, nunca escreve em nome da pessoa pra fora, e texto que
-vai pro cliente sai na voz da marca do aluno.
+Ele não é a pessoa. Por padrão nunca se apresenta como ela; só com o sim do aluno fala em primeira pessoa,
+no chat com quem montou. Nunca escreve em nome da pessoa pra fora, e texto que vai pro cliente sai na voz da marca.
 
 Onde as coisas ficam:
 ```
@@ -42,19 +42,20 @@ subir com o backup do projeto.
 
 ## Passo 1: crivo e apelido
 
-Ler `referencias/crivo.md` e aplicar antes de qualquer pesquisa. Pessoa privada, menor de 18,
-candidato ou político pedido pela voz política, ou pedido de usar o conselheiro pra se passar
-pela pessoa: recusar com o porquê que está lá e oferecer a rota mais próxima (um conselheiro
-por tema, sem pessoa por trás, pela `/aprender-curso` ou por pesquisa comum).
+Ler `referencias/crivo.md` e aplicar antes de qualquer pesquisa. Pessoa privada, menor de 18, candidato
+ou político pedido pela voz política, ou pedido de usar o conselheiro pra se passar pela pessoa com
+outros: recusar com o porquê que está lá e oferecer a rota mais próxima (um conselheiro por tema, sem
+pessoa por trás, pela `/aprender-curso` ou por pesquisa comum).
 
 Depois, uma pergunta só, com botão (formato de 4 partes da casa, no `.claude/detalhe-regras.md`):
 > "Como o conselheiro se chama? Por padrão ele ganha um apelido de função, tipo
-> `mentor-persuasao`, e nunca usa o nome da pessoa. Pergunto porque o nome real no agente
-> aumenta o risco de parecer que a pessoa endossa o que ele fala. Pode responder tipo: 'pode ser
-> mentor-persuasao', 'chama de conselheiro-oferta', 'quero com o nome da pessoa'."
+> `mentor-persuasao`, e nunca usa o nome da pessoa; pra uso só seu, pode ser o sobrenome dela.
+> Pergunto porque o nome real aumenta o risco de parecer que a pessoa endossa o que ele fala. Pode
+> responder tipo: 'pode ser mentor-persuasao', 'usa o sobrenome', 'quero com o nome completo'."
 
-Guardar a escolha, que se grava no inventário no Passo 4 (nome real: `nome-no-agente: sim`, e
-lembrar em uma linha que ele não fala em primeira pessoa como a pessoa). Conferir o apelido:
+Sobrenome vira apelido em minúscula e sem acento; sobrenome ou nome completo gravam
+`nome-no-agente: sim` no Passo 4 e abrem a pergunta da primeira pessoa (`referencias/crivo.md`).
+Conferir o apelido:
 ```
 node .claude/skills/clonar-especialista/scripts/checar-apelido.mjs <apelido>
 ```
@@ -63,25 +64,26 @@ conselheiro com esse apelido", é o Passo 2.
 
 ## Passo 2: conselheiro que já existe
 
-Perguntar (formato de 4 partes da casa):
-> "Já existe o conselheiro <apelido>, montado em <data da pesquisa>. Acrescento material novo
-> ou refaço do zero? Pergunto porque refazer substitui a persona e o teste de hoje. Pode
-> responder tipo: 'acrescenta esse livro novo', 'refaz do zero', 'me mostra antes o que ele
-> tem'."
+`node .claude/skills/clonar-especialista/scripts/lacunas.mjs juntar <pasta>` junta o que ele deduziu.
+"Atualiza o <apelido>" com lacuna aberta pesquisa só esses temas, sem perguntar
+(`referencias/lacunas-molde.md`); trocar o nome ou ligar a primeira pessoa segue o `crivo.md`
+(Mudar depois). Senão, perguntar (formato de 4 partes da casa): "Já existe o conselheiro
+<apelido>, de <data da pesquisa>. Acrescento material novo ou refaço do zero? Pergunto porque refazer
+substitui a persona e o teste de hoje. Pode responder tipo: 'acrescenta esse livro novo', 'refaz do
+zero', 'me mostra antes o que ele tem'."
 
 Rodar de novo `node .claude/skills/clonar-especialista/scripts/checar-apelido.mjs <apelido>
 --atualizar`. Antes de mexer, copiar o `SKILL.md` atual, com a data, pro fim do `correcoes.md`.
 
-Acrescentar material: o inventário, as fichas, o `itens-vistos.md` e o `conflitos.md` que existem
-ficam, nada se recria. O material do aluno entra pelo Passo 3, e o Passo 4 só pesquisa e lista as
-fontes novas: linhas novas no fim da tabela, com N continuando do maior que já existe (última 23,
-a nova é 24), status `pendente`, e a ficha nasce `fichas/24-<fonte>.md`. A linha `pesquisa:` do
-cabeçalho ganha a data nova (`pesquisa: 2026-03-01, acrescimo 2026-10-12`). Das fontes novas,
-separar pra `prova` o que o `medir-coleta` pedir (ele conta sobre o total). A contagem de novos
-usa o `itens-vistos.md` que já existe. Depois segue do Passo 5 ao 10, e a persona é remontada no
-Passo 7. Refazer do zero é o único caminho que apaga e recria. Acrescentar ou refazer pede rodada
-nova da bateria no Passo 9: o `Liberado: sim` velho não vale. "Continua o <apelido>" (coleta
-parada no meio) volta direto no Passo 5, nas fontes `pendente` do inventário.
+Acrescentar material: o inventário, as fichas, o `itens-vistos.md` e o `conflitos.md` que existem ficam,
+nada se recria. O material do aluno entra pelo Passo 3, e o Passo 4 só pesquisa e lista as fontes novas:
+linhas novas no fim da tabela, com N continuando do maior que já existe (última 23, a nova é 24), status
+`pendente`, e a ficha nasce `fichas/24-<fonte>.md`. A linha `pesquisa:` do cabeçalho ganha a data nova
+(`pesquisa: 2026-03-01, acrescimo 2026-10-12`). Das fontes novas, separar pra `prova` o que o
+`medir-coleta` pedir (ele conta sobre o total). A contagem de novos usa o `itens-vistos.md` que já existe.
+Depois segue do Passo 5 ao 10, e a persona é remontada no Passo 7. Refazer do zero é o único caminho que
+apaga e recria. Acrescentar ou refazer pede rodada nova da bateria no Passo 9: o `Liberado: sim` velho
+não vale. "Continua o <apelido>" (coleta parada no meio) volta direto no Passo 5, nas fontes `pendente`.
 
 ## Passo 3: material do aluno primeiro
 
@@ -90,20 +92,18 @@ Perguntar se ele tem livro, apostila, curso ou link da pessoa. O que ele tiver e
 - PDF: `node .claude/skills/aprender-curso/scripts/ler-pdf.mjs "<pasta>/fontes/<arquivo>.pdf"` (o
   `--medir` antes, e confirmação acima de 300 páginas). Escaneado, senha ou sem permissão de cópia
   não se contorna. Epub ou docx: pedir em PDF.
-- Vídeo com legenda: `yt-dlp` pedindo a trilha no idioma original do vídeo (`--sub-langs
-  "<idioma>-orig"`, depois `"<idioma>"`), e `node
-  .claude/skills/aprender-curso/scripts/limpar-legenda.mjs "<arquivo>.vtt"`.
+- Vídeo com legenda: `yt-dlp` pedindo a trilha no idioma original do vídeo (`--sub-langs "<idioma>-orig"`,
+  depois `"<idioma>"`), e `node .claude/skills/aprender-curso/scripts/limpar-legenda.mjs "<arquivo>.vtt"`.
 - Sem legenda: `/transcribe`.
 
-Só entra o que o aluno comprou ou é público. Curso vazado ou PDF de site pirata: recusar e dizer
-por quê (`referencias/crivo.md`). Curso de plataforma (Hotmart, Kiwify, Udemy): usar só pro
-estudo dele, e nada do curso sai pra fora.
+Só entra o que o aluno comprou ou é público. Curso vazado ou PDF de site pirata: recusar e dizer por quê
+(`referencias/crivo.md`). Curso de plataforma (Hotmart, Kiwify, Udemy): só pro estudo dele, nada sai pra fora.
 
 ## Passo 4: inventário e estimativa antes de gastar
 
 Acrescentando material (Passo 2): só acrescentar linhas, com N continuando. Conselheiro novo:
 criar `<pasta>/inventario.md` pelo `referencias/inventario-molde.md`, com `pessoa:` (nome
-completo, só aqui e nas fichas), `nome-no-agente:`, `area:` e `pesquisa:` (a data de hoje).
+completo, só aqui e nas fichas), `nome-no-agente:`, `primeira-pessoa:`, `area:` e `pesquisa:` (hoje).
 Pesquisar o material da pessoa no mundo, em inglês, na língua nativa da pessoa e em português
 quando houver (nenhuma fonte em português é obrigatória), nas 5 camadas do molde: (a) obra
 própria, cada edição com o ano; (b) fala longa espontânea, de 30 minutos ou mais contando só a
@@ -169,21 +169,20 @@ Prova fora da faixa e linha torta da tabela não se aceitam: conserta e roda de 
 
 ## Passo 7: montar a persona
 
-Três subagentes leem as fichas (nunca as fontes brutas), cada um com uma lente, e cada um grava
-na pasta a sua lista, com a marca no formato da ficha: jeito de ser (`leitura-ser.md`: valores,
-como reage a desacordo e a pedido antiético), jeito de decidir (`leitura-decidir.md`: princípios,
-regras, casos, Perguntas que sempre faço e Posições que mudaram) e jeito de falar
-(`leitura-falar.md`: voz). A conversa principal junta as três; item `(impression)` só entra como
-fato e crítica. Na lente decidir, ideia só vira modelo mental se passa nos 3 testes: aparece em
-mais de um assunto (2 fontes de temas diferentes), prevê o que a pessoa diria sobre tema novo e
-foge do que qualquer pessoa inteligente diria. Passou em 1 ou 2: vira regra de decisão, e o
-princípio sem "se X" vai em Modelos mentais com a Limitação. Em nenhum: sai.
+Três subagentes leem as fichas (nunca as fontes brutas), cada um com uma lente, e cada um grava na pasta
+a sua lista, com a marca no formato da ficha: jeito de ser (`leitura-ser.md`: valores, como reage a
+desacordo e a pedido antiético), jeito de decidir (`leitura-decidir.md`: princípios, regras, casos,
+Perguntas que sempre faço e Posições que mudaram) e jeito de falar (`leitura-falar.md`: voz). A conversa
+principal junta as três; item `(impression)` só entra como fato e crítica. Na lente decidir, ideia só
+vira modelo mental se passa nos 3 testes: aparece em mais de um assunto (2 fontes de temas diferentes),
+prevê o que a pessoa diria sobre tema novo e foge do que qualquer pessoa inteligente diria. Passou em 1
+ou 2: vira regra de decisão, e o princípio sem "se X" vai em Modelos mentais com a Limitação. Em nenhum: sai.
 
-Escrever `SKILL.md` pelo `referencias/esqueleto-persona.md` e `agente.md` pelo
-`referencias/agente-molde.md`. O que o `coleta-aceita` do inventário diz que faltou vai pra seção
-Limites. Opinião que mudou com o tempo vai pro `conflitos.md`, pelo `referencias/conflitos-molde.md`
-(as duas pontas com as datas, sem conciliar). Pergunta fora do material: o conselheiro opina pelo
-jeito de pensar da pessoa e marca "dedução, a pessoa nunca disse isso".
+Escrever `SKILL.md` pelo `referencias/esqueleto-persona.md` (com `primeira-pessoa: sim`, o Papel e a Voz
+de primeira pessoa de lá) e `agente.md` pelo `referencias/agente-molde.md`. O que o `coleta-aceita` diz
+que faltou vai pra Limites. Opinião que mudou com o tempo vai pro `conflitos.md`, pelo
+`referencias/conflitos-molde.md` (as duas pontas com as datas, sem conciliar). Fora do material, o
+conselheiro deduz, marca e anota a lacuna, sem pesquisar a pessoa no meio da resposta (item 4).
 
 ## Passo 8: travas
 
@@ -242,7 +241,8 @@ mensagem e parar); reinstalar troca `~/.claude/skills/<apelido>/` inteira, e arq
 Cinco linhas, em linguagem simples (`_contexto/preferencias.md`): 1) o mais valioso do jeito de
 pensar da pessoa; 2) o placar do teste; 3) o que o material não cobre; 4) a data da pesquisa (depois
 dela, ele não sabe); 5) uma pergunta pra fazer agora. E como chamar, numa conversa nova:
-`/<apelido> <pedido>` ou "chama o <apelido> pra revisar esse anúncio". A cópia-mestra só sobe pro
+`/<apelido> <pedido>` ou "chama o <apelido> pra revisar esse anúncio"; "atualiza o <apelido>"
+pesquisa o que ele precisou deduzir. A cópia-mestra só sobe pro
 backup quando uma sessão roda na pasta-mãe (abrir a pasta-mãe uma vez, ou `/syncar` lá). Fechou o
 processo: sugerir conversa nova.
 

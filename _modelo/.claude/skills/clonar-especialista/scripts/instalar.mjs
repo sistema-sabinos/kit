@@ -26,7 +26,7 @@ import { medirPersona } from './medir-persona.mjs'
 import { travarNome } from './travar-nome.mjs'
 import { medirColeta } from './medir-coleta.mjs'
 import { conferirPasta } from '../../aprender-curso/scripts/conferir-citacoes.mjs'
-import { lerGabarito, textoPerguntas } from './montar-bateria.mjs'
+import { lerGabarito, minimos, textoPerguntas } from './montar-bateria.mjs'
 
 const ler = f => { try { return readFileSync(f, 'utf8') } catch { return '' } }
 const pastas = dir => {
@@ -102,7 +102,7 @@ const provaDaRodada = (pasta, texto) => {
     if (!arq[nome].trim()) return { motivo: `falta prova/${nome}`, linha: `nao carimbei: falta prova/${nome} da rodada ${k}` }
   }
   const lf = s => s.replace(/\r\n/g, '\n')
-  const gab = lerGabarito(arq[`gabarito-v${k}.md`])
+  const gab = lerGabarito(arq[`gabarito-v${k}.md`], minimos(pasta))
   if (gab.problemas.length || lf(arq[`perguntas-v${k}.md`]) !== textoPerguntas(gab.perguntas, '\n')) {
     return { motivo: `perguntas da rodada ${k} nao batem com o gabarito`, linha: `nao carimbei: perguntas da rodada ${k} nao batem com o gabarito` }
   }

@@ -1,5 +1,5 @@
 {
- "versao": "5.56",
+ "versao": "5.57",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -916,6 +916,7 @@
    "cc80b015633469c8": "5.20"
   },
   ".claude/skills/clonar-especialista/SKILL.md": {
+   "0304636eea500eb8": "5.57",
    "13bdf267a0ed0a9c": "anterior-5.11",
    "15e2c5e619507767": "5.20",
    "1a194a29b7841fff": "anterior-5.15",
@@ -934,6 +935,7 @@
    "9370a990257ba6a6": "anterior-5.11",
    "991acb4800114e4c": "anterior-5.11",
    "9f8b00ffddca4747": "anterior-5.11",
+   "b40fbee4fc43c78d": "5.57",
    "ba9080fefad6289a": "anterior-5.15",
    "c19c64927cd9eb3d": "anterior-5.15",
    "c5281102be54d763": "anterior-5.14",
@@ -945,6 +947,7 @@
    "fbeb82e960fdd212": "anterior-5.15"
   },
   ".claude/skills/clonar-especialista/referencias/agente-molde.md": {
+   "3ed01df9fb10ff69": "5.57",
    "c24278f7f336b19f": "5.11",
    "ed2008c9b99faa17": "5.20",
    "faf70b7c23b14459": "5.15"
@@ -952,6 +955,7 @@
   ".claude/skills/clonar-especialista/referencias/bateria.md": {
    "070a6773446dfccb": "anterior-5.11",
    "0db442afc32eb1c6": "anterior-5.11",
+   "10006ac4c6dc7d02": "5.57",
    "10384d2d40983028": "5.11",
    "2eccbcc54732bf43": "anterior-5.11",
    "56617abbe93b0ba0": "anterior-5.11",
@@ -966,6 +970,7 @@
    "bca724b3740f5bc1": "anterior-5.15",
    "c4bc437362d110aa": "5.20",
    "cb1d5c8d986b0ec5": "anterior-5.11",
+   "d057baef97cfdbbf": "5.57",
    "f8509656b7bed0e0": "anterior-5.15"
   },
   ".claude/skills/clonar-especialista/referencias/conflitos-molde.md": {
@@ -973,7 +978,10 @@
   },
   ".claude/skills/clonar-especialista/referencias/crivo.md": {
    "3385d71b9b4ce709": "5.11",
+   "923cc6c03bcc982b": "5.57",
    "b447d176a1731479": "5.18",
+   "c887f2a5e8da9f93": "5.57",
+   "d21c88f63d1ed5b6": "5.57",
    "fc01d8a5c648ec43": "anterior-5.11"
   },
   ".claude/skills/clonar-especialista/referencias/esqueleto-persona.md": {
@@ -983,6 +991,7 @@
    "748f157f568a67fe": "5.20",
    "8bf361b98955d847": "anterior-5.11",
    "9c56f1623bd095ff": "5.11",
+   "a447f8f80605db69": "5.57",
    "be03a8fd53444e1d": "anterior-5.11",
    "d223bc09e4e81234": "anterior-5.15",
    "deda38fb39b73ffe": "anterior-5.15"
@@ -996,11 +1005,16 @@
    "505225406326e82c": "anterior-5.15",
    "58c0d095645b7f0f": "anterior-5.15",
    "6a067b7b970fe579": "5.11",
+   "799f908c2a66d3ad": "5.57",
    "7d10c73c4c1740ca": "anterior-5.11",
    "fdbf4f75e6893cc5": "5.15"
   },
   ".claude/skills/clonar-especialista/referencias/itens-vistos-molde.md": {
    "c3997ea16086be14": "5.15"
+  },
+  ".claude/skills/clonar-especialista/referencias/lacunas-molde.md": {
+   "3ede7c60b8786869": "5.57",
+   "73a937d16d5fddb7": "5.57"
   },
   ".claude/skills/clonar-especialista/scripts/checar-apelido.mjs": {
    "007cef7722652a2e": "5.15",
@@ -1018,14 +1032,25 @@
    "4c588f7904018430": "5.20",
    "6627049aa2ef9c15": "anterior-5.11",
    "ac2168368a7b3b62": "anterior-5.11",
+   "b0201b6f41e6c17b": "5.57",
    "e1612727f07946db": "5.15",
    "e507795949627423": "5.11"
   },
+  ".claude/skills/clonar-especialista/scripts/lacunas.mjs": {
+   "009d174d2df1c47c": "5.57",
+   "1e739e78df4cb5e7": "5.57",
+   "3968542e8663da07": "5.57",
+   "b519a016b7374dde": "5.57"
+  },
   ".claude/skills/clonar-especialista/scripts/lib/carimbo.mjs": {
-   "85a3f1e695305497": "5.11"
+   "85a3f1e695305497": "5.11",
+   "aba931fb4bf3b3de": "5.57"
   },
   ".claude/skills/clonar-especialista/scripts/lib/frontmatter.mjs": {
    "b862cc07f37445eb": "5.11"
+  },
+  ".claude/skills/clonar-especialista/scripts/lib/inventario.mjs": {
+   "0f4c24bf97e4e71e": "5.57"
   },
   ".claude/skills/clonar-especialista/scripts/lib/nome.mjs": {
    "e02af4d7c748e683": "5.14",
@@ -1052,7 +1077,8 @@
   ".claude/skills/clonar-especialista/scripts/medir-persona.mjs": {
    "1a4093a9eac89d68": "anterior-5.11",
    "4b3f2f61d7faab90": "5.20",
-   "8a06cd191b1af71a": "5.11"
+   "8a06cd191b1af71a": "5.11",
+   "d48fa848e4cd95f7": "5.57"
   },
   ".claude/skills/clonar-especialista/scripts/montar-bateria.mjs": {
    "49a0dfcc3cd7546e": "anterior-5.11",
@@ -1060,9 +1086,11 @@
    "7058753c1f134ef9": "5.11",
    "985cd08b0c6d909b": "5.15",
    "b20080f7c9e1af7a": "5.20",
-   "b4e22c2f1243bc4e": "anterior-5.11"
+   "b4e22c2f1243bc4e": "anterior-5.11",
+   "bf5b2235aa332188": "5.57"
   },
   ".claude/skills/clonar-especialista/scripts/travar-nome.mjs": {
+   "27f1dad7cc367b63": "5.57",
    "55640c1df79d120c": "5.14",
    "572fd15d6afddf69": "5.20",
    "9cb3ec94aadbe5c7": "5.11"
@@ -1468,10 +1496,10 @@
    "ff75ecd69edf1585": "4.1"
   },
   ".claude/skills/conselho/SKILL.md": {
-   "2901b4ccd3136f82": "5.56",
-   "543fe12d2c329003": "5.56",
-   "63f889daf171c485": "5.56",
-   "66b6d46d88693c2d": "5.56",
+   "2901b4ccd3136f82": "anterior-5.56",
+   "543fe12d2c329003": "anterior-5.56",
+   "63f889daf171c485": "anterior-5.56",
+   "66b6d46d88693c2d": "anterior-5.56",
    "ec22182472083c5a": "5.56"
   },
   ".claude/skills/conselho/referencias/dono-tempo.md": {
@@ -1487,12 +1515,12 @@
    "81a71a13568396a3": "5.56"
   },
   ".claude/skills/conselho/scripts/copia.mjs": {
-   "5654df0f4d8a4c7a": "5.56",
+   "5654df0f4d8a4c7a": "anterior-5.56",
    "7dd5e5d5948b5f95": "5.56",
-   "88e1bcd707e863ae": "5.56",
-   "ac3c23e789333053": "5.56",
-   "b71cd4d07a8a1e48": "5.56",
-   "fefb94294d41de13": "5.56"
+   "88e1bcd707e863ae": "anterior-5.56",
+   "ac3c23e789333053": "anterior-5.56",
+   "b71cd4d07a8a1e48": "anterior-5.56",
+   "fefb94294d41de13": "anterior-5.56"
   },
   ".claude/skills/decidir-anuncio/SKILL.md": {
    "029b44e5fbab2166": "3.6",
@@ -3571,7 +3599,7 @@
    "99784d6fef25933b": "anterior-5.42",
    "99c9c8a351548bb1": "4.4",
    "9aaad516c45d4136": "5.11",
-   "a0048bb00495a8f9": "5.56",
+   "a0048bb00495a8f9": "anterior-5.56",
    "a2472a4de5c2c1fd": "anterior-3.0",
    "a25184ad3cff1991": "5.55",
    "adc463790267930f": "anterior-5.42",
@@ -3937,6 +3965,7 @@
    "2618e2fb4d5ae57e": "5.5",
    "2694754476985dc2": "5.54",
    "27085768eeae0cd5": "5.32",
+   "2ba8b0ed873bfacf": "5.57",
    "2e9cf9664b720540": "5.51",
    "32130589c7e7fa90": "3.6",
    "332bc97f889928da": "5.6",
@@ -4030,6 +4059,7 @@
    "4ccf541be996cb55": "5.54",
    "4da33b375501651a": "5.5",
    "54353cf4d0f7e379": "5.6",
+   "5805eee7582fbb98": "5.57",
    "584a356c1cd859c2": "5.34",
    "597fd61a4dc22d0c": "4.7",
    "5a7c93e5a5d3e2ce": "5.17",
@@ -4522,8 +4552,12 @@
   },
   "_modelo/.claude/skills/clonar-especialista/scripts/instalar.test.mjs": {
    "2682a41d3638040a": "5.20",
+   "d1ad77cd6da56fd5": "5.57",
    "d3253c8c24a7979c": "5.15",
    "fc501d94c3ac408c": "5.11"
+  },
+  "_modelo/.claude/skills/clonar-especialista/scripts/lacunas.test.mjs": {
+   "7e887036b327290e": "5.57"
   },
   "_modelo/.claude/skills/clonar-especialista/scripts/lib/carimbo.test.mjs": {
    "4ba1361e9b5ce341": "5.11"
@@ -4540,6 +4574,7 @@
    "572803feb2e5b0cd": "5.15"
   },
   "_modelo/.claude/skills/clonar-especialista/scripts/medir-persona.test.mjs": {
+   "ce2756e952a0b63a": "5.57",
    "e2a4668edf8ad565": "5.20",
    "f09a36e68cd577f8": "5.11"
   },
@@ -4547,8 +4582,12 @@
    "17623bf97c416222": "5.15",
    "b51a71f40662e67f": "5.11"
   },
+  "_modelo/.claude/skills/clonar-especialista/scripts/primeira-pessoa.test.mjs": {
+   "e4b8aab3a3b43b70": "5.57"
+  },
   "_modelo/.claude/skills/clonar-especialista/scripts/travar-nome.test.mjs": {
    "5503b99d7f78759e": "5.11",
+   "7863f256e87f7e2d": "5.57",
    "830e4c5044461cac": "5.14"
   },
   "_modelo/.claude/skills/comecar-a-vender/scripts/fatos.test.mjs": {

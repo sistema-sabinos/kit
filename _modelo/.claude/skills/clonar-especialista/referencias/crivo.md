@@ -1,6 +1,7 @@
 # Crivo da /clonar-especialista
 
-Conferido em 2026-10-12. Reconferir a cada versão do kit: lei e política de IA estão andando.
+Conferido em 2026-10-12; a política da Anthropic, de novo em 2026-11-17 (versão de 2026-11-12).
+Reconferir a cada versão do kit: lei e política de IA estão andando.
 Este crivo é o mínimo que o sistema cumpre. Dúvida de lei de verdade vai pra um advogado.
 
 ## Quem pode virar conselheiro
@@ -14,8 +15,9 @@ Recusa, sempre com o porquê:
 - **Menor de 18:** proteção reforçada (ECA Digital, Lei 15.211/2025, em vigor desde 2026-03-17).
 - **Político ou candidato pela voz política:** a política de uso da Anthropic proíbe conteúdo que
   imita candidato em processo eleitoral (seção de processos democráticos).
-- **Pedido de se passar pela pessoa** (responder cliente como se fosse ela, gravar "depoimento",
-  perfil falso): a política da Anthropic proíbe "Impersonate real individuals".
+- **Pedido de se passar pela pessoa com outros** (responder cliente como se fosse ela, gravar
+  "depoimento", perfil falso, post assinado por ela): a política da Anthropic proíbe "Impersonate
+  real individuals" e imitar pessoa real pra enganar sobre a origem ou a autoria.
 
 ## Por que apelido por padrão
 
@@ -24,6 +26,36 @@ comercial (art. 20); nos EUA, imitação reconhecível já foi condenada mesmo s
 Host) e há processo contra bot que imitava a persona de um palestrante famoso (2025). O apelido
 reduz o risco de parecer endosso. Ele sozinho não basta: o que segura é a regra de uso, de que o
 conselheiro conversa com o aluno e nada sai em nome da pessoa.
+
+Pra uso só do aluno, o nome pode ser o sobrenome da pessoa (minúsculo e sem acento) ou o nome
+completo, com `nome-no-agente: sim`. A regra de uso continua a mesma.
+
+## Primeira pessoa, só pra quem montou
+
+Com o nome liberado, perguntar uma vez (formato de 4 partes da casa):
+> "Quer que ele fale como a própria pessoa, em primeira pessoa ('eu recusei essa oferta em tal
+> ano')? Só no seu chat: ele continua dizendo que é IA quando você pergunta a sério, marca o que é
+> dedução, cita a fonte, e nada sai pra fora como se fosse dela. Pergunto porque isso muda o teste
+> de fidelidade. Pode responder tipo: 'pode falar como ela', 'prefiro em terceira pessoa'."
+
+Com o sim, `primeira-pessoa: sim` no inventário (o `travar-nome` recusa sem `nome-no-agente: sim`).
+É ficção avisada pra quem sabe que fala com uma IA: a política da Anthropic diz que a proibição de
+imitar "does not prohibit clearly disclosed parody, satire, or fiction", e proíbe "convince people
+they are interacting with a human when they are not". Por isso a primeira pessoa vale só no chat de
+quem montou; com terceiro (cliente, seguidor, sócio), é imitação e se recusa.
+
+## Mudar depois
+
+Conselheiro que já existe pede a troca pelo Passo 2 ("liga a primeira pessoa", "troca o nome pro
+sobrenome"). Nos dois casos a persona muda: Passos 8 a 10 de novo, com rodada nova da bateria.
+- Primeira pessoa: a pergunta acima; com o sim, `primeira-pessoa: sim` (e `nome-no-agente: sim`, se
+  faltar) no cabeçalho do inventário, e o Papel e a Voz pelo trecho "Primeira pessoa" do esqueleto.
+- Nome: o apelido é o nome da pasta. Rodar o `lacunas.mjs juntar` do velho, conferir o novo pelo
+  `checar-apelido.mjs <novo>`, copiar a cópia-mestra inteira pra pasta irmã com o nome novo (na
+  pasta-mãe, `agentes/<novo>`; fora dela, `~/.claude/conselheiros/<novo>`), trocar o apelido
+  velho pelo novo no `SKILL.md` e no `agente.md` (name, skills e caminhos) e gravar
+  `nome-no-agente: sim`. Instalado o novo, com o ok do aluno, apagar `~/.claude/skills/<velho>/`,
+  `~/.claude/agents/<velho>.md` e a cópia-mestra velha.
 
 ## Fonte que pode entrar
 

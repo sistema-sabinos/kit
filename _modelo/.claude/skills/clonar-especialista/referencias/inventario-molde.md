@@ -9,6 +9,7 @@ a ordem nem o nome das colunas.
 
 pessoa: <nome completo>
 nome-no-agente: nao
+primeira-pessoa: nao
 area: <expertise, ex.: persuasão>
 pesquisa: <AAAA-MM-DD>
 fases: <AAAA-MM-DD>, <fases da carreira cobertas>
@@ -32,6 +33,9 @@ fases: <AAAA-MM-DD>, <fases da carreira cobertas>
   (descartada, com o motivo na coluna fonte).
 - **itens / novos:** itens da ficha e quantos o contador acrescentou ao `itens-vistos.md`
   (Passo 5). Inteiro de 0 pra cima; outra coisa vira linha torta.
+- **nome-no-agente / primeira-pessoa:** `sim` só com a escolha do aluno no Passo 1
+  (`referencias/crivo.md`); `primeira-pessoa: sim` pede `nome-no-agente: sim` (o `travar-nome`
+  cobra) e muda a bateria e o Papel (`bateria.md`, `esqueleto-persona.md`).
 - **fases:** a conferência de julgamento do Passo 6 (toda fase da carreira com fonte), com a data;
   sem ela o `medir-coleta` avisa.
 - **coleta-aceita:** linha opcional no cabeçalho, só com o sim do aluno no Passo 6

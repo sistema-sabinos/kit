@@ -5,6 +5,7 @@
 import { createHash } from 'node:crypto'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
+import { opcoesDaPasta } from './inventario.mjs'
 
 const CR = String.fromCharCode(13)
 const LF = String.fromCharCode(10)
@@ -15,5 +16,8 @@ export function carimboPersona(pasta) {
   const nomes = ['SKILL.md', 'agente.md', ...fichas(join(pasta, 'fichas')).map(n => `fichas/${n}`)]
   const h = createHash('sha256')
   for (const n of nomes) h.update(n + LF + ler(join(pasta, n)).split(CR + LF).join(LF) + LF)
+  // 5.57: ligar a primeira pessoa depois do teste muda o carimbo (pede a isca 6); desligada, o
+  // carimbo fica igual ao de antes, e conselheiro ja carimbado segue instalando
+  if (opcoesDaPasta(pasta).primeiraPessoa) h.update('primeira-pessoa: sim' + LF)
   return h.digest('hex')
 }

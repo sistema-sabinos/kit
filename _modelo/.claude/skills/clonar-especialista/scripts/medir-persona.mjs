@@ -12,12 +12,22 @@ import { readFileSync, realpathSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { lerFrontmatter, ORIGEM } from './lib/frontmatter.mjs'
+import { opcoesDaPasta } from './lib/inventario.mjs'
 
 export const SECOES = ['## Papel', '## Como respondo', '## Modelos mentais', '## Regras de decisão', '## Voz', '## Limites', '## Regras de saída', '## Mapa das fichas']
 export const RODAPE = 'Inspirado no material público de um especialista. Não fala pela pessoa e não tem endosso dela.'
 export const CONFERENCIA = '--persona --resposta'
 export const FERRAMENTAS_CONFERENCIA = ['Bash', 'Write']
+export const FRASE_IA = 'Sou uma IA'
+export const FRASE_AUTORIA = 'Nada sai em nome da pessoa pra fora'
 const ler = f => { try { return readFileSync(f, 'utf8') } catch { return '' } }
+// texto da secao: da linha do titulo ate o proximo "## "
+const secao = (linhas, titulo) => {
+  const i = linhas.findIndex(l => l.trim() === titulo)
+  if (i < 0) return ''
+  const fim = linhas.findIndex((l, j) => j > i && l.startsWith('## '))
+  return linhas.slice(i + 1, fim < 0 ? linhas.length : fim).join(' ')
+}
 
 // conferencia: false so no instalar, pra copia-mestra carimbada antes da 5.20 ainda reinstalar
 export function medirPersona(pasta, { conferencia = true } = {}) {
@@ -38,6 +48,12 @@ export function medirPersona(pasta, { conferencia = true } = {}) {
     if (fm.origem !== ORIGEM) problemas.push(`falta "origem: ${ORIGEM}" no frontmatter do SKILL.md`)
   }
   for (const s of SECOES) if (!linhas.some(l => l.trim() === s)) problemas.push(`falta a secao "${s}"`)
+  // 5.57: com primeira-pessoa: sim no inventario, o Papel ainda diz que e IA e a saida ainda
+  // proibe autoria da pessoa: as duas frases do esqueleto, cada uma na secao dela
+  if (opcoesDaPasta(pasta).primeiraPessoa) {
+    if (!secao(linhas, '## Papel').includes(FRASE_IA)) problemas.push(`primeira pessoa sem "${FRASE_IA}" no Papel: o conselheiro diz que e IA quando perguntam a serio`)
+    if (!secao(linhas, '## Regras de saída').includes(FRASE_AUTORIA)) problemas.push(`primeira pessoa sem "${FRASE_AUTORIA}" nas Regras de saída`)
+  }
   if (!skill.includes(RODAPE)) problemas.push('falta o rodape de inspiracao no fim do SKILL.md')
   if (conferencia && !skill.includes(`conferir-citacoes.mjs ~/.claude/skills/${apelido} ${CONFERENCIA}`)) problemas.push(`falta no Como respondo a conferencia de cada resposta (conferir-citacoes.mjs ~/.claude/skills/${apelido} ${CONFERENCIA}): item 7 do esqueleto`)
   if (!agente) problemas.push('falta agente.md')

@@ -103,3 +103,23 @@ test('nome sem parte de 4 letras confere as partes juntas: Li Wu sai 0 sem o nom
     assert.equal(comum.status, 0, comum.stdout + comum.stderr)
   } finally { for (const d of dirs) rmSync(d, { recursive: true, force: true }) }
 })
+
+test('5.57: primeira pessoa so com o nome liberado', () => {
+  const comNome = INV.replace('nome-no-agente: nao', ['nome-no-agente: sim', 'primeira-pessoa: sim'].join(CRLF))
+  const semNome = INV.replace('nome-no-agente: nao', ['nome-no-agente: nao', 'primeira-pessoa: sim'].join(CRLF))
+  const dirs = [
+    conselheiro({ inventario: comNome, skill: 'Eu, Souza, recusei.' }),
+    conselheiro({ inventario: semNome }),
+    conselheiro({ inventario: INV.replace('nome-no-agente: nao', 'primeira-pessoa: sim') }),
+  ]
+  try {
+    const [ok, nao, ausente] = dirs.map(rodar)
+    assert.ok(ok.stdout.length > 0 && nao.stdout.length > 0, 'saida veio vazia')
+    assert.equal(ok.status, 0, ok.stdout + ok.stderr)
+    assert.equal(ok.stdout.trim(), 'nome liberado pelo aluno, com primeira pessoa')
+    for (const r of [nao, ausente]) {
+      assert.equal(r.status, 1, r.stdout + r.stderr)
+      assert.match(r.stdout, /^primeira-pessoa: sim pede nome-no-agente: sim/)
+    }
+  } finally { for (const d of dirs) rmSync(d, { recursive: true, force: true }) }
+})

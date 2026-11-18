@@ -6,7 +6,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'nod
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { medirPersona, SECOES, RODAPE, CONFERENCIA } from './medir-persona.mjs'
+import { medirPersona, SECOES, RODAPE, CONFERENCIA, FRASE_IA, FRASE_AUTORIA } from './medir-persona.mjs'
 
 const CRLF = String.fromCharCode(13, 10)
 const conferencia = apelido => `7. Rodo node .claude/skills/aprender-curso/scripts/conferir-citacoes.mjs ~/.claude/skills/${apelido} ${CONFERENCIA} r.md`

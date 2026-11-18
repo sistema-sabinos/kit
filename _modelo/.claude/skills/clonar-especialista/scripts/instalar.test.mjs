@@ -540,3 +540,31 @@ test('CLI instala na casa do HOME e do USERPROFILE e o --faltando responde nenhu
     assert.equal(f.stdout.trim(), 'nenhum')
   } finally { rmSync(c.raiz, { recursive: true, force: true }) }
 })
+
+test('5.57: primeira pessoa ligada depois da rodada de 5 iscas nao carimba; a rodada de 6 carimba e instala', () => {
+  const c = cenario()
+  try {
+    // rodada 2 montada com a opcao desligada: 5 iscas
+    rodadaNova(c, 2, 'sim')
+    writeFileSync(join(c.mestra, 'inventario.md'), INVENTARIO.join(CRLF).replace('nome-no-agente: nao', ['nome-no-agente: sim', 'primeira-pessoa: sim'].join(CRLF)))
+    const f = join(c.mestra, 'SKILL.md')
+    writeFileSync(f, readFileSync(f, 'utf8').replace(`## Papel${CRLF}Regra`, `## Papel${CRLF}Sou uma IA. Regra`)
+      .replace(`## Regras de saída${CRLF}Regra`, `## Regras de saída${CRLF}Nada sai em nome da pessoa pra fora. Regra`))
+    const r = carimbar(c.mestra)
+    assert.equal(r.codigo, 1, r.linhas.join('\n'))
+    assert.deepEqual(r.linhas, ['nao carimbei: perguntas da rodada 2 nao batem com o gabarito'])
+    assert.equal(instalar(c.mestra, c.casa).codigo, 1)
+    // rodada 3 com 6 iscas
+    const partes = [...Array(10).fill('prova'), ...Array(6).fill('isca'), 'constancia', 'constancia', 'constancia-b', 'negocio', 'negocio', 'negocio']
+    const g = ['# Gabarito', '', ...partes.flatMap((parte, i) => [`## P${i + 1} ${parte}`, `pergunta: O que fazer na situacao ${i + 1}?`, `posicao esperada: segredo numero ${i + 1} do gabarito, so o juiz ve`, ''])]
+    writeFileSync(join(c.mestra, 'prova', 'gabarito-v3.md'), g.join(CRLF))
+    assert.equal(montarBateria(c.mestra, 3).codigo, 0)
+    writeFileSync(join(c.mestra, 'prova', 'respostas-v3.md'), ['## P1 prova', 'Insistir.', ''].join(CRLF))
+    const res = join(c.mestra, 'prova', 'resultado.md')
+    writeFileSync(res, readFileSync(res, 'utf8') + ['', '## Rodada 3, 2026-11-17', 'Volta: 0', 'Liberado: sim', ''].join(CRLF))
+    const r3 = carimbar(c.mestra)
+    assert.equal(r3.codigo, 0, r3.linhas.join('\n'))
+    const i = instalar(c.mestra, c.casa)
+    assert.equal(i.codigo, 0, i.linhas.join('\n'))
+  } finally { rmSync(c.raiz, { recursive: true, force: true }) }
+})
