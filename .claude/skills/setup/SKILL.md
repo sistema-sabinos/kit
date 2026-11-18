@@ -212,6 +212,7 @@ Responda as perguntas abaixo só com o que eu já te contei. Regras:
 6. Devolva neste formato, pergunta por pergunta:
 [1] (a pergunta)
 Sua resposta: (o que você sabe, ou nada)
+7. Depois da última resposta, escreva [FIM DAS RESPOSTAS] sozinho numa linha e pare.
 
 Perguntas:
 ```
@@ -222,10 +223,12 @@ Com a resposta colada em mãos:
    segue e sai antes de gravar.
 2. Tirar senha, documento com número, nome de cliente e informação de saúde de uma pessoa, dizendo numa linha o que
    saiu (o público do negócio, tipo "pessoas com diabetes", fica). A outra IA escreve na segunda pessoa: a resposta
-   volta pra primeira ("você começou" vira "comecei").
+   volta pra primeira ("você começou" vira "comecei"). A conversa dela depois do `[FIM DAS RESPOSTAS]` (ou, sem a
+   marca, depois da última resposta: "espero ter ajudado", "quer que eu...") não é resposta e sai.
 3. Gravar de uma vez pelo script, com o texto já limpo pela entrada, e mostrar o que ele disse (as que entraram, as
-   que vieram em branco e as que ficaram de fora). Ele grava só nas perguntas em branco, troca travessão por vírgula e
-   marca o rótulo com `[AAAA-MM-DD HH:MM outra IA]`. Pela Bash (Git Bash ou Mac):
+   que vieram em branco e as que ficaram de fora). Ele grava só nas perguntas em branco, troca travessão por vírgula,
+   para no `[FIM DAS RESPOSTAS]` e marca o rótulo com `[AAAA-MM-DD HH:MM outra IA]`. Se ele avisar que a marca faltou,
+   a última pergunta aparece inteira na conferência do passo 4. Pela Bash (Git Bash ou Mac):
 
    ```sh
    node _ferramentas/respostas.mjs importar <<'FIM'

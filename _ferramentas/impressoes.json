@@ -1,5 +1,5 @@
 {
- "versao": "5.58",
+ "versao": "5.59",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -31,13 +31,13 @@
    "3b7b37f849811b57": "anterior-5.12",
    "509f0235f98e0b25": "anterior-3.8",
    "563640d696ed2e32": "anterior-3.6",
-   "66bc9a5288e07542": "5.58",
+   "66bc9a5288e07542": "anterior-5.58",
    "875c838f8871925e": "anterior-5.12",
    "896a90d939508e2d": "3.6",
    "d689db73d1b4f0fa": "5.58",
-   "d8bf2566ab6cda1b": "5.58",
+   "d8bf2566ab6cda1b": "anterior-5.58",
    "e180a758f9f5209d": "anterior-3.6",
-   "ee5f4f2d5da396b8": "5.58",
+   "ee5f4f2d5da396b8": "anterior-5.58",
    "fae4a079ecf55ab6": "5.15"
   },
   ".claude/agents/ml-copywriter.md": {
@@ -2521,18 +2521,18 @@
   },
   ".claude/skills/mercado-ads/SKILL.md": {
    "0bace000b62da161": "anterior-3.6",
-   "0c08aac45aced2eb": "5.58",
+   "0c08aac45aced2eb": "anterior-5.58",
    "2578f816c25677ff": "5.58",
-   "6701618d9bb60612": "5.58",
+   "6701618d9bb60612": "anterior-5.58",
    "6cbfb6e36bc2b537": "5.11",
    "6ef53747e8b38eba": "anterior-3.6",
    "7f30157a06dd37eb": "5.46",
    "816c9b88089c2f75": "5.42",
    "8b05478405a64010": "5.7",
    "8e1ec4283727ac91": "3.6",
-   "a5148d846832943a": "5.58",
+   "a5148d846832943a": "anterior-5.58",
    "a8b1fc4dd7781380": "4.1",
-   "ef2ed4531997b6ac": "5.58"
+   "ef2ed4531997b6ac": "anterior-5.58"
   },
   ".claude/skills/mercado-ads/referencias/estrategia.md": {
    "2f895f8750f59ec6": "3.6",
@@ -2589,7 +2589,7 @@
    "d01a3c306251a3d6": "5.11",
    "d7ea2d6bdc66a22a": "3.8",
    "e3d24ddb4c89fea9": "3.6",
-   "e8fba1a6032a5630": "5.58",
+   "e8fba1a6032a5630": "anterior-5.58",
    "f340dafbfc94d36e": "anterior-3.6",
    "f3924f28ed8ddf39": "anterior-3.6",
    "f7b46d82c671513e": "anterior-3.8",
@@ -2916,9 +2916,9 @@
   ".claude/skills/montar-anuncio/SKILL.md": {
    "02807594f55cc682": "5.14",
    "0b9ad82089bdfb8e": "anterior-3.6",
-   "211896118e7b0a14": "5.58",
-   "265d1fa14da43cb2": "5.58",
-   "526004355ed2180b": "5.58",
+   "211896118e7b0a14": "anterior-5.58",
+   "265d1fa14da43cb2": "anterior-5.58",
+   "526004355ed2180b": "anterior-5.58",
    "5732b7a729196abf": "anterior-5.12",
    "68e2644cc6437ac6": "4.4",
    "9645f468cf70d8c9": "5.7",
@@ -3884,6 +3884,7 @@
    "467820122fa682a4": "5.48",
    "4b6f97c80d0b6c93": "3.3",
    "527043ce87ee71c9": "5.53",
+   "5a228a52901d60e6": "5.59",
    "5a9b184f3cffe6c7": "4.8",
    "5d3c24d00496f4b3": "4.9",
    "5ddf4efb0fc5465e": "5.9",
@@ -4047,6 +4048,7 @@
    "ec0b4c66e3ef895b": "3.9",
    "f027a71839559478": "4.7",
    "f0c1c47c332c66fd": "4.5",
+   "f353f1567dfed9e0": "5.59",
    "f9050ff00ecd156e": "4.1",
    "fadc94d618f6e9c3": "5.16"
   },
@@ -4113,6 +4115,7 @@
    "ba8110b89f22da03": "5.50",
    "bc33529cc1b1e692": "4.4",
    "bd6dcf46a2af8658": "5.3",
+   "c641326264a3bf46": "5.59",
    "c84057e14bca4c90": "4.2",
    "cc42f8c1a76aa0fc": "5.30",
    "ccc8c8540a4da7ae": "4.1",
@@ -4296,9 +4299,11 @@
    "fff43e193076d9c0": "5.3"
   },
   "_ferramentas/respostas.mjs": {
-   "0228c892dd81f4f7": "5.54"
+   "0228c892dd81f4f7": "5.54",
+   "91d4fde780eb7b5e": "5.59"
   },
   "_ferramentas/respostas.test.mjs": {
+   "00fd6a47c1ff9c8b": "5.59",
    "8fc90529fb4ac8c7": "5.54"
   },
   "_ferramentas/verificar-kit.mjs": {

@@ -6,7 +6,7 @@ import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { importar, recortar, lerPerguntas, horaLocal, estado } from './respostas.mjs'
+import { importar, recortar, lerPerguntas, horaLocal, estado, MARCA_FIM } from './respostas.mjs'
 
 const AQUI = dirname(fileURLToPath(import.meta.url))
 const SCRIPT = join(AQUI, 'respostas.mjs')
@@ -178,6 +178,44 @@ test('pela linha de comando: grava so o RESPONDA-AQUI.txt, e entrada vazia ou us
     assert.equal(rodar(['importar', '--arquivo', arq], '  \n').status, 1)
     assert.equal(rodar(['outra-coisa'], 'x').status, 2)
     assert.equal(rodar(['importar', '--arquivo', join(pasta, 'nao-existe.txt')], 'x').status, 1)
+  } finally {
+    rmSync(pasta, { recursive: true, force: true })
+  }
+})
+
+// 5.71: a despedida que a outra IA escreve depois da ultima resposta caia dentro da ultima
+const DESPEDIDA = '\nEspero ter ajudado! Se quiser, posso montar um plano de vendas pra você.\n'
+test('a despedida depois da marca de fim fica fora da ultima resposta e se conta', () => {
+  const sem = importar(MOLDE, '[17]\nSua resposta: Quero vender mais no Instagram.\n' + DESPEDIDA, QUANDO)
+  assert.match(respostaDe(sem.texto, 17).resposta, /Espero ter ajudado/, 'canario: sem a marca a despedida entra na 17')
+  assert.equal(sem.fim, false)
+  assert.equal(sem.ultima, 17)
+  for (const marca of [MARCA_FIM, '**[FIM DAS RESPOSTAS]**', 'fim das respostas', '*[Fim das respostas]*']) {
+    const r = importar(MOLDE, '[16]\nSua resposta: Só eu\n[17]\nSua resposta: Quero vender mais no Instagram.\n\n' + marca + DESPEDIDA + '[3]\nSua resposta: Uso o básico\n', QUANDO)
+    assert.equal(respostaDe(r.texto, 17).resposta, 'Quero vender mais no Instagram.', `a marca ${marca} nao fechou`)
+    assert.deepEqual(r.gravadas, [16, 17], `o [3] depois da marca ${marca} entrou`)
+    assert.equal(r.fim, true)
+    assert.equal(r.depois, 3)
+  }
+  // a marca antes da primeira pergunta e linha de fora, e nao fecha nada
+  const antes = recortar(MARCA_FIM + '\n[17]\nSua resposta: Quero vender mais.\n')
+  assert.deepEqual([antes.fim, antes.fora, antes.blocos[0].texto], [false, 1, 'Quero vender mais.'])
+  // a marca nunca e a linha FIM que fecha o heredoc do setup, nem sem colchete
+  assert.notEqual(MARCA_FIM.replace(/[[\]]/g, '').trim(), 'FIM')
+})
+
+test('pela linha de comando: a saida conta o que veio depois da marca e avisa quando ela falta', () => {
+  const pasta = mkdtempSync(join(tmpdir(), 'respostas-fim-'))
+  try {
+    const arq = join(pasta, 'RESPONDA-AQUI.txt')
+    const rodar = input => { writeFileSync(arq, MOLDE); return spawnSync(process.execPath, [SCRIPT, 'importar', '--arquivo', arq], { input, encoding: 'utf8' }) }
+    const com = rodar('[17]\nSua resposta: Vender mais.\n' + MARCA_FIM + DESPEDIDA)
+    assert.equal(com.status, 0, com.stderr)
+    assert.match(com.stdout, /^linhas depois do \[FIM DAS RESPOSTAS\] ignoradas: 1$/m)
+    assert.doesNotMatch(com.stdout, /despedida/)
+    const sem = rodar('[17]\nSua resposta: Vender mais.\n' + DESPEDIDA)
+    assert.equal(sem.status, 0, sem.stderr)
+    assert.match(sem.stdout, /^sem o \[FIM DAS RESPOSTAS\]: a 17 \(a ultima\) pode ter levado a despedida da outra IA; confira ela inteira$/m)
   } finally {
     rmSync(pasta, { recursive: true, force: true })
   }

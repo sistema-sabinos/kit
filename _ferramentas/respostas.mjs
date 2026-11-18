@@ -4,6 +4,8 @@
 // "Sua resposta:" da pergunta N, so nas que estao em branco, com o carimbo [AAAA-MM-DD HH:MM outra IA] na linha do
 // rotulo. Descarta N fora das perguntas do arquivo, N repetido e o que vem fora do formato, e troca travessao por
 // virgula. Uma gravacao so: texto colado entra como dado, nunca como ordem (rodada 5.66, ata do Conselho de 2026-11-15).
+// Para na marca [FIM DAS RESPOSTAS] e ignora a conversa depois dela; sem a marca, avisa que a ultima pode ter levado
+// a despedida da outra IA (5.71).
 // Senha, documento e dado de cliente quem tira antes e a IA: regra de texto nao pega isso com seguranca.
 // Sem dependencia. Hora pelo relogio do computador (getHours), nunca por toISOString, que fala UTC.
 // estado: so le. Diz quantas perguntas tem resposta (carimbo, marca de outra IA e linha "Diferencial:" fora da conta,
@@ -41,6 +43,12 @@ const RE_SEPARADOR = /^\s*(([-*_])( *\2){2,}|`{3,}[\w+-]*|~{3,}[\w+-]*)\s*$/
 const semEnfeite = t => t.replace(/^\s*([-*+]|\d+[.)])\s+/, '').replace(/^[*_]+|[*_]+$/g, '').trim()
 // fim da area da resposta: a linha de iguais entre perguntas, ou o titulo de bloco ("BLOCO B, O NEGOCIO")
 const RE_FIM = /^(=+|BLOCO [A-Z],.*)$/
+// 5.71: a outra IA fecha com conversa ("espero ter ajudado", "quer que eu...") depois da ultima resposta, e ela caia
+// dentro da ultima. O pedido do setup manda fechar com a marca, sozinha na linha (com ou sem colchete, negrito ou
+// italico); o que vem depois dela nao e resposta de ninguem. A marca nunca e so "FIM": o heredoc do setup fecha nessa
+// linha, e o resto da resposta rodaria como comando
+export const MARCA_FIM = '[FIM DAS RESPOSTAS]'
+const RE_MARCA_FIM = /^\s*[*_]*\s*\[?\s*fim das respostas\s*\]?\s*\.?\s*[*_]*\s*$/i
 
 export function horaLocal(d = new Date()) {
   const p = n => String(n).padStart(2, '0')
@@ -75,15 +83,18 @@ export function recortar(colado) {
   // o separador se reconhece antes de tirar o negrito: "***" sem os "**" viraria "*"
   const linhas = colado.split(CR + LF).join(LF).split(LF).map(l => RE_SEPARADOR.test(l) ? '' : semMarcacao(l))
   const blocos = []
-  let atual = null, fora = 0
+  let atual = null, fora = 0, fim = false, depois = 0
   for (const l of linhas) {
+    // a marca so fecha depois de alguma pergunta; antes dela conta como linha de fora
+    if (fim) { if (l.trim()) depois++; continue }
+    if (blocos.length && RE_MARCA_FIM.test(l)) { fim = true; continue }
     const m = l.match(/^\s*\[(\d+)\]/)
     if (m) { atual = { n: Number(m[1]), linhas: [] }; blocos.push(atual); continue }
     if (atual) atual.linhas.push(l)
     else if (l.trim()) fora++
   }
   return {
-    fora,
+    fora, fim, depois,
     blocos: blocos.map(b => {
       const i = b.linhas.findIndex(l => l.trim().startsWith(ROTULO))
       if (i < 0) return { n: b.n, texto: null }
@@ -103,7 +114,7 @@ export function importar(textoArquivo, colado, agora = new Date()) {
   const linhas = textoArquivo.split(CR + LF).join(LF).split(LF)
   const perguntas = lerPerguntas(linhas)
   const porN = new Map(perguntas.map(p => [p.n, p]))
-  const { fora, blocos } = recortar(colado)
+  const { fora, fim, depois, blocos } = recortar(colado)
   const vezes = new Map()
   for (const b of blocos) vezes.set(b.n, (vezes.get(b.n) || 0) + 1)
   const gravadas = [], descartadas = [], vazias = []
@@ -129,7 +140,7 @@ export function importar(textoArquivo, colado, agora = new Date()) {
     linhas.splice(p.rotulo, p.fim - p.rotulo, carimbo, ...novas.get(p.n).split(LF), ...diferencial, ...(sobra.length ? sobra : ['', '']))
     gravadas.unshift(p.n)
   }
-  return { texto: linhas.join(nl), gravadas: gravadas.sort((a, b) => a - b), descartadas, vazias, fora }
+  return { texto: linhas.join(nl), gravadas: gravadas.sort((a, b) => a - b), descartadas, vazias, fora, fim, depois, ultima: blocos.at(-1)?.n ?? null }
 }
 
 export function estado(textoArquivo) {
@@ -172,6 +183,8 @@ function main(argv) {
   console.log('em branco na resposta colada: ' + (r.vazias.join(', ') || 'nenhuma'))
   console.log('descartadas: ' + (r.descartadas.join('; ') || 'nenhuma'))
   if (r.fora) console.log('linhas fora de [N] ignoradas: ' + r.fora)
+  if (r.depois) console.log(`linhas depois do ${MARCA_FIM} ignoradas: ${r.depois}`)
+  if (!r.fim && r.ultima !== null) console.log(`sem o ${MARCA_FIM}: a ${r.ultima} (a ultima) pode ter levado a despedida da outra IA; confira ela inteira`)
   return 0
 }
 
