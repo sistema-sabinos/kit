@@ -1,5 +1,5 @@
 {
- "versao": "5.59",
+ "versao": "5.60",
  "arquivos": {
   ".claude/agents/auditor.md": {
    "bafe5e60cb6f0183": "anterior-3.6"
@@ -102,6 +102,7 @@
    "25130c1222651fe1": "5.11",
    "3800300bd226095a": "5.53",
    "5c9f23b0ee26c871": "5.41",
+   "7279a4d3dc0f4e34": "5.60",
    "a207d0ca0847e383": "anterior-5.41",
    "a50d4bbc6d7e3829": "5.42",
    "ac4ccca8f230e2f3": "anterior-5.42",
@@ -2612,6 +2613,7 @@
    "b16eb4fcdbd9cd5c": "anterior-4.9",
    "cca6c16ecb102d8f": "4.1",
    "ce907b9ef5313c6a": "3.9",
+   "e598761838a4150a": "5.60",
    "f45d29891339558d": "4.9",
    "f977f56bf5ffd166": "5.41"
   },
@@ -3155,6 +3157,7 @@
    "ed7c3d964dee1955": "5.11"
   },
   ".claude/skills/pedir/SKILL.md": {
+   "3cfdd8f92ff77180": "5.60",
    "87f31fff917517ae": "anterior-5.42",
    "918f2e8d419ea383": "anterior-5.6",
    "bb9b269f318f0916": "anterior-5.42",
@@ -3631,6 +3634,7 @@
    "e1de1ad21ed4f5d9": "anterior-4.3",
    "ea5a25380f7e2c6b": "anterior-4.4",
    "f244bd12e8c2b4d7": "5.41",
+   "f65d35b7669275a0": "5.60",
    "f94c05738fce3489": "anterior-5.42",
    "fb1870fa879924d0": "5.53"
   },
@@ -4026,6 +4030,7 @@
    "9b292fa7d447cd1f": "5.56",
    "9e81ee72267323ea": "5.39",
    "a12d2a329d9e1742": "3.1",
+   "a37091e96acdd3e6": "5.60",
    "a6c61f4251f8323e": "5.30",
    "afb45b01a0601b35": "3.0",
    "b3b430d1dda04f2f": "5.19",
@@ -4066,6 +4071,7 @@
    "2633b735e2a5a87c": "5.10",
    "2b7f86ff4a37ec15": "5.11",
    "2e5d3cf3acb0a8d0": "4.9",
+   "2f7c548c279cb18d": "5.60",
    "3332ee6c635375ad": "5.8",
    "335f6442cc8f7e49": "4.8",
    "391e74c981d43c7e": "5.29",
@@ -4296,6 +4302,7 @@
    "ee8194cb197ea007": "4.5",
    "ef43618f0617c69a": "5.32",
    "f4dec7e16452a8c5": "5.27",
+   "f50dbe57fc860858": "5.60",
    "fff43e193076d9c0": "5.3"
   },
   "_ferramentas/respostas.mjs": {
@@ -5229,9 +5236,11 @@
   },
   "_modelo/templates/marca/exemplos/design-guide-agencia.md": {
    "0a73c17df7d4f66a": "5.52",
-   "0e76a153085e09ff": "3.0"
+   "0e76a153085e09ff": "3.0",
+   "c008f060be019668": "5.60"
   },
   "_modelo/templates/marca/exemplos/design-guide-solopreneur.md": {
+   "b1e9bac0595ba15a": "5.60",
    "be8ef5ccebd7246f": "5.52",
    "c146479ee12aee54": "3.0"
   },

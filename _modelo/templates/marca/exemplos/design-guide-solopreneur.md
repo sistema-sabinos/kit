@@ -31,10 +31,10 @@ Quente, humano e editorial. Tons terrosos com fundo off-white. Parece um livro b
 
 ## Elementos-chave
 
-- Bordas: dashed, arredondadas
+- Bordas: linha tracejada, com os cantos arredondados
 - Cantos dos cards: bem arredondados (20px)
-- Botões: pill bem redondo nas pontas, fundo terracota
-- Sombras: sutil (0 4px 20px rgba(0,0,0,0.06))
+- Botões: bem redondos nas pontas, fundo terracota
+- Sombras: bem leve, quase invisível
 
 ---
 

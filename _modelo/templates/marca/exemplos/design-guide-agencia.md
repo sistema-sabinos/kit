@@ -31,9 +31,9 @@ Dark e bold. Interface de agência de performance: sem frescura, sem decoração
 
 ## Elementos-chave
 
-- Bordas: solid 1px com opacidade baixa
+- Bordas: linha fininha e clarinha em volta
 - Cantos dos cards: levemente arredondados (12px)
-- Botões: pill bem redondo nas pontas, fundo laranja
+- Botões: bem redondos nas pontas, fundo laranja
 - Sombras: não
 
 ---

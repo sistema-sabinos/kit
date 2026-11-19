@@ -23,7 +23,7 @@ fornecedores:
 limite_gasto_usd: 4
 ```
 
-- `erp`: `bling` ou `nenhum`. Com `nenhum`, o anúncio é criado pausado direto no Mercado Livre pela API (ou pelo checklist no painel, quando o produto tem variação)
+- `erp`: `bling` ou `nenhum`. Com `nenhum`, o anúncio é criado e pausado na hora direto no Mercado Livre pela API (ou pelo checklist no painel, quando o produto tem variação)
 - `modelo`: `dropshipping` (o fornecedor despacha em seu nome, sem estoque seu) ou `estoque` (você guarda e despacha). Muda o que a auditoria confere
 - `estado`: a sigla do estado do seu CNPJ (exemplo: SP). No dropshipping, o fornecedor precisa ser do mesmo estado
 - `imposto_pct`: a alíquota do mês sobre a venda, em porcentagem (exemplo: 6). Vem da contadora e muda; `imposto_informado_em` guarda a data (exemplo: 2026-09-01) e `imposto_fonte` quem informou (exemplo: contadora). MEI põe 0, porque o imposto dele é o valor fixo do DAS, pago todo mês, e escreve em `imposto_fonte`: MEI, imposto fixo no DAS. No Simples Nacional sem o número do contador, com o CNPJ de 12 meses ou mais e até R$ 180 mil vendidos nos últimos 12 meses, entra a alíquota do fato `simples-anexo1` (no `fatos.md` da `/comecar-a-vender`) e `imposto_fonte` fica: estimativa, conferir com o contador; nos outros casos, o campo fica vazio até o contador passar. Essa estimativa só vale pra quem revende produto comprado pronto (dropshipping e revenda); quem fabrica ou monta o que vende cai noutro anexo do Simples e deixa o campo vazio até o contador passar

@@ -29,8 +29,8 @@ quê, e como sabe que ficou bom**.
 1. Responder em uma linha: **dá**, **dá em parte** ou **não dá**, e por quê
 2. O que falta: conta a ligar (pelo `/conectar`), skill que faz (pelo nome, só se a pasta
    existe no projeto) ou pacote que não veio (o `/atualizar-sabinos` mostra os
-   disponíveis). Mudança em conta de terceiro, gasto, publicação e mensagem pra fora
-   continuam pedindo o "pode ir" da pessoa: dizer isso quando o X mexe em conta
+   disponíveis). Se o X cai no Gate humano do `AGENTS.md`, dizer que ele pede o
+   "pode ir" da pessoa
 3. Se custa: dizer que custa e quem cobra (o `ferramentas.md` e a skill que cobra dizem
    quem). Valor só conferido na internet na hora (regra 2 do `AGENTS.md`); sem conferir:
    "tem custo; confiro o valor antes de rodar qualquer coisa". Nunca preço, taxa ou limite
